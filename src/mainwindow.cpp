@@ -1004,7 +1004,7 @@ void MainWindow::onRecordClick() {
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 absPath + baseName + QString::fromStdString("-datarec-meta.xml"),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter);
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         // GB added end
         
         // GB new kind of signals
@@ -1067,7 +1067,7 @@ void MainWindow::onRecordImageClick() {
             
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 outputDirectory + "/" + QString::fromStdString("imagerec-meta.xml"),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter);
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
         // GB added end
