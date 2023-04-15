@@ -240,7 +240,7 @@ void VideoView::drawAutoParamOverlay() {
     }
     geBufferAP.clear();
 
-    if(!showAutoParamOverlay)
+    if(!showAutoParamOverlay || !showROI)
         return;
 
     //QRectF roi1;

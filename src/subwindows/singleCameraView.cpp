@@ -64,6 +64,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     // GB added/modified begin
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
+    showAutoParamAct->setEnabled(plotROIContour);
     showAutoParamAct->setChecked(showAutoParamOverlay);
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
@@ -695,6 +696,8 @@ void SingleCameraView::onPlotPupilCenterClick(bool value) {
 void SingleCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("SingleCameraView.plotROIContour", plotROIContour);
+    showAutoParamAct->setEnabled(value);
+    emit onShowAutoParamOverlay(showAutoParamOverlay);
 
     emit onShowROI(plotROIContour);
 }
