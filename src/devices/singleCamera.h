@@ -91,10 +91,10 @@ public:
     void saveToFile(const String_t &filename);
 
     // GB added begin
-    int getImageROIwidth(); 
-    int getImageROIheight(); 
-    int getImageROIoffsetX(); 
-    int getImageROIoffsetY(); 
+    int getImageROIwidth() override; 
+    int getImageROIheight() override; 
+    int getImageROIoffsetX() override; 
+    int getImageROIoffsetY() override; 
     int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
     int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
     int getBinningVal();

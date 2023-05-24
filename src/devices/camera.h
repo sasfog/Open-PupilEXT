@@ -57,6 +57,11 @@ public:
     virtual void close() = 0;
     virtual CameraImageType getType() = 0;
 
+    virtual int getImageROIwidth() = 0; 
+    virtual int getImageROIheight() = 0; 
+    virtual int getImageROIoffsetX() = 0; 
+    virtual int getImageROIoffsetY() = 0;  
+
 signals:
 
     void onNewGrabResult(CameraImage grabResult);

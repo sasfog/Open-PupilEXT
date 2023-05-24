@@ -9,6 +9,7 @@
 #include <QtCore/QFile>
 #include <QDir>
 #include <QtCore/qfileinfo.h>
+#include <cmath>
 
 /**
     
@@ -106,4 +107,25 @@ public:
     
     };
 
+    static QRect calculateRoi(QRect imageRect, QRect discreteROI, QRectF rationalROI){
+        QRect newRoi;
+
+        if(!rationalROI.isEmpty()){
+            newRoi = QRect(rationalROI.x()*imageRect.width(),rationalROI.y()*imageRect.height(),rationalROI.width()*imageRect.width(),rationalROI.height()*imageRect.height());
+            if (isValidRoi(imageRect, discreteROI, rationalROI))
+                return newRoi;
+        }
+        int height = std::round(imageRect.height() * 0.6);
+        int width = std::round((height / 3) * 4);
+        newRoi.setLeft(imageRect.center().x() - width / 2);
+        newRoi.setTop(imageRect.center().y() - height / 2);
+        newRoi.setWidth(width);
+        newRoi.setHeight(height);
+        return newRoi;
+    }
+
+    static bool isValidRoi(QRect imageRect, QRect discreteROI, QRectF rationalROI){
+            return (imageRect.width() / discreteROI.width()) == rationalROI.x() &&
+                (imageRect.height() / discreteROI.height()) == rationalROI.y();
+    }
 };
