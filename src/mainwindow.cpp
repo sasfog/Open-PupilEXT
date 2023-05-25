@@ -854,9 +854,12 @@ void MainWindow::onTrackActClick() {
         // BREAKPOINT
         // GB: this needs to happen, because if we just open a camera, and start tracking, no ROI has been set for pupilDetection before
         if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            QRectF roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
-            if(!roi1.isEmpty())
-                pupilDetectionWorker->setROIsingleImageOnePupil(roi1);
+            QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
+            if(!roi1D.isEmpty()){
+                QRectF initRoi = selectedCamera->getImageROI();
+                QRectF roi1R = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
+                pupilDetectionWorker->setROIsingleImageOnePupil(SupportFunctions::calculateRoiD(initRoi, roi1D, roi1R));
+                }
         } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             QRectF roiA = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.discrete", QRectF()).toRectF();
             QRectF roiB = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.discrete", QRectF()).toRectF();

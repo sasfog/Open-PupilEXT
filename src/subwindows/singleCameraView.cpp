@@ -2,7 +2,7 @@
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QtWidgets>
-
+#include "../supportFunctions.h"
 #include "singleCameraView.h"
 
 // Create new single camera view given a single camera object and a pupil detection process
@@ -400,7 +400,9 @@ void SingleCameraView::loadSettings() {
     }
 
     if(!roi1.isEmpty()) {
-        videoView->setROI1SelectionR(roi1);
+        QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
+        QRectF initRoi = camera->getImageROI();
+        videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi1D, roi1));
         //videoView->saveROI1Selection(); // GB: why save just after loading?
     }
     if(!roi2.isEmpty()) {

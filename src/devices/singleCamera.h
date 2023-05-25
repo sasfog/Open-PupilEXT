@@ -95,6 +95,7 @@ public:
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 
     int getImageROIoffsetY() override; 
+    QRectF getImageROI() override;
     int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
     int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
     int getBinningVal();

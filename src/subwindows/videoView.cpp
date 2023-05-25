@@ -624,7 +624,8 @@ bool VideoView::saveROI1Selection() {
 
     // GB modified begin
     //QRectF roi = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-    QRectF roiD = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+    //QRectF roiD = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+    QRectF roiD = roi1Selection->sceneBoundingRect();
     QRectF roiR;
     if(imageSize.width>0 && imageSize.height>0)
         roiR = QRectF( roiD.x()/imageSize.width, roiD.y()/imageSize.height, roiD.width()/imageSize.width, roiD.height()/imageSize.height );
@@ -819,7 +820,7 @@ void VideoView::setROI2SelectionR(float roiSize) {
 // Sets a ROI (GB: ROI nr 1) selection based on a given rectangle
 // GB: modified for RATIO ROIs
 void VideoView::setROI1SelectionR(QRectF roiR) {
-    if(roiR.isEmpty() || roiR.left()<0 || roiR.right()>1)
+    if(roiR.isEmpty())
         return;
 
     roi1SelectionRectLastR = roiR; 
@@ -830,11 +831,11 @@ void VideoView::setROI1SelectionR(QRectF roiR) {
 // Sets a ROI (GB: ROI nr 2) selection based on a given rectangle
 // GB: added, and modified for RATIO ROIs
 void VideoView::setROI2SelectionR(QRectF roiR) {
-    if(roiR.isEmpty() || !usingDoubleROI || roiR.left()<0 || roiR.right()>1)
+    if(roiR.isEmpty() || !usingDoubleROI)
         return;
 
     roi2SelectionRectLastR = roiR; 
-    roi2Selection->setRect(QRect(roi2SelectionRectLastR.x()*imageSize.width,roi2SelectionRectLastR.y()*imageSize.height,roi2SelectionRectLastR.width()*imageSize.width,roi2SelectionRectLastR.height()*imageSize.height));
+    roi2Selection->setRect(QRect(roiR.x(),roiR.y(),roiR.width(),roiR.height()));
     qDebug() << "roi2Selection->setRect() via setROI2Selection(QRectF roi) (RATIO): " << roiR; 
 }
 

@@ -61,6 +61,7 @@ public:
     virtual int getImageROIheight() = 0; 
     virtual int getImageROIoffsetX() = 0; 
     virtual int getImageROIoffsetY() = 0;  
+    virtual QRectF getImageROI() = 0;
 
 signals:
 

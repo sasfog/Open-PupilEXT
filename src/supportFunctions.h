@@ -10,6 +10,7 @@
 #include <QDir>
 #include <QtCore/qfileinfo.h>
 #include <cmath>
+#include <QRectF>
 
 /**
     
@@ -107,25 +108,64 @@ public:
     
     };
 
-    static QRect calculateRoi(QRect imageRect, QRect discreteROI, QRectF rationalROI){
-        QRect newRoi;
+    static QRectF calculateRoiD(QRectF imageRect, QRectF discreteROI, QRectF rationalROI, float defaultRatio = 0.6f){
+        QRectF newRoi;
 
         if(!rationalROI.isEmpty()){
-            newRoi = QRect(rationalROI.x()*imageRect.width(),rationalROI.y()*imageRect.height(),rationalROI.width()*imageRect.width(),rationalROI.height()*imageRect.height());
-            if (isValidRoi(imageRect, discreteROI, rationalROI))
-                return newRoi;
+            if (isValidRoi(imageRect, discreteROI, rationalROI)){
+                return getRectDiscreteFromRational(imageRect, rationalROI);
+            }
         }
-        int height = std::round(imageRect.height() * 0.6);
-        int width = std::round((height / 3) * 4);
-        newRoi.setLeft(imageRect.center().x() - width / 2);
-        newRoi.setTop(imageRect.center().y() - height / 2);
-        newRoi.setWidth(width);
-        newRoi.setHeight(height);
+        return getDefaultRectD(imageRect, imageRect.center(), defaultRatio);
+    }
+
+    static QRectF calculateRoiR(QRectF imageRect, QRectF discreteROI, QRectF rationalROI, float defaultRatio = 0.6f){
+        QRectF newRoi;
+
+        if(!rationalROI.isEmpty()){
+            if (isValidRoi(imageRect, discreteROI, rationalROI)){
+                return rationalROI;
+            }
+        }
+        return getDefaultRectR(imageRect, imageRect.center(), defaultRatio);
+    }
+
+    static QRectF getRectDiscreteFromRational(QRectF imageRect, QRectF rationalROI){
+        return QRectF(rationalROI.x() * imageRect.width(), rationalROI.y() * imageRect.height(),
+                    rationalROI.width() * imageRect.width(), rationalROI.height() * imageRect.height());
+
+    }
+    static QRectF getDefaultRectD(QRectF imageRect, QPointF center, float defaultRatio){
+        int height = 0;
+        int width = 0;
+        if (imageRect.height() < imageRect.width()){
+            height = std::round(imageRect.height() * defaultRatio);
+            width = std::round((height / 3) * 4);
+        }
+        else {
+            width = std::round(imageRect.width() * defaultRatio);
+            height = std::round((width / 4) * 3);
+        }
+        QRectF newRoi = QRectF(center.x() - width / 2, center.y() - height / 2, width, height);
         return newRoi;
     }
 
-    static bool isValidRoi(QRect imageRect, QRect discreteROI, QRectF rationalROI){
-            return (imageRect.width() / discreteROI.width()) == rationalROI.x() &&
-                (imageRect.height() / discreteROI.height()) == rationalROI.y();
+    static QRectF getDefaultRectR(QRectF imageRect, QPointF center, float defaultRatio){
+        QRectF rectR = getDefaultRectD(imageRect, center, defaultRatio);
+        return QRectF(rectR.topLeft().x() / imageRect.width(), rectR.topLeft().y() / imageRect.height(),
+        rectR.width() / imageRect.width(), rectR.height() / imageRect.height());
+    }
+
+    static bool isValidRoi(QRectF imageRect, QRectF discreteROI, QRectF rationalROI){
+        float epsilon = 0.0001f;
+        float widthRatio = discreteROI.width() / imageRect.width();
+        bool widthMatches = widthRatio - epsilon <= rationalROI.width() && rationalROI.width() <= widthRatio + epsilon;
+        float heightRatio = discreteROI.height() / imageRect.height();
+        bool heightMatches = heightRatio - epsilon <= rationalROI.height() && rationalROI.height() <= heightRatio + epsilon;
+        float xRatio = discreteROI.x() / imageRect.width();
+        bool xMatches = xRatio - epsilon <= rationalROI.x() && rationalROI.x() <= xRatio + epsilon;
+        float yRatio = discreteROI.y() / imageRect.height();
+        bool yMatches = yRatio - epsilon <= rationalROI.y() && rationalROI.y() <= yRatio + epsilon;
+        return xMatches && yMatches && widthMatches && heightMatches;
     }
 };
