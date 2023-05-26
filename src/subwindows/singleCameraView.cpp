@@ -398,15 +398,16 @@ void SingleCameraView::loadSettings() {
         roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF()).toRectF();
         roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF()).toRectF();
     }
-
+    QRectF initRoi = camera->getImageROI();
     if(!roi1.isEmpty()) {
         QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
-        QRectF initRoi = camera->getImageROI();
+        
         videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi1D, roi1));
-        //videoView->saveROI1Selection(); // GB: why save just after loading?
     }
     if(!roi2.isEmpty()) {
-        videoView->setROI2SelectionR(roi2);
+        QRectF roi2D = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.discrete", QRectF()).toRectF();
+        
+        videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi2D, roi2));
     }
     // GB added/modified end
 }
@@ -810,6 +811,7 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
         //qDebug() << "Processing mode is undetermined" << Qt::endl;
     }
 
+    videoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
     loadSettings(); // same as onSettingsChange()
 
     updateProcModeLabel();
