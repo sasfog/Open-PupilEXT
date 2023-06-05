@@ -84,6 +84,7 @@ private:
 
     
     int playbackSpeed;
+    int selectedFrameVal = 1;
     bool playbackLoop;
     bool syncRecordCsv;
     bool syncStream;
@@ -92,6 +93,7 @@ private:
 
     QGroupBox *infoGroup;
     QLineEdit *timestampVal;
+    QSpinBox *selectedFrameBox;
     QLabel *timestampHumanValLabel;
     QLabel *imgNumberValLabel;
     QLabel *elapsedTimeValLabel;
@@ -138,6 +140,8 @@ public slots:
     //void saveSettings();
     void updateForm();
 
+    void onFrameSelected(int frameNumber);
+
 private slots:
     void onStartPauseButtonClick();
     void onStopButtonClick();
@@ -158,6 +162,8 @@ private slots:
     void setPlaybackLoop(int m_state);
     void setSyncRecordCsv(int m_state);
     void setSyncStream(int m_state);
+
+    
 
     //void onSettingsChange();
 

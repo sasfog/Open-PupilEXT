@@ -55,6 +55,15 @@ void ImagePlaybackControlDialog::createForm() {
     timestampVal->setMaximumWidth(100);
     infoLayout->addRow(timestampLabel, timestampVal);
 
+    QLabel *frameLabel = new QLabel(tr("Frame:"));
+    selectedFrameBox = new QSpinBox();
+    selectedFrameBox->setReadOnly(false);
+    selectedFrameBox->setMaximumWidth(100);
+    selectedFrameBox->setMinimum(1);
+    selectedFrameBox->setMaximum(fileCamera->getNumImagesTotal());
+    selectedFrameBox->setValue(selectedFrameVal);
+    infoLayout->addRow(frameLabel, selectedFrameBox);
+
     QLabel *timestampHumanLabel = new QLabel(tr("Date and time:"));
     timestampHumanValLabel = new QLabel("-");
     infoLayout->addRow(timestampHumanLabel, timestampHumanValLabel);
@@ -114,6 +123,7 @@ void ImagePlaybackControlDialog::createForm() {
     connect(dial, SIGNAL(incremented()), this, SLOT(onDialForward()));
     connect(dial, SIGNAL(decremented()), this, SLOT(onDialBackward()));
     connect(slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderValueChanged(int)));
+    connect(dial, SIGNAL(valueChanged(int)), this, SLOT(on(int)));
     
     controlLayout->addWidget(slider, 0, 0, 1, 3);
     controlLayout->addWidget(dial, 1, 2, 6, 1);
@@ -174,6 +184,7 @@ void ImagePlaybackControlDialog::createForm() {
     connect(loopBox, SIGNAL(stateChanged(int)), this, SLOT(setPlaybackLoop(int)));
     connect(syncRecordCsvBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncRecordCsv(int)));
     connect(syncStreamBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncStream(int)));
+    connect(selectedFrameBox, SIGNAL(valueChanged(int)), this, SLOT(onFrameSelected(int)));
 }
 
 void ImagePlaybackControlDialog::updateSliderColorTick(const CameraImage &cimg) {
@@ -267,6 +278,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
         //timestampHumanValLabel->setText(QLocale::system().toString(date));
         imgNumberValLabel->setText(QString::number(frameNumber+1) + "\t/ " + QString::number(numImagesTotal));
+        selectedFrameBox->setValue(frameNumber + 1);
         if(acqFPS == 0)
             acqFPSValLabel->setText("-");
         else if(acqFPS > 0 && acqFPS < 1)
@@ -324,6 +336,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
         const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
         startPauseButton->setIcon(icon);
         playImagesOn = false;
+        selectedFrameBox->setReadOnly(false);
     } else {
         
         //stalledTimestamp = 0;
@@ -340,6 +353,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
         const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-pause.svg");
         startPauseButton->setIcon(icon);
         playImagesOn = true;
+        selectedFrameBox->setReadOnly(true);
     }
 
     this->update(); // invalidate 
@@ -372,6 +386,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
         waitingForReset = false;
 
         emit onPlaybackSafelyStopped();
+        selectedFrameBox->setReadOnly(false);
 
     } else if(playImagesOn && lastTimestamp < stalledTimestamp) {
 
@@ -386,6 +401,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 
         playbackStalled = true;
         waitingForReset = true;
+        selectedFrameBox->setReadOnly(true);
     }
 
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
@@ -403,6 +419,7 @@ void ImagePlaybackControlDialog::onFinish() {
         const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
         startPauseButton->setIcon(icon);
         playImagesOn = false;
+        selectedFrameBox->setReadOnly(true);
     }
 
     stalledTimestamp = 0;
@@ -440,18 +457,22 @@ void ImagePlaybackControlDialog::onAutomaticFinish() {
 void ImagePlaybackControlDialog::onDialForward() {
     lastTimestamp = 0;
     fileCamera->step1frameNext();
+    selectedFrameVal+= 1;
+    selectedFrameBox->setValue(selectedFrameVal);
 }
 
 void ImagePlaybackControlDialog::onDialBackward() {
     lastTimestamp = 0;
     fileCamera->step1framePrev();
+    selectedFrameVal-= 1;
+    selectedFrameBox->setValue(selectedFrameVal);
 }
 
 void ImagePlaybackControlDialog::onSliderValueChanged(int val) {
     int frameNumber = floor((float)(val)/(float)slider->maximum()*(float)(numImagesTotal-1));
     //qDebug() << "Seek to frame number (INDEX, starting from 0): " << frameNumber;
     fileCamera->seekToFrame(frameNumber);
-
+    selectedFrameBox->setValue(frameNumber + 1);
     if(!playImagesOn) {
         updateInfoInternal(frameNumber);
         emit stillImageChange(frameNumber);
@@ -549,3 +570,20 @@ void ImagePlaybackControlDialog::setSyncStream(int m_state) {
     // TODO
 }
 
+void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
+    if (!playImagesOn){
+        if (frameNumber <= 0)
+            selectedFrameVal = numImagesTotal;
+        else 
+            selectedFrameVal = frameNumber;
+
+        slider->blockSignals(true);
+        int gg = floor(99*((selectedFrameVal+1)/(float)numImagesTotal));
+        slider->setColorTickPos((selectedFrameVal)/(float)numImagesTotal);
+        slider->setValue( gg );
+        slider->blockSignals(false);
+        fileCamera->seekToFrame(selectedFrameVal -1);
+        updateInfoInternal(selectedFrameVal - 1);
+        emit stillImageChange(selectedFrameVal - 1);
+    }
+}
