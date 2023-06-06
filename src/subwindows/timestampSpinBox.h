@@ -6,19 +6,19 @@
 */
 
 #include <QtWidgets>
-#include <QtWidgets/QSpinBox>
+#include <QtWidgets/QDoubleSpinBox>
 #include "../devices/fileCamera.h"
 
-class TimestampSpinBox : QSpinBox {
+class TimestampSpinBox : public QDoubleSpinBox {
     Q_OBJECT
 
 public:
-    explicit TimestampSpinBox(const FileCamera *fileCamera, const QWidget *parent);
+    explicit TimestampSpinBox(FileCamera *fileCamera);
 
     ~TimestampSpinBox() override;
 
-    QString textFromValue(int value) const override;
-    int valueFromText(const QString &text) const override;
+    QString textFromValue(double value) const override;
+    double valueFromText(const QString &text) const override;
 
 private:
     FileCamera *fileCamera;

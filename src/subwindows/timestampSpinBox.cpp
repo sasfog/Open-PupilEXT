@@ -1,19 +1,23 @@
+
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QDoubleSpinBox>
 #include "timestampSpinBox.h"
 
-TimestampSpinBox::TimestampSpinBox(FileCamera *fileCamera, QWidget *parent) :
-        QSpinBox(),
-        QWidget(parent),
+
+TimestampSpinBox::TimestampSpinBox(FileCamera *fileCamera) : QDoubleSpinBox(),
         fileCamera(fileCamera){
-
 }
 
-QString TimestampSpinBox::textFromValue(int value) const {
-    uint64_t timestamp = fileCamera->getTimestampForFrameNumber(value);
-    return QString::Number(timestamp);
+TimestampSpinBox::~TimestampSpinBox() {
 }
 
-int TimestampSpinBox::valueFromText(const QString &text) const {
+QString TimestampSpinBox::textFromValue(double value) const {
+    uint64_t timestamp = fileCamera->getTimestampForFrameNumber(value-1);
+    return QString::number(timestamp);
+}
+
+double TimestampSpinBox::valueFromText(const QString &text) const {
     bool success;
-    uint64_t timestamp = text.toLongLong(&success);
+    uint64_t timestamp = text.toULongLong(&success);
     return fileCamera->getFrameNumberForTimestamp(timestamp);
 }

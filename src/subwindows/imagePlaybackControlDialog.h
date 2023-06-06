@@ -19,6 +19,7 @@
 #include "../pupilDetection.h"
 
 #include "../recEventTracker.h"
+#include "timestampSpinBox.h"
 
 #include <QKeyEvent> // DEV
 
@@ -92,7 +93,8 @@ private:
     QSpinBox* playbackFPSVal;
 
     QGroupBox *infoGroup;
-    QLineEdit *timestampVal;
+    //QLineEdit *timestampVal;
+    TimestampSpinBox *timestampVal;
     QSpinBox *selectedFrameBox;
     QLabel *timestampHumanValLabel;
     QLabel *imgNumberValLabel;
@@ -126,6 +128,7 @@ private:
     QCheckBox *syncStreamBox;
 
     void createForm();
+    void enableWidgets(bool enable);
  //   void saveSettings();
  //   void updateForm();
 
@@ -141,6 +144,7 @@ public slots:
     void updateForm();
 
     void onFrameSelected(int frameNumber);
+    void onTimestampSelected(double frameNumber);
 
 private slots:
     void onStartPauseButtonClick();

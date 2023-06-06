@@ -5,6 +5,7 @@
 #include <QtWidgets/QSpinBox>
 #include <iostream>
 #include "imagePlaybackControlDialog.h"
+#include "timestampSpinBox.h"
 
 
 // TODO: readSettings and updateForm calls necessary when someone changes settings through remote control command, via QSettings
@@ -50,9 +51,14 @@ void ImagePlaybackControlDialog::createForm() {
     infoGroup = new QGroupBox("Playback info");
 
     QLabel *timestampLabel = new QLabel(tr("Timestamp [ms]:"));
-    timestampVal = new QLineEdit();
-    timestampVal->setReadOnly(true);
+    //timestampVal = new QLineEdit();
+    timestampVal = new TimestampSpinBox(fileCamera);
+    timestampVal->setReadOnly(false);
     timestampVal->setMaximumWidth(100);
+    timestampVal->setMinimum(0);
+    uint64_t timestampMax = fileCamera->getTimestampForFrameNumber(fileCamera->getNumImagesTotal()-1);
+    timestampVal->setMaximum(timestampMax);
+    timestampVal->setWrapping(true);
     infoLayout->addRow(timestampLabel, timestampVal);
 
     QLabel *frameLabel = new QLabel(tr("Frame:"));
@@ -186,6 +192,7 @@ void ImagePlaybackControlDialog::createForm() {
     connect(syncRecordCsvBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncRecordCsv(int)));
     connect(syncStreamBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncStream(int)));
     connect(selectedFrameBox, SIGNAL(valueChanged(int)), this, SLOT(onFrameSelected(int)));
+    connect(timestampVal, SIGNAL(valueChanged(double)), this, SLOT(onTimestampSelected(double)));
 }
 
 void ImagePlaybackControlDialog::updateSliderColorTick(const CameraImage &cimg) {
@@ -223,7 +230,7 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
     QTime timeElapsed = QTime::fromMSecsSinceStartOfDay(elapsedMs);
 
     //timestampValLabel->setText(QString::number(img.timestamp));
-    timestampVal->setText(QString::number(currTimestamp));
+    timestampVal->setValue(frameNumber+1);
     timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
     //timestampHumanValLabel->setText(QLocale::system().toString(date));
     imgNumberValLabel->setText(QString::number(frameNumber+1) + "\t/ " + QString::number(numImagesTotal));
@@ -275,7 +282,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         QTime timeElapsed = QTime::fromMSecsSinceStartOfDay(elapsedMs);
 
         //timestampValLabel->setText(QString::number(img.timestamp));
-        timestampVal->setText(QString::number(timestamp));
+        timestampVal->setValue(frameNumber+1);
         timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
         //timestampHumanValLabel->setText(QLocale::system().toString(date));
         imgNumberValLabel->setText(QString::number(frameNumber+1) + "\t/ " + QString::number(numImagesTotal));
@@ -337,8 +344,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
         const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
         startPauseButton->setIcon(icon);
         playImagesOn = false;
-        selectedFrameBox->setReadOnly(false);
-        selectedFrameBox->setDisabled(false);
+        enableWidgets(false);
     } else {
         
         //stalledTimestamp = 0;
@@ -355,8 +361,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
         const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-pause.svg");
         startPauseButton->setIcon(icon);
         playImagesOn = true;
-        selectedFrameBox->setReadOnly(true);
-        selectedFrameBox->setDisabled(true);
+        enableWidgets(true);
     }
 
     this->update(); // invalidate 
@@ -389,8 +394,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
         waitingForReset = false;
 
         emit onPlaybackSafelyStopped();
-        selectedFrameBox->setReadOnly(false);
-        selectedFrameBox->setDisabled(false);
+        enableWidgets(false);
 
     } else if(playImagesOn && lastTimestamp < stalledTimestamp) {
 
@@ -405,8 +409,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 
         playbackStalled = true;
         waitingForReset = true;
-        selectedFrameBox->setReadOnly(true);
-        selectedFrameBox->setDisabled(true);
+        enableWidgets(true);
     }
 
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
@@ -424,8 +427,7 @@ void ImagePlaybackControlDialog::onFinish() {
         const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
         startPauseButton->setIcon(icon);
         playImagesOn = false;
-        selectedFrameBox->setReadOnly(true);
-        selectedFrameBox->setDisabled(true);
+        enableWidgets(true);
     }
 
     stalledTimestamp = 0;
@@ -589,4 +591,17 @@ void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
         updateInfoInternal(selectedFrameVal - 1);
         emit stillImageChange(selectedFrameVal - 1);
     }
+}
+
+void ImagePlaybackControlDialog::enableWidgets(bool enable){
+        selectedFrameBox->setReadOnly(enable);
+        selectedFrameBox->setDisabled(enable);
+        timestampVal->setReadOnly(enable);
+        timestampVal->setDisabled(enable);
+}
+
+void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
+        if (!playImagesOn){
+            selectedFrameBox->setValue(frameNumber);
+        }
 }

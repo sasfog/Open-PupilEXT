@@ -125,12 +125,12 @@ public:
         // However, there is a conversion from uint64_t to quint64 every time the comparison happens..
         // I could not get around this, as CameraImage employs uint64_t 
         // (I guess because in case of real cameras, it gets the value from Pylon, which uses uint64_t)
-        for(imgNumSeekerIdx = acqTimestamps.size(); imgNumSeekerIdx>0; imgNumSeekerIdx--) {
+        for(imgNumSeekerIdx = acqTimestamps.size() - 1; imgNumSeekerIdx>=0; imgNumSeekerIdx--) {
             if(acqTimestamps[imgNumSeekerIdx] == timestamp) 
                 return imgNumSeekerIdx;
         }
         return currentImageIndex; 
-    };
+    }
     
     uint64_t getTimestampForFrameNumber(int frameNumber) {
         if(acqTimestamps.size() > frameNumber)
