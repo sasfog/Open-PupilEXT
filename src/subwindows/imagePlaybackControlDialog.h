@@ -83,11 +83,11 @@ private:
     bool playImagesOn = false;
 
     
-    int playbackSpeed;
+    int playbackSpeed = 1;
     int selectedFrameVal = 1;
-    bool playbackLoop;
-    bool syncRecordCsv;
-    bool syncStream;
+    bool playbackLoop = false;
+    bool syncRecordCsv = false;
+    bool syncStream = false;
 
     QSpinBox* playbackFPSVal;
 

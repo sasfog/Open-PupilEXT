@@ -62,6 +62,7 @@ void ImagePlaybackControlDialog::createForm() {
     selectedFrameBox->setMinimum(1);
     selectedFrameBox->setMaximum(fileCamera->getNumImagesTotal());
     selectedFrameBox->setValue(selectedFrameVal);
+    selectedFrameBox->setWrapping(true);
     infoLayout->addRow(frameLabel, selectedFrameBox);
 
     QLabel *timestampHumanLabel = new QLabel(tr("Date and time:"));
@@ -337,6 +338,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
         startPauseButton->setIcon(icon);
         playImagesOn = false;
         selectedFrameBox->setReadOnly(false);
+        selectedFrameBox->setDisabled(false);
     } else {
         
         //stalledTimestamp = 0;
@@ -354,6 +356,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
         startPauseButton->setIcon(icon);
         playImagesOn = true;
         selectedFrameBox->setReadOnly(true);
+        selectedFrameBox->setDisabled(true);
     }
 
     this->update(); // invalidate 
@@ -387,6 +390,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 
         emit onPlaybackSafelyStopped();
         selectedFrameBox->setReadOnly(false);
+        selectedFrameBox->setDisabled(false);
 
     } else if(playImagesOn && lastTimestamp < stalledTimestamp) {
 
@@ -402,6 +406,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
         playbackStalled = true;
         waitingForReset = true;
         selectedFrameBox->setReadOnly(true);
+        selectedFrameBox->setDisabled(true);
     }
 
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
@@ -420,6 +425,7 @@ void ImagePlaybackControlDialog::onFinish() {
         startPauseButton->setIcon(icon);
         playImagesOn = false;
         selectedFrameBox->setReadOnly(true);
+        selectedFrameBox->setDisabled(true);
     }
 
     stalledTimestamp = 0;
@@ -572,10 +578,7 @@ void ImagePlaybackControlDialog::setSyncStream(int m_state) {
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
     if (!playImagesOn){
-        if (frameNumber <= 0)
-            selectedFrameVal = numImagesTotal;
-        else 
-            selectedFrameVal = frameNumber;
+        selectedFrameVal = frameNumber;
 
         slider->blockSignals(true);
         int gg = floor(99*((selectedFrameVal+1)/(float)numImagesTotal));
