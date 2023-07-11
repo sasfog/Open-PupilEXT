@@ -1685,6 +1685,12 @@ void MainWindow::onOpenImageDirectory() {
     if(imageDirectory.isEmpty())
         return;
 
+    QDir imageDir(imageDirectory);
+    if (imageDir.isEmpty())
+        return;
+    
+
+
     // GB added begin
     // GB: added to disable/enable opening of a new directory when there is already one opened
     fileOpenAct->setEnabled(false);
