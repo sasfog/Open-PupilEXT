@@ -1684,16 +1684,14 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 
 // GB: Repaired bug leading to crash when path was too short
 void MainWindow::onOpenImageDirectory() {
-    //QString tempDir = QFileDialog::getExistingDirectory(this, tr("Image Directory"), recentPath);
-
     QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
-    //dialog.setOptions(QFileDialog::DontUseNativeDialog | QFileDialog::DontResolveSymlinks);
-    dialog.setOptions(QFileDialog::DontResolveSymlinks);
+    dialog.setOptions(QFileDialog::DontUseNativeDialog | QFileDialog::DontResolveSymlinks);
+    
     dialog.setFileMode(QFileDialog::Directory);
-    QString tempDir;
+    
     if(!dialog.exec())
         return;
-    dialog.selectFile(tempDir);
+    QString tempDir = dialog.directory().absolutePath();
     // GB: negated check logic and removed indentation accordingly
     if(tempDir.isEmpty())
         return;
