@@ -620,16 +620,16 @@ void MainWindow::openSourceDialog() {
 
 void MainWindow::setLogFile() {
 
-    QString tempDir = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
+    QString tempFile = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
 
     // GB: cleaner code without long indentation
-    if(tempDir.isEmpty()) 
+    if(tempFile.isEmpty()) 
         return;
 
-    if(!QFileInfo(tempDir).exists())
+    if(!QFileInfo(tempFile).dir().exists())
         return;
 
-    pupilDetectionDataFile = tempDir;
+    pupilDetectionDataFile = tempFile;
     QFileInfo fileInfo(pupilDetectionDataFile);
     recentPath = fileInfo.dir().path();
 
@@ -638,7 +638,7 @@ void MainWindow::setLogFile() {
         pupilDetectionDataFile = pupilDetectionDataFile + ".csv";
     }
 
-    //QFile file(logFileName);
+    //QFile file(pupilDetectionDataFile);
     //file.open(QIODevice::WriteOnly); // Or QIODevice::ReadWrite
     //file.close();
 
@@ -1004,15 +1004,15 @@ void MainWindow::onRecordClick() {
         safelyResetTrialCounter();
         
         QFileInfo fi(pupilDetectionDataFile);
-        QString absPath = fi.absolutePath(); // ? TODO: check if ends with "/" and append if not
-        QString baseName = fi.baseName();
+        QDir pupilDetectionDir = fi.dir();
+        QString metadataFileName = fi.baseName() + QString::fromStdString("-datarec-meta.xml");
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
         if( (applicationSettings->value("metaSnapshotsEnabled", "1") == "1" || 
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
             MetaSnapshotOrganizer::writeMetaSnapshot(
-                absPath + baseName + QString::fromStdString("-datarec-meta.xml"),
+                pupilDetectionDir.filePath(metadataFileName),
                 selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         // GB added end
         
