@@ -8,6 +8,15 @@
 
 #include <QtWidgets/QWidget>
 
+
+enum class Settings {
+            DEFAULT,
+            ROI_0_3_OPTIMIZED,
+            ROI_0_6_OPTIMIZED,
+            FULL_IMAGE_OPTIMIZED,
+            AUTOMATIC_PARAMETRIZATION
+};
+
 /**
     Abstract class representing the pupil detection algorithm's individual parameters, this widget will be integrated into the pupil detection settings configuration windows
 */
@@ -25,6 +34,14 @@ public:
 
         infoBox = new QWidget();
     }
+
+    QMap<QString, Settings> settingsMap{
+            { "Default", Settings::DEFAULT },
+            { "ROI 0.3 Optimized", Settings::ROI_0_3_OPTIMIZED },
+            { "ROI 0.6 Optimized", Settings::ROI_0_6_OPTIMIZED },
+            { "Full Image Optimized", Settings::FULL_IMAGE_OPTIMIZED },
+            { "Automatic Parametrization", Settings::AUTOMATIC_PARAMETRIZATION } 
+    };
 
     //virtual void addSecondary(PupilDetectionMethod *method) = 0;
 
@@ -49,5 +66,7 @@ signals:
     void onConfigChange(QString configText);
 
 };
+
+
 
 #endif //PUPILEXT_PUPILMETHODSETTING_H
