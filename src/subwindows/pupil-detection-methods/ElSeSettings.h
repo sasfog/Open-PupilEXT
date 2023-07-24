@@ -32,17 +32,17 @@ public:
         pupilDetection(pupilDetection), 
         configParameters(defaultParameters)  {
 
-        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
+        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<Settings, QList<float>>>();
 
-        configIndex = applicationSettings->value("ElSeSettings.configIndex", "Default").toString();
+        configIndex = applicationSettings->value("ElSeSettings.configIndex", QVariant::fromValue(PupilMethodSetting::Settings::DEFAULT)).value<PupilMethodSetting::Settings>();
 
         createForm();
 
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
+        if(parameterConfigs->findText(QVariant::fromValue(configIndex).toString()) < 0) {
+            qDebug() << "Did not found config: " << QVariant::fromValue(configIndex);
             parameterConfigs->setCurrentText("Default");
         } else {
-            parameterConfigs->setCurrentText(configIndex);
+            parameterConfigs->setCurrentText(QVariant::fromValue(configIndex).toString());
         }
 
         // GB added begin
@@ -106,11 +106,11 @@ public:
         else4 = s_else;
     }
 
-    QMap<QString, QList<float>> getParameter() {
+    QMap<Settings, QList<float>> getParameter() {
         return configParameters;
     }
 
-    void setParameter(QMap<QString, QList<float>> params) {
+    void setParameter(QMap<Settings, QList<float>> params) {
         if(defaultParameters.size() == params.size())
             configParameters = params;
     }
@@ -128,14 +128,14 @@ public:
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-        configIndex = applicationSettings->value("ElSeSettings.configIndex", "Default").toString();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
+        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<Settings, QList<float>>>();
+        configIndex = applicationSettings->value("ElSeSettings.configIndex", QVariant::fromValue(PupilMethodSetting::Settings::DEFAULT)).value<PupilMethodSetting::Settings>();
+    
+        if(parameterConfigs->findText(QVariant::fromValue(configIndex).toString()) < 0) {
+            qDebug() << "Did not found config: " << QVariant::fromValue(configIndex);
             parameterConfigs->setCurrentText("Default");
         } else {
-            parameterConfigs->setCurrentText(configIndex);
+            parameterConfigs->setCurrentText(QVariant::fromValue(configIndex).toString());
         }
 
         // GG added begin
@@ -186,8 +186,8 @@ public slots:
             p_else->minAreaRatio = minAreaRatio;
             p_else->maxAreaRatio = maxAreaRatio;
 
-            configParameters[parameterConfigs->currentText()][0] = minAreaRatio;
-            configParameters[parameterConfigs->currentText()][1] = maxAreaRatio;
+            configParameters[settingsMap[parameterConfigs->currentText()]][0] = minAreaRatio;
+            configParameters[settingsMap[parameterConfigs->currentText()]][1] = maxAreaRatio;
 
             if(else2) {
                 else2->minAreaRatio = minAreaRatio;
@@ -249,10 +249,9 @@ private:
         // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
-        QMapIterator<QString, QList<float>> i(configParameters);
-        while (i.hasNext()) {
-            i.next();
-            parameterConfigs->addItem(i.key());
+        for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
+        {
+            parameterConfigs->addItem(cit.key());
         }
 
         connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
@@ -310,12 +309,12 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters["Default"];
+        QList<float> customs = defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["minAreaRatio"];
         customs[1] = j["Parameter Set"]["maxAreaRatio"];
 
-        configParameters.insert("Custom", customs);
+        configParameters.insert(Settings::CUSTOM, customs);
 
         if(parameterConfigs->findText("Custom") < 0) {
             parameterConfigs->addItem("Custom");
@@ -324,21 +323,21 @@ private:
 
     }
 
-    QMap<QString, QList<float>> defaultParameters = {
-            { "Default", {0.005f, 0.2f} },
-            { "ROI 0.3 Optimized", {0.001f, 0.823f} },
-            { "ROI 0.6 Optimized", {0.001f, 0.131f} },
-            { "Full Image Optimized", {0.001f, 0.038f} },
-            { "Automatic Parametrization", {-1.0f, -1.0f} } // GB added
+    QMap<Settings, QList<float>> defaultParameters = {
+            { Settings::DEFAULT, {0.005f, 0.2f} },
+            { Settings::ROI_0_3_OPTIMIZED, {0.001f, 0.823f} },
+            { Settings::ROI_0_6_OPTIMIZED, {0.001f, 0.131f} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {0.001f, 0.038f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f} } // GB added
     };
 
-    QMap<QString, QList<float>> configParameters;
-    QString configIndex;
+    QMap<Settings, QList<float>> configParameters;
+    Settings configIndex;
 
 
 private slots:
 
-    void onParameterConfigSelection(QString configKey) {
+    void onParameterConfigSelection(Settings configKey) {
         QList<float> selectedParameter = configParameters.value(configKey);
 
         // GB modified begin
@@ -364,7 +363,7 @@ private slots:
     }
 
     void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
+        Settings configKey = settingsMap[parameterConfigs->itemText(parameterConfigs->currentIndex())];
         configParameters[configKey] = defaultParameters.value(configKey);
         onParameterConfigSelection(configKey);
     }

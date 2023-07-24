@@ -9,13 +9,7 @@
 #include <QtWidgets/QWidget>
 
 
-enum class Settings {
-            DEFAULT,
-            ROI_0_3_OPTIMIZED,
-            ROI_0_6_OPTIMIZED,
-            FULL_IMAGE_OPTIMIZED,
-            AUTOMATIC_PARAMETRIZATION
-};
+
 
 /**
     Abstract class representing the pupil detection algorithm's individual parameters, this widget will be integrated into the pupil detection settings configuration windows
@@ -27,6 +21,19 @@ public:
 
     QWidget *infoBox;
     QSettings *applicationSettings;
+
+    enum class Settings {
+            DEFAULT,
+            ROI_0_3_OPTIMIZED,
+            ROI_0_6_OPTIMIZED,
+            FULL_IMAGE_OPTIMIZED,
+            AUTOMATIC_PARAMETRIZATION,
+            CUSTOM
+};
+    Q_ENUM(Settings);
+    void setSettings(Settings settings);
+    Settings settings() const;
+
 
     // GB: a
     explicit PupilMethodSetting(QWidget *parent=0) : QWidget(parent),
