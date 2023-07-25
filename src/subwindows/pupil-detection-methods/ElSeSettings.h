@@ -27,23 +27,13 @@ public:
 
     // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit ElSeSettings(PupilDetection * pupilDetection, ElSe *m_else, QWidget *parent=0) : 
-        PupilMethodSetting(parent), 
+        PupilMethodSetting("ElSeSettings.configParameters","ElSeSettings.configIndex",parent), 
         p_else(m_else), 
         pupilDetection(pupilDetection), 
         configParameters(defaultParameters)  {
-
-        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<Settings, QList<float>>>();
-
-        configIndex = applicationSettings->value("ElSeSettings.configIndex", QVariant::fromValue(PupilMethodSetting::Settings::DEFAULT)).value<PupilMethodSetting::Settings>();
-
+        
+        PupilMethodSetting::loadSettings();
         createForm();
-
-        if(parameterConfigs->findText(QVariant::fromValue(configIndex).toString()) < 0) {
-            qDebug() << "Did not found config: " << QVariant::fromValue(configIndex);
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(QVariant::fromValue(configIndex).toString());
-        }
 
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -106,37 +96,10 @@ public:
         else4 = s_else;
     }
 
-    QMap<Settings, QList<float>> getParameter() {
-        return configParameters;
-    }
-
-    void setParameter(QMap<Settings, QList<float>> params) {
-        if(defaultParameters.size() == params.size())
-            configParameters = params;
-    }
-
-    void reset() {
-        configParameters = defaultParameters;
-    }
-
-    // GB modified begin
-    bool isAutoParamEnabled() override {
-        return (parameterConfigs->currentText()=="Automatic Parametrization");
-    }
-    // GB modified end
-
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<Settings, QList<float>>>();
-        configIndex = applicationSettings->value("ElSeSettings.configIndex", QVariant::fromValue(PupilMethodSetting::Settings::DEFAULT)).value<PupilMethodSetting::Settings>();
-    
-        if(parameterConfigs->findText(QVariant::fromValue(configIndex).toString()) < 0) {
-            qDebug() << "Did not found config: " << QVariant::fromValue(configIndex);
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(QVariant::fromValue(configIndex).toString());
-        }
+        PupilMethodSetting::loadSettings();
 
         // GG added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -207,8 +170,7 @@ public slots:
 
         emit onConfigChange(parameterConfigs->currentText());
 
-        applicationSettings->setValue("ElSeSettings.configParameters", QVariant::fromValue(configParameters));
-        applicationSettings->setValue("ElSeSettings.configIndex", parameterConfigs->currentText());
+        PupilMethodSetting::updateSettings();
     }
 
 private:
@@ -225,10 +187,6 @@ private:
 
     QDoubleSpinBox *minAreaBox;
     QDoubleSpinBox *maxAreaBox;
-
-    QPushButton *resetButton;
-    QComboBox *parameterConfigs;
-    QPushButton *fileButton;
 
     void createForm() {
 
@@ -290,11 +248,11 @@ private:
         fileButton = new QPushButton("Load config file"); // GB: clarified text
 
         buttonsLayout->addWidget(resetButton);
-        connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
+        connect(resetButton, SIGNAL(clicked()), this, SLOT(PupilMethodSetting::onResetClick()));
         buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
         buttonsLayout->addWidget(fileButton);
-        connect(fileButton, SIGNAL(clicked()), this, SLOT(onLoadFileClick()));
+        connect(fileButton, SIGNAL(clicked()), this, SLOT(PupilMethodSetting::onLoadFileClick()));
 
         mainLayout->addLayout(buttonsLayout);
 
@@ -337,8 +295,9 @@ private:
 
 private slots:
 
-    void onParameterConfigSelection(Settings configKey) {
-        QList<float> selectedParameter = configParameters.value(configKey);
+    void onParameterConfigSelection(QString configKey) {
+        Settings config = settingsMap[configKey];
+        QList<float> selectedParameter = configParameters[config];
 
         // GB modified begin
 
@@ -363,24 +322,10 @@ private slots:
     }
 
     void onResetClick() {
-        Settings configKey = settingsMap[parameterConfigs->itemText(parameterConfigs->currentIndex())];
-        configParameters[configKey] = defaultParameters.value(configKey);
+        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
+        Settings config = settingsMap[configKey];
+        configParameters[config] = defaultParameters.value(config);
         onParameterConfigSelection(configKey);
-    }
-
-    void onLoadFileClick() {
-        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
-
-        if(!filename.isEmpty()) {
-
-            try {
-                loadSettingsFromFile(filename);
-            } catch(...) {
-                QMessageBox msgBox;
-                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
-                msgBox.exec();
-            }
-        }
     }
 
 };
