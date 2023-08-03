@@ -35,6 +35,7 @@ public:
     Settings settings() const;
 
 
+
     // GB: a
     explicit PupilMethodSetting(QString settingsConfigParametersName, QString settingsConfigParametersIndexName, QWidget *parent=0) : 
              settingsConfigParametersName(settingsConfigParametersName), settingsConfigParametersIndexName(settingsConfigParametersIndexName), QWidget(parent),
@@ -54,12 +55,13 @@ public:
             { "ROI 0.3 Optimized", Settings::ROI_0_3_OPTIMIZED },
             { "ROI 0.6 Optimized", Settings::ROI_0_6_OPTIMIZED },
             { "Full Image Optimized", Settings::FULL_IMAGE_OPTIMIZED },
-            { "Automatic Parametrization", Settings::AUTOMATIC_PARAMETRIZATION } 
+            { "Automatic Parametrization", Settings::AUTOMATIC_PARAMETRIZATION },
+            { "Custom", Settings::CUSTOM }
     };
 
     //virtual void addSecondary(PupilDetectionMethod *method) = 0;
 
-        QMap<Settings, QList<float>> getParameter() {
+    QMap<Settings, QList<float>> getParameter() {
         return configParameters;
     }
 
@@ -89,24 +91,56 @@ protected:
     QString settingsConfigParametersName;
     QString settingsConfigParametersIndexName;
 
+    void setDefaultParameters(const QMap<Settings, QList<float>> &defaultParameters){
+        this->defaultParameters = defaultParameters;
+        this->configParameters = defaultParameters;
+    }
+
 public slots:
 
     virtual void loadSettings() {
-        configParameters = applicationSettings->value(settingsConfigParametersName, QVariant::fromValue(configParameters)).value<QMap<Settings, QList<float>>>();
-        configIndex = applicationSettings->value(settingsConfigParametersIndexName, QVariant::fromValue(PupilMethodSetting::Settings::DEFAULT)).value<PupilMethodSetting::Settings>();
-    
-        if(parameterConfigs->findText(QVariant::fromValue(configIndex).toString()) < 0) {
-            qDebug() << "Did not found config: " << QVariant::fromValue(configIndex);
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(QVariant::fromValue(configIndex).toString());
+
+
+        QVariant parametersConf = applicationSettings->value(settingsConfigParametersName);
+        QMap<QString, QList<float>> confToRead;
+        if (parametersConf.isValid()){
+            confToRead = parametersConf.value<QMap<QString, QList<float>>>();
+            for (QMap<QString, QList<float>>::const_iterator cit = confToRead.cbegin(); cit != confToRead.cend(); cit++)
+            {
+                configParameters.insert(QVariant::fromValue(cit.key()).value<Settings>(), cit.value());
+            }
+        }
+        else {
+            for (QMap<Settings, QList<float>>::const_iterator cit = defaultParameters.cbegin(); cit != defaultParameters.cend(); cit++)
+            {
+                configParameters.insert(cit.key(), cit.value());
+            }        
+        }
+        
+        QVariant indexConf = applicationSettings->value(settingsConfigParametersIndexName);
+        if (parametersConf.isValid()){
+            configIndex = indexConf.value<Settings>();
+
+        }
+        else{
+            configIndex = Settings::DEFAULT;
         }
     }
 
     virtual void updateSettings(){
-        applicationSettings->setValue(settingsConfigParametersName, QVariant::fromValue(configParameters));
-        applicationSettings->setValue(settingsConfigParametersIndexName, parameterConfigs->currentText());
+        QMap<QString, QList<float>> confToWrite;
+        QString indexToWrite = QVariant::fromValue(configIndex).toString();
+
+        for (QMap<Settings, QList<float>>::const_iterator cit = configParameters.cbegin(); cit != configParameters.cend(); cit++)
+        {
+            confToWrite.insert(QVariant::fromValue(cit.key()).toString(), cit.value());
+        }
+        //applicationSettings->setValue(settingsConfigParametersName, parameters);
+        applicationSettings->setValue(settingsConfigParametersName, QVariant::fromValue(confToWrite));
+        applicationSettings->setValue(settingsConfigParametersIndexName, indexToWrite);
     }
+
+virtual void onParameterConfigSelection(QString configKey){}
 
     void onResetClick(){
         QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
@@ -115,7 +149,8 @@ public slots:
         onParameterConfigSelection(configKey);
     }
 
-    virtual void onParameterConfigSelection(QString configKey);
+    
+    virtual void loadSettingsFromFile(QString filename){}
 
     void onLoadFileClick() {
         QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
@@ -132,7 +167,7 @@ public slots:
         }
     }
 
-    virtual void loadSettingsFromFile(QString filename);
+    
 
 signals:
 

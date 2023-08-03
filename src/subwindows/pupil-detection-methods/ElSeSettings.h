@@ -27,14 +27,13 @@ public:
 
     // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit ElSeSettings(PupilDetection * pupilDetection, ElSe *m_else, QWidget *parent=0) : 
-        PupilMethodSetting("ElSeSettings.configParameters","ElSeSettings.configIndex",parent), 
+        PupilMethodSetting("ElSeSettings.configParameters","ElSeSettings.configIndex", parent), 
         p_else(m_else), 
-        pupilDetection(pupilDetection), 
-        configParameters(defaultParameters)  {
+        pupilDetection(pupilDetection)  {
         
-        PupilMethodSetting::loadSettings();
+        PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-
+        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
             minAreaBox->setEnabled(false);
@@ -189,7 +188,7 @@ private:
     QDoubleSpinBox *maxAreaBox;
 
     void createForm() {
-
+        PupilMethodSetting::loadSettings();
         QList<float> selectedParameter = configParameters.value(configIndex);
 
         float minAreaRatio = selectedParameter[0];
@@ -248,11 +247,11 @@ private:
         fileButton = new QPushButton("Load config file"); // GB: clarified text
 
         buttonsLayout->addWidget(resetButton);
-        connect(resetButton, SIGNAL(clicked()), this, SLOT(PupilMethodSetting::onResetClick()));
+        connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
         buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
         buttonsLayout->addWidget(fileButton);
-        connect(fileButton, SIGNAL(clicked()), this, SLOT(PupilMethodSetting::onLoadFileClick()));
+        connect(fileButton, SIGNAL(clicked()), this, SLOT(onLoadFileClick()));
 
         mainLayout->addLayout(buttonsLayout);
 
@@ -267,7 +266,7 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters[Settings::DEFAULT];
+        QList<float> customs = PupilMethodSetting::defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["minAreaRatio"];
         customs[1] = j["Parameter Set"]["maxAreaRatio"];
@@ -286,11 +285,9 @@ private:
             { Settings::ROI_0_3_OPTIMIZED, {0.001f, 0.823f} },
             { Settings::ROI_0_6_OPTIMIZED, {0.001f, 0.131f} },
             { Settings::FULL_IMAGE_OPTIMIZED, {0.001f, 0.038f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f} } // GB added
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f} },
+            { Settings::CUSTOM, {-1.0f, -1.0f} } // GB added
     };
-
-    QMap<Settings, QList<float>> configParameters;
-    Settings configIndex;
 
 
 private slots:
@@ -319,13 +316,6 @@ private slots:
         // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
-    }
-
-    void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        Settings config = settingsMap[configKey];
-        configParameters[config] = defaultParameters.value(config);
-        onParameterConfigSelection(configKey);
     }
 
 };
