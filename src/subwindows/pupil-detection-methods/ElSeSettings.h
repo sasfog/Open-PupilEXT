@@ -148,8 +148,9 @@ public slots:
             p_else->minAreaRatio = minAreaRatio;
             p_else->maxAreaRatio = maxAreaRatio;
 
-            configParameters[settingsMap[parameterConfigs->currentText()]][0] = minAreaRatio;
-            configParameters[settingsMap[parameterConfigs->currentText()]][1] = maxAreaRatio;
+            QList<float>& currentParameters = getCurrentParameters();
+            currentParameters[0] = minAreaRatio;
+            currentParameters[1] = maxAreaRatio;
 
             if(else2) {
                 else2->minAreaRatio = minAreaRatio;
@@ -189,7 +190,7 @@ private:
 
     void createForm() {
         PupilMethodSetting::loadSettings();
-        QList<float> selectedParameter = configParameters.value(configIndex);
+        QList<float>& selectedParameter = getCurrentParameters();
 
         float minAreaRatio = selectedParameter[0];
         float maxAreaRatio = selectedParameter[1];
@@ -266,17 +267,12 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = PupilMethodSetting::defaultParameters[Settings::DEFAULT];
+        QList<float> customs = defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["minAreaRatio"];
         customs[1] = j["Parameter Set"]["maxAreaRatio"];
 
-        configParameters.insert(Settings::CUSTOM, customs);
-
-        if(parameterConfigs->findText("Custom") < 0) {
-            parameterConfigs->addItem("Custom");
-        }
-        parameterConfigs->setCurrentText("Custom");
+        insertCustomEntry(customs);
 
     }
 
@@ -293,8 +289,8 @@ private:
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        Settings config = settingsMap[configKey];
-        QList<float> selectedParameter = configParameters[config];
+        setConfigIndex(configKey);
+        QList<float>& selectedParameter = getCurrentParameters();
 
         // GB modified begin
 

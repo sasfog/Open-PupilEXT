@@ -61,11 +61,24 @@ public:
 
     //virtual void addSecondary(PupilDetectionMethod *method) = 0;
 
-    QMap<Settings, QList<float>> getParameter() {
+    QList<float>& getParameter(QString configKey){
+        Settings config = settingsMap[configKey.toUpper()];
+        return configParameters[config];
+    }
+
+    QList<float>& getCurrentParameters(){
+        return configParameters[configIndex];
+    }
+
+    void setConfigIndex(QString configKey){
+        configIndex = QVariant::fromValue(configKey.toUpper()).value<Settings>();
+    }
+
+    QMap<Settings, QList<float>>& getConfigParameters() {
         return configParameters;
     }
 
-    void setParameter(QMap<Settings, QList<float>> params) {
+    void setConfigParameters(QMap<Settings, QList<float>> params) {
         if(defaultParameters.size() == params.size())
             configParameters = params;
     }
@@ -96,6 +109,15 @@ protected:
         this->configParameters = defaultParameters;
     }
 
+    void insertCustomEntry(QList<float> customParameters){
+        configParameters.insert(Settings::CUSTOM, customParameters);
+
+        if(parameterConfigs->findText(settingsMap.key(Settings::CUSTOM)) < 0) {
+            parameterConfigs->addItem(settingsMap.key(Settings::CUSTOM));
+        }
+        parameterConfigs->setCurrentText(settingsMap.key(Settings::CUSTOM));
+    }
+
 public slots:
 
     virtual void loadSettings() {
@@ -107,7 +129,7 @@ public slots:
             confToRead = parametersConf.value<QMap<QString, QList<float>>>();
             for (QMap<QString, QList<float>>::const_iterator cit = confToRead.cbegin(); cit != confToRead.cend(); cit++)
             {
-                configParameters.insert(QVariant::fromValue(cit.key()).value<Settings>(), cit.value());
+                configParameters.insert(QVariant::fromValue(cit.key().toUpper()).value<Settings>(), cit.value());
             }
         }
         else {
