@@ -43,6 +43,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     void start();
     void stop();
     void pause();

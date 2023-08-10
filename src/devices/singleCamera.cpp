@@ -77,6 +77,8 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
     }
 }
 
+
+
 SingleCamera::~SingleCamera() {
     calibrationThread->quit();
     calibrationThread->wait();
@@ -557,6 +559,18 @@ void SingleCamera::setLineSource(String_t value) {
 
 CameraImageType SingleCamera::getType() {
     return CameraImageType::LIVE_SINGLE_CAMERA;
+}
+
+void SingleCamera::startGrabbing()
+{
+    if (camera.IsOpen() && !camera.IsGrabbing())
+        camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+}
+
+void SingleCamera::stopGrabbing()
+{
+    if (camera.IsOpen() && camera.IsGrabbing())
+        camera.StopGrabbing();
 }
 
 QString SingleCamera::getCalibrationFilename() {

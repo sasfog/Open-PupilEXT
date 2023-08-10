@@ -96,6 +96,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     int getImageROIwidth() override; 
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 

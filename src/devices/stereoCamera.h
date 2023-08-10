@@ -61,6 +61,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     std::vector<QString> getFriendlyNames();
 
     void autoGainOnce();

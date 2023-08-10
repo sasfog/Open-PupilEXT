@@ -557,6 +557,47 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     }
 }
 
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_F){
+        Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
+        if (modifiers == Qt::ShiftModifier){
+            if (cameraPaused){
+                selectedCamera->startGrabbing();
+                cameraPaused = false;
+            }
+            else{ 
+                selectedCamera->stopGrabbing();
+                cameraPaused = true;
+            }
+        }
+        else
+            QWidget::keyPressEvent(event);
+    }
+    else {
+        QWidget::keyPressEvent(event);
+    }
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if(obj == singleCameraSettingsDialog){
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_F){
+                keyPressEvent(keyEvent);
+                return true;
+            }
+            else
+                return false;
+        }
+        else 
+            return false;
+    }
+    else
+        return QObject::eventFilter(obj, event);
+}
+
 void MainWindow::about() {
     GettingsStartedWizard* wizard = new GettingsStartedWizard(this);
     wizard->show();
@@ -1534,6 +1575,7 @@ void MainWindow::onSingleCameraSettingsClick() {
 
     // GB NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
     singleCameraSettingsDialog = new SingleCameraSettingsDialog(dynamic_cast<SingleCamera*>(selectedCamera), serialSettingsDialog, this); 
+    singleCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleCameraSettingsDialog", this);
     singleCameraSettingsDialog->show();
 

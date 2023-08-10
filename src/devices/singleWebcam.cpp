@@ -178,6 +178,14 @@ SingleWebcam::SingleWebcam(int deviceID, QString friendlyName, QObject* parent)
     }
 }
 
+void SingleWebcam::stopGrabbing(){
+    grabberDummy->stop();
+}
+
+void SingleWebcam::startGrabbing(){
+    grabberDummy->run();
+}
+
 SingleWebcam::~SingleWebcam() {
     //grabbingThread->terminate();
     grabbingThread->deleteLater();

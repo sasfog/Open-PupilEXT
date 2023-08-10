@@ -72,6 +72,8 @@ public:
 protected:
 
     void closeEvent(QCloseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event);
 
 private:
  
@@ -137,6 +139,7 @@ private:
     bool recordImagesOn = false;
     //bool playImagesOn = false; // GB: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
+    bool cameraPaused = false;
 
     void createActions();
     void createStatusBar();

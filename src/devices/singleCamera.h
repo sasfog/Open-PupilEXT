@@ -63,6 +63,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     void autoGainOnce();
     void autoExposureOnce();
 

@@ -639,6 +639,18 @@ CameraImageType StereoCamera::getType() {
     return CameraImageType::LIVE_STEREO_CAMERA;
 }
 
+void StereoCamera::startGrabbing()
+{
+    if (cameras.IsOpen() && !cameras.IsGrabbing())
+        cameras.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+}
+
+void StereoCamera::stopGrabbing()
+{
+    if (cameras.IsOpen() && cameras.IsGrabbing())
+        cameras.StopGrabbing();
+}
+
 // Returns a list of the friendly device names of the connected cameras
 std::vector<QString> StereoCamera::getFriendlyNames() {
     std::vector<QString> names;
