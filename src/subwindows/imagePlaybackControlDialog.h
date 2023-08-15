@@ -70,6 +70,7 @@ public:
     bool getSyncRecordCsv();
     bool getSyncStream();
 
+    bool getPlayImagesOn();
 
 private:
 

@@ -562,6 +562,11 @@ bool ImagePlaybackControlDialog::getSyncStream() {
     return syncStream;
 }
 
+bool ImagePlaybackControlDialog::getPlayImagesOn()
+{
+    return playImagesOn;
+}
+
 // Set whether we want csv recording to start/pause on playback start/(pause/stop)
 void ImagePlaybackControlDialog::setSyncRecordCsv(int m_state) {
     syncRecordCsv = (bool) m_state;

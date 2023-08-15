@@ -139,7 +139,7 @@ private:
     bool recordImagesOn = false;
     //bool playImagesOn = false; // GB: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
-    bool cameraPaused = false;
+    bool cameraPlaying = true;
 
     void createActions();
     void createStatusBar();
@@ -196,6 +196,11 @@ private:
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
+
+    void stopCamera();
+    void startCamera();
+
+    void resetStatus(bool isConnect);
     // GB added end
 
 private slots:
@@ -321,6 +326,8 @@ public slots:
 signals:
     void commitTrialCounterIncrement(quint64 timestamp);
     void commitTrialCounterReset(quint64 timestamp);
+
+    void cameraPlaybackChanged();
 
 };
 
