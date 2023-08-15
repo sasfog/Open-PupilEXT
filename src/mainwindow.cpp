@@ -1167,7 +1167,6 @@ void MainWindow::onCameraDisconnectClick() {
         camTempMonitor->deleteLater();
         camTempMonitor = nullptr; 
     }
-    trialWidget->setVisible(false);
 
     cameraViewWindow = nullptr;
 
