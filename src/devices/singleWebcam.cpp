@@ -225,6 +225,11 @@ QString SingleWebcam::getCalibrationFilename() {
             QString::number(cameraCalibration->getBoardSize().height+1) + ".xml");
 }
 
+bool SingleWebcam::isGrabbing()
+{
+    return grabberDummy->running();
+}
+
 void SingleWebcam::loadCalibrationFile() {
     QString configFile = getCalibrationFilename();
     configFile.replace(" ", "");

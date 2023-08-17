@@ -110,6 +110,8 @@ public:
     CameraCalibration* getCameraCalibration();
     QString getCalibrationFilename();
 
+    bool isGrabbing() override;
+
 private:
 
     QDir settingsDirectory;

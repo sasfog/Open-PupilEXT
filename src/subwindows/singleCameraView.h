@@ -28,7 +28,7 @@ class SingleCameraView : public QWidget {
 
 public:
 
-    explicit SingleCameraView(Camera *camera, PupilDetection *pupilDetection, QWidget *parent=0);
+    explicit SingleCameraView(Camera *camera, PupilDetection *pupilDetection, bool playbackFrozen,  QWidget *parent=0);
     ~SingleCameraView() override;
 
     void setUpdateFPS(int fps) {
@@ -37,6 +37,7 @@ public:
             pupilDetection->setUpdateFPS(fps);
     }
 
+    void setPlaybackFrozen(bool frozen);
 
 private:
 
@@ -50,6 +51,9 @@ private:
     int updateDelay;
 
     QToolBar *toolBar;
+    QAction *freezeAct;
+    QString freezeText;
+    bool playbackFrozen;
     QAction *saveROI;
     QAction *resetROI;
     QAction *discardROISelection;
@@ -154,6 +158,9 @@ public slots:
 
     void onShowAutoParamOverlay(bool state);
     void onAutoParamPupSize(int value);
+
+    void onFreezeClicked();
+    void onCameraPlaybackChanged();
     // GB modified/added end
 
 signals:
@@ -163,6 +170,7 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+    void cameraPlaybackChanged();
     // GB end
 
 };

@@ -846,6 +846,11 @@ std::vector<double> StereoCamera::getTemperatures() {
     return temperatures;
 }
 
+bool StereoCamera::isGrabbing()
+{
+    return cameras.IsGrabbing();
+}
+
 // NOTE: grabbing "pause" is necessary for setting binning
 bool StereoCamera::setBinningVal(int value) {
     if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {

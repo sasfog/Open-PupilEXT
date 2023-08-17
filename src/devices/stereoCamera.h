@@ -107,6 +107,8 @@ public:
     QRectF getImageROI() override;
     int getBinningVal();
     std::vector<double> getTemperatures();
+
+    bool isGrabbing() override;
     // BG added end
 
 private:

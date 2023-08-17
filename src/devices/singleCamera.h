@@ -103,6 +103,7 @@ public:
     int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
     int getBinningVal();
     double getTemperature();
+    bool isGrabbing() override;
     // GB added end
 
 private:

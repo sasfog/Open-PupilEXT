@@ -146,6 +146,7 @@ public slots:
 
     void onFrameSelected(int frameNumber);
     void onTimestampSelected(double frameNumber);
+    void onCameraPlaybackChanged();
 
 private slots:
     void onStartPauseButtonClick();
@@ -168,8 +169,6 @@ private slots:
     void setSyncRecordCsv(int m_state);
     void setSyncStream(int m_state);
 
-    
-
     //void onSettingsChange();
 
 signals:
@@ -178,6 +177,8 @@ signals:
     void onPlaybackSafelyStarted();
     void onPlaybackSafelyPaused();
     void onPlaybackSafelyStopped();
+
+    void cameraPlaybackChanged();
 
 };
 

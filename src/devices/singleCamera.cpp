@@ -656,6 +656,11 @@ double SingleCamera::getTemperature() {
     return d;
 }
 
+bool SingleCamera::isGrabbing()
+{
+    return camera.IsGrabbing();
+}
+
 // NOTE: grabbing "pause" is necessary for setting binning
 bool SingleCamera::setBinningVal(int value) {
 

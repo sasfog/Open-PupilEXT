@@ -66,6 +66,8 @@ public:
     virtual void stopGrabbing() = 0;
     virtual void startGrabbing() = 0;
 
+    virtual bool isGrabbing() = 0;
+
 signals:
 
     void onNewGrabResult(CameraImage grabResult);

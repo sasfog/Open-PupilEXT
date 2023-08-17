@@ -564,18 +564,28 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_F){
         Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
         if (modifiers == Qt::ShiftModifier){
-            if (cameraPlaying){
-                stopCamera();
-            }
-            else{ 
-                startCamera();
-            }
+            onCameraFreezePressed();
         }
         else
             QWidget::keyPressEvent(event);
     }
     else {
         QWidget::keyPressEvent(event);
+    }
+}
+
+void MainWindow::onCameraFreezePressed()
+{
+    emit cameraPlaybackChanged();
+}
+
+void MainWindow::onCameraPlaybackChanged()
+{
+    if (cameraPlaying){
+        stopCamera();
+    }
+    else{ 
+        startCamera();
     }
 }
 
@@ -1156,6 +1166,7 @@ void MainWindow::onCameraDisconnectClick() {
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
+        delete imagePlaybackControlDialog;
         imagePlaybackControlDialog = nullptr;
     }
     if(camTempMonitor) {
@@ -1480,7 +1491,7 @@ void MainWindow::cameraViewClick() {
         selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM
         ) ) {
         //SingleCameraView *childWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
-        singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this); // changed by kheki4 on 2022.10.24, NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
+        singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this); // changed by kheki4 on 2022.10.24, NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
 
         RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(singleCameraChildWidget, "SingleCameraView", this);
@@ -1497,7 +1508,7 @@ void MainWindow::cameraViewClick() {
         selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE
         ) ) {
         //StereoCameraView *childWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, this); // GB modified: now it is in a global pointer
-        stereoCameraChildWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, this);
+        stereoCameraChildWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this);
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraChildWidget, SLOT (onSettingsChange()));
 
         RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(stereoCameraChildWidget, "StereoCameraView", this);
@@ -1507,6 +1518,7 @@ void MainWindow::cameraViewClick() {
         connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
         cameraViewWindow = child;
     }
+    connectCameraPlaybackChangedSlots();
 }
 
 void MainWindow::onCameraSettingsClick() {
@@ -1791,6 +1803,7 @@ void MainWindow::onOpenImageDirectory() {
         // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place
         applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", pmStereo);
     }
+    this->cameraPlaying = false;
     cameraViewClick(); // GB: moved here. Had to ensure that proc mode is correctly set before creating camera view (as not it relies on pupilDetection instance too)
     onCalibrateClick();
 
@@ -1849,8 +1862,9 @@ void MainWindow::onOpenImageDirectory() {
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
-    this->cameraPlaying = imagePlaybackControlDialog->getPlayImagesOn();
-    connect(this, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onStartPauseButtonClick()));
+
+    connectCameraPlaybackChangedSlots();
+
 
     // GB NOTE:
     // I could have done this in a way that the camera child widgets only receive a cv::Mat to display.. 
@@ -2170,7 +2184,6 @@ void MainWindow::stopCamera()
     if (selectedCamera){
         selectedCamera->stopGrabbing();
         cameraPlaying = false;
-        emit cameraPlaybackChanged();
     }
 }
 
@@ -2179,7 +2192,6 @@ void MainWindow::startCamera()
     if (selectedCamera){
         selectedCamera->startGrabbing();
         cameraPlaying = true;
-        emit cameraPlaybackChanged();
     }
 }
 
@@ -2222,4 +2234,39 @@ void MainWindow::resetStatus(bool isConnect)
         recordAct->setDisabled(true);
         cameraPlaying = true;
         }
+}
+
+void MainWindow::connectCameraPlaybackChangedSlots()
+{
+    /*    if (imagePlaybackControlDialog && cameraViewWindow){
+        connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
+        connect(cameraViewWindow, &SingleCameraView::cameraPlaybackChanged, imagePlaybackControlDialog, &ImagePlaybackControlDialog::onCameraPlaybackChanged);        
+    }
+    else if (imagePlaybackControlDialog){
+        connect(this, cameraPlaybackChanged, imagePlaybackControlDialog, &ImagePlaybackControlDialog::onCameraPlaybackChanged);
+        connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, this, onCameraPlaybackChanged);
+        connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, imagePlaybackControlDialog, &ImagePlaybackControlDialog::onCameraPlaybackChanged);
+    }
+    else if (cameraViewWindow){
+        connect(this, cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
+        connect(cameraViewWindow, &SingleCameraView::cameraPlaybackChanged, this, onCameraPlaybackChanged);
+        connect(cameraViewWindow, &SingleCameraView::cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
+    }
+    connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()));*/
+
+    if (imagePlaybackControlDialog != nullptr && singleCameraChildWidget != nullptr){
+        connect(imagePlaybackControlDialog, SIGNAL(ImagePlaycameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);        
+    }
+    if (imagePlaybackControlDialog != nullptr){
+        connect(this, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+    if (cameraViewWindow != nullptr){
+        connect(this, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+    connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
 }

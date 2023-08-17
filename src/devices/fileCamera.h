@@ -70,6 +70,10 @@ public:
         imageReader->setPlaybackLoop(loop);
     }
 
+    bool isGrabbing(){
+        return imageReader->isPlaying();
+    }
+
     // GB added begin
     bool isPlaying() {
         return imageReader->isPlaying();

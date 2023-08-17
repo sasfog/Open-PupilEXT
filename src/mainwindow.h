@@ -201,6 +201,8 @@ private:
     void startCamera();
 
     void resetStatus(bool isConnect);
+
+    void connectCameraPlaybackChangedSlots();
     // GB added end
 
 private slots:
@@ -321,6 +323,10 @@ public slots:
     void PRGdisconnectRemoteCOM();
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
+
+    void onCameraFreezePressed();
+
+    void onCameraPlaybackChanged();
     // GB added end
 
 signals:

@@ -34,7 +34,7 @@ Q_OBJECT
 
 public:
 
-    explicit StereoCameraView(Camera *camera, PupilDetection *pupilDetection, QWidget *parent = 0);
+    explicit StereoCameraView(Camera *camera, PupilDetection *pupilDetection,bool playbackFrozen, QWidget *parent = 0);
 
     ~StereoCameraView() override;
 
@@ -43,6 +43,8 @@ public:
         if (pupilDetection)
             pupilDetection->setUpdateFPS(fps);
     }
+
+    void setPlaybackFrozen(bool frozen);
 
 private:
 
@@ -55,6 +57,9 @@ private:
     int updateDelay;
 
     QToolBar *toolBar;
+    QAction *freezeAct;
+    QString freezeText;
+    bool playbackFrozen;
     QAction *saveROI;
     QAction *resetROI;
     QAction *discardROISelection;
@@ -115,6 +120,7 @@ private:
 
     void loadSettings();
     bool isAutoParamModificationEnabled();
+    
 
 public slots:
 
@@ -163,6 +169,9 @@ public slots:
 
     void onShowAutoParamOverlay(bool state);
     void onAutoParamPupSize(int value);
+
+    void onFreezeClicked();
+    void onCameraPlaybackChanged();
     // GB modified/added end
 
 signals:
@@ -173,6 +182,8 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+
+    void cameraPlaybackChanged();
     // GÁBOR end
 
 };
