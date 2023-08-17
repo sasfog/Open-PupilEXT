@@ -445,7 +445,9 @@ void ImagePlaybackControlDialog::readSettings() {
 
     const QByteArray m_playbackSpeed = applicationSettings->value("playbackSpeed", QByteArray()).toByteArray();
     if (!m_playbackSpeed.isEmpty())
-        playbackSpeed = m_playbackSpeed.toInt();
+        setPlaybackSpeed(m_playbackSpeed.toInt());
+    else
+        setPlaybackSpeed(30);
 
     const QByteArray m_playbackLoop = applicationSettings->value("playbackLoop", QByteArray()).toByteArray();
     playbackLoop = true;
