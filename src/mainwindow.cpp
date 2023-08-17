@@ -2255,18 +2255,30 @@ void MainWindow::connectCameraPlaybackChangedSlots()
     connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()));*/
 
     if (imagePlaybackControlDialog != nullptr && singleCameraChildWidget != nullptr){
-        connect(imagePlaybackControlDialog, SIGNAL(ImagePlaycameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
         connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);        
     }
+    if (imagePlaybackControlDialog != nullptr && stereoCameraChildWidget != nullptr){
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);        
+    }
+
     if (imagePlaybackControlDialog != nullptr){
         connect(this, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
         connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
         connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
     }
-    if (cameraViewWindow != nullptr){
+
+    if (singleCameraChildWidget != nullptr){
         connect(this, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
         connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
         connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+
+    if (stereoCameraChildWidget != nullptr){
+        connect(this, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
     }
     connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
 }
