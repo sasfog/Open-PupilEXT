@@ -895,8 +895,3 @@ void SingleCameraView::onDiscardROISelectionClick(){
 bool SingleCameraView::isAutoParamModificationEnabled(){
     return pupilDetection->isAutoParamSettingsEnabled();
 }
-
-void SingleCameraView::setPlaybackFrozen(bool frozen)
-{
-    playbackFrozen = frozen;
-}

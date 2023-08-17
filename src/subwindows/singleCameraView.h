@@ -37,8 +37,6 @@ public:
             pupilDetection->setUpdateFPS(fps);
     }
 
-    void setPlaybackFrozen(bool frozen);
-
 private:
 
     Camera *camera;
@@ -87,7 +85,7 @@ private:
 
     double currentCameraFPS;
 
-    void loadSettings();
+
 
     // GB added begin
     QAction *pupilDetectionMenuAct;
@@ -103,11 +101,11 @@ private:
     QAction *showAutoParamAct;
     bool showAutoParamOverlay;
     
-    void updateProcModeLabel();
-
     QRectF tempROIRect1;
     QRectF tempROIRect2;
 
+    void updateProcModeLabel();
+    void loadSettings();
     bool isAutoParamModificationEnabled();
     // GB added end
 

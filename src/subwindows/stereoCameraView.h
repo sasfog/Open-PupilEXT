@@ -44,8 +44,6 @@ public:
             pupilDetection->setUpdateFPS(fps);
     }
 
-    void setPlaybackFrozen(bool frozen);
-
 private:
 
     Camera *camera;
@@ -132,6 +130,7 @@ public slots:
     void updateProcessingFPS(double fps);
     //void updatePupilView(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
     void updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void updateAlgorithmLabel();
 
     void onFitClick();
     void on100pClick();
@@ -141,14 +140,15 @@ public slots:
     void onSaveROIClick();
     void onResetROIClick();
     void onDiscardROISelectionClick();
-    void onPupilDetectionStart();
-    void onPupilDetectionStop();
-
     void onDisplayPupilViewClick(bool value);
     void onPlotPupilCenterClick(bool value);
     void onPlotROIClick(bool value);
+
+    void onPupilDetectionStart();
+    void onPupilDetectionStop();
+
+
     void onSettingsChange();
-    void updateAlgorithmLabel();
     void onPupilDetectionConfigChanged(QString config);
 
     // GB modified/added begin
@@ -182,7 +182,6 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
-
     void cameraPlaybackChanged();
     // GÁBOR end
 

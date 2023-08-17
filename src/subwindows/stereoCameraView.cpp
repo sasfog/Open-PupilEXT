@@ -1030,8 +1030,3 @@ void StereoCameraView::onDiscardROISelectionClick(){
 bool StereoCameraView::isAutoParamModificationEnabled(){
     return pupilDetection->isAutoParamSettingsEnabled();
 }
-
-void StereoCameraView::setPlaybackFrozen(bool frozen)
-{
-    playbackFrozen = frozen;
-}
