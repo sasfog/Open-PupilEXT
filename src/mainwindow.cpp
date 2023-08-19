@@ -241,7 +241,7 @@ void MainWindow::createActions() {
 
     addToolBar(Qt::LeftToolBarArea, toolBar); // Add the toolbar to the window, on the left side initially
 
-    const QIcon cameraIcon = QIcon(":/icons/Breeze/devices/22/camera-video.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon cameraIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-video.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     cameraAct = new QAction(cameraIcon, tr("Camera"), this);
     cameraAct->setStatusTip(tr("Connect to camera(s)."));
 
@@ -301,7 +301,7 @@ void MainWindow::createActions() {
     //fileMenu->addAction(newAct);
     toolBar->addAction(cameraAct);
 
-    const QIcon disconnectIcon = QIcon(":/icons/Breeze/actions/22/network-disconnect.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon disconnectIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/network-disconnect.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     cameraActDisconnectAct = new QAction(disconnectIcon, tr("Disconnect"), this);
     //trackAct->setShortcuts(QKeySequence::New);
     cameraActDisconnectAct->setStatusTip(tr("Disconnect camera."));
@@ -310,7 +310,7 @@ void MainWindow::createActions() {
     //fileMenu->addAction(newAct);
     toolBar->addAction(cameraActDisconnectAct);
 
-    const QIcon cameraSettingsIcon = QIcon(":/icons/Breeze/actions/22/configure.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon cameraSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/configure.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     cameraSettingsAct = new QAction(cameraSettingsIcon, tr("Camera Settings"), this);
     //trackAct->setShortcuts(QKeySequence::New);
     cameraSettingsAct->setStatusTip(tr("Disconnect camera."));
@@ -337,7 +337,7 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
-    const QIcon trackOffIcon = QIcon(":/icons/Breeze/actions/22/view-visible.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon trackOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-visible.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     trackAct = new QAction(trackOffIcon, tr("Track"), this);
     trackAct->setCheckable(true);
     //trackAct->setShortcuts(QKeySequence::New);
@@ -349,7 +349,7 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
-    const QIcon calibrateIcon = QIcon(":/icons/Breeze/actions/22/crosshairs.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon calibrateIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/crosshairs.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     calibrateAct = new QAction(calibrateIcon, tr("Calibrate"), this);
     calibrateAct->setStatusTip(tr("Start calibrating."));
     connect(calibrateAct, &QAction::triggered, this, &MainWindow::onCalibrateClick);
@@ -357,7 +357,7 @@ void MainWindow::createActions() {
     toolBar->addAction(calibrateAct);
     calibrateAct->setDisabled(true);
 
-    const QIcon sharpnessIcon = QIcon(":/icons/Breeze/actions/22/edit-select-all.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon sharpnessIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/edit-select-all.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     sharpnessAct = new QAction(sharpnessIcon, tr("Sharpness"), this);
     sharpnessAct->setStatusTip(tr("Validate sharpness."));
     connect(sharpnessAct, &QAction::triggered, this, &MainWindow::onSharpnessClick);
@@ -365,7 +365,7 @@ void MainWindow::createActions() {
     toolBar->addAction(sharpnessAct);
     sharpnessAct->setDisabled(true);
 
-    const QIcon subjectsIcon = QIcon(":/icons/Breeze/actions/22/im-user.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon subjectsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     subjectsAct = new QAction(subjectsIcon, tr("Subjects"), this);
     subjectsAct->setStatusTip(tr("Load subject specific detection configuration."));
     connect(subjectsAct, &QAction::triggered, this, &MainWindow::onSubjectsClick);
@@ -374,7 +374,7 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
-    const QIcon logFileIcon = QIcon(":icons/Breeze/actions/22/edit-text-frame-update.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon logFileIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/edit-text-frame-update.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     logFileAct = new QAction(logFileIcon, tr("Logfile"), this);
     logFileAct->setStatusTip(tr("Set log file."));
     connect(logFileAct, &QAction::triggered, this, &MainWindow::setLogFile);
@@ -383,7 +383,7 @@ void MainWindow::createActions() {
     logFileAct->setDisabled(true);
 
 
-    const QIcon recordIcon = QIcon(":/icons/Breeze/actions/22/media-record.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon recordIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     recordAct = new QAction(recordIcon, tr("Record"), this);
     recordAct->setStatusTip(tr("Start pupil recording."));
     connect(recordAct, &QAction::triggered, this, &MainWindow::onRecordClick);
@@ -394,7 +394,7 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
-    const QIcon outputDirIcon = QIcon(":icons/Breeze/actions/22/document-open.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon outputDirIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/document-open.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     outputDirectoryAct = new QAction(outputDirIcon, tr("Output Directory"), this);
     outputDirectoryAct->setStatusTip(tr("Set output directory."));
     connect(outputDirectoryAct, &QAction::triggered, this, &MainWindow::setOutputDirectory);
@@ -402,7 +402,7 @@ void MainWindow::createActions() {
     toolBar->addAction(outputDirectoryAct);
     outputDirectoryAct->setDisabled(true);
 
-    const QIcon recordImagesIcon = QIcon(":/icons/Breeze/actions/22/media-record-blue.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon recordImagesIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record-blue.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     recordImagesAct = new QAction(recordImagesIcon, tr("Record Images"), this);
     recordImagesAct->setStatusTip(tr("Start image recording."));
     connect(recordImagesAct, &QAction::triggered, this, &MainWindow::onRecordImageClick);
@@ -413,7 +413,7 @@ void MainWindow::createActions() {
     // GB added begin
     toolBar->addSeparator();
 
-    const QIcon streamingSettingsIcon = QIcon(":/icons/Breeze/actions/22/view-presentation.svg");
+    const QIcon streamingSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-presentation.svg"), applicationSettings);
     streamingSettingsAct = new QAction(streamingSettingsIcon, tr("Streaming settings"), this);
     streamingSettingsAct->setStatusTip(tr("Settings for data streaming."));
     connect(streamingSettingsAct, &QAction::triggered, this, &MainWindow::onStreamingSettingsClick);
@@ -422,7 +422,7 @@ void MainWindow::createActions() {
     //streamingSettingsAct->setDisabled(true);
     streamingSettingsAct->setDisabled(true);
 
-    const QIcon streamIcon = QIcon(":/icons/media-record-green.svg");
+    const QIcon streamIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/media-record-green.svg"), applicationSettings);
     streamAct = new QAction(streamIcon, tr("Stream"), this);
     streamAct->setStatusTip(tr("Stream pupil detection output."));
     connect(streamAct, &QAction::triggered, this, &MainWindow::onStreamClick);
@@ -485,7 +485,7 @@ void MainWindow::createStatusBar() {
 
     // GB added begin
     QLabel *remoteLabel = new QLabel("Remote Control Conn.");
-    const QIcon remoteIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     remoteStatusIcon = new QLabel();
     remoteStatusIcon->setPixmap(remoteIcon.pixmap(16, 16));
 
@@ -494,7 +494,7 @@ void MainWindow::createStatusBar() {
     // GB added end
 
     QLabel *calibrationLabel = new QLabel("Camera Calibration");
-    const QIcon calibrationIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon calibrationIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     calibrationStatusIcon = new QLabel();
     calibrationStatusIcon->setPixmap(calibrationIcon.pixmap(16, 16));
 
@@ -503,7 +503,7 @@ void MainWindow::createStatusBar() {
 
     // GB: renamed to be better descriptive, as now there are other purposes for serial connection too
     QLabel *serialLabel = new QLabel("Camera Serial Conn.");
-    const QIcon offlineIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     serialStatusIcon = new QLabel();
     serialStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
 
@@ -856,7 +856,7 @@ void MainWindow::onTrackActClick() {
         }
         // GB added end
 
-        const QIcon trackOffIcon = QIcon(":/icons/Breeze/actions/22/view-visible.svg"); //QIcon::fromTheme("camera-video");
+        const QIcon trackOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-visible.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         trackAct->setIcon(trackOffIcon);
         trackingOn = false;
 
@@ -957,7 +957,7 @@ void MainWindow::onTrackActClick() {
         pupilDetectionWorker->startDetection();
         // GB added end
 
-        const QIcon trackOnIcon = QIcon(":/icons/Breeze/actions/22/redeyes.svg"); //QIcon::fromTheme("camera-video");
+        const QIcon trackOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/redeyes.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         trackAct->setIcon(trackOnIcon);
         trackingOn = true;
 
@@ -984,7 +984,7 @@ void MainWindow::onStreamClick() {
         // GB: this way we can safely check like if(var!=nullptr) or if(var)
         dataStreamer = nullptr;
 
-        const QIcon streamIcon = QIcon(":/icons/media-record-green.svg");
+        const QIcon streamIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/media-record-green.svg"), applicationSettings);
         streamAct->setIcon(streamIcon);
         streamOn = false;
 
@@ -1012,7 +1012,7 @@ void MainWindow::onStreamClick() {
 
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataStreamer, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
 
-        const QIcon streamIcon = QIcon(":/icons/Breeze/actions/22/kt-stop-all.svg");
+        const QIcon streamIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kt-stop-all.svg"), applicationSettings);
         streamAct->setIcon(streamIcon);
         streamOn = true;
     }
@@ -1033,7 +1033,7 @@ void MainWindow::onRecordClick() {
         dataWriter = nullptr;
         // GB added end
 
-        const QIcon recordOffIcon = QIcon(":/icons/Breeze/actions/22/media-record.svg"); //QIcon::fromTheme("camera-video");
+        const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordAct->setIcon(recordOffIcon);
         recordOn = false;
 
@@ -1070,7 +1070,7 @@ void MainWindow::onRecordClick() {
         // GB new kind of signals
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
 
-        const QIcon recordOnIcon = QIcon(":/icons/Breeze/actions/22/kt-stop-all.svg"); //QIcon::fromTheme("camera-video");
+        const QIcon recordOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kt-stop-all.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordAct->setIcon(recordOnIcon);
         recordOn = true;
     }
@@ -1084,7 +1084,7 @@ void MainWindow::onRecordImageClick() {
         // disconnect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
         disconnect(signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
 
-        const QIcon recordOffIcon = QIcon(":/icons/Breeze/actions/22/media-record-blue.svg"); //QIcon::fromTheme("camera-video");
+        const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record-blue.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordImagesAct->setIcon(recordOffIcon);
         recordImagesOn = false;
 
@@ -1140,7 +1140,7 @@ void MainWindow::onRecordImageClick() {
         // connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SLOT (onNewImage(CameraImage)));
         connect(signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
 
-        const QIcon recordOnIcon = QIcon(":/icons/Breeze/actions/22/kt-stop-all.svg"); //QIcon::fromTheme("camera-video");
+        const QIcon recordOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kt-stop-all.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordImagesAct->setIcon(recordOnIcon);
         recordImagesOn = true;
     }
@@ -1930,52 +1930,54 @@ void MainWindow::onPlaybackSafelyStopped() {
 // were here, but their functionality has been moved to ImagePlaybackControlDialog
 
 void MainWindow::onSerialConnect() {
-    const QIcon offlineIcon = QIcon(":icons/Breeze/emblems/22/vcs-normal.svg");
+    const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     serialStatusIcon->setPixmap(offlineIcon.pixmap(12, 12));
 }
 
 void MainWindow::onSerialDisconnect() {
-    const QIcon offlineIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     serialStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
 }
 
 void MainWindow::onRemoteEnable() {
     remoteOn = true;
-    const QIcon remoteIcon = QIcon(":icons/Breeze/emblems/22/vcs-normal.svg");
+    const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     remoteStatusIcon->setPixmap(remoteIcon.pixmap(12, 12));
 }
 
 void MainWindow::onRemoteDisable() {
     remoteOn = false;
-    const QIcon remoteIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     remoteStatusIcon->setPixmap(remoteIcon.pixmap(16, 16));
 }
 
 void MainWindow::onHwTriggerEnable() {
     hwTriggerOn = true;
-    const QIcon offlineIcon = QIcon(":icons/Breeze/emblems/22/vcs-normal.svg");
+    const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     hwTriggerStatusIcon->setPixmap(offlineIcon.pixmap(12, 12));
 }
 
 void MainWindow::onHwTriggerDisable() {
     hwTriggerOn = false;
-    const QIcon offlineIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     hwTriggerStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
 }
 
 void MainWindow::onCameraCalibrationEnabled() {
-    const QIcon calibIcon = QIcon(":icons/Breeze/emblems/22/vcs-normal.svg");
+    const QIcon calibIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     calibrationStatusIcon->setPixmap(calibIcon.pixmap(12, 12));
 }
 
 void MainWindow::onCameraCalibrationDisabled() {
-    const QIcon calibIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+    const QIcon calibIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     calibrationStatusIcon->setPixmap(calibIcon.pixmap(16, 16));
 }
 
 
 void MainWindow::onGeneralSettingsChange() {
-    // GB: Moved code. These are now all done in imagePlaybackControlDialog
+    // repaint to get appearance settings saved
+    // TODO: also repaint any child necessary
+    this->repaint();
 }
 
 void MainWindow::onSubjectsSettingsChange(QString subject) {
@@ -1984,7 +1986,7 @@ void MainWindow::onSubjectsSettingsChange(QString subject) {
 }
 
 void MainWindow::onSubjectsClick() {
-    const QIcon subjectsSelectedIcon = QIcon(":/icons/Breeze/actions/22/im-user-online.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon subjectsSelectedIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user-online.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     //subjectsAct->setIcon(subjectsSelectedIcon);
 
     subjectSelectionDialog->show();
@@ -2121,10 +2123,10 @@ void MainWindow::onStreamingCOMDisconnect() {
 
 void MainWindow::onRemoteConnStateChanged() {
     if(remoteCCDialog->isAnyConnected()) {
-        const QIcon offlineIcon = QIcon(":icons/Breeze/emblems/22/vcs-normal.svg");
+        const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
         remoteStatusIcon->setPixmap(offlineIcon.pixmap(12, 12));
     } else {
-        const QIcon offlineIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
+        const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
         remoteStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
     }
 }
