@@ -134,6 +134,5 @@ public:
 
         return QIcon(new SVGIconEngine(content, applicationSettings));
     };
-
 };
 
