@@ -23,7 +23,7 @@
 
 */
 
-// SVGIconEngine code was used from this SO post: https://stackoverflow.com/a/44757951
+// Most of SVGIconEngine code was used from this SO post: https://stackoverflow.com/a/44757951
 class SVGIconEngine : public QIconEngine {
 
     QString data;
@@ -51,10 +51,13 @@ class SVGIconEngine : public QIconEngine {
             // invert only the HSV "value"/intensity value (mirror it to 0.5 on a 0.0-1.0 range)
             if(doLighten && actualColor.valueF() <= 0.5f) {
                 actualColor = QColor::fromHsvF(actualColor.hsvHueF(), actualColor.hsvSaturationF(), 1.0f-actualColor.valueF());
-            }
-
-            if(mode == QIcon::Mode::Disabled) {
-                actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.1, 0.7);
+                if(mode == QIcon::Mode::Disabled) {
+                    actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.8, 0.5);
+                }
+            } else {
+                if(mode == QIcon::Mode::Disabled) {
+                    actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.1, 0.7);
+                }
             }
 
             // TODO: only replace if different
