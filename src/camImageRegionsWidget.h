@@ -1,5 +1,9 @@
 #pragma once
 
+/**
+    @author Gábor Bényei
+*/
+
 #include <QWidget>
 #include <QFrame>
 #include <QLabel>
@@ -14,6 +18,13 @@
 #include <QCoreApplication>
 #include <QString>
 #include <QDebug>
+
+/**
+
+    This header is for a custom widget that can be used in camera settings dialogs to position image ROI(s)
+    (and possibly to check pupil detection ROIs too, as an enhancement in future)
+
+*/
 
 class CamImageRegionsWidget : public QFrame {
 Q_OBJECT
@@ -35,6 +46,8 @@ public:
 private:
     
     QSettings *applicationSettings;
+    
+    void updatePenColors();
 
     // TODO option 1: 
     // use setScale and translate using Qt things, not QRect and QLine separately but any QGraphicsItem

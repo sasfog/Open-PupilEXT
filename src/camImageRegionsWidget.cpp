@@ -1,5 +1,5 @@
 #include "camImageRegionsWidget.h"
-
+#include "supportFunctions.h"
 
 CamImageRegionsWidget::CamImageRegionsWidget(QWidget *parent) : 
     QFrame(parent),
@@ -11,27 +11,47 @@ CamImageRegionsWidget::CamImageRegionsWidget(QWidget *parent) :
     setFrameStyle(2);
 
     
-    // widgetBorderPen.setAlphaF( 0.3 );
-    // penAutoParamAccent.setStyle(Qt::DashLine);
-    // penAutoParamBack.setStyle(Qt::SolidLine);
-
-    penWidgetBorder = QPen(Qt::black, 1, Qt::DashLine);
-
-    penImageAcqROI1 = QPen(Qt::darkRed, 1, Qt::DashLine);
-    penImageAcqROI2 = QPen(Qt::darkRed, 1, Qt::DashLine);
-
-    penPupilDetectionROI1 = QPen(Qt::blue, 1, Qt::SolidLine);
-    penPupilDetectionROI2 = QPen(Qt::green, 1, Qt::SolidLine);
-    // penPupilDetectionROI1 = QPen(Qt::cyan, 1, Qt::SolidLine);
-    // penPupilDetectionROI2 = QPen(Qt::yellow, 1, Qt::SolidLine);
-
-    penImageAcqROISplitLine = QPen(Qt::black, 1, Qt::DashLine);
+    penWidgetBorder.setStyle(Qt::DashLine);
+    penImageAcqROI1.setStyle(Qt::DashLine);
+    penImageAcqROI2.setStyle(Qt::DashLine);
+    penPupilDetectionROI1.setStyle(Qt::SolidLine);
+    penPupilDetectionROI2.setStyle(Qt::SolidLine);
+    penImageAcqROISplitLine.setStyle(Qt::DashLine);
+    updatePenColors();
 
     drawingArea = QRect(0, 0, size().width(), size().height());
 }
 
 CamImageRegionsWidget::~CamImageRegionsWidget(void) {
 
+}
+
+void CamImageRegionsWidget::updatePenColors() {
+
+    // TODO: move these to a separate function as the same lines are used in SVGIconColorAdjuster class too !!
+    // -- begin 
+    // NOTE: These 4 lines below are from a SO post: https://stackoverflow.com/a/21024983
+    QLabel label("something");
+    int text_hsv_value = label.palette().color(QPalette::WindowText).value();
+    int bg_hsv_value = label.palette().color(QPalette::Window).value();
+    // bool dark_theme_found = text_hsv_value > bg_hsv_value;
+    //
+    // basically the icon set we use is for light theme, so we only need to decide whether to lighten colors or not
+    // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
+    bool doLighten = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2" && text_hsv_value > bg_hsv_value);
+    // -- end
+
+    penWidgetBorder.setColor(SupportFunctions::changeColors(Qt::black, doLighten, isEnabled()));
+
+    penImageAcqROI1.setColor(SupportFunctions::changeColors(Qt::darkRed, doLighten, isEnabled()));
+    penImageAcqROI2.setColor(SupportFunctions::changeColors(Qt::darkRed, doLighten, isEnabled()));
+
+    penPupilDetectionROI1.setColor(SupportFunctions::changeColors(Qt::blue, doLighten, isEnabled()));
+    penPupilDetectionROI2.setColor(SupportFunctions::changeColors(Qt::green, doLighten, isEnabled()));
+    //penPupilDetectionROI1.setColor(SupportFunctions::changeColors(Qt::cyan, doLighten, isEnabled()));
+    //penPupilDetectionROI2.setColor(SupportFunctions::changeColors(Qt::yellow, doLighten, isEnabled()));
+
+    penImageAcqROISplitLine.setColor(SupportFunctions::changeColors(Qt::black, doLighten, isEnabled()));
 }
 
 void CamImageRegionsWidget::setImageMaxSize(QSize size) {
@@ -86,7 +106,6 @@ void CamImageRegionsWidget::resizeEvent(QResizeEvent *event) {
     if(widgetAR >= sensorAR) {
         // up and bottom edges of drawingArea touch the border of the widget
         // shrink the width of drawingArea AND center horizontally
-        qDebug() << "1";
         drawingArea = QRect(
             0 + (float)event->size().width()/2 - ((float)event->size().height() * sensorAR /2), 
             0, 
@@ -95,7 +114,6 @@ void CamImageRegionsWidget::resizeEvent(QResizeEvent *event) {
     } else {
         // left and right edges of drawingArea touch the border of the widget
         // shrink the height of drawingArea AND center vertically
-        qDebug() << "2";
         drawingArea = QRect(
             0, 
             0 + (float)event->size().height()/2 - ((float)event->size().width() / sensorAR /2), 
@@ -108,6 +126,9 @@ void CamImageRegionsWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
+
+    updatePenColors();
+
 
     painter.setPen(penWidgetBorder);
     painter.drawRect(toDrawingArea(QRect(0,0,imageMaxSize.width(),imageMaxSize.height())));
