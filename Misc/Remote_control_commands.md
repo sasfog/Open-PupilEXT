@@ -22,12 +22,10 @@ Even extraordinary cases can be handled e.g. when PupilEXT is instructed by a UD
 
 User Datagram Protocol (abbreviated UDP) is a transport layer network communication protocol. It is widespread among measurement devices i.e. eye-tracker setups for sending textual commands from the display computer to control the host computer e.g. to start or stop recording or to "send trigger signals" to increment trial numbering. It is realized through network adapters of the communicating computers, thus the commands can travel through an ethernet cable or even WiFi, from computer to computer directly, within a local network (LAN) or even over the internet. In experimental setups however, typically the former are used. 
 
-A port needs to be opened on the receiver side which is "listened to" for our textual commands to control PupilEXT. Sender needs to specify the target IP address and port to send to (e.g. "192.168.1.1" and "6969" respectively). On the host computer, PupilEXT listens to any message received on the specified port, but these messages containing the commands are further filtered using an IP address that you specify: 
-- The IP address should be set to equal the address that was previously set on the other computer (the display computer). E.g. "192.168.1.2"
+A port needs to be opened on the receiver side which is "listened to" for our textual commands to control PupilEXT. Sender computer needs to specify the target IP address and port to send to (e.g. "192.168.40.1" and "6900" respectively). On the host computer, PupilEXT listens to any message received on the specified port, but importantly, these messages containing the commands are further filtered using an IP address that you specify: 
+- The IP address should be set to equal the address that was previously set on the other computer (the display computer). E.g. "192.168.40.2"
 - If the IP address for listening is set to "0.0.0.0", any message will be received that was sent from any computer connected to the host (also including the host computer itself). This is the best option if nothing else is working, or you are debugging.
-- If the IP is "127.0.0.0" (which IP is conventionally called "localhost" elsewhere) then only those commands will be received that were sent from the host computer itself. This option is rather for special use cases or debugging, when the host and display computer are deliberately the same.
-
-??? ******
+- If the IP is "127.0.0.1" (which IP is conventionally called "localhost" elsewhere) then only those commands will be received that were sent from the host computer itself. This option is rather for special use cases or debugging, when the host and display computer are deliberately the same.
 
 Commands sent using UDP can only be received if there is PupilEXT listening on the receiver side. To achieve this, you probably need to disable firewall, or add PupilEXT as an exception that can communicate through UDP protocol anytime, and/or run PupilEXT with administrator privileges. 
 
