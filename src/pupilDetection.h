@@ -264,6 +264,9 @@ public:
     void stopDetection();
 
 
+    cv::Mat getLayerImage(int index){
+        return pupilDetectionMethods1[pupilDetectionIndex]->getLayer(index);
+    }
 private:
 
     Camera *camera;

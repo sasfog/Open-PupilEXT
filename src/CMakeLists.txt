@@ -74,6 +74,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/pupil-detection-methods/json.h subwindows/timestampSpinBox.h subwindows/timestampSpinBox.cpp
         SVGIconColorAdjuster.h
         camImageRegionsWidget.h camImageRegionsWidget.cpp
+        gaze-detection/eyeDetector.h
         )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT

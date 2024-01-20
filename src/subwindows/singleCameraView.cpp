@@ -6,6 +6,7 @@
 #include "singleCameraView.h"
 #include "../SVGIconColorAdjuster.h"
 
+
 // Create new single camera view given a single camera object and a pupil detection process
 // The pupil detection is used to display the detected pupils and show detection information such as processing fps
 SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetection,  bool playbackFrozen, QWidget *parent) :
@@ -17,6 +18,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
         plotROIContour(true),
         initPupilViewSize(false),
         playbackFrozen(playbackFrozen),
+        eyeDetector(new EyeDetector()),
         //pupilViewSize(0, 0),
         currentCameraFPS(0.0),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
@@ -477,7 +479,20 @@ void SingleCameraView::updateView(const CameraImage &cimg, const int &procMode, 
         return;
     
     timer.restart();
-        
+    
+    eyeDetector->generateEyeRoiRs(camera->getImageROI(), cimg.img);
+    int rois = eyeDetector->getRoiSize();
+    if (rois >= 1){
+        QRectF roi1 = eyeDetector->getEyeRoi(0);
+        videoView->setROI1SelectionR(roi1);     
+    }
+    if (rois == 2){
+        if (videoView->getDoubleROI()){
+            QRectF roi2 = eyeDetector->getEyeRoi(1);
+            videoView->setROI2SelectionR(roi2);
+        }
+    }
+    videoView->saveROI1Selection();
     // GB: NOTE: disabled this feature, as it can occupy big space on smaller screens, 
     // and is only useful in case of fileCamera, but now that has playbackControlDialog which shows the same already
     //
@@ -490,7 +505,12 @@ void SingleCameraView::updateView(const CameraImage &cimg, const int &procMode, 
     // As we are using a single camera right now, we can just pass the ROIs and Pupils vectors
     // But in case of stereo cameras, where there are two videoViews, it is necessary to know
     // which videoView gets which two ROIs and pupils (see stereoCameraView for details)
-    videoView->updateViewProcessed(cimg.img, ROIs, Pupils);
+    int layer = 3;
+    if (layer < 0)
+        videoView->updateViewProcessed(cimg.img, ROIs, Pupils);
+    else 
+        videoView->updateViewProcessed(pupilDetection->getLayerImage(layer), ROIs, Pupils);
+    
 }
 
 void SingleCameraView::updateView(const CameraImage &cimg) {
@@ -499,7 +519,20 @@ void SingleCameraView::updateView(const CameraImage &cimg) {
         return;
     
     timer.restart();
-        
+    
+    eyeDetector->generateEyeRoiRs(camera->getImageROI(), cimg.img);
+    int rois = eyeDetector->getRoiSize();
+    if (rois >= 1){
+        QRectF roi1 = eyeDetector->getEyeRoi(0);
+        videoView->setROI1SelectionR(roi1);     
+    }
+    if (rois == 1){
+        if (videoView->getDoubleROI()){
+            QRectF roi2 = eyeDetector->getEyeRoi(1);
+            videoView->setROI2SelectionR(roi2);
+        }
+    }
+    videoView->saveROI1Selection();
     // GB: NOTE: disabled this feature, as it can occupy big space on smaller screens, 
     // and is only useful in case of fileCamera, but now that has playbackControlDialog which shows the same already
     //

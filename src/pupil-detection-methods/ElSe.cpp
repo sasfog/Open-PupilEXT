@@ -1261,7 +1261,7 @@ static RotatedRect blob_finder(Mat *pic)
 
 Pupil ElSe::run(const Mat &frame)
 {
-
+    layers.clear();
     RotatedRect ellipse;
     Point pos(0, 0);
 
@@ -1279,7 +1279,7 @@ Pupil ElSe::run(const Mat &frame)
 
     Mat pic;
     normalize(downscaled, pic, 0, 255, NORM_MINMAX, CV_8U);
-
+    layers.push_back(pic);
     minArea = downscaled.cols * downscaled.rows * minAreaRatio;
     maxArea = downscaled.cols * downscaled.rows * maxAreaRatio;
 
@@ -1312,13 +1312,14 @@ Pupil ElSe::run(const Mat &frame)
         {
             detected_edges.data[(detected_edges.cols * (start_y + j)) + (start_x + i)] = detected_edges2.data[(detected_edges2.cols * j) + i];
         }
-
+    layers.push_back(detected_edges);
     //cv::imwrite( "edge_image.jpg", detected_edges);
 
     filter_edges(&detected_edges, start_x, end_x, start_y, end_y);
 
     //cv::imwrite( "filtered_edge_image.jpg", detected_edges );
-
+    layers.push_back(detected_edges);
+    
     ellipse = find_best_edge(&pic, &detected_edges, &magni, start_x, end_x, start_y, end_y, mean_dist, inner_color_range);
 
     if ((ellipse.center.x <= 0 && ellipse.center.y <= 0) || ellipse.center.x >= pic.cols || ellipse.center.y >= pic.rows)
@@ -1336,7 +1337,6 @@ Pupil ElSe::run(const Mat &frame)
 
 void ElSe::run(const cv::Mat &frame, const cv::Rect &roi, Pupil &pupil, const float &minPupilDiameterPx = -1, const float &maxPupilDiameterPx = -1)
 {
-
     if (roi.area() < 10)
     {
         std::cout << "Bad ROI: falling back to regular detection.";

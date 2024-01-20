@@ -14,6 +14,7 @@
 #include "../pupilDetection.h"
 
 #include "../devices/fileCamera.h"
+#include "../gaze-detection/eyeDetector.h"
 
 /**
     Main view showing the camera images for a single camera, at the same time displays results of the pupil detection rendered on top of the image
@@ -35,7 +36,7 @@ public:
         updateDelay = 1000/fps;
         if(pupilDetection)
             pupilDetection->setUpdateFPS(fps);
-    }
+    };
 
 private:
 
@@ -75,7 +76,7 @@ private:
     QWidget *statusProcessingFPSWidget;
     QLabel *processingConfigLabel;
     
-
+    EyeDetector *eyeDetector;
     bool displayPupilView;
     bool plotPupilCenter;
     bool plotROIContour;

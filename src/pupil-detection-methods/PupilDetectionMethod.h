@@ -104,8 +104,13 @@ public:
 
     static std::vector<cv::Point> ellipse2Points(const cv::RotatedRect &ellipse, const int &delta);
 
+    cv::Mat& getLayer(int i){
+        if (i >= layers.size())
+            return layers[0];
+        else return layers[i];
+    }
 protected:
-
+    std::vector<cv::Mat> layers;
     std::string mTitle;
     std::string mDesc;
 };

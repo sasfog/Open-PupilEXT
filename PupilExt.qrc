@@ -42,6 +42,7 @@
         <file>icons/2cam2pupNS.svg</file>
 
         <file>icons/media-record-green.svg</file>
+        <file>Mi_Models/haarcascade_eye.xml</file>
 
     </qresource>
 </RCC>

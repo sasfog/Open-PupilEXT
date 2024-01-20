@@ -465,6 +465,7 @@ void VideoView::updateViewInternal(const cv::Mat &img) {
     if (img.channels() == 1)
         cv::cvtColor(img, bgrFrame, cv::COLOR_GRAY2BGR);
     QImage qImg = cvMatToQImage(bgrFrame);
+    
 
     // added by Gabor Benyei (kheki4) on 2022.11.07, 
     // Reason: when camera binning is changed, the Pylon library sends a request to the camera to send new images considering the newly set binning value

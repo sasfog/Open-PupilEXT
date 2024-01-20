@@ -579,7 +579,7 @@ void PuRe::searchInnerCandidates(vector<PupilCandidate> &candidates, PupilCandid
 }
 
 void PuRe::detect(Pupil &pupil, std::vector<cv::Point2f> &inlierPts) {
-
+	layers.push_back(input);
 	// 3.2 Edge Detection and Morphological Transformation
 	Mat detectedEdges = canny(input, true, true, 64, 0.7f, 0.4f);
 
@@ -587,6 +587,7 @@ void PuRe::detect(Pupil &pupil, std::vector<cv::Point2f> &inlierPts) {
 #ifdef SAVE_ILLUSTRATION
 	imwrite("edges.png", detectedEdges);
 #endif
+	layers.push_back(detectedEdges);
 	filterEdges(detectedEdges);
 
 	// 3.3 Segment Selection
@@ -614,7 +615,19 @@ void PuRe::detect(Pupil &pupil, std::vector<cv::Point2f> &inlierPts) {
 	imwrite ("filtered-edges.png", detectedEdges);
 	imwrite("candidates.png", candidatesImage);
 #endif
-
+float r = 255.0 / candidates.size();
+	int i = 0;
+	Mat candidatesImage;
+	cvtColor(input, candidatesImage, COLOR_GRAY2BGR);
+	for ( auto c = candidates.begin(); c != candidates.end(); c++) {
+		Mat colorMat = (Mat_<uchar>(1,1) << i*r);
+		applyColorMap(colorMat, colorMat, COLORMAP_HSV);
+		c->color = colorMat.at<Vec3b>(0,0);
+		c->draw(candidatesImage, c->color );
+		i++;
+	}
+	
+	layers.push_back(candidatesImage);
 	// Combination
 	combineEdgeCandidates(input, detectedEdges, candidates);
 	for (auto c=candidates.begin(); c!=candidates.end(); c++) {
@@ -660,10 +673,17 @@ void PuRe::detect(Pupil &pupil, std::vector<cv::Point2f> &inlierPts) {
 	line(out, Point(0,pupil.center.y), Point(out.cols,pupil.center.y), Scalar(0,255,0), 2);
 	imwrite("out.png", out);
 #endif
+	Mat out;
+	cvtColor(input, out, COLOR_GRAY2BGR);
+	ellipse(out, pupil, Scalar(0,255,0), 2);
+	line(out, Point(pupil.center.x,0), Point(pupil.center.x,out.rows), Scalar(0,255,0), 2);
+	line(out, Point(0,pupil.center.y), Point(out.cols,pupil.center.y), Scalar(0,255,0), 2);
+	layers.push_back(out);
 }
 
 void PuRe::run(const Mat &frame, Pupil &pupil) {
 	pupil.clear();
+	layers.clear();
 
 	init(frame);
 
