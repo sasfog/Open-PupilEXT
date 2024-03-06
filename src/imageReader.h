@@ -72,7 +72,7 @@ Q_OBJECT
 
 public:
 
-    explicit ImageReader(QString directory, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
+    explicit ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
 
     ~ImageReader() override;
 
@@ -170,6 +170,9 @@ private:
 
     QFuture<void> playbackProcess;
     QMutex mutex;
+    QMutex *imageMutex;
+    QWaitCondition *imagePublished;
+    QWaitCondition *imageProcessed;
 
     QDir imageDirectory;
 

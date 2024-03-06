@@ -194,6 +194,10 @@ private:
     QLabel *remoteStatusIcon;
 
     DataStreamer *dataStreamer;
+    QMutex *imageMutex;
+    QWaitCondition *imagePublished;
+    QWaitCondition *imageProcessed;
+
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();

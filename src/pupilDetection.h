@@ -135,7 +135,7 @@ class PupilDetection : public QObject {
 
 public:
 
-    explicit PupilDetection(QObject *parent = 0);
+    explicit PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent = 0);
     ~PupilDetection() override;
 
     std::vector<PupilDetectionMethod*> getMethods() {
@@ -310,6 +310,9 @@ private:
     int drawDelay;
 
     QMutex mutex;
+    QMutex *imageMutex;
+    QWaitCondition *imageProcessed;
+    QWaitCondition *imagePublished;
 
     bool calibrated;
     bool trackingOn;

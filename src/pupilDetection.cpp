@@ -34,7 +34,7 @@ void PupilDetection::populateWithMethods(std::vector<PupilDetectionMethod*> &vec
 
 // Creates a new pupil detection worker which include all pupil detection algorithms
 // Should be run on a seperate thread
-PupilDetection::PupilDetection(QObject *parent) : QObject(parent),
+PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent) : QObject(parent),
                                                   camera(nullptr),
                                                   frameCounter(new FrameRateCounter(parent)),
                                                   useOutlineConfidence(true),
@@ -58,7 +58,10 @@ PupilDetection::PupilDetection(QObject *parent) : QObject(parent),
                                                   ROIstereoImageTwoPupilB1(),
                                                   ROIstereoImageTwoPupilB2(),
                                                   ROImirrImageOnePupil1(),
-                                                  ROImirrImageOnePupil2()
+                                                  ROImirrImageOnePupil2(),
+                                                  imageMutex(imageMutex),
+                                                  imagePublished(imagePublished),
+                                                  imageProcessed(imageProcessed)
                                                   {
 
     drawDelay = 33; // ~30fps
@@ -146,7 +149,7 @@ void PupilDetection::startDetection() {
         //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
-            std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
+            qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
         }
         emit processingStarted();
     }
@@ -179,7 +182,6 @@ void PupilDetection::stopDetection() {
             disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         }
         */
-            
         emit processingFinished();
     }
 }
@@ -228,7 +230,7 @@ void PupilDetection::setAlgorithm(QString method) {
         //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
-            //std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
+            //qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
         }
     }
 }
@@ -239,12 +241,12 @@ void PupilDetection::setAlgorithm(QString method) {
 // Depending on the configuration, performs undistortion on the images or pupil detections
 // GB: renamed and modified
 void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
-
+    const QMutexLocker locker(imageMutex);
+    qDebug() << "pupilDetection locking";
     // Processing fps restriction not working correctly, timers overhead seem to break timing, left out for now
-    //std::cout<<cimg.filename<<std::endl;
-
+    //qDebug()<<cimg.filename;
     if (!trackingOn) {
-        std::cout<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."<<std::endl; // GB: changed text
+        qDebug()<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
         return;
     }
 
@@ -254,7 +256,7 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     if(!usePupilUndistort && useImageUndistort) {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         bwFrame = singleCalibration->undistortImage(cimg.img);
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     }
 
     cv::Rect roi = cv::Rect(0, 0, bwFrame.cols, bwFrame.rows);
@@ -282,6 +284,7 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     // Pupil detection
     try {
         if(useOutlineConfidence) {
+
             //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
             pupilDetectionMethods1[pupilDetectionIndex]->runWithConfidence(bwFrame, pupil);
             //runtimeHistory.push_back(std::make_pair(cimg.timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
@@ -303,7 +306,7 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     if(usePupilUndistort && !useImageUndistort) {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         pupil.undistortedDiameter = singleCalibration->undistortPupilDiameter(pupil);
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     } else if(!usePupilUndistort && useImageUndistort) {
         pupil.undistortedDiameter = pupil.diameter();
     }
@@ -374,6 +377,10 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
     // GB modified end
 
+    qDebug() << "pupilDetection image processed, unlocking";
+    imagePublished->wakeAll();
+    imageProcessed->wait(imageMutex);
+
 }
 
 // Slot callback for receiving new single camera images that contain two pupils/eyes
@@ -383,7 +390,7 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
 void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
 
     if (!trackingOn) {
-        std::cout<<"Single: onNewSingleImageForTwoPupil: Tracking is stopped but receiving signals."<<std::endl;
+        qDebug()<<"Single: onNewSingleImageForTwoPupil: Tracking is stopped but receiving signals.";
         return;
     }
 
@@ -506,7 +513,7 @@ void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
 void PupilDetection::onNewMirrImageForOnePupil(const CameraImage &cimg) {
 
     if (!trackingOn) {
-        std::cout<<"Single: onNewMirrImageForOnePupil: Tracking is stopped but receiving signals."<<std::endl; // GB: changed text
+        qDebug()<<"Single: onNewMirrImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
         return;
     }
 
@@ -629,9 +636,10 @@ void PupilDetection::onNewMirrImageForOnePupil(const CameraImage &cimg) {
 void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
-
+    const QMutexLocker locker(imageMutex);
+    qDebug() << "pupilDetection locking";
     if (!trackingOn) {
-        std::cout<<"Stereo: onNewStereoImageForOnePupil: Tracking is stopped but receiving signals."<<std::endl;
+        qDebug()<<"Stereo: onNewStereoImageForOnePupil: Tracking is stopped but receiving signals.";
         return;
     }
 
@@ -700,7 +708,7 @@ void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
         std::pair<double, double> diameters = stereoCalibration->undistortPupilDiameters(pupil, pupilSecondary);
         pupil.undistortedDiameter = diameters.first;
         pupilSecondary.undistortedDiameter = diameters.second;
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     } else if(!usePupilUndistort && useImageUndistort) {
         pupil.undistortedDiameter = pupil.diameter();
         pupilSecondary.undistortedDiameter = pupil.diameter();
@@ -804,6 +812,10 @@ void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
     //emit processedStereoImageForOnePupilData(simg.timestamp, pupil, pupilSecondary, QString::fromStdString(simg.filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
     emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     // GB modified end
+
+    qDebug() << "pupilDetection image processed, unlocking";
+    imagePublished->wakeAll();
+    imageProcessed->wait(imageMutex);
 }
 
 // Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
@@ -815,7 +827,7 @@ void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        std::cout<<"Stereo: onNewStereoImageForTwoPupil: Tracking is stopped but receiving signals."<<std::endl;
+        qDebug()<<"Stereo: onNewStereoImageForTwoPupil: Tracking is stopped but receiving signals.";
         return;
     }
 
@@ -916,7 +928,7 @@ void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
         std::pair<double, double> diameters2 = stereoCalibration->undistortPupilDiameters(pupilA2, pupilB2);
         pupilA2.undistortedDiameter = diameters2.first;
         pupilB2.undistortedDiameter = diameters2.second;
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     } else if(!usePupilUndistort && useImageUndistort) {
         pupilA1.undistortedDiameter = pupilA1.diameter();
         pupilA2.undistortedDiameter = pupilA1.diameter();
@@ -1037,15 +1049,15 @@ template <typename T> void PupilDetection::writeVectorCSV(std::vector<std::pair<
 
     if(file.is_open()) {
 
-        file << header << std::endl;
+        file << header ;
 
         for(typename std::vector<std::pair<uint64_t , T>>::iterator it = data.begin(); it != data.end(); ++it) {
-            file << std::get<0>((*it)) << "," << std::get<1>((*it)) << std::endl;
+            file << std::get<0>((*it)) << "," << std::get<1>((*it)) ;
         }
 
         file.close();
     } else {
-        std::cerr<<"Failed to open file : "<<filename<<std::endl;
+        std::cerr<<"Failed to open file : "<<filename;
     }
 }
 
@@ -1170,7 +1182,7 @@ void PupilDetection::setCurrentProcMode(int val) {
         //     disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
-            std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
+            qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
         }
     }
 
@@ -1189,7 +1201,7 @@ void PupilDetection::setCurrentProcMode(int val) {
         //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
-            //std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
+            //qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
         }
     }
 }

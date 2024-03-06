@@ -35,7 +35,7 @@ class FileCamera : public Camera
     Q_OBJECT
 
 public:
-    explicit FileCamera(const QString &directory, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
+    explicit FileCamera(const QString &directory, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
 
     ~FileCamera() override;
 

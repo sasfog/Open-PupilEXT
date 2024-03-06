@@ -24,7 +24,7 @@ MainWindow::MainWindow():
                           mdiArea(new QMdiArea(this)),
                           signalPubSubHandler(new SignalPubSubHandler(this)),
                           
-                          pupilDetectionWorker(new PupilDetection()),
+
                           subjectSelectionDialog(new SubjectSelectionDialog(this)),
                           singleCameraSettingsDialog(nullptr),
                           stereoCameraSettingsDialog(nullptr),
@@ -52,6 +52,10 @@ MainWindow::MainWindow():
 */
                           applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
+    imageMutex = new QMutex();
+    imagePublished = new QWaitCondition();
+    imageProcessed = new QWaitCondition();
+    pupilDetectionWorker = new PupilDetection(imageMutex, imagePublished, imageProcessed);
     // GB added begin: needs to be instantiated here, as these use global instances of ConnPoolCOM
     serialSettingsDialog = new SerialSettingsDialog(connPoolCOM, this);
     remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter, 
@@ -1772,7 +1776,7 @@ void MainWindow::onOpenImageDirectory() {
     }
     safelyResetTrialCounter();
 
-    selectedCamera = new FileCamera(imageDirectory, playbackSpeed, playbackLoop, this);
+    selectedCamera = new FileCamera(imageDirectory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this);
     std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));

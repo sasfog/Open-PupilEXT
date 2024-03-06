@@ -3,8 +3,8 @@
 
 // Creates a virtual camera, behaving like a physical camera while playing image files from the given directory
 // Playback speed in frames per second can be adjusted through "playbackSpeed"
-FileCamera::FileCamera(const QString &directory, int playbackSpeed, bool playbackLoop, QObject *parent) : Camera(parent),
-                        imageReader(new ImageReader(directory, playbackSpeed, playbackLoop)),
+FileCamera::FileCamera(const QString &directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed, bool playbackLoop, QObject *parent) : Camera(parent),
+                        imageReader(new ImageReader(directory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop)),
                         frameCounter(new FrameRateCounter()),
                         stereoCameraCalibration(nullptr),
                         cameraCalibration(nullptr),
@@ -89,13 +89,13 @@ StereoCameraCalibration *FileCamera::getStereoCameraCalibration() {
 void FileCamera::step1frameNext() {
     if(imageReader->isPlaying())
         imageReader->pause();
-    imageReader->step1frame(true);
+    //imageReader->step1frame(true);
 }
 
 void FileCamera::step1framePrev() {
     if(imageReader->isPlaying())
         imageReader->pause();
-    imageReader->step1frame(false);
+    //imageReader->step1frame(false);
 }
 
 int FileCamera::getImageROIwidth(){

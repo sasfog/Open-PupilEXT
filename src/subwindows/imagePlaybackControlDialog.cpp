@@ -131,7 +131,7 @@ void ImagePlaybackControlDialog::createForm() {
     connect(dial, SIGNAL(incremented()), this, SLOT(onDialForward()));
     connect(dial, SIGNAL(decremented()), this, SLOT(onDialBackward()));
     connect(slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderValueChanged(int)));
-    connect(dial, SIGNAL(valueChanged(int)), this, SLOT(on(int)));
+    //connect(dial, SIGNAL(valueChanged(int)), this, SLOT(on(int)));
     
     controlLayout->addWidget(slider, 0, 0, 1, 3);
     controlLayout->addWidget(dial, 1, 2, 6, 1);
@@ -322,14 +322,14 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
 }
 
 void ImagePlaybackControlDialog::onStopButtonClick() {
-    std::cout<<"Stopping FileCamera Click"<<std::endl;
+    qDebug()<<"Stopping FileCamera Click";
     fileCamera->stop();
     //playImagesOn = false;
 
     //stalledTimestamp = fileCamera->getLastCommissionedTimestamp();
     stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
-    //std::cout<<"Stopping, lastTimestamp: "<< lastTimestamp << std::endl;
-    //std::cout<<"Stopping, stalledTimestamp: "<< stalledTimestamp << std::endl;
+    //qDebug()<<"Stopping, lastTimestamp: "<< lastTimestamp ;
+    //qDebug()<<"Stopping, stalledTimestamp: "<< stalledTimestamp ;
     if(!playImagesOn || lastTimestamp >= stalledTimestamp) {
         // e.g. when playback automatically finished
         // we can supposedly "safely" reset right now, no need to wait for imageReader to finish
@@ -542,14 +542,14 @@ void ImagePlaybackControlDialog::setSyncStream(int m_state) {
 void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 {
     if(playImagesOn) {
-        std::cout<<"Pausing FileCamera Click"<<std::endl;
+        qDebug()<<"Pausing FileCamera Click";
         fileCamera->pause();
 
         //stalledTimestamp = fileCamera->getLastCommissionedTimestamp();
         stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
         // GB NOTE: I have already added a guiderail in imageReader.cpp, but still, rarely just the image corresponding to the last commissioned frame number (and its timestamp) does never arrive at updateInfo(quint64 timestamp, int frameNumber)
-        std::cout<<"Pausing, lastTimestamp: "<< lastTimestamp << std::endl;
-        std::cout<<"Pausing, stalledTimestamp: "<< stalledTimestamp << std::endl;
+        qDebug()<<"Pausing, lastTimestamp: "<< lastTimestamp ;
+        qDebug()<<"Pausing, stalledTimestamp: "<< stalledTimestamp ;
         if(lastTimestamp < stalledTimestamp) {
             slider->setEnabled(false);
             dial->setEnabled(false);
@@ -579,7 +579,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 
         emit onPlaybackSafelyStarted();
 
-        std::cout<<"Starting FileCamera Click"<<std::endl;
+        qDebug()<<"Starting FileCamera Click";
         fileCamera->start();
 
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-pause.svg"), applicationSettings);
