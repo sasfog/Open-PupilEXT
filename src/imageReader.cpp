@@ -323,9 +323,10 @@ void ImageReader::pause() {
 
     qDebug()<<"-----------------------------------------------------------Image Reader: Pausing ImageReader thread.";
     state = PlaybackState::PAUSED;
-    //imageProcessed->wakeAll();
+
     imagePublished->wakeAll();
     playbackProcess.waitForFinished();
+
 }
 
 // Stops the image play back and sets the play position back to start, calling start again will play the first image again
@@ -337,7 +338,7 @@ void ImageReader::stop() {
     state = PlaybackState::STOPPED;
     currentImageIndex = 0;
 
-    //imageProcessed->wakeAll();
+
     imagePublished->wakeAll();
     playbackProcess.waitForFinished();
 }
