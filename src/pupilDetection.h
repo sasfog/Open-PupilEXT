@@ -339,11 +339,15 @@ private:
     
     bool autoParamSettingsEnabled = false; // True if pupil detection algorithm has Automatic Parametrization setting selected.
 
+    bool synchronised = false; // True if both PupilDetection and Playback are running and synchronized.
+
     void performAutoParam(); // GB added
 
     PupilDetectionMethod* getCurrentMethod(){
         return getCurrentMethod1();
     };
+
+    void onNewSingleImageForOnePupilInner(const CameraImage &image);
 
 public slots:
 
@@ -392,6 +396,8 @@ public slots:
     void setROIstereoImageTwoPupilB2(QRectF roi);
     void setROImirrImageOnePupil1(QRectF roi);
     void setROImirrImageOnePupil2(QRectF roi);
+
+    void setSynchronised(bool synchronised);
     // GB end
 
 signals:

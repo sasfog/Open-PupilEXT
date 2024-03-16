@@ -164,6 +164,8 @@ public:
             frameNumber=0;
         currentImageIndex = frameNumber;
     }
+
+    void setSynchronised(bool synchronised);
     // GB added end
 
 private:
@@ -189,6 +191,7 @@ private:
     bool stereoMode;
     bool noDelay;
     bool playbackLoop;
+    bool synchronised;
 
     // GB added begin
     std::vector<quint64> acqTimestamps;
@@ -202,7 +205,9 @@ private:
     // GB added end
 
     void run();
+    void runImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img);
     void runStereo();
+
 
 
 public slots:
@@ -226,6 +231,7 @@ signals:
     // playback changes that were caused by GUI interactions. Without this signal, it would be clueless
     void endReached();
     // GB added end
+
 };
 
 

@@ -117,3 +117,7 @@ int FileCamera::getImageROIoffsetY(){
 QRectF FileCamera::getImageROI(){
     return QRectF(0,0,getImageROIwidth(), getImageROIheight());
 }
+
+ImageReader *FileCamera::getImageReader() const {
+    return imageReader;
+}

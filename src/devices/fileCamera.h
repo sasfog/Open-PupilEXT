@@ -126,6 +126,8 @@ public:
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();
 
+    ImageReader *getImageReader() const;
+
 private:
     FrameRateCounter *frameCounter;
     ImageReader *imageReader;

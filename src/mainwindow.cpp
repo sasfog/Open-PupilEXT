@@ -1885,6 +1885,19 @@ void MainWindow::onOpenImageDirectory() {
     }
     // GB modified/added end
 
+    playbackSynchroniser = new PlaybackSynchroniser();
+    playbackSynchroniser->setCamera(selectedCamera);
+    playbackSynchroniser->setPupilDetection(pupilDetectionWorker);
+
+
+    connect(pupilDetectionWorker, SIGNAL(processingStarted()), playbackSynchroniser, SLOT(onPupilDetectionStarted()));
+    connect(pupilDetectionWorker, SIGNAL(processingFinished()), playbackSynchroniser, SLOT(onPupilDetectionStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), playbackSynchroniser, SLOT(onPlaybackStarted()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), playbackSynchroniser, SLOT(onPlaybackStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), playbackSynchroniser, SLOT(onPlaybackStopped()));
+
+
+
 }
 
 void MainWindow::onPlaybackSafelyStarted() {

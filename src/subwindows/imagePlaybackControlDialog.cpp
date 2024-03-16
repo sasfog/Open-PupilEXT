@@ -351,7 +351,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
         enableWidgets(false);
 
     } else if(playImagesOn && lastTimestamp < stalledTimestamp) {
-
+/*
         playImagesOn = false;
 
         slider->setEnabled(false);
@@ -361,9 +361,10 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
         
         infoGroup->setEnabled(false);
 
-        playbackStalled = true;
+        //playbackStalled = true;
         waitingForReset = true;
         enableWidgets(true);
+        */
     }
 
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
@@ -550,6 +551,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
         // GB NOTE: I have already added a guiderail in imageReader.cpp, but still, rarely just the image corresponding to the last commissioned frame number (and its timestamp) does never arrive at updateInfo(quint64 timestamp, int frameNumber)
         qDebug()<<"Pausing, lastTimestamp: "<< lastTimestamp ;
         qDebug()<<"Pausing, stalledTimestamp: "<< stalledTimestamp ;
+        /*
         if(lastTimestamp < stalledTimestamp) {
             slider->setEnabled(false);
             dial->setEnabled(false);
@@ -564,6 +566,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
         } else {
             dial->setEnabled(true); 
         }
+         */
 
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
         startPauseButton->setIcon(icon);

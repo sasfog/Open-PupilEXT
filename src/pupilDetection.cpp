@@ -183,6 +183,8 @@ void PupilDetection::stopDetection() {
         }
         */
         emit processingFinished();
+        imageProcessed->wakeAll();
+        imagePublished->wakeAll();
     }
 }
 
@@ -240,9 +242,8 @@ void PupilDetection::setAlgorithm(QString method) {
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
 // GB: renamed and modified
-void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
-    const QMutexLocker locker(imageMutex);
-    qDebug() << "pupilDetection locking";
+void PupilDetection::onNewSingleImageForOnePupilInner(const CameraImage &cimg) {
+
     // Processing fps restriction not working correctly, timers overhead seem to break timing, left out for now
     //qDebug()<<cimg.filename;
     if (!trackingOn) {
@@ -377,10 +378,22 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
     // GB modified end
 
-    qDebug() << "pupilDetection image processed, unlocking";
-    imagePublished->wakeAll();
-    imageProcessed->wait(imageMutex);
 
+
+}
+
+void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
+    if (synchronised) {
+        const QMutexLocker locker(imageMutex);
+        onNewSingleImageForOnePupilInner(cimg);
+//        qDebug() << "pupilDetection locking";
+  //      qDebug() << "pupilDetection image processed, unlocking";
+        imagePublished->wakeAll();
+        imageProcessed->wait(imageMutex);
+    }
+    else {
+        onNewSingleImageForOnePupilInner(cimg);
+    }
 }
 
 // Slot callback for receiving new single camera images that contain two pupils/eyes
@@ -1396,5 +1409,9 @@ void PupilDetection::performAutoParam() {
         }
 
     }
+}
+
+void PupilDetection::setSynchronised(bool synchronised) {
+    PupilDetection::synchronised = synchronised;
 }
 

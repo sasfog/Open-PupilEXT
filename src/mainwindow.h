@@ -38,6 +38,7 @@
 //#include <QCameraInfo> // Qt 5.3 would be necessary. For OpenCV device enumeration
 #include "recEventTracker.h"
 #include "SVGIconColorAdjuster.h"
+#include "playbackSynchroniser.h"
 // GB added end
 
 
@@ -197,6 +198,8 @@ private:
     QMutex *imageMutex;
     QWaitCondition *imagePublished;
     QWaitCondition *imageProcessed;
+
+    PlaybackSynchroniser *playbackSynchroniser;
 
 
     void loadCalibrationWindow();
