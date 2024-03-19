@@ -349,6 +349,8 @@ private:
 
     void onNewSingleImageForOnePupilInner(const CameraImage &image);
 
+    void configureCameraConnection();
+
 public slots:
 
     void setAlgorithm(QString method);
@@ -405,7 +407,7 @@ signals:
     void processedImage(const CameraImage &image);
     
     // GB added/modified begin
-    void processedPlaybackImage(quint64 timestamp, int frameNumber);
+    void processedPlaybackImage(CameraImage mimg);
     void processedImage(CameraImage mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
     void processedPupilData(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
 

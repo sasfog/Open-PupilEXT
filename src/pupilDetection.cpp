@@ -89,37 +89,41 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
 
     drawTimer.start();
     processingTimer.start();
+
+    //configureCameraConnection();
 }
 
 PupilDetection::~PupilDetection() {
-
 }
 
 // Attaches a camera to the pupil detection process
 // Checks if the camera is calibrated and stereo or single, sets the detection mode accordingly
 void PupilDetection::setCamera(Camera *m_camera) {
 
-    camera = m_camera;
+    if (camera != m_camera) {
+        camera = m_camera;
 
-    calibrated = false;
+        calibrated = false;
 
-    if(camera->getType()==CameraImageType::LIVE_STEREO_CAMERA) {
-        stereoCalibration = dynamic_cast<StereoCamera*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
-    } else if(camera->getType()==CameraImageType::STEREO_IMAGE_FILE) {
-        stereoCalibration = dynamic_cast<FileCamera*>(camera)->getStereoCameraCalibration();
-        calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
-    } else if(camera->getType()==CameraImageType::LIVE_SINGLE_CAMERA) {
-        singleCalibration = dynamic_cast<SingleCamera*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(singleCalibration->isCalibrated());
-    } else if(camera->getType()==CameraImageType::SINGLE_IMAGE_FILE) {
-        singleCalibration = dynamic_cast<FileCamera*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(singleCalibration->isCalibrated());
-    } 
-    // GB added begin
-    else if(camera->getType()==CameraImageType::LIVE_SINGLE_WEBCAM) {
-        singleCalibration = dynamic_cast<SingleWebcam*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        if (camera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
+            stereoCalibration = dynamic_cast<StereoCamera *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
+        } else if (camera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
+            stereoCalibration = dynamic_cast<FileCamera *>(camera)->getStereoCameraCalibration();
+            calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
+        } else if (camera->getType() == CameraImageType::LIVE_SINGLE_CAMERA) {
+            singleCalibration = dynamic_cast<SingleCamera *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        } else if (camera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
+            singleCalibration = dynamic_cast<FileCamera *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        }
+            // GB added begin
+        else if (camera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM) {
+            singleCalibration = dynamic_cast<SingleWebcam *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        }
+        configureCameraConnection();
     }
     // GB added end
 }
@@ -136,21 +140,7 @@ void PupilDetection::startDetection() {
 
     trackingOn = true;
     if(camera) {
-        if(currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-            //runtimeHistory.clear();
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
-        } else {
-            // error
-            qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
-        }
+        //configureCameraConnection();
         emit processingStarted();
     }
 }
@@ -162,12 +152,12 @@ void PupilDetection::stopDetection() {
     if(camera && trackingOn) {
         trackingOn = false;
 
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
-        
+        //disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
+        //disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
+        //disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
+        //disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        //disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+
         /*
         // BG: code bits found here: I left as a block comment
         if(!stereo) {
@@ -185,7 +175,9 @@ void PupilDetection::stopDetection() {
         emit processingFinished();
         imageProcessed->wakeAll();
         imagePublished->wakeAll();
+        qDebug() << "Woke up imageProcessing";
     }
+    qDebug() << "Woke up imageProcessing";
 }
 
 // Changes the applied pupil detection algorithm
@@ -247,7 +239,9 @@ void PupilDetection::onNewSingleImageForOnePupilInner(const CameraImage &cimg) {
     // Processing fps restriction not working correctly, timers overhead seem to break timing, left out for now
     //qDebug()<<cimg.filename;
     if (!trackingOn) {
-        qDebug()<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
+        //qDebug()<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
+        qDebug() << cimg.frameNumber;
+        emit processedImage(cimg);
         return;
     }
 
@@ -368,8 +362,10 @@ void PupilDetection::onNewSingleImageForOnePupilInner(const CameraImage &cimg) {
         emit processedImage(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
-        if(camera->getType() == SINGLE_IMAGE_FILE)
-            emit processedPlaybackImage((quint64)mimg.timestamp, (int)mimg.frameNumber);
+        if(camera->getType() == SINGLE_IMAGE_FILE) {
+            emit processedImage(mimg);
+            qDebug() << cimg.frameNumber;
+        }
         //qDebug() << "frameNumber left pupilDetection: " << cimg.frameNumber;
     }
 
@@ -389,7 +385,10 @@ void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
 //        qDebug() << "pupilDetection locking";
   //      qDebug() << "pupilDetection image processed, unlocking";
         imagePublished->wakeAll();
-        imageProcessed->wait(imageMutex);
+        if (trackingOn) {
+            qDebug() << "Locking image processing";
+            imageProcessed->wait(imageMutex);
+        }
     }
     else {
         onNewSingleImageForOnePupilInner(cimg);
@@ -512,7 +511,7 @@ void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
 
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE)
-            emit processedPlaybackImage((quint64)mimg.timestamp, (int)mimg.frameNumber);
+            emit processedImage(mimg);
     }
     emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
 }
@@ -635,7 +634,7 @@ void PupilDetection::onNewMirrImageForOnePupil(const CameraImage &cimg) {
 
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE)
-            emit processedPlaybackImage((quint64)mimg.timestamp, (int)mimg.frameNumber);
+            emit processedImage(mimg);
     }
 
     emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
@@ -819,7 +818,7 @@ void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
 
         // to inform imagePlaybackControlDialog about the just processed image.
         if(camera->getType() == STEREO_IMAGE_FILE)
-            emit processedPlaybackImage((quint64)mimg.timestamp, (int)mimg.frameNumber);
+            emit processedImage(mimg);
     }
 
     //emit processedStereoImageForOnePupilData(simg.timestamp, pupil, pupilSecondary, QString::fromStdString(simg.filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
@@ -1049,7 +1048,7 @@ void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
 
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == STEREO_IMAGE_FILE)
-            emit processedPlaybackImage((quint64)mimg.timestamp, (int)mimg.frameNumber);
+            emit processedImage(mimg);
     }
 
     emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
@@ -1413,5 +1412,25 @@ void PupilDetection::performAutoParam() {
 
 void PupilDetection::setSynchronised(bool synchronised) {
     PupilDetection::synchronised = synchronised;
+}
+
+void PupilDetection::configureCameraConnection() {
+    if (camera) {
+        if (currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
+        } else if (currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
+        } else if (currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
+            //runtimeHistory.clear();
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
+        } else if (currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+            // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+            //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+        } else {
+            // error
+            qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined";
+        }
+    }
 }
 

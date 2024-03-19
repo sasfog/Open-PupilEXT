@@ -182,11 +182,13 @@ void ImagePlaybackControlDialog::createForm() {
     connect(stopButton, SIGNAL(clicked()), this, SLOT(onStopButtonClick()));
 
     //bool succeeded = connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
+    //connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+    //connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
     // BREAKPOINT
-    connect(pupilDetection, SIGNAL(processingStarted()), this, SLOT(onPupilDetectionStart()));
-    connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
+    //connect(pupilDetection, SIGNAL(processingStarted()), this, SLOT(onPupilDetectionStart()));
+    //connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
 
     connect(playbackFPSVal, SIGNAL(valueChanged(int)), this, SLOT(setPlaybackSpeed(int)));
     connect(loopBox, SIGNAL(stateChanged(int)), this, SLOT(setPlaybackLoop(int)));
@@ -203,13 +205,14 @@ void ImagePlaybackControlDialog::updateSliderColorTick(const CameraImage &cimg) 
         slider->setColorTickPos((cimg.frameNumber+1)/(float)numImagesTotal);
 }
 
+
 void ImagePlaybackControlDialog::onPupilDetectionStart() {
     disconnect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedPlaybackImage(quint64, int)), this, SLOT(updateInfo(quint64, int)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
 }
 
 void ImagePlaybackControlDialog::onPupilDetectionStop() {
-    disconnect(pupilDetection, SIGNAL(processedPlaybackImage(quint64, int)), this, SLOT(updateInfo(quint64, int)));
+    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
     connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
 }
 
@@ -251,6 +254,8 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
 void ImagePlaybackControlDialog::updateInfo(const CameraImage &img) {
     // NOTE: this img.frameNumber field existed already/originally in pupilEXT beta 0.1.1 and is used in calibration code
     // Pay attention, it is an INDEX, so it starts from 0
+
+    qDebug() << "New image arrived, framenumber: " << img.frameNumber;
     updateInfo((quint64)img.timestamp, (int)img.frameNumber);
 }
 
@@ -267,7 +272,8 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
     // NOTES:
     // 1, if it is the last frame in the whole playback, we need to draw it anyhow
     // 2, if we are waiting for the last emitted frame to come with stalledTimestamp we still need to draw it, no matter is drawDelay was not reached yet (fixes disabled-stuck buttons bug)
-    if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal || (playbackStalled && stalledTimestamp<=timestamp)) {
+    //if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal || (playbackStalled && stalledTimestamp<=timestamp)) {
+    //if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal) {
         drawTimer.start();
 
         QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
@@ -303,18 +309,20 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         // NOTE: workaround to not emit valuechanged signals, so it gets emitted only if the user interacts with it
         slider->blockSignals(true);
         int gg = floor(99*((frameNumber+1)/(float)numImagesTotal));
+        qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
-    }
+    //}
 
     lastTimestamp = timestamp; // GB: need to come before 30 fps drawTime wait
     if(startTimestamp == 0)
         startTimestamp = timestamp;
-
+    /*
     if(playbackStalled && stalledTimestamp <= timestamp) {
         playbackStalled = false;
         onFinish(); 
     }
+     */
 }
 
 void ImagePlaybackControlDialog::onStartPauseButtonClick() {
@@ -601,6 +609,7 @@ void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
         slider->blockSignals(true);
         int gg = floor(99*((selectedFrameVal+1)/(float)numImagesTotal));
         slider->setColorTickPos((selectedFrameVal)/(float)numImagesTotal);
+        qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
         fileCamera->seekToFrame(selectedFrameVal -1);
