@@ -2316,21 +2316,27 @@ void MainWindow::dropEvent(QDropEvent* e)
         thingToOpen = urlList.at(0).toLocalFile();
 
     QFileInfo fileInfo(thingToOpen);
-    if(!fileInfo.isReadable())
-        return;
+    if(!fileInfo.isReadable()) {
+        QMessageBox MsgBox;
+        MsgBox.setText(QString::fromStdString("The folder you are trying to open is not readable. Please ensure sufficient permission of your user account and/or PupilEXT, and the availability of the location to be read."));
+        MsgBox.exec();
+    }
 
     if(fileInfo.isDir()) {
+        if(selectedCamera && selectedCamera->isOpen()) {
+            onCameraDisconnectClick();
+        }
+        qDebug() << "Attempting to open: " << fileInfo.filePath();
         openImageDirectory(fileInfo.filePath());
-
-        qDebug() << fileInfo.filePath();
     } else if(fileInfo.isFile()) {
         // TODO: do this with a QMap that is stored in persistence/QSettings
         if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
             fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml") {
 
-            //fileInfo.filePath().chopped(fileInfo.fileName().length())
-            qDebug() << fileInfo.filePath().chopped(fileInfo.fileName().length());
-
+            if(selectedCamera && selectedCamera->isOpen()) {
+                onCameraDisconnectClick();
+            }
+            qDebug() << "Attempting to open: " << fileInfo.filePath().chopped(fileInfo.fileName().length());
             openImageDirectory(fileInfo.filePath().chopped(fileInfo.fileName().length()));
         }
     }
