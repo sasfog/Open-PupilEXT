@@ -185,7 +185,7 @@ void ImagePlaybackControlDialog::createForm() {
     //connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
     //connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
     connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
+    //connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
     // BREAKPOINT
     //connect(pupilDetection, SIGNAL(processingStarted()), this, SLOT(onPupilDetectionStart()));
     //connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
@@ -196,13 +196,14 @@ void ImagePlaybackControlDialog::createForm() {
     connect(syncStreamBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncStream(int)));
     connect(selectedFrameBox, SIGNAL(valueChanged(int)), this, SLOT(onFrameSelected(int)));
     connect(timestampVal, SIGNAL(valueChanged(double)), this, SLOT(onTimestampSelected(double)));
+    connect(fileCamera, SIGNAL(endReached()), this, SLOT(onFinish()));
 }
 
 void ImagePlaybackControlDialog::updateSliderColorTick(const CameraImage &cimg) {
     // GB: even though this gets called really often, the slider's setter doesnt invalidate the widget, 
     // so even fast updating does not slow the GUI thread
-    if(numImagesTotal>=1)
-        slider->setColorTickPos((cimg.frameNumber+1)/(float)numImagesTotal);
+    //if(numImagesTotal>=1)
+        //slider->setColorTickPos((cimg.frameNumber+1)/(float)numImagesTotal);
 }
 
 
@@ -308,7 +309,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
 
         // NOTE: workaround to not emit valuechanged signals, so it gets emitted only if the user interacts with it
         slider->blockSignals(true);
-        int gg = floor(99*((frameNumber+1)/(float)numImagesTotal));
+        int gg = floor(99*((frameNumber)/(float)(numImagesTotal - 1)));
         qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
@@ -317,12 +318,10 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
     lastTimestamp = timestamp; // GB: need to come before 30 fps drawTime wait
     if(startTimestamp == 0)
         startTimestamp = timestamp;
-    /*
-    if(playbackStalled && stalledTimestamp <= timestamp) {
-        playbackStalled = false;
-        onFinish(); 
+
+    if (endReached){
+        resetState();
     }
-     */
 }
 
 void ImagePlaybackControlDialog::onStartPauseButtonClick() {
@@ -338,7 +337,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
     stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
     //qDebug()<<"Stopping, lastTimestamp: "<< lastTimestamp ;
     //qDebug()<<"Stopping, stalledTimestamp: "<< stalledTimestamp ;
-    if(!playImagesOn || lastTimestamp >= stalledTimestamp) {
+    if(!playImagesOn) {
         // e.g. when playback automatically finished
         // we can supposedly "safely" reset right now, no need to wait for imageReader to finish
         lastTimestamp = 0;
@@ -358,21 +357,14 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
         emit onPlaybackSafelyStopped();
         enableWidgets(false);
 
-    } else if(playImagesOn && lastTimestamp < stalledTimestamp) {
-/*
-        playImagesOn = false;
+    } else {
 
-        slider->setEnabled(false);
-        dial->setEnabled(false);
-        startPauseButton->setEnabled(false);
-        stopButton->setEnabled(false);
-        
-        infoGroup->setEnabled(false);
+        playImagesOn = false;
 
         //playbackStalled = true;
         waitingForReset = true;
         enableWidgets(true);
-        */
+
     }
 
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
@@ -385,40 +377,9 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 }
 
 void ImagePlaybackControlDialog::onFinish() {
+    endReached = true;
     // NOTE: gets called whenever imageReader is finished with reading and sending images
-    if(playImagesOn) {
-        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
-        startPauseButton->setIcon(icon);
-        playImagesOn = false;
-        enableWidgets(true);
-    }
 
-    stalledTimestamp = 0;
-    playbackStalled = false;
-
-    slider->setEnabled(true);
-    dial->setEnabled(true);
-    startPauseButton->setEnabled(true);
-    stopButton->setEnabled(true);
-    
-    infoGroup->setEnabled(true);
-
-    if(waitingForReset) {
-        lastTimestamp = 0;
-        startTimestamp = 0;
-        slider->blockSignals(false);
-        slider->setValue(0);
-        waitingForReset = false;
-
-        //if(recEventTracker)
-        //    recEventTracker->resetReplay();
-
-        emit onPlaybackSafelyStopped();
-    } else {
-        emit onPlaybackSafelyPaused();
-    }
-
-    this->update(); // invalidate 
 }
 
 void ImagePlaybackControlDialog::onAutomaticFinish() {
@@ -603,12 +564,13 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 }
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
+    qDebug() << "Frame number arrived: " << frameNumber;
     if (!playImagesOn){
         selectedFrameVal = frameNumber;
 
         slider->blockSignals(true);
-        int gg = floor(99*((selectedFrameVal+1)/(float)numImagesTotal));
-        slider->setColorTickPos((selectedFrameVal)/(float)numImagesTotal);
+        int gg = floor(99*((selectedFrameVal - 1)/(float)(numImagesTotal - 1)));
+        //slider->setColorTickPos((selectedFrameVal)/(float)numImagesTotal);
         qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
@@ -629,4 +591,38 @@ void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
         if (!playImagesOn){
             selectedFrameBox->setValue(frameNumber);
         }
+}
+
+void ImagePlaybackControlDialog::resetState() {
+
+    const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
+    startPauseButton->setIcon(icon);
+    playImagesOn = false;
+    enableWidgets(false);
+
+
+    slider->setEnabled(true);
+    dial->setEnabled(true);
+    startPauseButton->setEnabled(true);
+    stopButton->setEnabled(true);
+
+    infoGroup->setEnabled(true);
+
+    if(waitingForReset) {
+        lastTimestamp = 0;
+        startTimestamp = 0;
+        slider->blockSignals(false);
+        slider->setValue(0);
+        waitingForReset = false;
+
+        //if(recEventTracker)
+        //    recEventTracker->resetReplay();
+
+        emit onPlaybackSafelyStopped();
+    } else {
+        emit onPlaybackSafelyPaused();
+    }
+
+    endReached = false;
+    this->update(); // invalidate
 }

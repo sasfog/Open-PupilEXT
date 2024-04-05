@@ -90,6 +90,7 @@ private:
     bool playbackLoop = false;
     bool syncRecordCsv = false;
     bool syncStream = false;
+    bool endReached = false;
 
     QSpinBox* playbackFPSVal;
 
@@ -130,6 +131,7 @@ private:
 
     void createForm();
     void enableWidgets(bool enable);
+    void resetState();
  //   void saveSettings();
  //   void updateForm();
 

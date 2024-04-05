@@ -37,28 +37,7 @@ enum ProcMode {
     // MIRR_IMAGE_ONE_PUPIL = 3
 };
 
-/**
-    Enum to easily address pupil detection output vector (std::vector<Pupil>) contents
-    
-    Depending on procMode, Pupils or ROIs vector elements are indexed in the following way:
-        SINGLE_IMAGE_ONE_PUPIL :
-            [0] = pupil
-        SINGLE_IMAGE_TWO_PUPIL :
-            [0] = pupilA (eye A)
-            [1] = pupilB (eye B)
-        STEREO_IMAGE_ONE_PUPIL :
-            [0] = pupil (view 1)
-            [1] = pupilSecondary (view 2)
-        STEREO_IMAGE_TWO_PUPIL :
-            [0] = pupilA1 (eye A view 1)
-            [1] = pupilA2 (eye A view 2)
-            [2] = pupilB1 (eye B view 1)
-            [3] = pupilB2 (eye B view 2)
-        MIRR_IMAGE_ONE_PUPIL :
-            [0] = pupil1 (view 1)
-            [1] = pupil2 (view 2)
-     
-*/
+
 enum PupilVecIdx {
     SINGLE_IMAGE_ONE_PUPIL_MAIN = 0,
     SINGLE_IMAGE_TWO_PUPIL_A = 0,
@@ -74,62 +53,7 @@ enum PupilVecIdx {
 };
 // GB added end
 
-/**
-    Object that performs the pupil detection on images, should be executed in an own thread
 
-    Supports single and stereo camera pupil detection
-
-    Modified by Gábor Bényei, 2023 jan
-    GB NOTES: 
-        Added different processing modes. These use separate ROI variables, all have their own 
-        setters, getters, and all processing modes correspond to 1/2/4 detected pupils.
-
-        Removed onShowROI() and onShowPupilCenter() as these are now drawn as overlays in videoViews.
-
-        Now there are 4 std::vector<PupilDetectionMethod*> pupilDetectionMethods variables 
-        (probably a vector of vectors could be introduced) because of proper multithreading for 
-        "Stereo camera for two pupils" processing mode. I also added a method to populate these vectors 
-        upon pupilDetection instantiation, called populateWithMethods().
-
-slots:
-    
-    // On each new camera image, pupil detection is performed:
-    onNewSingleImageForOnePupil(): formerly onNewImage
-    onNewSingleImageForTwoPupil()
-    onNewStereoImageForOnePupil(): formerly onNewStereoImage
-    onNewStereoImageForTwoPupil()
-    onNewMirrImageForOnePupil()
-
-    setAlgorithm(): select the algorithm to apply
-    setCurrentProcMode(): set current processing mode
-    
-    setROIsingleImageOnePupil() // formerly void setROI(QRectF roi);
-    setROIsingleImageTwoPupilA()
-    setROIsingleImageTwoPupilB()
-    setROIstereoImageOnePupil1() // formerly void setROI(QRectF roi);
-    setROIstereoImageOnePupil2() // formerly void setSecondaryROI(QRectF roi);
-    setROIstereoImageTwoPupilA1()
-    setROIstereoImageTwoPupilA2()
-    setROIstereoImageTwoPupilB1()
-    setROIstereoImageTwoPupilB2()
-    setROImirrImageOnePupil1()
-    setROImirrImageOnePupil2()
-
-signals:
-
-    processedImage(): Outputs camera images with rendered pupil detection results
-
-    // Pupil measurements of the pupil detection:
-    processedImage()
-    processedPupilData()
-
-    processingStarted(): signal to notify pupil detection start
-    processingFinished(): signal to notify pupil detection end
-
-    fps(double fps): processing frame rate of the pupil detection
-    algorithmChanged(): signal to notify pupil detection algorithm change, used for interface updates
-
-*/
 class PupilDetection : public QObject {
     Q_OBJECT
 
@@ -329,9 +253,6 @@ private:
 
     void populateWithMethods(std::vector<PupilDetectionMethod*> &vec); // GB added
 
-    //cv::Size expectedImageSize = cv::Size(0,0);
-    //void resizeROIs(cv::Size newImageSize);
-    //cv::Rect resizeCvRect(const cv::Rect &rect, float factorX, float factorY);
 
     bool autoParamEnabled = false; // true as long as there is demand for autoParam. Also for informing other class instances through getter
     float autoParamPupSizePercent = 50;
@@ -347,7 +268,10 @@ private:
         return getCurrentMethod1();
     };
 
-    void onNewSingleImageForOnePupilInner(const CameraImage &image);
+    void onNewSingleImageForOnePupilImpl(const CameraImage &image);
+    void onNewSingleImageForTwoPupilImpl(const CameraImage &cimg);
+    void onNewStereoImageForOnePupilImpl(const CameraImage &simg);
+    void onNewStereoImageForTwoPupilImpl(const CameraImage &simg);
 
     void configureCameraConnection();
 
@@ -361,7 +285,6 @@ public slots:
     void onNewSingleImageForTwoPupil(const CameraImage &img); // formerly did not exist
     void onNewStereoImageForOnePupil(const CameraImage &simg); // formerly onNewStereoImage
     void onNewStereoImageForTwoPupil(const CameraImage &simg); // formerly did not exist
-    void onNewMirrImageForOnePupil(const CameraImage &simg); // formerly did not exist
 
     void setAutoParamEnabled(bool state);
     void setAutoParamPupSizePercent(float value);

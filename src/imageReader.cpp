@@ -228,7 +228,7 @@ void ImageReader::runStereo() {
             qDebug() << "Image Reader: Run Loop found Stop/Pause signal" ;
             break;
         }
-        const QMutexLocker locker(imageMutex);
+
         //qDebug() << "imageReader locking";
         std::chrono::steady_clock::time_point beginProcess = std::chrono::steady_clock::now();
         std::chrono::duration<int, std::milli> elapsedDuration = std::chrono::duration_cast<std::chrono::milliseconds>(beginProcess - startTime);
@@ -242,47 +242,21 @@ void ImageReader::runStereo() {
         cv::Mat imgSecondary = synchronizer.futures().at(1).result();
 
         if(img.data && imgSecondary.data && elapsedTime >= playbackDelay) {
-            startTime += elapsedDuration;
-            //std::chrono::steady_clock::time_point beginRead = std::chrono::steady_clock::now();
 
-            //std::cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginRead).count();
-
-            startTimestamp += playbackDelay;
-
-            //std::cout<<"Reading image: "<< filename ;
-
-            CameraImage cimg;
-            cimg.type = CameraImageType::STEREO_IMAGE_FILE;
-            cimg.img = img.clone();
-            cimg.imgSecondary = imgSecondary.clone();
-            //cimg.timestamp = startTimestamp; // GB corrected /commented out
-            cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
-            cimg.frameNumber = currentImageIndex;
-            cimg.filename = filenames[currentImageIndex];
-            img.release();
-            imgSecondary.release();
-
-            /*
-            if (!noDelay) {
-                int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now() - beginProcess).count();
-                if (playbackDelay - durProcess > 0) {
-                    QThread::msleep(playbackDelay - durProcess);
+            if (synchronised) {
+                const QMutexLocker locker(imageMutex);
+                qDebug() << "imageReader locking";
+                qDebug() << "Current image index: " << currentImageIndex;
+                runStereoImpl(startTime, elapsedDuration, img, imgSecondary);
+                imageProcessed->wakeAll();
+                if (state == PlaybackState::PLAYING) {
+                    imagePublished->wait(imageMutex);
                 }
+            } else {
+                qDebug() << "Current image index: " << currentImageIndex;
+                runStereoImpl(startTime, elapsedDuration, img, imgSecondary);
             }
-            */
-            // GB added begin
-            lastCommissionedFrameNumber = currentImageIndex;
-            // GB adde end
-
-            emit onNewImage(cimg);
-            qDebug() << "New Image generated, unlocking";
             currentImageIndex++;
-            imageProcessed->wakeAll();
-            if (state == PlaybackState::PLAYING) {
-                qDebug() << "Waiting for processing";
-                imagePublished->wait(imageMutex);
-            }
         }
         else if (!img.data || !imgSecondary.data){
             std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] ;
@@ -292,7 +266,6 @@ void ImageReader::runStereo() {
             qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
             currentImageIndex = 0;
         }
-        qDebug() << "Looping";
     }
     qDebug() << "Loop ended";
 
@@ -314,6 +287,46 @@ void ImageReader::runStereo() {
     imageProcessed->wakeAll();
     imagePublished->wakeAll();
 
+}
+
+void
+ImageReader::runStereoImpl(std::chrono::steady_clock::time_point &startTime, std::chrono::duration<int, std::milli> elapsedDuration,
+                           cv::Mat &img, cv::Mat &imgSecondary) {
+
+    startTime += elapsedDuration;
+    //std::chrono::steady_clock::time_point beginRead = std::chrono::steady_clock::now();
+
+    //std::cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginRead).count();
+
+    startTimestamp += playbackDelay;
+
+    //std::cout<<"Reading image: "<< filename ;
+
+    CameraImage cimg;
+    cimg.type = CameraImageType::STEREO_IMAGE_FILE;
+    cimg.img = img.clone();
+    cimg.imgSecondary = imgSecondary.clone();
+    //cimg.timestamp = startTimestamp; // GB corrected /commented out
+    cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+    cimg.frameNumber = currentImageIndex;
+    cimg.filename = filenames[currentImageIndex];
+    img.release();
+    imgSecondary.release();
+
+    /*
+    if (!noDelay) {
+        int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - beginProcess).count();
+        if (playbackDelay - durProcess > 0) {
+            QThread::msleep(playbackDelay - durProcess);
+        }
+    }
+    */
+    // GB added begin
+    lastCommissionedFrameNumber = currentImageIndex;
+    // GB adde end
+
+    emit onNewImage(cimg);
 }
 
 // Starts the image reader play back in another thread
@@ -356,7 +369,7 @@ void ImageReader::stop() {
 
     qDebug()<<"Image Reader: Stopping ImageReader thread.";
     state = PlaybackState::STOPPED;
-    currentImageIndex = 0;
+    //currentImageIndex = 0;
 
     imageProcessed->wakeAll();
     imagePublished->wakeAll();
@@ -510,4 +523,6 @@ void ImageReader::step1frame(bool next) {
 void ImageReader::setSynchronised(bool synchronised) {
     ImageReader::synchronised = synchronised;
 }
+
+
 

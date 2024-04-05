@@ -1167,7 +1167,7 @@ void MainWindow::onCameraDisconnectClick() {
     // GB added begin
     if(imagePlaybackControlDialog) {
 //        disconnect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
-        disconnect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
+        //disconnect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
@@ -1250,14 +1250,21 @@ void MainWindow::onCameraDisconnectClick() {
     // GB: take care of fileOpenAct
     fileOpenAct->setEnabled(true);
 
-    disconnect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
-    disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
-    disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+    if (selectedCamera && signalPubSubHandler) {
+        disconnect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler,
+                   SIGNAL(onNewGrabResult(CameraImage)));
+        disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
+        disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+    }
 
     // GB begin
     pupilDetectionSettingsDialog->onSettingsChange();
-    disconnect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), singleCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
-    disconnect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), stereoCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
+    if (pupilDetectionSettingsDialog && (singleCameraChildWidget || stereoCameraChildWidget)) {
+        disconnect(pupilDetectionSettingsDialog, SIGNAL(pupilDetectionProcModeChanged(int)), singleCameraChildWidget,
+                   SLOT(updateForPupilDetectionProcMode()));
+        disconnect(pupilDetectionSettingsDialog, SIGNAL(pupilDetectionProcModeChanged(int)), stereoCameraChildWidget,
+                   SLOT(updateForPupilDetectionProcMode()));
+    }
     // GB end
 
     if(hwTriggerOn) {
@@ -1865,7 +1872,7 @@ void MainWindow::onOpenImageDirectory() {
         
     //connect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
     // GB: right now, this only gets called when playbackLoop is false, and we need to finish playing (with possible overhead)
-    connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
+    //connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));

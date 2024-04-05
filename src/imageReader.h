@@ -207,6 +207,7 @@ private:
     void run();
     void runImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img);
     void runStereo();
+    void runStereoImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img, cv::Mat &imgSecondary);
 
 
 
