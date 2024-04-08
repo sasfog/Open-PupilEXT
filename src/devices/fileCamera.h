@@ -148,6 +148,7 @@ signals:
     void framecount(int framecount);
 
     void finished();
+    void paused();
 
     // GB added begin
     void endReached();

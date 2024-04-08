@@ -160,7 +160,6 @@ void ImageReader::run() {
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
-        qDebug() << "Paused";
         state = PlaybackState::STOPPED;
         // GB added begin
         // GB: to signal when we automatically reached the end
@@ -170,9 +169,13 @@ void ImageReader::run() {
         }
         // GB added end
         currentImageIndex = 0;
+        qDebug() << "finished()";
+        emit finished();
     }
-    qDebug() << "finished()";
-    emit finished();
+    else {
+        qDebug() << "paused()";
+        emit paused();
+    }
     imageProcessed->wakeAll();
     imagePublished->wakeAll();
 }
@@ -271,19 +274,20 @@ void ImageReader::runStereo() {
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
-        qDebug() << "Paused";
         state = PlaybackState::STOPPED;
         // GB added begin
         // GB: to signal when we automatically reached the end
         if(currentImageIndex == filenames.size()){
             emit endReached();
+            qDebug() << "endReached";
             lastCommissionedFrameNumber = -1; // corner case
         }
         // GB added end
         currentImageIndex = 0;
+        qDebug() << "finished()";
+        emit finished();
     }
-    qDebug() << "finished()";
-    emit finished();
+
     imageProcessed->wakeAll();
     imagePublished->wakeAll();
 

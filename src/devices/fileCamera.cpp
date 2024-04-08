@@ -16,6 +16,7 @@ FileCamera::FileCamera(const QString &directory, QMutex *imageMutex, QWaitCondit
 
     // GB: added this line
     connect(imageReader, SIGNAL(endReached()), this, SIGNAL(endReached()));
+    connect(imageReader, SIGNAL(paused()), this, SIGNAL(paused()));
 
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));

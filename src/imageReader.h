@@ -226,6 +226,8 @@ signals:
     void onNewImage(const CameraImage &image);
     void finished();
 
+    void paused();
+
     // GB added begin
     // GB NOTE: we need this specific signal, to let imagePlaybackControlDialog know 
     // that the playback finished automatically. The dialog alonw only knows about 

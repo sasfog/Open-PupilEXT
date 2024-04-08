@@ -196,7 +196,8 @@ void ImagePlaybackControlDialog::createForm() {
     connect(syncStreamBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncStream(int)));
     connect(selectedFrameBox, SIGNAL(valueChanged(int)), this, SLOT(onFrameSelected(int)));
     connect(timestampVal, SIGNAL(valueChanged(double)), this, SLOT(onTimestampSelected(double)));
-    connect(fileCamera, SIGNAL(endReached()), this, SLOT(onFinish()));
+    connect(fileCamera, SIGNAL(endReached()), this, SLOT(onEndReached()));
+    connect(fileCamera, SIGNAL(finished()), this, SLOT(onFinished()));
 }
 
 void ImagePlaybackControlDialog::updateSliderColorTick(const CameraImage &cimg) {
@@ -275,6 +276,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
     // 2, if we are waiting for the last emitted frame to come with stalledTimestamp we still need to draw it, no matter is drawDelay was not reached yet (fixes disabled-stuck buttons bug)
     //if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal || (playbackStalled && stalledTimestamp<=timestamp)) {
     //if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal) {
+    if ((finished && endReached && selectedFrameVal < fileCamera->getNumImagesTotal()) || (!finished && !paused)){
         drawTimer.start();
 
         QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
@@ -303,9 +305,9 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
             acqFPSValLabel->setText(QString::number(round(acqFPS)));
         //elapsedTimeValLabel->setText(QString::number(elapsedMs));
         elapsedTimeValLabel->setText(timeElapsed.toString("hh:mm:ss") + "\t/ " + timeTotal.toString("hh:mm:ss"));
-        percentValLabel->setText(QString::number((float)(frameNumber+1)/(float)numImagesTotal*(float)100,'f',1)); 
+        percentValLabel->setText(QString::number((float)(frameNumber+1)/(float)numImagesTotal*(float)100,'f',1));
         if(recEventTracker)
-            trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(timestamp).trialNumber)); 
+            trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(timestamp).trialNumber));
 
         // NOTE: workaround to not emit valuechanged signals, so it gets emitted only if the user interacts with it
         slider->blockSignals(true);
@@ -313,13 +315,15 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
-    //}
+        //}
 
-    lastTimestamp = timestamp; // GB: need to come before 30 fps drawTime wait
-    if(startTimestamp == 0)
-        startTimestamp = timestamp;
+        lastTimestamp = timestamp; // GB: need to come before 30 fps drawTime wait
+        if(startTimestamp == 0)
+            startTimestamp = timestamp;
 
-    if (endReached){
+    }
+
+    if (finished || paused){
         resetState();
     }
 }
@@ -331,10 +335,9 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
 void ImagePlaybackControlDialog::onStopButtonClick() {
     qDebug()<<"Stopping FileCamera Click";
     fileCamera->stop();
+    /*
     //playImagesOn = false;
 
-    //stalledTimestamp = fileCamera->getLastCommissionedTimestamp();
-    stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
     //qDebug()<<"Stopping, lastTimestamp: "<< lastTimestamp ;
     //qDebug()<<"Stopping, stalledTimestamp: "<< stalledTimestamp ;
     if(!playImagesOn) {
@@ -348,23 +351,16 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 
         slider->blockSignals(false);
         slider->setValue(0);
-
-        dial->setEnabled(true); 
         
         playbackStalled = false;
         waitingForReset = false;
 
         emit onPlaybackSafelyStopped();
-        enableWidgets(false);
+        enableWidgets();
 
     } else {
 
         playImagesOn = false;
-
-        //playbackStalled = true;
-        waitingForReset = true;
-        enableWidgets(true);
-
     }
 
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
@@ -373,10 +369,14 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
     const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
     startPauseButton->setIcon(icon);
 
-    this->update(); // invalidate 
+    this->update(); // invalidate
+     */
+    if (paused)
+        finished = true;
+    resetState();
 }
 
-void ImagePlaybackControlDialog::onFinish() {
+void ImagePlaybackControlDialog::onEndReached() {
     endReached = true;
     // NOTE: gets called whenever imageReader is finished with reading and sending images
 
@@ -471,12 +471,29 @@ void ImagePlaybackControlDialog::setPlaybackSpeed(int m_playbackSpeed) {
 
 // Set that playback is looped infinitely
 void ImagePlaybackControlDialog::setPlaybackLoop(int m_state) {
+    // If playbackLoop was false and we are setting to true, set temp variables and disable checkboxes
+    if (!playbackLoop && m_state){
+        tempSyncRecordCsv = syncRecordCsv;
+        tempSyncStream = syncStream;
+        syncRecordCsvBox->setDisabled(true);
+        syncRecordCsvBox->setChecked(false);
+        syncStreamBox->setDisabled(true);
+        syncStreamBox->setChecked(false);
+    }
+    // If playbackLoop was true and we are setting to false, restore sync variables
+    if (playbackLoop && !m_state){
+        syncRecordCsvBox->setEnabled(true);
+        syncRecordCsvBox->setChecked(tempSyncRecordCsv);
+        syncStreamBox->setEnabled(true);
+        syncStreamBox->setChecked(tempSyncStream);
+    }
     playbackLoop = (bool) m_state;
     applicationSettings->setValue("playbackLoop", playbackLoop);
 
     // NOTE: this was previously done in MainWindow:onGeneralSettingsChange();
     if(fileCamera->getPlaybackLoop() != static_cast<int>(playbackLoop)) {
         fileCamera->setPlaybackLoop(playbackLoop);
+
     }
 }
 
@@ -511,43 +528,27 @@ void ImagePlaybackControlDialog::setSyncStream(int m_state) {
 
 void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 {
-    if(playImagesOn) {
+    if(!paused) {
         qDebug()<<"Pausing FileCamera Click";
         fileCamera->pause();
 
-        //stalledTimestamp = fileCamera->getLastCommissionedTimestamp();
-        stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
-        // GB NOTE: I have already added a guiderail in imageReader.cpp, but still, rarely just the image corresponding to the last commissioned frame number (and its timestamp) does never arrive at updateInfo(quint64 timestamp, int frameNumber)
-        qDebug()<<"Pausing, lastTimestamp: "<< lastTimestamp ;
-        qDebug()<<"Pausing, stalledTimestamp: "<< stalledTimestamp ;
-        /*
-        if(lastTimestamp < stalledTimestamp) {
-            slider->setEnabled(false);
-            dial->setEnabled(false);
-            startPauseButton->setEnabled(false);
-            stopButton->setEnabled(false);
-            
-            infoGroup->setEnabled(false);
-
-            playbackStalled = true;
-            waitingForReset = false;
-
-        } else {
-            dial->setEnabled(true); 
-        }
-         */
-
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
-        playImagesOn = false;
-        enableWidgets(false);
+
+        startPauseButton->setEnabled(true);
+        stopButton->setEnabled(true);
+        enableWidgets();
+        paused = true;
+        //playImagesOn = false;
+
+        qDebug() << "Playback paused";
     } else {
         
         //stalledTimestamp = 0;
 
         // GB: dial can be buggy when touched during playing is on, so disabled it if play is on. 
         // Can be operated separately, when paused
-        dial->setEnabled(false); 
+        dial->setEnabled(false);
 
         emit onPlaybackSafelyStarted();
 
@@ -557,7 +558,9 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-pause.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
         playImagesOn = true;
-        enableWidgets(true);
+        finished = false;
+        paused = false;
+        disableWidgets();
     }
 
     this->update(); // invalidate 
@@ -565,8 +568,8 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
     qDebug() << "Frame number arrived: " << frameNumber;
+    selectedFrameVal = frameNumber;
     if (!playImagesOn){
-        selectedFrameVal = frameNumber;
 
         slider->blockSignals(true);
         int gg = floor(99*((selectedFrameVal - 1)/(float)(numImagesTotal - 1)));
@@ -580,11 +583,24 @@ void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
     }
 }
 
-void ImagePlaybackControlDialog::enableWidgets(bool enable){
-        selectedFrameBox->setReadOnly(enable);
-        selectedFrameBox->setDisabled(enable);
-        timestampVal->setReadOnly(enable);
-        timestampVal->setDisabled(enable);
+void ImagePlaybackControlDialog::enableWidgets(){
+    selectedFrameBox->setReadOnly(false);
+    selectedFrameBox->setDisabled(false);
+    timestampVal->setReadOnly(false);
+    timestampVal->setDisabled(false);
+    dial->setDisabled(false);
+    slider->setDisabled(false);
+    infoGroup->setDisabled(false);
+}
+
+void ImagePlaybackControlDialog::disableWidgets(){
+    selectedFrameBox->setReadOnly(true);
+    selectedFrameBox->setDisabled(true);
+    timestampVal->setReadOnly(true);
+    timestampVal->setDisabled(true);
+    dial->setDisabled(true);
+    slider->setDisabled(true);
+    infoGroup->setDisabled(true);
 }
 
 void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
@@ -595,34 +611,53 @@ void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
 
 void ImagePlaybackControlDialog::resetState() {
 
-    const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
-    startPauseButton->setIcon(icon);
-    playImagesOn = false;
-    enableWidgets(false);
 
+    if (finished && endReached && fileCamera->getNumImagesTotal() == selectedFrameVal){
+        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
+        startPauseButton->setIcon(icon);
 
-    slider->setEnabled(true);
-    dial->setEnabled(true);
-    startPauseButton->setEnabled(true);
-    stopButton->setEnabled(true);
+        startPauseButton->setEnabled(true);
+        stopButton->setEnabled(true);
+        enableWidgets();
 
-    infoGroup->setEnabled(true);
-
-    if(waitingForReset) {
         lastTimestamp = 0;
         startTimestamp = 0;
-        slider->blockSignals(false);
-        slider->setValue(0);
         waitingForReset = false;
+        playImagesOn = false;
+        //finished = false;
+        endReached = false;
+        paused = true;
 
+
+    }
+    else if (finished && !endReached){
+        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
+        startPauseButton->setIcon(icon);
+
+        startPauseButton->setEnabled(true);
+        stopButton->setEnabled(true);
+        enableWidgets();
+
+        lastTimestamp = 0;
+        startTimestamp = 0;
+        waitingForReset = false;
+        playImagesOn = false;
+        paused = true;
+
+        qDebug() << "Playback stopped";
         //if(recEventTracker)
         //    recEventTracker->resetReplay();
-
+        selectedFrameVal = 1;
+        selectedFrameBox->setValue(selectedFrameVal);
         emit onPlaybackSafelyStopped();
-    } else {
-        emit onPlaybackSafelyPaused();
     }
 
-    endReached = false;
+
     this->update(); // invalidate
 }
+
+void ImagePlaybackControlDialog::onFinished() {
+    finished = true;
+    resetState();
+}
+
