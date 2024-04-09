@@ -22,7 +22,7 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
  
 
     //this->setMinimumSize(500, 400); 
-    this->setMinimumSize(600, 200); 
+    this->setMinimumSize(600, 240);
     this->setWindowTitle("Image Playback Control");
 
     drawDelay = 33; // ~30 fps
@@ -226,8 +226,10 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
     //date.toString("yyyy-MMM-dd hh:mm:ss");
 
     acqFPS = 0.0;
-    if(lastTimestamp != 0)
-        acqFPS = 1/(float)(currTimestamp-lastTimestamp) *1000; //timestamps are in millisecond
+    if(lastTimestamp != 0 && lastPlayedFrame != 0) {
+        float frameNumberDiff = frameNumber - lastPlayedFrame;
+        acqFPS = 1 / (float) ((currTimestamp - lastTimestamp) / frameNumberDiff) * 1000; //timestamps are in millisecond
+    }
 
     elapsedMs = 0.0;
     if(startTimestamp != 0)
@@ -282,9 +284,10 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
 
         acqFPS = 0.0;
-        if(lastTimestamp != 0)
-            acqFPS = 1/(float)(timestamp-lastTimestamp) *1000; // timestamps are in millisecond
-
+        if(lastTimestamp != 0 && lastPlayedFrame != 0) {
+            float frameNumberDiff = lastPlayedFrame - frameNumber;
+            acqFPS = 1 / (float) ((timestamp - lastTimestamp) / frameNumberDiff) * 1000; // timestamps are in millisecond
+        }
         elapsedMs = 0.0;
         if(startTimestamp != 0)
             elapsedMs = (timestamp-startTimestamp);
@@ -539,6 +542,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
         stopButton->setEnabled(true);
         enableWidgets();
         paused = true;
+        playImagesOn = false;
         //playImagesOn = false;
 
         qDebug() << "Playback paused";

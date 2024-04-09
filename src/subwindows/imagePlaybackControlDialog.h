@@ -87,6 +87,7 @@ private:
     
     int playbackSpeed = 1;
     int selectedFrameVal = 1;
+    int lastPlayedFrame = 0;
     bool playbackLoop = false;
     bool syncRecordCsv = false;
     bool tempSyncRecordCsv = false;

@@ -403,7 +403,8 @@ void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
 void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
     if (!trackingOn) {
-        qDebug()<<"Single: onNewSingleImageForTwoPupil: Tracking is stopped but receiving signals.";
+        qDebug() << cimg.frameNumber;
+        emit processedImage(cimg);
         return;
     }
 
@@ -548,7 +549,8 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
     if (!trackingOn) {
-        qDebug()<<"Stereo: onNewStereoImageForOnePupil: Tracking is stopped but receiving signals.";
+        qDebug() << simg.frameNumber;
+        emit processedImage(simg);
         return;
     }
 
@@ -718,7 +720,8 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        qDebug()<<"Stereo: onNewStereoImageForTwoPupil: Tracking is stopped but receiving signals.";
+        qDebug() << simg.frameNumber;
+        emit processedImage(simg);
         return;
     }
 
