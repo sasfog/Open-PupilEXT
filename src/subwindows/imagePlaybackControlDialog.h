@@ -175,9 +175,9 @@ private slots:
 
     
     void setPlaybackSpeed(int playbackSpeed);
-    void setPlaybackLoop(int m_state);
-    void setSyncRecordCsv(int m_state);
-    void setSyncStream(int m_state);
+    void setPlaybackLoop(bool m_state);
+    void setSyncRecordCsv(bool m_state);
+    void setSyncStream(bool m_state);
 
     //void onSettingsChange();
 

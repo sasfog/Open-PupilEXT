@@ -35,6 +35,7 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
     timeTotal = QTime::fromMSecsSinceStartOfDay(fileCamera->getRecordingDuration());
     lastTimestamp = 0;
     startTimestamp = 0;
+    setPlaybackLoop(playbackLoop);
 
 
     updateInfoInternal(0);
@@ -191,9 +192,9 @@ void ImagePlaybackControlDialog::createForm() {
     //connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
 
     connect(playbackFPSVal, SIGNAL(valueChanged(int)), this, SLOT(setPlaybackSpeed(int)));
-    connect(loopBox, SIGNAL(stateChanged(int)), this, SLOT(setPlaybackLoop(int)));
-    connect(syncRecordCsvBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncRecordCsv(int)));
-    connect(syncStreamBox, SIGNAL(stateChanged(int)), this, SLOT(setSyncStream(int)));
+    connect(loopBox, SIGNAL(toggled(bool)), this, SLOT(setPlaybackLoop(bool)));
+    connect(syncRecordCsvBox, SIGNAL(toggled(bool)), this, SLOT(setSyncRecordCsv(bool)));
+    connect(syncStreamBox, SIGNAL(toggled(bool)), this, SLOT(setSyncStream(bool)));
     connect(selectedFrameBox, SIGNAL(valueChanged(int)), this, SLOT(onFrameSelected(int)));
     connect(timestampVal, SIGNAL(valueChanged(double)), this, SLOT(onTimestampSelected(double)));
     connect(fileCamera, SIGNAL(endReached()), this, SLOT(onEndReached()));
@@ -423,13 +424,6 @@ void ImagePlaybackControlDialog::readSettings() {
     else
         setPlaybackSpeed(30);
 
-    const QByteArray m_playbackLoop = applicationSettings->value("playbackLoop", QByteArray()).toByteArray();
-    playbackLoop = true;
-    // GB: I tried but this does not work, always reads "true" or "false", but not "1" or "0", and Int conversion fails accordingly. I modified the code accordingly
-    //playbackLoop = (bool) m_playbackLoop.toInt(); 
-    if (!m_playbackLoop.isEmpty() && (m_playbackLoop == "0" || m_playbackLoop == "false"))
-        playbackLoop = false;
-
     const QByteArray m_syncRecordCsv = applicationSettings->value("syncRecordCsv", QByteArray()).toByteArray();
     syncRecordCsv = true;
     if (!m_syncRecordCsv.isEmpty() && (m_syncRecordCsv == "0" || m_syncRecordCsv == "false"))
@@ -439,6 +433,15 @@ void ImagePlaybackControlDialog::readSettings() {
     syncStream = true;
     if (!m_syncStream.isEmpty() && (m_syncStream == "0" || m_syncStream == "false"))
         syncStream = false;
+
+    const QByteArray m_playbackLoop = applicationSettings->value("playbackLoop", QByteArray()).toByteArray();
+    playbackLoop = true;
+    // GB: I tried but this does not work, always reads "true" or "false", but not "1" or "0", and Int conversion fails accordingly. I modified the code accordingly
+    //playbackLoop = (bool) m_playbackLoop.toInt(); 
+    if (!m_playbackLoop.isEmpty() && (m_playbackLoop == "0" || m_playbackLoop == "false"))
+        playbackLoop = false;
+
+
 }
 
 /*
@@ -473,24 +476,29 @@ void ImagePlaybackControlDialog::setPlaybackSpeed(int m_playbackSpeed) {
 }
 
 // Set that playback is looped infinitely
-void ImagePlaybackControlDialog::setPlaybackLoop(int m_state) {
+void ImagePlaybackControlDialog::setPlaybackLoop(bool m_state) {
     // If playbackLoop was false and we are setting to true, set temp variables and disable checkboxes
-    if (!playbackLoop && m_state){
+    if (m_state){
         tempSyncRecordCsv = syncRecordCsv;
+        syncRecordCsv = false;
         tempSyncStream = syncStream;
+        syncStream = false;
+
         syncRecordCsvBox->setDisabled(true);
         syncRecordCsvBox->setChecked(false);
         syncStreamBox->setDisabled(true);
         syncStreamBox->setChecked(false);
     }
     // If playbackLoop was true and we are setting to false, restore sync variables
-    if (playbackLoop && !m_state){
+    if (!m_state){
+        syncRecordCsv = tempSyncRecordCsv;
+        syncStream = tempSyncStream;
         syncRecordCsvBox->setEnabled(true);
-        syncRecordCsvBox->setChecked(tempSyncRecordCsv);
+        syncRecordCsvBox->setChecked(syncRecordCsv);
         syncStreamBox->setEnabled(true);
-        syncStreamBox->setChecked(tempSyncStream);
+        syncStreamBox->setChecked(syncStream);
     }
-    playbackLoop = (bool) m_state;
+    playbackLoop = m_state;
     applicationSettings->setValue("playbackLoop", playbackLoop);
 
     // NOTE: this was previously done in MainWindow:onGeneralSettingsChange();
@@ -498,6 +506,8 @@ void ImagePlaybackControlDialog::setPlaybackLoop(int m_state) {
         fileCamera->setPlaybackLoop(playbackLoop);
 
     }
+
+    this->update();
 }
 
 bool ImagePlaybackControlDialog::getSyncRecordCsv() {
@@ -514,16 +524,16 @@ bool ImagePlaybackControlDialog::getPlayImagesOn()
 }
 
 // Set whether we want csv recording to start/pause on playback start/(pause/stop)
-void ImagePlaybackControlDialog::setSyncRecordCsv(int m_state) {
-    syncRecordCsv = (bool) m_state;
+void ImagePlaybackControlDialog::setSyncRecordCsv(bool m_state) {
+    syncRecordCsv = m_state;
     applicationSettings->setValue("syncRecordCsv", syncRecordCsv);
 
     // TODO
 }
 
 // Set whether we want streaming to start/pause on playback start/(pause/stop)
-void ImagePlaybackControlDialog::setSyncStream(int m_state) {
-    syncStream = (bool) m_state;
+void ImagePlaybackControlDialog::setSyncStream(bool m_state) {
+    syncStream = m_state;
     applicationSettings->setValue("syncStream", syncStream);
 
     // TODO
@@ -632,7 +642,7 @@ void ImagePlaybackControlDialog::resetState() {
         endReached = false;
         paused = true;
 
-
+        emit onPlaybackSafelyStopped();
     }
     else if (finished && !endReached){
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
