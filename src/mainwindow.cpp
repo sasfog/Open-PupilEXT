@@ -1720,7 +1720,7 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 // GB: Repaired bug leading to crash when path was too short
 void MainWindow::onOpenImageDirectory() {
     QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
-    dialog.setOptions(QFileDialog::DontResolveSymlinks);
+    dialog.setOptions(QFileDialog::DontResolveSymlinks); // BG: tried QFileDialog::DontUseNativeDialog flag too but it is slow. TODO: make own dialog
 
     dialog.setFileMode(QFileDialog::Directory);
 
