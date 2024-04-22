@@ -1069,7 +1069,7 @@ void MainWindow::onRecordClick() {
         
         QFileInfo fi(pupilDetectionDataFile);
         QDir pupilDetectionDir = fi.dir();
-        QString metadataFileName = fi.baseName() + QString::fromStdString("-datarec-meta.xml");
+        QString metadataFileName = fi.baseName() + QString::fromStdString("_datarec_meta.xml");
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
