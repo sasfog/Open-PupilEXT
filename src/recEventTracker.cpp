@@ -107,7 +107,6 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
     while (!child.isNull())
     {
         temp_ts = 0;
-        temp_tr = 0;
         str = child.attribute("TimestampMs", "");
         if (!str.isEmpty()){
             temp_ts = str.toULongLong();

@@ -2279,42 +2279,42 @@ void MainWindow::resetStatus(bool isConnect)
     bool imageRecordingEnabled = selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE;
 
     if (isConnect){
-        cameraAct->setDisabled(true);
-        cameraSettingsAct->setDisabled(false);
-        cameraActDisconnectAct->setDisabled(false);
-        calibrateAct->setDisabled(false);
-        sharpnessAct->setDisabled(false);
-        trackAct->setDisabled(false);
-        logFileAct->setDisabled(false);
-        //streamAct->setDisabled(false);
+        cameraAct->setEnabled(false);
+        cameraSettingsAct->setEnabled(true);
+        cameraActDisconnectAct->setEnabled(true);
+        calibrateAct->setEnabled(true);
+        sharpnessAct->setEnabled(true);
+        trackAct->setEnabled(true);
+        logFileAct->setEnabled(true);
+        //streamAct->setEnabled(true);
 
-        outputDirectoryAct->setDisabled(!imageRecordingEnabled);
-        recordImagesAct->setDisabled(!imageRecordingEnabled);
-        forceResetTrialAct->setDisabled(!imageRecordingEnabled);
-        manualIncTrialAct->setDisabled(!imageRecordingEnabled);
+        outputDirectoryAct->setEnabled(imageRecordingEnabled);
+        recordImagesAct->setEnabled(imageRecordingEnabled);
+        forceResetTrialAct->setEnabled(imageRecordingEnabled);
+        manualIncTrialAct->setEnabled(imageRecordingEnabled);
 
-        streamingSettingsAct->setDisabled(false); 
+        streamingSettingsAct->setEnabled(true);
         trialWidget->setVisible(true);
     }
     else {
-        cameraAct->setDisabled(false);
-        cameraSettingsAct->setDisabled(true);
-        cameraActDisconnectAct->setDisabled(true);
-        calibrateAct->setDisabled(true);
-        sharpnessAct->setDisabled(true);
-        trackAct->setDisabled(true);
-        logFileAct->setDisabled(true);
-        //streamAct->setDisabled(true);
+        cameraAct->setEnabled(true);
+        cameraSettingsAct->setEnabled(false);
+        cameraActDisconnectAct->setEnabled(false);
+        calibrateAct->setEnabled(false);
+        sharpnessAct->setEnabled(false);
+        trackAct->setEnabled(false);
+        logFileAct->setEnabled(false);
+        //streamAct->setEnabled(false);
 
-        outputDirectoryAct->setDisabled(!imageRecordingEnabled);
-        recordImagesAct->setDisabled(!imageRecordingEnabled);
-        forceResetTrialAct->setDisabled(!imageRecordingEnabled);
-        manualIncTrialAct->setDisabled(!imageRecordingEnabled);
+        outputDirectoryAct->setEnabled(imageRecordingEnabled);
+        recordImagesAct->setEnabled(imageRecordingEnabled);
+        forceResetTrialAct->setEnabled(imageRecordingEnabled);
+        manualIncTrialAct->setEnabled(imageRecordingEnabled);
 
-        streamingSettingsAct->setDisabled(true);
+        streamingSettingsAct->setEnabled(false);
         trialWidget->setVisible(false);
 
-        recordAct->setDisabled(true); //
+        recordAct->setEnabled(false); //
         cameraPlaying = true; //
         }
 }
