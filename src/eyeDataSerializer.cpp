@@ -192,13 +192,13 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
     return QString(content);
 }
 
-QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDataStructure dataStructure) {
+QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDataStyle dataStyle) {
 
     QString result; // TODO: .reserve() ?
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % "filename" % delim;
             }
             result = result % "timestamp_ms" % delim;
@@ -215,13 +215,13 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "circumference_px" % delim;
             result = result % "confidence" % delim;
             result = result % "outlineConfidence";
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim;
                 result = result % "temperature_c";
             }
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % "filename" % delim;
             }
             result = result % "timestamp_ms" % delim;
@@ -250,14 +250,14 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidenceA" % delim;
             result = result % "confidenceB" % delim;
             result = result % "outlineConfidenceB";
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim;
                 result = result % "temperature_c";
             }
                 // GB TODO: check temp
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % "filename" % delim;
             }
             result = result % "timestamp_ms" % delim;
@@ -285,14 +285,14 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidenceMain" % delim;
             result = result % "confidenceSec" % delim;
             result = result % "outlineConfidenceSec";
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim;
                 result = result % "temperatureMain_c" % delim;
                 result = result % "temperatureSec_c";
             }
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % "filename" % delim;
             }
             result = result % "timestamp_ms" % delim;
@@ -343,7 +343,7 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidenceBMain" % delim;
             result = result % "confidenceBSec" % delim;
             result = result % "outlineConfidenceBSec"; //
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim; //
                 result = result % "temperatureMain_c" % delim;
                 result = result % "temperatureSec_c";
@@ -363,7 +363,7 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
 
 // Converts a pupil detection to a string row that is written to file
 // CAUTION: This must exactly reproduce the format defined by the header fields
-QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStructure dataStructure, const std::vector<double> &temperatures) {
+QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const std::vector<double> &temperatures) {
 
     QString filename = "-1";
     if(!filepath.isEmpty())
@@ -373,7 +373,7 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % filename % delim;
             }
             result = result % QString::number(timestamp) % delim;
@@ -390,13 +390,13 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].circumference()) % delim;
             result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].confidence) % delim;
             result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].outline_confidence);
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result %  delim % QString::number(trialNum) % delim;
                 result = result % QString::number(temperatures[0]);
             }
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % filename % delim;
             }
             result = result % QString::number(timestamp) % delim;
@@ -425,14 +425,14 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].outline_confidence) % delim;
             result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].confidence) % delim;
             result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].outline_confidence);
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % QString::number(trialNum) % delim;
                 result = result % QString::number(temperatures[0]);
             }
             // GB TODO: TEMP CHECK!
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % filename % delim;
             }
             result = result % QString::number(timestamp) % delim;
@@ -460,7 +460,7 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].outline_confidence) % delim;
             result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].confidence) % delim;
             result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].outline_confidence);
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % QString::number(trialNum) % delim;
                 result = result % QString::number(temperatures[0]) % delim;
                 result = result % QString::number(temperatures[1]);
@@ -468,7 +468,7 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             // GB TODO: TEMP CHECK!
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_1) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
                 result = result % filename % delim;
             }
             result = result % QString::number(timestamp) % delim;
@@ -519,7 +519,7 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].outline_confidence) % delim;
             result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].confidence) % delim;
             result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].outline_confidence); //
-            if(dataStructure == DataWriterDataStructure::PUPILEXT_0_1_2) {
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % QString::number(trialNum) % delim;
                 result = result % QString::number(temperatures[0]) % delim;
                 result = result % QString::number(temperatures[1]);

@@ -339,59 +339,6 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     dataFile->close();
 }
 
-// below is the version that creates a csv
-/*
-void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName) {
-    delim = applicationSettings->value("dataWriterDelimiterToUse", ",").toString()[0];
-    //delim = applicationSettings->value("dataWriterDelimiterToUse", ',').toChar(); // somehow this just doesnt work
-
-    std::cout << "saveOfflineEventLog(const QString& fileName, QObject *parent = 0)" << std::endl;
-
-    QString header =
-        QString::fromStdString("timestamp_ms") + delim +
-        QString::fromStdString("event_type") + delim +
-        QString::fromStdString("notation_value1") + delim +
-        QString::fromStdString("notation_value2")
-    ;
-
-    std::cout<<fileName.toStdString()<<std::endl;
-    SupportFunctions::preparePath(fileName);
-    dataFile = new QFile(fileName);
-
-    if(dataFile->exists()) {
-        std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << ", writing cancelled." << std::endl;
-        return;
-    }
-
-    if(!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
-        std::cout << "Recording failure. Could not open file for writing: " << fileName.toStdString() << std::endl;
-        delete dataFile;
-        dataFile = nullptr;
-    }
-
-    QTextStream *textStream = new QTextStream(dataFile);
-    *textStream << header << Qt::endl;
-    for(size_t i=0; i<trialIncrements.size(); i++)
-        if(trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo)
-            *textStream <<
-                QString::number(trialIncrements[i].timestamp) << delim <<
-                "TRIAL_INCREMENT" << delim <<
-                QString::number(trialIncrements[i].trialNumber) << delim
-                << Qt::endl;
-    for(size_t i=0; i<temperatureChecks.size(); i++) {
-        if(temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo)
-            *textStream <<
-                QString::number(temperatureChecks[i].timestamp) << delim <<
-                "TEMPERATURE_CHECK" << delim <<
-                QString::number(temperatureChecks[i].temperatures[0]) << delim <<
-                QString::number(temperatureChecks[i].temperatures[1])
-                << Qt::endl;
-    }
-
-    dataFile->close();
-}
-*/
-
 uint RecEventTracker::getLastCommissionedTrialNumber()
 {
     return bufferTrialCounter;

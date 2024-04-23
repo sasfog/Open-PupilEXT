@@ -37,7 +37,7 @@ public:
 
     // GB added begin
     QString getDataWriterDataRule() const;
-    QString getDataWriterDataStructure() const;
+    QString getDataWriterDataStyle() const;
     bool getMetaSnapshotsEnabled() const;
     bool getSaveOfflineEventLog() const; 
     // GB added end
@@ -64,10 +64,10 @@ private:
     bool saveOfflineEventLog; 
 
     QString dataWriterDelimiter;
-    QString dataWriterDataStructure;
+    QString dataWriterDataStyle;
     QString dataWriterDataRule;
     QComboBox *dataWriterDelimiterBox;
-    QComboBox *dataWriterDataStructureBox;
+    QComboBox *dataWriterDataStyleBox;
     QComboBox *dataWriterDataRuleBox;
 
     int darkAdaptMode;
@@ -92,12 +92,12 @@ public slots:
     void setImageWriterFormat(const QString &imageWriterFormat);
     void setImageWriterDataRule(const QString &imageWriterDataRule);
     void setDataWriterDataRule(const QString &dataWriterDataRule);
-    void setDataWriterDataStructure(const QString &dataWriterDataStructure);
+    void setDataWriterDataStyle(const QString &dataWriterDataStyle);
     //void setPlaybackLoop(int m_state);
 
     // GB added begin
     void onDataWriterDelimiterChange(int index);
-    void onDataWriterDataStructureChange(int index);
+    void onDataWriterDataStyleChange(int index);
     void onDataWriterDataRuleChange(int index);
     void onDarkAdaptChange(int index);
     void setMetaSnapshotEnabled(int m_state);

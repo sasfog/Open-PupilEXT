@@ -32,7 +32,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(imageWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
 
     connect(dataWriterDelimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDelimiterChange(int)));
-    connect(dataWriterDataStructureBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataStructureChange(int)));
+    connect(dataWriterDataStyleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataStyleChange(int)));
     connect(dataWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataRuleChange(int)));
 
     connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
@@ -62,9 +62,9 @@ void GeneralSettingsDialog::readSettings() {
         dataWriterDelimiter = m_dataWriterDelimiter;
     }
 
-    const QString m_dataWriterDataStructure = applicationSettings->value("dataWriterDataStructure", "PupilEXT-0-1-2").toString();
-    if (!m_dataWriterDataStructure.isEmpty()) {
-        dataWriterDataStructure = m_dataWriterDataStructure;
+    const QString m_dataWriterDataStyle = applicationSettings->value("dataWriterDataStyle", "PupilEXT-0-1-2").toString();
+    if (!m_dataWriterDataStyle.isEmpty()) {
+        dataWriterDataStyle = m_dataWriterDataStyle;
     }
 
     const QString m_dataWriterDataRule = applicationSettings->value("dataWriterDataRule", QByteArray()).toString();
@@ -127,10 +127,10 @@ void GeneralSettingsDialog::updateForm() {
         dataWriterDelimiterBox->setCurrentIndex(0);
     qDebug() << "Data writer delimiter read as: " << dataWriterDelimiter << "\n";
 
-    if(dataWriterDataStructure == "PupilEXT-0-1-1")
-        dataWriterDataStructureBox->setCurrentIndex(0);
-    else // if(dataWriterDataStructure == "PupilEXT-0-1-2")
-        dataWriterDataStructureBox->setCurrentIndex(1);
+    if(dataWriterDataStyle == "PupilEXT-0-1-1")
+        dataWriterDataStyleBox->setCurrentIndex(0);
+    else // if(dataWriterDataStyle == "PupilEXT-0-1-2")
+        dataWriterDataStyleBox->setCurrentIndex(1);
 
     if(dataWriterDataRule == "ask")
         dataWriterDataRuleBox->setCurrentIndex(0);
@@ -151,7 +151,7 @@ void GeneralSettingsDialog::saveSettings() {
     applicationSettings->setValue("imageWriterFormat", imageWriterFormat);
     applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
     applicationSettings->setValue("dataWriterDelimiter", dataWriterDelimiter );
-    applicationSettings->setValue("dataWriterDataStructure", dataWriterDataStructure );
+    applicationSettings->setValue("dataWriterDataStyle", dataWriterDataStyle );
     applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
     applicationSettings->setValue("GUIDarkAdaptMode", darkAdaptMode );
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
@@ -163,39 +163,39 @@ void GeneralSettingsDialog::createForm() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
 
-    dataWriterGroup = new QGroupBox("General Data Output");
-    QFormLayout *dataOutLayout = new QFormLayout;
+    dataWriterGroup = new QGroupBox("General Data Output", this);
+    QFormLayout *dataOutLayout = new QFormLayout(this);
 
-    QLabel *dataWriterDelimiterLabel = new QLabel(tr("Delimiter Character"));
-    dataWriterDelimiterBox = new QComboBox();
+    QLabel *dataWriterDelimiterLabel = new QLabel(tr("Delimiter Character"), this);
+    dataWriterDelimiterBox = new QComboBox(this);
     dataWriterDelimiterBox->addItem(QString("Comma [,]"), QString(","));
     dataWriterDelimiterBox->addItem(QString("Semicolon [;]"), QString(";"));
     dataWriterDelimiterBox->addItem(QString("Tabulation"), QString("\t"));
     dataWriterDelimiterBox->setCurrentText(dataWriterDelimiter);
     dataOutLayout->addRow(dataWriterDelimiterLabel, dataWriterDelimiterBox);
 
-    QLabel *dataWriterDataStructureLabel = new QLabel(tr("Data Structure*: "));
-    dataWriterDataStructureBox = new QComboBox();
-    dataWriterDataStructureBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1"));
-    dataWriterDataStructureBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2"));
-    dataWriterDataStructureBox->setCurrentText(dataWriterDataStructure);
-    dataOutLayout->addRow(dataWriterDataStructureLabel, dataWriterDataStructureBox);
-    QLabel *dataWriterDataStructureWarnLabel = new QLabel(tr("*Older version will not save trial numbering."));
-    dataWriterDataStructureWarnLabel->setAlignment(Qt::AlignRight);
-    dataOutLayout->addRow(dataWriterDataStructureWarnLabel);
+    QLabel *dataWriterDataStyleLabel = new QLabel(tr("Data Style*: "), this);
+    dataWriterDataStyleBox = new QComboBox(this);
+    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1"));
+    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2"));
+    dataWriterDataStyleBox->setCurrentText(dataWriterDataStyle);
+    dataOutLayout->addRow(dataWriterDataStyleLabel, dataWriterDataStyleBox);
+    QLabel *dataWriterDataStyleWarnLabel = new QLabel(tr("*Older version will not save trial numbering."), this);
+    dataWriterDataStyleWarnLabel->setAlignment(Qt::AlignRight);
+    dataOutLayout->addRow(dataWriterDataStyleWarnLabel);
 
 
-    QLabel *dataWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
+    QLabel *dataWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"), this);
     dataOutLayout->addRow(dataWriterDataRuleLabel);
 
-    dataWriterDataRuleBox = new QComboBox();
+    dataWriterDataRuleBox = new QComboBox(this);
     dataWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
     dataWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
     dataWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
     dataWriterDataRuleBox->setCurrentText(dataWriterDataRule);
     dataOutLayout->addRow(dataWriterDataRuleBox);
 
-    metaSnapshotBox = new QCheckBox("Generate metadata snapshot files");
+    metaSnapshotBox = new QCheckBox("Generate metadata snapshot files", this);
     metaSnapshotBox->setChecked(getMetaSnapshotsEnabled());
     dataOutLayout->addRow(metaSnapshotBox);
 
@@ -204,12 +204,12 @@ void GeneralSettingsDialog::createForm() {
 
 
 
-    imageWriterGroup = new QGroupBox("Image Writer");
-    QFormLayout *writerLayout = new QFormLayout;
+    imageWriterGroup = new QGroupBox("Image Writer", this);
+    QFormLayout *writerLayout = new QFormLayout(this);
 
     QLabel *formatLabel = new QLabel(tr("Image Format"));
 
-    imageWriterFormatBox = new QComboBox();
+    imageWriterFormatBox = new QComboBox(this);
     imageWriterFormatBox->addItem(QString("tiff [very CPU heavy]"), QString("tiff"));
     imageWriterFormatBox->addItem(QString("jpg [CPU heavy]"), QString("jpg"));
     imageWriterFormatBox->addItem(QString("png [CPU heavy]"), QString("png"));
@@ -218,17 +218,17 @@ void GeneralSettingsDialog::createForm() {
     writerLayout->addRow(formatLabel, imageWriterFormatBox);
 
 
-    QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
+    QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"), this);
     writerLayout->addRow(imageWriterDataRuleLabel);
 
-    imageWriterDataRuleBox = new QComboBox();
+    imageWriterDataRuleBox = new QComboBox(this);
     imageWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
     imageWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
     imageWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
     imageWriterDataRuleBox->setCurrentText(imageWriterDataRule);
     writerLayout->addRow(imageWriterDataRuleBox);
 
-    saveOfflineEventLogBox = new QCheckBox("Save trials/event log for offline analyses");
+    saveOfflineEventLogBox = new QCheckBox("Save trials/event log for offline analyses", this);
     saveOfflineEventLogBox->setChecked(getSaveOfflineEventLog());
     writerLayout->addRow(saveOfflineEventLogBox);
 
@@ -237,12 +237,12 @@ void GeneralSettingsDialog::createForm() {
 
     // GB NOTE: removed playback speed and playback loop settings, as these are yet in ImagePlaybackSettingsDialog
 
-    QGroupBox *appearanceGroup = new QGroupBox("Appearance");
-    QFormLayout *appearanceLayout = new QFormLayout;
+    QGroupBox *appearanceGroup = new QGroupBox("Appearance", this);
+    QFormLayout *appearanceLayout = new QFormLayout(this);
 
-    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode:"));
+    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode:"), this);
 
-    darkAdaptBox = new QComboBox();
+    darkAdaptBox = new QComboBox(this);
     darkAdaptBox->addItem(QString("Light"));
     darkAdaptBox->addItem(QString("Dark"));
     darkAdaptBox->addItem(QString("Auto-detect"));
@@ -256,10 +256,10 @@ void GeneralSettingsDialog::createForm() {
 
 
 
-    QHBoxLayout *buttonsLayout = new QHBoxLayout();
+    QHBoxLayout *buttonsLayout = new QHBoxLayout(this);
 
-    applyButton = new QPushButton(tr("Apply and Close"));
-    cancelButton = new QPushButton(tr("Cancel"));
+    applyButton = new QPushButton(tr("Apply and Close"), this);
+    cancelButton = new QPushButton(tr("Cancel"), this);
 
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
@@ -334,8 +334,8 @@ QString GeneralSettingsDialog::getDataWriterDataRule() const {
     return dataWriterDataRule;
 }
 
-QString GeneralSettingsDialog::getDataWriterDataStructure() const {
-    return dataWriterDataStructure;
+QString GeneralSettingsDialog::getDataWriterDataStyle() const {
+    return dataWriterDataStyle;
 }
 
 void GeneralSettingsDialog::setMetaSnapshotEnabled(int m_state) {
@@ -359,8 +359,8 @@ void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDat
     dataWriterDataRule = m_dataWriterDataRule;
 }
 
-void GeneralSettingsDialog::setDataWriterDataStructure(const QString &m_dataWriterDataStructure) {
-    dataWriterDataStructure = m_dataWriterDataStructure;
+void GeneralSettingsDialog::setDataWriterDataStyle(const QString &dataWriterDataStyle) {
+    dataWriterDataStyle = dataWriterDataStyle;
 }
 
 // Event handler on the change of the combobox selection in the dialog
@@ -377,8 +377,8 @@ void GeneralSettingsDialog::onDataWriterDelimiterChange(int index) {
     dataWriterDelimiter = dataWriterDelimiterBox->itemData(index).toString();
 }
 
-void GeneralSettingsDialog::onDataWriterDataStructureChange(int index) {
-    dataWriterDataStructure = dataWriterDataStructureBox->itemData(index).toString();
+void GeneralSettingsDialog::onDataWriterDataStyleChange(int index) {
+    dataWriterDataStyle = dataWriterDataStyleBox->itemData(index).toString();
 }
 
 void GeneralSettingsDialog::onDataWriterDataRuleChange(int index) {
