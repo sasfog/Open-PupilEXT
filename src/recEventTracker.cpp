@@ -298,7 +298,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 
     // NOTE: Should this range inclusive on both sides? (Should be low inclusive high exclusive?) But now it surely prevents data loss
     for (size_t i = 0; i < trialIncrements.size(); i++)
-        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo)
+        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp < timestampTo)
         {
             currObj = document.createElement("TrialIncrement");
             currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp));
@@ -307,7 +307,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         }
     for (size_t i = 0; i < temperatureChecks.size(); i++)
     {
-        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo)
+        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp < timestampTo)
         {
             currObj = document.createElement("CameraTempCheck");
             currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp));
@@ -318,7 +318,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         }
     }
     for (size_t i = 0; i < messages.size(); i++)
-        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp <= timestampTo)
+        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp < timestampTo)
         {
             currObj = document.createElement("Message");
             currObj.setAttribute("TimestampMs", QString::number(messages[i].timestamp));
@@ -326,6 +326,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             root.appendChild(currObj);
         }
 
+    // NOTE: search intervals are only inclusive on the left, but exclusive on the right. Consider this
     // TODO: clear file even if appended, as new XML is flushed into it
 
     QTextStream *textStream = new QTextStream(dataFile);
@@ -341,8 +342,8 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 // below is the version that creates a csv
 /*
 void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName) {
-    delim = applicationSettings->value("delimiterToUse", ",").toString()[0];
-    //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
+    delim = applicationSettings->value("dataWriterDelimiterToUse", ",").toString()[0];
+    //delim = applicationSettings->value("dataWriterDelimiterToUse", ',').toChar(); // somehow this just doesnt work
 
     std::cout << "saveOfflineEventLog(const QString& fileName, QObject *parent = 0)" << std::endl;
 

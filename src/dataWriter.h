@@ -15,6 +15,13 @@
 #include <QCoreApplication>
 
 #include "pupilDetection.h"
+
+// BG NOTE: must come here due to eyeDataSerializer.h and this dataWriter.h including each other. Compiler has to know the enum before looking at the other one
+enum DataWriterDataStructure {
+    PUPILEXT_0_1_1 = 1,
+    PUPILEXT_0_1_2 = 2
+};
+
 #include "eyeDataSerializer.h"
 
 
@@ -34,6 +41,7 @@
 
     writePupilData(): given a vector of pupil data, write all its entries to file
 */
+
 class DataWriter : public QObject {
     Q_OBJECT
 
@@ -67,6 +75,7 @@ private:
 
     QSettings *applicationSettings;
     QChar delim;
+    DataWriterDataStructure dataStructure;
     RecEventTracker *recEventTracker;
 
     QString header;

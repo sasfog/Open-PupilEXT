@@ -14,12 +14,12 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         //playbackSpeed(30),
         imageWriterFormat("tiff"),
         imageWriterDataRule("ask"),
-        delimiterToUse(","),
+        dataWriterDelimiter(","),
         dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(200, 330); 
-    this->setMinimumSize(290, 370);
+    this->setMinimumSize(295, 410);
     this->setWindowTitle("Settings");
 
     readSettings();
@@ -31,7 +31,8 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatChange(int)));
     connect(imageWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
 
-    connect(delimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDelimiterChange(int)));
+    connect(dataWriterDelimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDelimiterChange(int)));
+    connect(dataWriterDataStructureBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataStructureChange(int)));
     connect(dataWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataRuleChange(int)));
 
     connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
@@ -56,9 +57,14 @@ void GeneralSettingsDialog::readSettings() {
         imageWriterDataRule = m_imageWriterDataRule;
     }
 
-    const QString m_delimiterToUse = applicationSettings->value("delimiterToUse", "0").toString();
-    if (!m_delimiterToUse.isEmpty()) {
-        delimiterToUse = m_delimiterToUse;
+    const QString m_dataWriterDelimiter = applicationSettings->value("dataWriterDelimiter", ",").toString();
+    if (!m_dataWriterDelimiter.isEmpty()) {
+        dataWriterDelimiter = m_dataWriterDelimiter;
+    }
+
+    const QString m_dataWriterDataStructure = applicationSettings->value("dataWriterDataStructure", "PupilEXT-0-1-2").toString();
+    if (!m_dataWriterDataStructure.isEmpty()) {
+        dataWriterDataStructure = m_dataWriterDataStructure;
     }
 
     const QString m_dataWriterDataRule = applicationSettings->value("dataWriterDataRule", QByteArray()).toString();
@@ -95,37 +101,42 @@ void GeneralSettingsDialog::updateForm() {
     // GB modified begin
     // NOTE: thiw line below somehow does not work (always sets the index 0 element of the combobox)
     // imageWriterFormatBox->setCurrentText(imageWriterFormat);
-    if(imageWriterFormat == "tiff")
-        imageWriterFormatBox->setCurrentIndex(0);
-    else if(imageWriterFormat == "jpg")
+    if(imageWriterFormat == "jpg")
         imageWriterFormatBox->setCurrentIndex(1);
     else if(imageWriterFormat == "png")
         imageWriterFormatBox->setCurrentIndex(2);
     else if(imageWriterFormat == "bmp")
         imageWriterFormatBox->setCurrentIndex(3);
+    else // if(imageWriterFormat == "tiff")
+        imageWriterFormatBox->setCurrentIndex(0);
     //qDebug() << imageWriterFormat << "\n";
 
     if(imageWriterDataRule == "ask")
         imageWriterDataRuleBox->setCurrentIndex(0);
     else if(imageWriterDataRule == "append")
         imageWriterDataRuleBox->setCurrentIndex(1);
-    else if(imageWriterDataRule == "new")
+    else // if(imageWriterDataRule == "new")
         imageWriterDataRuleBox->setCurrentIndex(2);
 
-    //delimiterBox->setCurrentText(delimiterToUse);
-    if(delimiterToUse == ",")
-        delimiterBox->setCurrentIndex(0);
-    else if(delimiterToUse == ";")
-        delimiterBox->setCurrentIndex(1);
-    else if(delimiterToUse == "\t")
-        delimiterBox->setCurrentIndex(2);
-    //qDebug() << delimiterToUse << "\n";
+    //dataWriterDelimiterBox->setCurrentText(delimiterToUse);
+    if(dataWriterDelimiter == ";")
+        dataWriterDelimiterBox->setCurrentIndex(1);
+    else if(dataWriterDelimiter == "\t")
+        dataWriterDelimiterBox->setCurrentIndex(2);
+    else //if(dataWriterDelimiter == ",")
+        dataWriterDelimiterBox->setCurrentIndex(0);
+    qDebug() << "Data writer delimiter read as: " << dataWriterDelimiter << "\n";
+
+    if(dataWriterDataStructure == "PupilEXT-0-1-1")
+        dataWriterDataStructureBox->setCurrentIndex(0);
+    else // if(dataWriterDataStructure == "PupilEXT-0-1-2")
+        dataWriterDataStructureBox->setCurrentIndex(1);
 
     if(dataWriterDataRule == "ask")
         dataWriterDataRuleBox->setCurrentIndex(0);
     else if(dataWriterDataRule == "append")
         dataWriterDataRuleBox->setCurrentIndex(1);
-    else if(dataWriterDataRule == "new")
+    else // if(dataWriterDataRule == "new")
         dataWriterDataRuleBox->setCurrentIndex(2);
 
     darkAdaptBox->setCurrentIndex(darkAdaptMode);
@@ -138,14 +149,13 @@ void GeneralSettingsDialog::updateForm() {
 // Saved the settings selected in the dialog to the QT application settings
 void GeneralSettingsDialog::saveSettings() {
     applicationSettings->setValue("imageWriterFormat", imageWriterFormat);
-    // GB begin
     applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
-    applicationSettings->setValue("delimiterToUse", delimiterToUse );
+    applicationSettings->setValue("dataWriterDelimiter", dataWriterDelimiter );
+    applicationSettings->setValue("dataWriterDataStructure", dataWriterDataStructure );
     applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
     applicationSettings->setValue("GUIDarkAdaptMode", darkAdaptMode );
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
     applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
-    // GB end
 }
 
 void GeneralSettingsDialog::createForm() {
@@ -156,13 +166,23 @@ void GeneralSettingsDialog::createForm() {
     dataWriterGroup = new QGroupBox("General Data Output");
     QFormLayout *dataOutLayout = new QFormLayout;
 
-    QLabel *delimiterLabel = new QLabel(tr("Delimiter Character"));
-    delimiterBox = new QComboBox();
-    delimiterBox->addItem(QString("Comma [,]"), QString(","));
-    delimiterBox->addItem(QString("Semicolon [;]"), QString(";"));
-    delimiterBox->addItem(QString("Tabulation"), QString("\t"));
-    delimiterBox->setCurrentText(delimiterToUse);
-    dataOutLayout->addRow(delimiterLabel, delimiterBox);
+    QLabel *dataWriterDelimiterLabel = new QLabel(tr("Delimiter Character"));
+    dataWriterDelimiterBox = new QComboBox();
+    dataWriterDelimiterBox->addItem(QString("Comma [,]"), QString(","));
+    dataWriterDelimiterBox->addItem(QString("Semicolon [;]"), QString(";"));
+    dataWriterDelimiterBox->addItem(QString("Tabulation"), QString("\t"));
+    dataWriterDelimiterBox->setCurrentText(dataWriterDelimiter);
+    dataOutLayout->addRow(dataWriterDelimiterLabel, dataWriterDelimiterBox);
+
+    QLabel *dataWriterDataStructureLabel = new QLabel(tr("Data Structure*: "));
+    dataWriterDataStructureBox = new QComboBox();
+    dataWriterDataStructureBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1"));
+    dataWriterDataStructureBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2"));
+    dataWriterDataStructureBox->setCurrentText(dataWriterDataStructure);
+    dataOutLayout->addRow(dataWriterDataStructureLabel, dataWriterDataStructureBox);
+    QLabel *dataWriterDataStructureWarnLabel = new QLabel(tr("*Older version will not save trial numbering."));
+    dataWriterDataStructureWarnLabel->setAlignment(Qt::AlignRight);
+    dataOutLayout->addRow(dataWriterDataStructureWarnLabel);
 
 
     QLabel *dataWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
@@ -314,6 +334,10 @@ QString GeneralSettingsDialog::getDataWriterDataRule() const {
     return dataWriterDataRule;
 }
 
+QString GeneralSettingsDialog::getDataWriterDataStructure() const {
+    return dataWriterDataStructure;
+}
+
 void GeneralSettingsDialog::setMetaSnapshotEnabled(int m_state) {
     metaSnapshotsEnabled = (bool) m_state;
 }
@@ -335,6 +359,10 @@ void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDat
     dataWriterDataRule = m_dataWriterDataRule;
 }
 
+void GeneralSettingsDialog::setDataWriterDataStructure(const QString &m_dataWriterDataStructure) {
+    dataWriterDataStructure = m_dataWriterDataStructure;
+}
+
 // Event handler on the change of the combobox selection in the dialog
 void GeneralSettingsDialog::onImageWriterFormatChange(int index) {
     imageWriterFormat = imageWriterFormatBox->itemData(index).toString();
@@ -345,8 +373,12 @@ void GeneralSettingsDialog::onImageWriterDataRuleChange(int index) {
 }
 
 // Event handler on the change of the combobox selection in the dialog
-void GeneralSettingsDialog::onDelimiterChange(int index) {
-    delimiterToUse = delimiterBox->itemData(index).toString();
+void GeneralSettingsDialog::onDataWriterDelimiterChange(int index) {
+    dataWriterDelimiter = dataWriterDelimiterBox->itemData(index).toString();
+}
+
+void GeneralSettingsDialog::onDataWriterDataStructureChange(int index) {
+    dataWriterDataStructure = dataWriterDataStructureBox->itemData(index).toString();
 }
 
 void GeneralSettingsDialog::onDataWriterDataRuleChange(int index) {
