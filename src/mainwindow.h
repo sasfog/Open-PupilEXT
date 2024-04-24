@@ -347,6 +347,8 @@ public slots:
     void onCameraFreezePressed();
 
     void onCameraPlaybackChanged();
+
+    void onCameraUnexpectedlyDisconnected();
     // GB added end
 
 signals:

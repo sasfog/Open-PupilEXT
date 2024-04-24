@@ -1276,6 +1276,8 @@ void MainWindow::onCameraDisconnectClick() {
                    SIGNAL(onNewGrabResult(CameraImage)));
         disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
         disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+
+        disconnect(selectedCamera, SIGNAL (onCameraDeviceRemoved()), this, SIGNAL (onCameraUnexpectedlyDisconnected()));
     }
 
     // GB begin
@@ -1343,6 +1345,8 @@ void MainWindow::singleCameraSelected(QAction *action) {
     if(dynamic_cast<SingleCamera*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
 
+    connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
+
     connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
     connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
@@ -1409,6 +1413,7 @@ void MainWindow::singleWebcamSelected() {
     if(dynamic_cast<SingleWebcam*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
 
+    // TODO: handle unexpected device removal
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
     connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
@@ -1460,6 +1465,8 @@ void MainWindow::stereoCameraSelected() {
     stereoCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "StereoCameraSettingsDialog", this);
     stereoCameraSettingsDialog->show();
+
+    connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
@@ -2320,6 +2327,20 @@ void MainWindow::resetStatus(bool isConnect)
         recordAct->setEnabled(false); //
         cameraPlaying = true; //
         }
+}
+
+void MainWindow::onCameraUnexpectedlyDisconnected() {
+
+    QMessageBox *msgBox = new QMessageBox(this);
+    msgBox->setWindowTitle("Camera unexpectedly disconnected");
+    msgBox->setText("At least one camera in use was unexpectedly disconnected. Recordings are stopped for saving.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");
+    msgBox->setMinimumSize(330,240);
+    msgBox->setIcon(QMessageBox::Warning);
+    msgBox->setModal(false);
+    msgBox->show();
+
+    onCameraDisconnectClick();
+
 }
 
 void MainWindow::connectCameraPlaybackChangedSlots()
