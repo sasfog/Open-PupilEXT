@@ -33,6 +33,7 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
     connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
     //connect(cameraImageEventHandler, SIGNAL(needsTimeSynchronization()), this, SLOT(resynchronizeTime()));
 
+    connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
     connect(cameraConfigurationEventHandler, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
 
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));

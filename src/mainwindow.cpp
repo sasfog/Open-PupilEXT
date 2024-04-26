@@ -1277,7 +1277,8 @@ void MainWindow::onCameraDisconnectClick() {
         disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
         disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
 
-        disconnect(selectedCamera, SIGNAL (onCameraDeviceRemoved()), this, SIGNAL (onCameraUnexpectedlyDisconnected()));
+        disconnect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
+        disconnect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
     }
 
     // GB begin
@@ -1345,6 +1346,7 @@ void MainWindow::singleCameraSelected(QAction *action) {
     if(dynamic_cast<SingleCamera*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
 
+    connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
     connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
 
     connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
@@ -1466,6 +1468,7 @@ void MainWindow::stereoCameraSelected() {
     //auto *child = new RestorableQMdiSubWindow(childWidget, "StereoCameraSettingsDialog", this);
     stereoCameraSettingsDialog->show();
 
+    connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
     connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)));
@@ -2327,6 +2330,28 @@ void MainWindow::resetStatus(bool isConnect)
         recordAct->setEnabled(false); //
         cameraPlaying = true; //
         }
+}
+
+void MainWindow::onImagesSkipped() {
+    if(imagesSkippedMsgBox != nullptr) {
+        return;
+    }
+    imagesSkippedMsgBox = new QMessageBox(this);
+    imagesSkippedMsgBox->setWindowTitle("Camera image frames skipped");
+    imagesSkippedMsgBox->setText("At least one image frame was skipped due to unstable connection or interface failure.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");
+    imagesSkippedMsgBox->setMinimumSize(330,240);
+    imagesSkippedMsgBox->setIcon(QMessageBox::Warning);
+    imagesSkippedMsgBox->setModal(false);
+    connect(imagesSkippedMsgBox, SIGNAL(accepted()), this, SLOT(onImagesSkippedMsgClose()));
+    //connect(imagesSkippedMsgBox,SIGNAL(accepted()),this,SLOT(onImagesSkippedMsgClose()));
+    //connect(imagesSkippedMsgBox,SIGNAL(rejected()),this,SLOT(onImagesSkippedMsgClose()));
+    imagesSkippedMsgBox->show();
+}
+
+void MainWindow::onImagesSkippedMsgClose() {
+    disconnect(imagesSkippedMsgBox, SIGNAL(accepted()), this, SLOT(onImagesSkippedMsgClose()));
+    imagesSkippedMsgBox->deleteLater();
+    imagesSkippedMsgBox = nullptr;
 }
 
 void MainWindow::onCameraUnexpectedlyDisconnected() {

@@ -164,6 +164,7 @@ signals:
     void fps(double fps);
     void framecount(int framecount);
     void cameraDeviceRemoved();
+    void imagesSkipped();
 
 };
 
