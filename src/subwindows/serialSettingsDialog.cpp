@@ -5,7 +5,6 @@
 #include <QLineEdit>
 #include <QSerialPortInfo>
 #include <QtWidgets/QGridLayout>
-#include <QtWidgets/QGroupBox>
 #include <QtWidgets/qmessagebox.h>
 #include <iostream>
 #include "../SVGIconColorAdjuster.h"
@@ -32,12 +31,12 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
     baudRateBox->setInsertPolicy(QComboBox::NoInsert);
 
     connect(applyButton, &QPushButton::clicked, this, &SerialSettingsDialog::apply);
-    connect(cancelButton, &QPushButton::clicked, this, &SerialSettingsDialog::cancel);
+//    connect(cancelButton, &QPushButton::clicked, this, &SerialSettingsDialog::cancel);
     connect(clearButton, &QPushButton::clicked, textField, &QTextEdit::clear);
     connect(refreshButton, &QPushButton::clicked, this, &SerialSettingsDialog::updateDevices);
 
-    connect(connectButton, &QPushButton::clicked, this, &SerialSettingsDialog::connectSerialPort);
-    connect(disconnectButton, &QPushButton::clicked, this, &SerialSettingsDialog::disconnectSerialPort);
+//    connect(connectButton, &QPushButton::clicked, this, &SerialSettingsDialog::connectSerialPort);
+//    connect(disconnectButton, &QPushButton::clicked, this, &SerialSettingsDialog::disconnectSerialPort);
 
     connect(serialPortInfoListBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::showPortInfo);
     connect(baudRateBox,  QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::checkCustomBaudRatePolicy);
@@ -65,8 +64,8 @@ void SerialSettingsDialog::connectSerialPort() {
     if(index >= 0) {
         textField->clear();
 
-        connectButton->setEnabled(false);
-        disconnectButton->setEnabled(true);
+//        connectButton->setEnabled(false);
+//        disconnectButton->setEnabled(true);
         //m_ui->actionConfigure->setEnabled(false);
         textField->append(tr("Connected to %1 : %2, %3, %4, %5, %6")
                                   .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
@@ -74,6 +73,10 @@ void SerialSettingsDialog::connectSerialPort() {
 
         connPoolCOMIndex = index;
         connPoolCOM->subscribeListener(index, this, SLOT(readData(QString, quint64)));
+
+        sendCommand("<SX>"); // To surely stop any triggering if it is still going on on the microcontroller side
+
+        setLimitationsWhileConnected(true);
 
         emit onConnect();
     } else {
@@ -99,11 +102,14 @@ void SerialSettingsDialog::disconnectSerialPort() {
         connPoolCOM->unsubscribeListener(connPoolCOMIndex, this, SLOT(readData(QString, quint64)));
         connPoolCOM->closeConnection(connPoolCOMIndex, ConnPoolPurposeFlag::CAMERA_TRIGGER);
         //connPoolCOM->getInstance(connPoolCOMIndex)->close();
+        connPoolCOMIndex = -1;
     }
 
-    connectButton->setEnabled(true);
-    disconnectButton->setEnabled(false);
+//    connectButton->setEnabled(true);
+//    disconnectButton->setEnabled(false);
     textField->append(tr("Disconnected."));
+
+    setLimitationsWhileConnected(false);
 
     emit onDisconnect();
 }
@@ -148,7 +154,7 @@ void SerialSettingsDialog::createForm() {
 
     QGridLayout *mainLayout = new QGridLayout(this);
 
-    QGroupBox *paramGroup = new QGroupBox("Parameters");
+    paramGroup = new QGroupBox("Parameters");
     //QGridLayout *paramLayout = new QGridLayout;
     QFormLayout *paramLayout = new QFormLayout;
 
@@ -182,7 +188,7 @@ void SerialSettingsDialog::createForm() {
     paramGroup->setLayout(paramLayout);
     mainLayout->addWidget(paramGroup, 0, 1);
 
-    QGroupBox *serialPortGroup = new QGroupBox("Serial Port");
+    serialPortGroup = new QGroupBox("Serial Port");
     QGridLayout *serialPortLayout = new QGridLayout;
 
     QHBoxLayout *serialPortInfoListLayout = new QHBoxLayout;
@@ -242,17 +248,17 @@ void SerialSettingsDialog::createForm() {
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-    connectButton = new QPushButton(tr("Connect"));
-    disconnectButton = new QPushButton(tr("Disconnect"));
+//    connectButton = new QPushButton(tr("Connect")); // moved to camera settings windows for clearer UX
+//    disconnectButton = new QPushButton(tr("Disconnect")); // moved to camera settings windows for clearer UX
     applyButton = new QPushButton(tr("Apply and Close"));
-    cancelButton = new QPushButton(tr("Cancel"));
+//    cancelButton = new QPushButton(tr("Cancel")); // does not really make sense here, there is already a window close button for this
 
-    buttonsLayout->addWidget(connectButton);
-    buttonsLayout->addWidget(disconnectButton);
+//    buttonsLayout->addWidget(connectButton);
+//    buttonsLayout->addWidget(disconnectButton);
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
     buttonsLayout->addWidget(applyButton);
-    buttonsLayout->addWidget(cancelButton);
+//    buttonsLayout->addWidget(cancelButton);
 
     mainLayout->addLayout(buttonsLayout, 4, 0, 1, 2);
 
@@ -291,9 +297,9 @@ void SerialSettingsDialog::apply()
     close();
 }
 
-void SerialSettingsDialog::cancel() {
-    close();
-}
+//void SerialSettingsDialog::cancel() {
+//    close();
+//}
 
 void SerialSettingsDialog::checkCustomBaudRatePolicy(int idx)
 {
@@ -320,30 +326,33 @@ void SerialSettingsDialog::fillPortsParameters()
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
     baudRateBox->addItem(QStringLiteral("38400"), QSerialPort::Baud38400);
     baudRateBox->addItem(QStringLiteral("115200"), QSerialPort::Baud115200);
-    baudRateBox->setCurrentIndex(3);
     baudRateBox->addItem(tr("Custom"));
+    baudRateBox->setCurrentIndex(SERIAL_DEF_BAUDRATE);
 
     dataBitsBox->addItem(QStringLiteral("5"), QSerialPort::Data5);
     dataBitsBox->addItem(QStringLiteral("6"), QSerialPort::Data6);
     dataBitsBox->addItem(QStringLiteral("7"), QSerialPort::Data7);
     dataBitsBox->addItem(QStringLiteral("8"), QSerialPort::Data8);
-    dataBitsBox->setCurrentIndex(3);
+    dataBitsBox->setCurrentIndex(SERIAL_DEF_DATABITS);
 
     parityBox->addItem(tr("None"), QSerialPort::NoParity);
     parityBox->addItem(tr("Even"), QSerialPort::EvenParity);
     parityBox->addItem(tr("Odd"), QSerialPort::OddParity);
     parityBox->addItem(tr("Mark"), QSerialPort::MarkParity);
     parityBox->addItem(tr("Space"), QSerialPort::SpaceParity);
+    parityBox->setCurrentIndex(SERIAL_DEF_PARITY);
 
     stopBitsBox->addItem(QStringLiteral("1"), QSerialPort::OneStop);
 #ifdef Q_OS_WIN
     stopBitsBox->addItem(tr("1.5"), QSerialPort::OneAndHalfStop);
 #endif
     stopBitsBox->addItem(QStringLiteral("2"), QSerialPort::TwoStop);
+    stopBitsBox->setCurrentIndex(SERIAL_DEF_STOPBITS);
 
     flowControlBox->addItem(tr("None"), QSerialPort::NoFlowControl);
     flowControlBox->addItem(tr("RTS/CTS"), QSerialPort::HardwareControl);
     flowControlBox->addItem(tr("XON/XOFF"), QSerialPort::SoftwareControl);
+    flowControlBox->setCurrentIndex(SERIAL_DEF_FLOWCONTROL);
 }
 
 void SerialSettingsDialog::fillPortsInfo()
@@ -419,11 +428,11 @@ void SerialSettingsDialog::updateSettings()
 // Loads the serial port settings from application settings
 void SerialSettingsDialog::loadSettings() {
     serialPortInfoListBox->setCurrentText(applicationSettings->value("SerialSettings.name", serialPortInfoListBox->itemText(0)).toString());
-    baudRateBox->setCurrentText(applicationSettings->value("SerialSettings.baudRate", baudRateBox->itemText(0)).toString());
-    dataBitsBox->setCurrentText(applicationSettings->value("SerialSettings.dataBits", dataBitsBox->itemText(0)).toString());
-    parityBox->setCurrentText(applicationSettings->value("SerialSettings.parity", parityBox->itemText(0)).toString());
-    stopBitsBox->setCurrentText(applicationSettings->value("SerialSettings.stopBits", stopBitsBox->itemText(0)).toString());
-    flowControlBox->setCurrentText(applicationSettings->value("SerialSettings.flowControl", flowControlBox->itemText(0)).toString());
+    baudRateBox->setCurrentText(applicationSettings->value("SerialSettings.baudRate", baudRateBox->itemText(SERIAL_DEF_BAUDRATE)).toString());
+    dataBitsBox->setCurrentText(applicationSettings->value("SerialSettings.dataBits", dataBitsBox->itemText(SERIAL_DEF_DATABITS)).toString());
+    parityBox->setCurrentText(applicationSettings->value("SerialSettings.parity", parityBox->itemText(SERIAL_DEF_PARITY)).toString());
+    stopBitsBox->setCurrentText(applicationSettings->value("SerialSettings.stopBits", stopBitsBox->itemText(SERIAL_DEF_STOPBITS)).toString());
+    flowControlBox->setCurrentText(applicationSettings->value("SerialSettings.flowControl", flowControlBox->itemText(SERIAL_DEF_FLOWCONTROL)).toString());
     localEchoCheckBox->setChecked(applicationSettings->value("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
     updateSettings();
 }
@@ -448,5 +457,10 @@ bool SerialSettingsDialog::isConnected() {
 
 void SerialSettingsDialog::updateDevices() {
     fillPortsInfo();
+}
+
+void SerialSettingsDialog::setLimitationsWhileConnected(bool state) {
+    paramGroup->setDisabled(state);
+    serialPortGroup->setDisabled(state);
 }
 

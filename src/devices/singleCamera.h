@@ -75,6 +75,7 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
+    bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
     int getAcquisitionFPSValue();

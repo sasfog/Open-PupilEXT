@@ -532,6 +532,12 @@ bool SingleCamera::isEnabledAcquisitionFrameRate() {
     return false;
 }
 
+bool SingleCamera::isEmulated()
+{
+    QString device_name = QString(camera.GetDeviceInfo().GetModelName().c_str());
+    return (device_name.toLower().contains("emu"));
+}
+
 void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
     try {
         if (camera.AcquisitionFrameRateEnable.IsWritable()) {
@@ -842,7 +848,7 @@ bool SingleCamera::setImageROIwidth(int width) {
     if(width < 16)
         width=16;
 
-    int modVal=width%4;
+    int modVal=width%16;
     if(modVal != 0)
         width -= modVal;
 
@@ -874,7 +880,7 @@ bool SingleCamera::setImageROIheight(int height) {
     if(height < 16)
         height=16;
 
-    int modVal=height%4;
+    int modVal=height%16;
     if(modVal != 0)
         height -= modVal;
     
@@ -908,7 +914,7 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
     //if(width + offsetX > maxWidth)
     //    return;
     
-    int modVal=offsetX%4;
+    int modVal=offsetX%16;
     if(modVal != 0)
         offsetX -= modVal;
 
@@ -939,7 +945,7 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
     //if(height + offsetY > maxHeight)
     //    return;
 
-    int modVal=offsetY%4;
+    int modVal=offsetY%16;
     if(modVal != 0)
         offsetY -= modVal;
 

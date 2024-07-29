@@ -528,7 +528,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
     if (!trackingOn) {
-        qDebug() << simg.frameNumber;
+//        qDebug() << simg.frameNumber;
         emit processedImage(simg);
         return;
     }
@@ -1238,7 +1238,7 @@ void PupilDetection::configureCameraConnection(bool connectOrDisconnect) {
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+//        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
     } else {
         if (currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));

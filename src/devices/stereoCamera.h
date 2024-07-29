@@ -16,6 +16,7 @@
 #include "cameraConfigurationEventHandler.h"
 #include "../stereoCameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
+#include "hardwareTriggerConfiguration.h"
 
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
@@ -125,8 +126,13 @@ private:
 
     String_t lineSource;
 
-    StereoCameraImageEventHandler *cameraImageEventHandler;
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler;
+    StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
+
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
+
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
 
     CameraFrameRateCounter *frameCounter;
 
@@ -136,6 +142,8 @@ private:
     void synchronizeTime();
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
+
+    void safelyCloseCameras();
 
 public slots:
 
