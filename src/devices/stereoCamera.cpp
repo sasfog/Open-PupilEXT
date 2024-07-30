@@ -22,7 +22,6 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
 
     // Calibration thread working
     cameraCalibration->moveToThread(calibrationThread);
-    connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
@@ -51,6 +50,12 @@ StereoCamera::~StereoCamera() {
         safelyCloseCameras();
     }
     delete cameraImageEventHandler;
+    if (cameraCalibration != nullptr)
+        cameraCalibration->deleteLater();
+    if (calibrationThread != nullptr) {
+        calibrationThread->quit();
+        calibrationThread->deleteLater();
+    }
 }
 
 void StereoCamera::genericExceptionOccured(const GenericException &e) {
