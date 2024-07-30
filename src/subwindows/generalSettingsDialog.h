@@ -32,58 +32,84 @@ public:
     int getPlaybackSpeed() const;
     bool getPlaybackLoop() const;
 
-    QString getWriterFormat() const;
+    QString getImageWriterFormat() const;
+    QString getImageWriterDataRule() const;
 
     // GB added begin
+    QString getDataWriterDataRule() const;
+    QString getDataWriterDataStyle() const;
     bool getMetaSnapshotsEnabled() const;
-    bool getSaveOfflineEventLog() const; 
+    bool getSaveOfflineEventLog() const;
+    bool getAlwaysOnTop() const;
     // GB added end
 
 private:
 
     QSettings *applicationSettings;
 
-    QString writerFormat;
+    QGroupBox *dataWriterGroup;
+    QGroupBox *imageWriterGroup;
+    QString imageWriterFormat;
+    QString imageWriterDataRule;
 
     QPushButton *applyButton;
     QPushButton *cancelButton;
 
-    QComboBox *formatBox;
+    QComboBox *imageWriterFormatBox;
+    QComboBox *imageWriterDataRuleBox;
     QSpinBox *playbackSpeedInputBox;
     QCheckBox *playbackLoopBox;
 
     // GB added begin
     bool metaSnapshotsEnabled;
-    bool saveOfflineEventLog; 
+    bool saveOfflineEventLog;
+    bool alwaysOnTop;
 
-    QString delimiterToUse;
-    QComboBox *delimiterBox;
+    QString dataWriterDelimiter;
+    QString dataWriterDataStyle;
+    QString dataWriterDataRule;
+    QComboBox *dataWriterDelimiterBox;
+    QComboBox *dataWriterDataStyleBox;
+    QComboBox *dataWriterDataRuleBox;
 
     int darkAdaptMode;
     QComboBox *darkAdaptBox;
     QCheckBox *metaSnapshotBox;
     QCheckBox *saveOfflineEventLogBox;
+    QCheckBox *alwaysOnTopBox;
     // GB added end
 
     void createForm();
     void saveSettings();
     void updateForm();
 
-private slots:
+public slots:
 
+    void open() override;
     void apply();
     void cancel();
-    void onFormatChange(int index);
+    void onImageWriterFormatChange(int index);
+    void onImageWriterDataRuleChange(int index);
     void readSettings();
     //void setPlaybackSpeed(int playbackSpeed);
-    void setWriterFormat(const QString &writerFormat);
+    void setImageWriterFormat(const QString &imageWriterFormat);
+    void setImageWriterDataRule(const QString &imageWriterDataRule);
+    void setDataWriterDataRule(const QString &dataWriterDataRule);
+    void setDataWriterDataStyle(const QString &m_dataWriterDataStyle);
     //void setPlaybackLoop(int m_state);
 
     // GB added begin
-    void onDelimiterChange(int index); 
+    void onDataWriterDelimiterChange(int index);
+    void onDataWriterDataStyleChange(int index);
+    void onDataWriterDataRuleChange(int index);
     void onDarkAdaptChange(int index);
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
+    void setAlwaysOnTop(int m_state);
+
+    void setLimitationsWhileImageWriting(bool state);
+    void setLimitationsWhileDataWriting(bool state);
+    void onSettingsChangedElsewhere();
     // GB added end
 
 signals:

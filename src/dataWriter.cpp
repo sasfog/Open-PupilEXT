@@ -17,26 +17,34 @@ DataWriter::DataWriter(
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     // GB modified begin
-    delim = applicationSettings->value("delimiterToUse", ",").toString()[0];
+    delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
+    QString dataStyleStr = applicationSettings->value("dataWriterDataStyle", "PupilEXT-0-1-2").toString();
+    if(dataStyleStr == "PupilEXT-0-1-1")
+        dataStyle = PUPILEXT_V0_1_1;
+    else // if(dataStyleStr == "PupilEXT-0-1-2")
+        dataStyle = PUPILEXT_V0_1_2;
+
     //delim = delimToUse; // only used if dataFormat=='P'
-    std::cout << "New DataWriter object created." << std::endl;
+    qDebug() << "New DataWriter object created.";
 
     // Header definitions of the output file, this must fit the output format in the pupilToRow functions
-    header = EyeDataSerializer::getHeaderCSV(procMode, delim);
+    header = EyeDataSerializer::getHeaderCSV(procMode, delim, dataStyle);
 
-    std::cout<<fileName.toStdString()<<std::endl;
+    qDebug() << fileName;
 
+    /*
     bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
     if(!pathWriteable) {
         QMessageBox MsgBox;
         MsgBox.setText("Recording failure. Could not create path.");
         MsgBox.exec();
     }
+    */
 
     dataFile = new QFile(fileName);
-    bool exists = dataFile->exists();
+    bool exists = dataFile->exists(); // NOTE: should never happen
 
     // Open the file in append mode
     // GB: needed to double check, in case of writing to e.g. C:/ or other admin-only folder, 
@@ -61,7 +69,8 @@ DataWriter::DataWriter(
     if(!exists)
         *textStream << header << Qt::endl;
 
-    if(!pathWriteable || !fileWriteable)
+    //if(!pathWriteable || !fileWriteable)
+    if(!fileWriteable)
         this->deleteLater();
 }
 
@@ -98,7 +107,7 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
             trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
             d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
         }
-        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, d) << Qt::endl;
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, dataStyle, d) << Qt::endl;
     }
 }
 
@@ -122,7 +131,7 @@ void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, c
                 recEventTracker->getTrialIncrement(timestamps[i]).trialNumber;
                 d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
             }
-            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, d) << Qt::endl;
+            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d) << Qt::endl;
         }
         ++framePos;
     }

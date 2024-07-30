@@ -111,6 +111,22 @@ private:
     RestorableQMdiSubWindow *cameraViewWindow;
     RestorableQMdiSubWindow *sharpnessWindow;
 
+    QIcon fileOpenIcon;
+    QIcon cameraSerialConnectionIcon;
+    QIcon pupilDetectionSettingsIcon;
+    QIcon remoteCCIcon;
+    QIcon generalSettingsIcon;
+    QIcon singleCameraIcon;
+    QIcon stereoCameraIcon;
+    QIcon cameraSettingsIcon1;
+    QIcon cameraSettingsIcon2;
+    QIcon calibrateIcon;
+    QIcon sharpnessIcon;
+    QIcon subjectsIcon;
+    QIcon outputDataFileIcon;
+    QIcon streamingSettingsIcon;
+    QIcon imagePlaybackControlIcon;
+
     QMenu *windowMenu;
     QMenu *singleCameraDevicesMenu; // GB: refactored name
 
@@ -150,6 +166,7 @@ private:
     bool hwTriggerOn = false;
     bool cameraPlaying = true;
 
+    void loadIcons();
     void createActions();
     void createStatusBar();
     void readSettings();
@@ -208,6 +225,7 @@ private:
 
     PlaybackSynchroniser *playbackSynchroniser;
 
+    QMessageBox *imagesSkippedMsgBox = nullptr;
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
@@ -298,11 +316,15 @@ private slots:
     void forceResetTrialCounter(const quint64 &timestamp);
     void incrementTrialCounter();
     void incrementTrialCounter(const quint64 &timestamp);
+    void logRemoteMessage(const quint64 &timestamp, const QString &str);
 
     void onStreamingUDPConnect();
     void onStreamingUDPDisconnect();
     void onStreamingCOMConnect();
     void onStreamingCOMDisconnect();
+
+    void onImagesSkipped();
+    void onImagesSkippedMsgClose();
     // GB added end
 
 public slots:
@@ -310,6 +332,8 @@ public slots:
     // GB added begin
     // GB NOTE: definitions of functions for programmatic control of GUI elements (their names beginning with PRG...)
     // are stored in PRGmainwindow.cpp, to keep mainwindow.cpp cleaner
+    void PRGlogRemoteMessage(const quint64 &timestamp, const QString &str);
+
     void PRGopenSingleCamera(const QString &camName);
     void PRGopenStereoCamera(const QString &camName1, const QString &camName2);
     void PRGopenSingleWebcam(int deviceID);
@@ -344,11 +368,14 @@ public slots:
     void onCameraFreezePressed();
 
     void onCameraPlaybackChanged();
+
+    void onCameraUnexpectedlyDisconnected();
     // GB added end
 
 signals:
     void commitTrialCounterIncrement(quint64 timestamp);
     void commitTrialCounterReset(quint64 timestamp);
+    void commitRemoteMessage(quint64 timestamp, QString str);
 
     void cameraPlaybackChanged();
 

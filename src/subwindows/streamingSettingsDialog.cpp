@@ -20,7 +20,7 @@ StreamingSettingsDialog::StreamingSettingsDialog(
     dataStreamer(dataStreamer),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(280, 330); 
+    this->setMinimumSize(280, 330);
     this->setWindowTitle("Streaming settings");
 
     createForm();
@@ -41,7 +41,7 @@ void StreamingSettingsDialog::createForm() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
 
-    QString udpIp = "192.168.0.1";
+    QString udpIp = "127.0.0.1";
     int udpPort = 6900;
 
 
@@ -267,6 +267,7 @@ void StreamingSettingsDialog::fillCOMParameters() {
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
     baudRateBox->addItem(QStringLiteral("38400"), QSerialPort::Baud38400);
     baudRateBox->addItem(QStringLiteral("115200"), QSerialPort::Baud115200);
+    baudRateBox->setCurrentIndex(3);
     //baudRateBox->addItem(tr("Custom"));
 
     dataBitsBox->addItem(QStringLiteral("5"), QSerialPort::Data5);

@@ -11,6 +11,7 @@
 #include <pylon/PylonIncludes.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
 #include "singleCameraImageEventHandler.h"
+#include "cameraConfigurationEventHandler.h"
 #include "camera.h"
 #include "../frameRateCounter.h"
 #include "../cameraCalibration.h"
@@ -99,8 +100,8 @@ public:
     int getImageROIoffsetX() override; 
     int getImageROIoffsetY() override; 
     QRectF getImageROI() override;
-    int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
-    int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
+    int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
     int getBinningVal();
     double getTemperature();
     bool isGrabbing() override;
@@ -118,6 +119,7 @@ private:
 
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler;
 
     CameraFrameRateCounter *frameCounter;
 
@@ -125,8 +127,8 @@ private:
     QThread *calibrationThread;
 
     void synchronizeTime();
-
     void loadCalibrationFile();
+    void genericExceptionOccured(const GenericException &e);
 
 public slots:
 
@@ -149,6 +151,8 @@ signals:
 
     void fps(double fps);
     void framecount(int framecount);
+    void cameraDeviceRemoved();
+    void imagesSkipped();
 
 };
 

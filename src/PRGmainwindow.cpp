@@ -10,6 +10,10 @@ void MainWindow::PRGforceResetTrialCounter(const quint64 &timestamp) {
     forceResetTrialCounter(timestamp);
 }
 
+void MainWindow::PRGlogRemoteMessage(const quint64 &timestamp, const QString &str) {
+    logRemoteMessage(timestamp, str);
+}
+
 void MainWindow::PRGopenSingleCamera(const QString &camName) {
     if(selectedCamera && selectedCamera->isOpen())
         return;
@@ -185,7 +189,7 @@ void MainWindow::PRGsetGlobalDelimiter(const QString &str) {
     if(str=="\t" || str=="tab" || str=="tabulator" || str == "tabulation")
         value="\t";
     
-    applicationSettings->setValue("delimiterToUse", value);
+    applicationSettings->setValue("dataWriterDelimiter", value);
 }
 
 void MainWindow::PRGsetImageOutputFormat(QString format) {
@@ -193,8 +197,8 @@ void MainWindow::PRGsetImageOutputFormat(QString format) {
         return;
 
     format.replace(".", "");
-    if(format=="tiff" || format =="jpg" || format=="bmp") {
-        applicationSettings->setValue("writerFormat", format);
+    if(format=="tiff" || format =="jpg" || format=="bmp" || format=="png") {
+        applicationSettings->setValue("imageWriterFormat", format);
     }
 }
 

@@ -52,16 +52,23 @@ MainWindow::MainWindow():
 */
                           applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
+    loadIcons();
+    const QByteArray alwaysOnTop = applicationSettings->value("alwaysOnTop", "0").toByteArray();
+    if (!alwaysOnTop.isEmpty() && (alwaysOnTop == "1" || alwaysOnTop == "true") ) {
+        this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
+        //show();
+    }
+
     imageMutex = new QMutex();
     imagePublished = new QWaitCondition();
     imageProcessed = new QWaitCondition();
     pupilDetectionWorker = new PupilDetection(imageMutex, imagePublished, imageProcessed);
-    // GB added begin: needs to be instantiated here, as these use global instances of ConnPoolCOM
     serialSettingsDialog = new SerialSettingsDialog(connPoolCOM, this);
-    remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter, 
+    serialSettingsDialog->setWindowIcon(cameraSerialConnectionIcon);
+    remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter,
+    remoteCCDialog->setWindowIcon(remoteCCIcon);
     streamingSettingsDialog = new StreamingSettingsDialog(connPoolCOM, pupilDetectionWorker, dataStreamer, this);
-    // GB added end
-
+    streamingSettingsDialog->setWindowIcon(streamingSettingsIcon);
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
@@ -75,8 +82,12 @@ MainWindow::MainWindow():
     connect(serialSettingsDialog, SIGNAL (onDisconnect()), this, SLOT (onSerialDisconnect()));
 
     pupilDetectionSettingsDialog = new PupilDetectionSettingsDialog(pupilDetectionWorker, this);
+    pupilDetectionSettingsDialog->setWindowIcon(pupilDetectionSettingsIcon);
 
     generalSettingsDialog = new GeneralSettingsDialog(this);
+    generalSettingsDialog->setWindowIcon(generalSettingsIcon);
+
+    subjectSelectionDialog->setWindowIcon(subjectsIcon);
 
     connect(generalSettingsDialog, SIGNAL (onSettingsChange()), this, SLOT (onGeneralSettingsChange()));
     connect(subjectSelectionDialog, SIGNAL (onSubjectChange(QString)), this, SLOT (onSubjectsSettingsChange(QString)));
@@ -186,15 +197,34 @@ void MainWindow::onGettingsStartedWizardFinish() {
     applicationSettings->setValue("ShowGettingsStartedWizard", false);
 }
 
+void MainWindow::loadIcons() {
+    fileOpenIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/document-open.svg"), applicationSettings);
+    cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings);
+    pupilDetectionSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/draw-circle.svg"), applicationSettings);
+    remoteCCIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/computer-connection.svg"), applicationSettings);
+    generalSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/mimetypes/16/application-x-sharedlib.svg"), applicationSettings);
+    singleCameraIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-video.svg"), applicationSettings);
+    stereoCameraIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/camera-video-stereo.svg"), applicationSettings);
+    cameraSettingsIcon1 = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/configure.svg"), applicationSettings);
+    cameraSettingsIcon2 = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/configure.svg"), applicationSettings);
+    calibrateIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/crosshairs.svg"), applicationSettings);
+    sharpnessIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/edit-select-all.svg"), applicationSettings);
+    subjectsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user.svg"), applicationSettings);
+    outputDataFileIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/edit-text-frame-update.svg"), applicationSettings);
+    streamingSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-presentation.svg"), applicationSettings);
+    imagePlaybackControlIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
+}
+
 void MainWindow::createActions() {
 
     QMenu *fileMenu = menuBar()->addMenu(tr("File"));
 
-    // GB begin: made global to let is get disabled/enabled, whether there is already an opened directory or not
+    // Note: made global to let is get disabled/enabled, whether there is already an opened directory or not
     fileOpenAct = fileMenu->addAction(tr("Open Images Directory"), this, &MainWindow::onOpenImageDirectory);
-    // GB end
+    fileOpenAct->setIcon(fileOpenIcon);
     fileOpenAct->setStatusTip(tr("Open Image Directory for Playback. Single and Stereo Mode supported."));
     fileMenu->addAction(fileOpenAct);
+    fileMenu->addSeparator();
 
     QAction *exitAct = fileMenu->addAction(tr("E&xit"), qApp, &QApplication::closeAllWindows);
     exitAct->setShortcuts(QKeySequence::Quit);
@@ -212,21 +242,10 @@ void MainWindow::createActions() {
     //viewMenu->addAction(tr("Switch layout direction"), this, &MainWindow::switchLayoutDirection);
 
     QMenu *settingsMenu = menuBar()->addMenu(tr("Settings"));
-
-    // GB: renamed to be better descriptive, as now there are other purposes for serial connection too
-    QAction *serialPortSettingsAct = settingsMenu->addAction(tr("Camera Serial Connection"));
-    connect(serialPortSettingsAct, &QAction::triggered, serialSettingsDialog, &SerialSettingsDialog::show);
-
-    QAction *pupilDetectionSettingsAct = settingsMenu->addAction(tr("Pupil Detection"));
-    connect(pupilDetectionSettingsAct, &QAction::triggered, pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
-
-    // GB begin
-    QAction *remoteCCAct = settingsMenu->addAction(tr("Remote Control Connection"));
-    connect(remoteCCAct, &QAction::triggered, remoteCCDialog, &RemoteCCDialog::show);
-    // GB end
-
-    QAction *generalSettingsAct = settingsMenu->addAction(tr("Settings"));
-    connect(generalSettingsAct, &QAction::triggered, generalSettingsDialog, &GeneralSettingsDialog::show);
+    settingsMenu->addAction(cameraSerialConnectionIcon, tr("Camera Serial Connection"), serialSettingsDialog, &SerialSettingsDialog::show);
+    settingsMenu->addAction(pupilDetectionSettingsIcon, tr("Pupil Detection"), pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
+    settingsMenu->addAction(remoteCCIcon, tr("Remote Control Connection"), remoteCCDialog, &RemoteCCDialog::show);
+    settingsMenu->addAction(generalSettingsIcon, tr("General Settings"), generalSettingsDialog, &GeneralSettingsDialog::show);
 
     windowMenu = menuBar()->addMenu(tr("Windows"));
     connect(windowMenu, &QMenu::aboutToShow, this, &MainWindow::updateWindowMenu);
@@ -250,19 +269,18 @@ void MainWindow::createActions() {
 
     addToolBar(Qt::LeftToolBarArea, toolBar); // Add the toolbar to the window, on the left side initially
 
-    const QIcon cameraIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-video.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
-    cameraAct = new QAction(cameraIcon, tr("Camera"), this);
+    cameraAct = new QAction(singleCameraIcon, tr("Camera"), this);
     cameraAct->setStatusTip(tr("Connect to camera(s)."));
 
     QMenu* cameraMenu = new QMenu(this);
-    singleCameraDevicesMenu = cameraMenu->addMenu(tr("&Single Camera"));
+    singleCameraDevicesMenu = cameraMenu->addMenu(singleCameraIcon,tr("&Single Camera"));
     updateCameraMenu();
     connect(singleCameraDevicesMenu, SIGNAL(triggered(QAction*)), this, SLOT(singleCameraSelected(QAction*)));
-    cameraMenu->addAction(tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
+    cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
     cameraMenu->addSeparator();
 
     // updateCameraMenu
-    cameraMenu->addAction(tr("Refresh Devices"), this, &MainWindow::updateCameraMenu);
+    cameraMenu->addAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/refactor.svg"), applicationSettings), tr("Refresh Devices"), this, &MainWindow::updateCameraMenu);
 
     // GB added begin
     // GB: added webcams option, as webcams/opencv devices are now supported
@@ -319,10 +337,9 @@ void MainWindow::createActions() {
     //fileMenu->addAction(newAct);
     toolBar->addAction(cameraActDisconnectAct);
 
-    const QIcon cameraSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/configure.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
-    cameraSettingsAct = new QAction(cameraSettingsIcon, tr("Camera Settings"), this);
+    cameraSettingsAct = new QAction(cameraSettingsIcon1, tr("Camera Settings"), this);
     //trackAct->setShortcuts(QKeySequence::New);
-    cameraSettingsAct->setStatusTip(tr("Disconnect camera."));
+    cameraSettingsAct->setStatusTip(tr("Camera settings."));
     connect(cameraSettingsAct, &QAction::triggered, this, &MainWindow::onCameraSettingsClick);
     cameraSettingsAct->setDisabled(true);
     settingsMenu->addAction(cameraSettingsAct);
@@ -332,14 +349,18 @@ void MainWindow::createActions() {
     // NOTE: these should have come before, when the menu actions are defined, but as these whould come after cameraSettingsAct, I put them down here
     settingsMenu->addSeparator();
 
-    forceResetTrialAct = settingsMenu->addAction(tr("Force reset trial counter"));
+    const QIcon forceResetTrialIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/equals1b.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
+    forceResetTrialAct = new QAction(forceResetTrialIcon, tr("Force reset trial counter"), this);
     forceResetTrialAct->setEnabled(false);
     //connect(forceResetTrialAct, &QAction::triggered, this, &MainWindow::forceResetTrialCounter);
     connect(forceResetTrialAct, SIGNAL(triggered()), this, SLOT(forceResetTrialCounter()));
+    settingsMenu->addAction(forceResetTrialAct);
 
-    manualIncTrialAct = settingsMenu->addAction(tr("Manually increment trial counter"));
+    const QIcon manualIncTrialIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/plus1b.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
+    manualIncTrialAct = new QAction(manualIncTrialIcon, tr("Manually increment trial counter"), this);
     manualIncTrialAct->setEnabled(false);
     connect(manualIncTrialAct, SIGNAL(triggered()), this, SLOT(incrementTrialCounter()));
+    settingsMenu->addAction(manualIncTrialAct);
     // GB added end
 
     // GB: play and stop buttons were here, but have been moved to ImagePlaybackControlDialog
@@ -358,15 +379,13 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
-    const QIcon calibrateIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/crosshairs.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
-    calibrateAct = new QAction(calibrateIcon, tr("Calibrate"), this);
-    calibrateAct->setStatusTip(tr("Start calibrating."));
+    calibrateAct = new QAction(calibrateIcon, tr("Camera calibration to compensate lens distortion"), this);
+    calibrateAct->setStatusTip(tr("Start camera calibration to compensate lens distortion."));
     connect(calibrateAct, &QAction::triggered, this, &MainWindow::onCalibrateClick);
     //fileMenu->addAction(newAct);
     toolBar->addAction(calibrateAct);
     calibrateAct->setDisabled(true);
 
-    const QIcon sharpnessIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/edit-select-all.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     sharpnessAct = new QAction(sharpnessIcon, tr("Sharpness"), this);
     sharpnessAct->setStatusTip(tr("Validate sharpness."));
     connect(sharpnessAct, &QAction::triggered, this, &MainWindow::onSharpnessClick);
@@ -374,18 +393,17 @@ void MainWindow::createActions() {
     toolBar->addAction(sharpnessAct);
     sharpnessAct->setDisabled(true);
 
-    const QIcon subjectsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     subjectsAct = new QAction(subjectsIcon, tr("Subjects"), this);
     subjectsAct->setStatusTip(tr("Load subject specific detection configuration."));
     connect(subjectsAct, &QAction::triggered, this, &MainWindow::onSubjectsClick);
     //fileMenu->addAction(newAct);
     toolBar->addAction(subjectsAct);
+    subjectsAct->setDisabled(true);
 
     toolBar->addSeparator();
 
-    const QIcon logFileIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/edit-text-frame-update.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
-    logFileAct = new QAction(logFileIcon, tr("Logfile"), this);
-    logFileAct->setStatusTip(tr("Set log file."));
+    logFileAct = new QAction(outputDataFileIcon, tr("Output data file"), this);
+    logFileAct->setStatusTip(tr("Set output data file path and name."));
     connect(logFileAct, &QAction::triggered, this, &MainWindow::setLogFile);
     //fileMenu->addAction(newAct);
     toolBar->addAction(logFileAct);
@@ -403,8 +421,7 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
-    const QIcon outputDirIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/document-open.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
-    outputDirectoryAct = new QAction(outputDirIcon, tr("Output Directory"), this);
+    outputDirectoryAct = new QAction(fileOpenIcon, tr("Output Directory"), this);
     outputDirectoryAct->setStatusTip(tr("Set output directory."));
     connect(outputDirectoryAct, &QAction::triggered, this, &MainWindow::setOutputDirectory);
     //fileMenu->addAction(newAct);
@@ -422,7 +439,6 @@ void MainWindow::createActions() {
     // GB added begin
     toolBar->addSeparator();
 
-    const QIcon streamingSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-presentation.svg"), applicationSettings);
     streamingSettingsAct = new QAction(streamingSettingsIcon, tr("Streaming settings"), this);
     streamingSettingsAct->setStatusTip(tr("Settings for data streaming."));
     connect(streamingSettingsAct, &QAction::triggered, this, &MainWindow::onStreamingSettingsClick);
@@ -528,6 +544,7 @@ void MainWindow::createStatusBar() {
 
     // GB added begin
     trialWidget = new QWidget();
+
     QHBoxLayout *trialWidgetLayout = new QHBoxLayout(trialWidget);
     trialWidgetLayout->setContentsMargins(8,0,8,0);
 
@@ -683,7 +700,7 @@ void MainWindow::setLogFile() {
     QString tempFile = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
 
     // GB: cleaner code without long indentation
-    if(tempFile.isEmpty()) 
+    if(tempFile.isEmpty())
         return;
 
     if(!QFileInfo(tempFile).dir().exists())
@@ -846,6 +863,9 @@ void MainWindow::updateCameraMenu() {
             if(!found) {
                 QAction *cameraAction = singleCameraDevicesMenu->addAction(deviceIt->GetFriendlyName().c_str());
                 cameraAction->setData(QString(deviceIt->GetFullName()));
+                if(QString(deviceIt->GetFriendlyName().c_str()).toLower().contains("emulat")) {
+                    cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
+                }
             }
         }
 
@@ -1030,10 +1050,8 @@ void MainWindow::onStreamClick() {
 
 void MainWindow::onRecordClick() {
 
-    // GB added begin
     if(pupilDetectionDataFile.isEmpty())
         return;
-    // GB added end
 
     if(recordOn && dataWriter) {
         // Deactivate recording
@@ -1042,7 +1060,9 @@ void MainWindow::onRecordClick() {
         dataWriter->deleteLater();
         // GB added: this way we can safely check like if(var!=nullptr) or if(var)
         dataWriter = nullptr;
-        // GB added end
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileDataWriting(false);
 
         const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordAct->setIcon(recordOffIcon);
@@ -1051,7 +1071,13 @@ void MainWindow::onRecordClick() {
     } else {
         // Activate recording
 
-        // GB modified/added begin
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileDataWriting(true);
+
+        // TODO: this version is imperfect yet, as it permanently overwrites pupilDetectionDataFile name
+        bool changedGiven = false; // unused yet
+        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForDataWriter(pupilDetectionDataFile, applicationSettings, changedGiven, this);
+
         dataWriter = 
             new DataWriter(
                 pupilDetectionDataFile, 
@@ -1068,7 +1094,7 @@ void MainWindow::onRecordClick() {
         
         QFileInfo fi(pupilDetectionDataFile);
         QDir pupilDetectionDir = fi.dir();
-        QString metadataFileName = fi.baseName() + QString::fromStdString("-datarec-meta.xml");
+        QString metadataFileName = fi.baseName() + QString::fromStdString("_datarec_meta.xml");
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
@@ -1076,8 +1102,7 @@ void MainWindow::onRecordClick() {
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 pupilDetectionDir.filePath(metadataFileName),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
-        // GB added end
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
         
         // GB new kind of signals
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
@@ -1112,8 +1137,8 @@ void MainWindow::onRecordImageClick() {
             recEventTracker->saveOfflineEventLog(
                 imageRecStartTimestamp,
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                outputDirectory + "/" + QString::fromStdString("offline-event-log.xml") );
-                //outputDirectory + "/" + QString::fromStdString("offline-event-log.csv") );
+                outputDirectory + "/" + QString::fromStdString("offline_event_log.xml") );
+                //outputDirectory + "/" + QString::fromStdString("offline_event_log.csv") );
         }
         
         if(singleCameraSettingsDialog && !trackingOn)
@@ -1122,6 +1147,9 @@ void MainWindow::onRecordImageClick() {
             stereoCameraSettingsDialog->setLimitationsWhileTracking(false);
         if(singleWebcamSettingsDialog && !trackingOn)
             singleWebcamSettingsDialog->setLimitationsWhileTracking(false);
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileImageWriting(false);
         // GB added end
     } else {
         // Activate recording
@@ -1139,21 +1167,29 @@ void MainWindow::onRecordImageClick() {
             stereoCameraSettingsDialog->setLimitationsWhileTracking(true);
         if(singleWebcamSettingsDialog)
             singleWebcamSettingsDialog->setLimitationsWhileTracking(true);
-        
-        if( applicationSettings->value("metaSnapshotsEnabled", "1") == "1" || 
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileImageWriting(true);
+
+        bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
+
+        // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
+        // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
+        bool changedGiven = false; // unused yet
+        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, changedGiven, this);
+
+        imageWriter = new ImageWriter(outputDirectory, stereo, this);
+
+        // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response
+        if( applicationSettings->value("metaSnapshotsEnabled", "1") == "1" ||
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ) {
-            
+
             MetaSnapshotOrganizer::writeMetaSnapshot(
-                outputDirectory + "/" + QString::fromStdString("imagerec-meta.xml"),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
+                    outputDirectory + "/" + QString::fromStdString("imagerec_meta.xml"),
+                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings);
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
         // GB added end
-
-        const QString imageFormat = applicationSettings->value("writerFormat", generalSettingsDialog->getWriterFormat()).toString();
-
-        bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
-        imageWriter = new ImageWriter(outputDirectory, imageFormat, stereo, this);
 
         // connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SLOT (onNewImage(CameraImage)));
         connect(signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
@@ -1214,6 +1250,7 @@ void MainWindow::onCameraDisconnectClick() {
     if(recEventTracker) {
         disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
         disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+        disconnect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
 
         recEventTracker->close();
         recEventTracker->deleteLater();
@@ -1289,6 +1326,9 @@ void MainWindow::onCameraDisconnectClick() {
                    SIGNAL(onNewGrabResult(CameraImage)));
         disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
         disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+
+        disconnect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
+        disconnect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
     }
 
     // GB begin
@@ -1356,6 +1396,9 @@ void MainWindow::singleCameraSelected(QAction *action) {
     if(dynamic_cast<SingleCamera*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
 
+    connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
+    connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
+
     connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
     connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
@@ -1368,7 +1411,7 @@ void MainWindow::singleCameraSelected(QAction *action) {
 
     cameraSettingsAct->setDisabled(false);
 
-
+    //pupilDetectionSettingsDialog->onSettingsChange(); // must come in this order, to set proc mode first
     pupilDetectionWorker->setCamera(selectedCamera);
     pupilDetectionSettingsDialog->onSettingsChange();
 
@@ -1377,6 +1420,7 @@ void MainWindow::singleCameraSelected(QAction *action) {
     //connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
     
     QThread *tempMonitorThread = new QThread();
@@ -1421,6 +1465,7 @@ void MainWindow::singleWebcamSelected() {
     if(dynamic_cast<SingleWebcam*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
 
+    // TODO: handle unexpected device removal
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
     connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
@@ -1440,6 +1485,7 @@ void MainWindow::singleWebcamSelected() {
     //connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
     // GB added end
 
@@ -1468,9 +1514,13 @@ void MainWindow::stereoCameraSelected() {
     // GB added end
 
     stereoCameraSettingsDialog = new StereoCameraSettingsDialog(dynamic_cast<StereoCamera*>(selectedCamera), serialSettingsDialog, this);
+    stereoCameraSettingsDialog->setWindowIcon(cameraSettingsIcon1);
     stereoCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "StereoCameraSettingsDialog", this);
     stereoCameraSettingsDialog->show();
+
+    connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
+    connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
@@ -1497,11 +1547,11 @@ void MainWindow::stereoCameraSelected() {
     pupilDetectionWorker->setCamera(selectedCamera);
     pupilDetectionSettingsDialog->onSettingsChange();
 
-    // GB added begin
     recEventTracker = new RecEventTracker();
     //connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
     
     QThread *tempMonitorThread = new QThread();
@@ -1514,10 +1564,16 @@ void MainWindow::stereoCameraSelected() {
     connect(camTempMonitor, SIGNAL(camTempChecked(std::vector<double>)), recEventTracker, SLOT(addTemperatureCheck(std::vector<double>)));
 
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), stereoCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
-    // GB added end
+
+    connect(stereoCameraSettingsDialog, SIGNAL(onImageROIChanged(QRect)), stereoCameraChildWidget, SLOT(onImageROIChanged(QRect)));
+    connect(stereoCameraSettingsDialog, SIGNAL(onSensorSizeChanged(QSize)), stereoCameraChildWidget, SLOT(onSensorSizeChanged(QSize)));
+
+    // call these once again, to evoke a signal that will tell the camera view window where the image ROI is, upon window creation
+    stereoCameraSettingsDialog->updateImageROISettingsValues();
+    stereoCameraSettingsDialog->updateCamImageRegionsWidget();
+    stereoCameraSettingsDialog->updateSensorSize();
 
     resetStatus(true);
-    // GB added end
 }
 
 void MainWindow::cameraViewClick() {
@@ -1549,6 +1605,7 @@ void MainWindow::cameraViewClick() {
         child->restoreGeometry();
         connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
         cameraViewWindow = child;
+        cameraViewWindow->setWindowIcon(singleCameraIcon);
 
 
     } else if(selectedCamera && (
@@ -1565,6 +1622,7 @@ void MainWindow::cameraViewClick() {
         child->restoreGeometry();
         connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
         cameraViewWindow = child;
+        cameraViewWindow->setWindowIcon(stereoCameraIcon);
     }
     connectCameraPlaybackChangedSlots();
 }
@@ -1587,11 +1645,11 @@ void MainWindow::onCameraSettingsClick() {
 void MainWindow::onSingleCameraSettingsClick() {
 
     // GB NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
-    singleCameraSettingsDialog = new SingleCameraSettingsDialog(dynamic_cast<SingleCamera*>(selectedCamera), serialSettingsDialog, this); 
+    singleCameraSettingsDialog = new SingleCameraSettingsDialog(dynamic_cast<SingleCamera*>(selectedCamera), serialSettingsDialog, this);
+    singleCameraSettingsDialog->setWindowIcon(cameraSettingsIcon2);
     singleCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleCameraSettingsDialog", this);
     singleCameraSettingsDialog->show();
-
 
     connect(singleCameraSettingsDialog, &SingleCameraSettingsDialog::onSerialConfig, serialSettingsDialog, &SerialSettingsDialog::show);
 
@@ -1605,6 +1663,14 @@ void MainWindow::onSingleCameraSettingsClick() {
 
     connect(singleCameraSettingsDialog, SIGNAL (onHardwareTriggerEnable()), this, SLOT (onHwTriggerEnable()));
     connect(singleCameraSettingsDialog, SIGNAL (onHardwareTriggerDisable()), this, SLOT (onHwTriggerDisable()));
+
+    connect(singleCameraSettingsDialog, SIGNAL(onImageROIChanged(QRect)), singleCameraChildWidget, SLOT(onImageROIChanged(QRect)));
+    connect(singleCameraSettingsDialog, SIGNAL(onSensorSizeChanged(QSize)), singleCameraChildWidget, SLOT(onSensorSizeChanged(QSize)));
+
+    // call these once again, to evoke a signal that will tell the camera view window where the image ROI is, upon window creation
+    singleCameraSettingsDialog->updateImageROISettingsValues();
+    singleCameraSettingsDialog->updateCamImageRegionsWidget();
+    singleCameraSettingsDialog->updateSensorSize();
 }
 
 Pylon::DeviceInfoList_t MainWindow::enumerateCameraDevices() {
@@ -1829,8 +1895,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     // create simulated FileCamera
 
     // GB added begin
-    //QString offlineEventLogFileName = imageDirectory + '/' + "offline-event-log.csv";
-    QString offlineEventLogFileName = imageDirectory + '/' + "offline-event-log.xml";
+    QString offlineEventLogFileName = imageDirectory + '/' + "offline_event_log.xml";
     std::cout << "expected offlineEventLogFileName = " << offlineEventLogFileName.toStdString() << std::endl;
     if(QFileInfo(offlineEventLogFileName).exists() == true) {
         recEventTracker = new RecEventTracker(offlineEventLogFileName);
@@ -1921,8 +1986,9 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
 
     imagePlaybackControlDialog = new ImagePlaybackControlDialog(dynamic_cast<FileCamera*>(selectedCamera), pupilDetectionWorker, recEventTracker, this);
     RestorableQMdiSubWindow *imagePlaybackControlWindow = new RestorableQMdiSubWindow(imagePlaybackControlDialog, "ImagePlaybackControlDialog", this);
+    imagePlaybackControlWindow->setWindowIcon(imagePlaybackControlIcon);
     mdiArea->addSubWindow(imagePlaybackControlWindow);
-    imagePlaybackControlWindow->resize(670, 275);
+    //imagePlaybackControlWindow->resize(650, 230); // Min. size will set automatically anyways
     // No "X" button on this window
     imagePlaybackControlWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowStaysOnTopHint);
     //imagePlaybackControlWindow->setWindowFlags(imagePlaybackControlWindow->windowFlags() & ~Qt::WindowCloseButtonHint);
@@ -2062,9 +2128,17 @@ void MainWindow::onCameraCalibrationDisabled() {
 
 
 void MainWindow::onGeneralSettingsChange() {
-    // repaint to get appearance settings saved
-    // TODO: also repaint any child necessary
+
     this->repaint();
+
+    if(pupilDetectionSettingsDialog)
+        pupilDetectionSettingsDialog->repaint();
+
+    if(singleCameraSettingsDialog)
+        singleCameraSettingsDialog->repaint();
+
+    if(stereoCameraSettingsDialog)
+        stereoCameraSettingsDialog->repaint();
 }
 
 void MainWindow::onSubjectsSettingsChange(QString subject) {
@@ -2111,15 +2185,31 @@ void MainWindow::incrementTrialCounter(const quint64 &timestamp) {
     updateCurrentTrialLabel();
 }
 
+// TODO: let the user place a message from GUI too
+void MainWindow::logRemoteMessage(const quint64 &timestamp, const QString &str) {
+    if(!selectedCamera || (selectedCamera && (selectedCamera->getType()==SINGLE_IMAGE_FILE || selectedCamera->getType()==STEREO_IMAGE_FILE)) || !recEventTracker )
+        return;
+    emit commitRemoteMessage(timestamp, str);
+}
+
 void MainWindow::updateCurrentTrialLabel() {
     if(recEventTracker) {
+        unsigned int num = recEventTracker->getLastCommissionedTrialNumber();
         //currentTrialLabel->setText(QString::number(trialCounter->value()));
-        currentTrialLabel->setText(QString::number(recEventTracker->getLastCommissionedTrialNumber()));
+        currentTrialLabel->setText(QString::number(num));
+        // It is important to emphasize the trial counter value by colour, as they can instantly catch the attention of
+        // the experimenter if trigger signals are not arriving from the experiment computer
+        if(num%2==0) {
+            trialWidget->setStyleSheet("background-color: #ebd234; color: #000000; border: 1px #000000;");
+        } else {
+            trialWidget->setStyleSheet("background-color: #19fac2; color: #000000; border: 1px #000000;");
+        }
         // NOTE: currently the label doe not show the trial number associated with the displayed image,
         // (can be lagging due to high fps) but the trial number that will be associated with the 
         // currently grabbed frames
     } else {
         currentTrialLabel->setText("-");
+        trialWidget->setStyleSheet(styleSheet());
     }
 }
 
@@ -2245,6 +2335,7 @@ void MainWindow::loadCalibrationWindow(){
     child->restoreGeometry();
     connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
     calibrationWindow = child;
+    calibrationWindow->setWindowIcon(calibrateIcon);
 }
 
 void MainWindow::loadSharpnessWindow(){
@@ -2257,6 +2348,7 @@ void MainWindow::loadSharpnessWindow(){
         child->show();
         child->restoreGeometry();
         sharpnessWindow = child;
+        sharpnessWindow->setWindowIcon(sharpnessIcon);
         connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
     }
 //    else if(selectedCamera && selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
@@ -2286,43 +2378,85 @@ void MainWindow::startCamera()
 
 void MainWindow::resetStatus(bool isConnect)
 {
+    bool imageRecordingEnabled = selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE;
+
     if (isConnect){
-        cameraAct->setDisabled(true);
-        cameraSettingsAct->setDisabled(false);
-        cameraActDisconnectAct->setDisabled(false);
-        calibrateAct->setDisabled(false);
-        sharpnessAct->setDisabled(false);
-        trackAct->setDisabled(false);
-        outputDirectoryAct->setDisabled(false);
-        logFileAct->setDisabled(false);
-        // GB added begin
-        //streamAct->setDisabled(false);
-        forceResetTrialAct->setDisabled(false);
-        manualIncTrialAct->setDisabled(false);
-        streamingSettingsAct->setDisabled(false); 
+        cameraAct->setEnabled(false);
+        cameraSettingsAct->setEnabled(true);
+        cameraActDisconnectAct->setEnabled(true);
+        calibrateAct->setEnabled(true);
+        sharpnessAct->setEnabled(true);
+        subjectsAct->setEnabled(true);
+        trackAct->setEnabled(true);
+        logFileAct->setEnabled(true);
+        //streamAct->setEnabled(true);
+
+        outputDirectoryAct->setEnabled(imageRecordingEnabled);
+        recordImagesAct->setEnabled(imageRecordingEnabled && !outputDirectory.isEmpty());
+        forceResetTrialAct->setEnabled(imageRecordingEnabled);
+        manualIncTrialAct->setEnabled(imageRecordingEnabled);
+
+        streamingSettingsAct->setEnabled(true);
         trialWidget->setVisible(true);
     }
     else {
-        cameraAct->setDisabled(false);
-        cameraSettingsAct->setDisabled(true);
-        cameraActDisconnectAct->setDisabled(true);
-        calibrateAct->setDisabled(true);
-        sharpnessAct->setDisabled(true);
-        trackAct->setDisabled(true);
-        outputDirectoryAct->setDisabled(true);
-        logFileAct->setDisabled(true);
-        // GB added begin
-        //streamAct->setDisabled(true);
-        forceResetTrialAct->setDisabled(true);
-        manualIncTrialAct->setDisabled(true);
-        streamingSettingsAct->setDisabled(true);
+        cameraAct->setEnabled(true);
+        cameraSettingsAct->setEnabled(false);
+        cameraActDisconnectAct->setEnabled(false);
+        calibrateAct->setEnabled(false);
+        sharpnessAct->setEnabled(false);
+        subjectsAct->setEnabled(false);
+        trackAct->setEnabled(false);
+        logFileAct->setEnabled(false);
+        //streamAct->setEnabled(false);
+
+        outputDirectoryAct->setEnabled(false);
+        recordImagesAct->setEnabled(false);
+        forceResetTrialAct->setEnabled(false);
+        manualIncTrialAct->setEnabled(false);
+
+        streamingSettingsAct->setEnabled(false);
         trialWidget->setVisible(false);
 
-        // Disconnect only
-        recordImagesAct->setDisabled(true);
-        recordAct->setDisabled(true);
-        cameraPlaying = true;
+        recordAct->setEnabled(false); //
+        cameraPlaying = true; //
         }
+}
+
+void MainWindow::onImagesSkipped() {
+    if(imagesSkippedMsgBox != nullptr) {
+        return;
+    }
+    imagesSkippedMsgBox = new QMessageBox(this);
+    imagesSkippedMsgBox->setWindowTitle("Camera image frames skipped");
+    imagesSkippedMsgBox->setText("At least one image frame was skipped due to unstable connection or interface failure.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");
+    imagesSkippedMsgBox->setMinimumSize(330,240);
+    imagesSkippedMsgBox->setIcon(QMessageBox::Warning);
+    imagesSkippedMsgBox->setModal(false);
+    connect(imagesSkippedMsgBox, SIGNAL(accepted()), this, SLOT(onImagesSkippedMsgClose()));
+    //connect(imagesSkippedMsgBox,SIGNAL(accepted()),this,SLOT(onImagesSkippedMsgClose()));
+    //connect(imagesSkippedMsgBox,SIGNAL(rejected()),this,SLOT(onImagesSkippedMsgClose()));
+    imagesSkippedMsgBox->show();
+}
+
+void MainWindow::onImagesSkippedMsgClose() {
+    disconnect(imagesSkippedMsgBox, SIGNAL(accepted()), this, SLOT(onImagesSkippedMsgClose()));
+    imagesSkippedMsgBox->deleteLater();
+    imagesSkippedMsgBox = nullptr;
+}
+
+void MainWindow::onCameraUnexpectedlyDisconnected() {
+
+    QMessageBox *msgBox = new QMessageBox(this);
+    msgBox->setWindowTitle("Camera unexpectedly disconnected");
+    msgBox->setText("At least one camera in use was unexpectedly disconnected. Recordings are stopped for saving.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");
+    msgBox->setMinimumSize(330,240);
+    msgBox->setIcon(QMessageBox::Warning);
+    msgBox->setModal(false);
+    msgBox->show();
+
+    onCameraDisconnectClick();
+
 }
 
 void MainWindow::connectCameraPlaybackChangedSlots()
@@ -2402,8 +2536,9 @@ void MainWindow::dropEvent(QDropEvent* e)
         openImageDirectory(fileInfo.filePath());
     } else if(fileInfo.isFile()) {
         // TODO: do this with a QMap that is stored in persistence/QSettings
-        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
-            fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml") {
+        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "jpg" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
+            fileInfo.fileName() == "imagerec_meta.xml" || fileInfo.fileName() == "offline_event_log.xml" ||
+            fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml" ) {
 
             if(selectedCamera && selectedCamera->isOpen()) {
                 onCameraDisconnectClick();

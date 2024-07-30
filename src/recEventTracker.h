@@ -34,6 +34,10 @@ struct TemperatureCheck {
     quint64 timestamp = 0;
     std::vector<double> temperatures = {0,0};
 };
+struct Message {
+    quint64 timestamp = 0;
+    QString messageString;
+};
 
 /**
     
@@ -42,9 +46,9 @@ struct TemperatureCheck {
         2, In case of an opened camera input device (BUFFER mode): 
             it represents temporary buffer to store frame-related info in, without slowing image processing 
             via adding extra data fields to some or each CameraImage instance that is passed down the pupil detection chain.
-            Also it can save event vectors into an offline-event-log.csv
+            Also it can save event vectors into an offline_event_log.csv
         3, When an image directory is opened for reading (STORAGE mode):
-            Tries to open an offline-event-log.csv containing trial increment events, etc.
+            Tries to open an offline_event_log.csv containing trial increment events, etc.
     
 */
 class RecEventTracker : public QObject {
@@ -78,6 +82,7 @@ public:
     // for both modes
     TrialIncrement getTrialIncrement(quint64 timestamp);
     TemperatureCheck getTemperatureCheck(quint64 timestamp);
+    //Message getMessage(quint64 timestamp);
 
 public slots:
     // For adding elements to vectors in BUFFER mode (timestamp is updated via image grab handler emitted CameraImages automatically)
@@ -92,6 +97,9 @@ public slots:
     // BUFFER mode only
     void resetBufferTrialCounter(const quint64 &timestamp);
 
+    // for both modes
+    void addMessage(const quint64 &timestamp, const QString &str);
+
 private:
 
     EventReplayMode mode;
@@ -100,8 +108,12 @@ private:
     // both modes
     std::vector<TrialIncrement> trialIncrements;
     std::vector<TemperatureCheck> temperatureChecks;
+    std::vector<Message> messages;
     QChar delim;
     QFile *dataFile = nullptr;
+
+    quint16 foundEventLogVersion = 1;
+    const quint16 currentEventLogVersion = 1;
 
     // BUFFER mode only
     //quint64 currentGrabTimestamp = 0;
