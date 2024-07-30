@@ -735,13 +735,6 @@ void SingleCameraSettingsDialog::onSetImageROIoffsetY(int val) {
 }
 
 void SingleCameraSettingsDialog::updateImageROISettingsMax() {
-    if(!camera->isOpen()) {
-        imageROIwidthInputBox->setMaximum(std::numeric_limits<short>::max());
-        imageROIheightInputBox->setMaximum(std::numeric_limits<short>::max());
-        imageROIoffsetXInputBox->setMaximum(std::numeric_limits<short>::max());
-        imageROIoffsetYInputBox->setMaximum(std::numeric_limits<short>::max());
-        return;
-    }
 
     imageROIwidthInputBox->setMaximum(camera->getImageROIwidthMax());
     imageROIheightInputBox->setMaximum(camera->getImageROIheightMax());

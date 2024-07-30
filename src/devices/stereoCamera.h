@@ -118,22 +118,18 @@ private:
 
     QDir settingsDirectory;
 
-    CBaslerUniversalInstantCameraArray cameras;
-
     uint64 cameraMainTime;
     uint64 cameraSecondaryTime;
     uint64 systemTime;
 
     String_t lineSource;
 
+    CBaslerUniversalInstantCameraArray cameras;
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
-
     CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
     CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
-
     HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
     HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
-
     CameraFrameRateCounter *frameCounter;
 
     StereoCameraCalibration *cameraCalibration;

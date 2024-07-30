@@ -105,7 +105,16 @@ void StereoCamera::open(bool enableHardwareTrigger) {
     }
 
     try {
-        // Register the configurations of the cameras, setting both to receive hardware trigger signals on the given line source
+        // Register the configurations of the cameras
+
+        cameraConfigurationEventHandler0 = new CameraConfigurationEventHandler();
+        cameraConfigurationEventHandler1 = new CameraConfigurationEventHandler();
+        connect(cameraConfigurationEventHandler0, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
+        connect(cameraConfigurationEventHandler1, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
+        cameras[0].RegisterConfiguration(cameraConfigurationEventHandler0, RegistrationMode_ReplaceAll, Cleanup_Delete);
+        cameras[1].RegisterConfiguration(cameraConfigurationEventHandler1, RegistrationMode_ReplaceAll, Cleanup_Delete);
+
+        // Setting both to receive hardware trigger signals on the given line source
         // NOTE: always true except when emulated cameras are used
         if(enableHardwareTrigger) {
             hardwareTriggerConfiguration0 = new HardwareTriggerConfiguration(lineSource);
@@ -113,14 +122,6 @@ void StereoCamera::open(bool enableHardwareTrigger) {
             cameras[0].RegisterConfiguration(hardwareTriggerConfiguration0, RegistrationMode_Append, Cleanup_Delete);
             cameras[1].RegisterConfiguration(hardwareTriggerConfiguration1, RegistrationMode_Append, Cleanup_Delete);
         }
-
-        cameraConfigurationEventHandler0 = new CameraConfigurationEventHandler();
-        cameraConfigurationEventHandler1 = new CameraConfigurationEventHandler();
-        connect(cameraConfigurationEventHandler0, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
-        connect(cameraConfigurationEventHandler1, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
-        cameras[0].RegisterConfiguration(cameraConfigurationEventHandler0, RegistrationMode_Append, Cleanup_Delete);
-        cameras[1].RegisterConfiguration(cameraConfigurationEventHandler1, RegistrationMode_Append, Cleanup_Delete);
-
 
         cameraImageEventHandler = new StereoCameraImageEventHandler(this->parent());
         connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
@@ -1364,7 +1365,7 @@ void StereoCamera::safelyCloseCameras() {
         disconnect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
         cameras[0].DeregisterImageEventHandler(cameraImageEventHandler);
         cameras[1].DeregisterImageEventHandler(cameraImageEventHandler);
-        cameraImageEventHandler->DestroyImageEventHandler(); //
+//        cameraImageEventHandler->DestroyImageEventHandler(); //
         cameraImageEventHandler = nullptr;
     }
 
@@ -1373,6 +1374,7 @@ void StereoCamera::safelyCloseCameras() {
                    SIGNAL(cameraDeviceRemoved()));
         cameras[0].DeregisterConfiguration(hardwareTriggerConfiguration0);
         cameras[0].DeregisterConfiguration(cameraConfigurationEventHandler0);
+        hardwareTriggerConfiguration0 = nullptr;
         cameraConfigurationEventHandler0 = nullptr;
     }
 
@@ -1381,5 +1383,7 @@ void StereoCamera::safelyCloseCameras() {
                    SIGNAL(cameraDeviceRemoved()));
         cameras[1].DeregisterConfiguration(hardwareTriggerConfiguration1);
         cameras[1].DeregisterConfiguration(cameraConfigurationEventHandler1);
+        hardwareTriggerConfiguration1 = nullptr;
+        cameraConfigurationEventHandler1 = nullptr;
     }
 }

@@ -68,12 +68,8 @@ public:
 
 private:
 
-    //QSerialPort *serialPort;
-
-    // GB begin
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
-    // GB end
 
     ConnPoolCOMInstanceSettings m_currentSettings;
     QIntValidator *m_intValidator = nullptr;
@@ -92,9 +88,6 @@ private:
     QTextEdit *textField;
 
     QPushButton *applyButton;
-//    QPushButton *cancelButton;
-//    QPushButton *connectButton;
-//    QPushButton *disconnectButton;
     QPushButton *clearButton;
     QPushButton *refreshButton;
 
@@ -119,7 +112,6 @@ private slots:
 
     void showPortInfo(int idx);
     void apply();
-//    void cancel();
     void checkCustomBaudRatePolicy(int idx);
     void checkCustomDevicePathPolicy(int idx);
     void readData(QString msg, quint64 timestamp); // GB modified

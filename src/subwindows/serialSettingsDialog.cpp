@@ -16,27 +16,19 @@ static const char* blankString = "N/A";
 SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent) :
     QDialog(parent),
     m_intValidator(new QIntValidator(0, 4000000, this)),
-    //serialPort(new QSerialPort(this)),
     connPoolCOM(connPoolCOM),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    // GB begin
     this->setMinimumSize(520, 380);
-    // GB: renamed to be better descriptive, as now there are other purposes for serial connection too
     this->setWindowTitle("Camera Serial Connection Settings");
-    // GB end
 
     createForm();
 
     baudRateBox->setInsertPolicy(QComboBox::NoInsert);
 
     connect(applyButton, &QPushButton::clicked, this, &SerialSettingsDialog::apply);
-//    connect(cancelButton, &QPushButton::clicked, this, &SerialSettingsDialog::cancel);
     connect(clearButton, &QPushButton::clicked, textField, &QTextEdit::clear);
     connect(refreshButton, &QPushButton::clicked, this, &SerialSettingsDialog::updateDevices);
-
-//    connect(connectButton, &QPushButton::clicked, this, &SerialSettingsDialog::connectSerialPort);
-//    connect(disconnectButton, &QPushButton::clicked, this, &SerialSettingsDialog::disconnectSerialPort);
 
     connect(serialPortInfoListBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::showPortInfo);
     connect(baudRateBox,  QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::checkCustomBaudRatePolicy);
@@ -53,7 +45,6 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
 
 // Connects the serial port with the configured settings, if successful, displays a connected message to the textfield
 // Sends an onConnect signal on success
-// BG: implemented serial port handling from pool
 void SerialSettingsDialog::connectSerialPort() {
 
     updateSettings();
@@ -63,10 +54,6 @@ void SerialSettingsDialog::connectSerialPort() {
     int index = connPoolCOM->setupAndOpenConnection(p, ConnPoolPurposeFlag::CAMERA_TRIGGER);
     if(index >= 0) {
         textField->clear();
-
-//        connectButton->setEnabled(false);
-//        disconnectButton->setEnabled(true);
-        //m_ui->actionConfigure->setEnabled(false);
         textField->append(tr("Connected to %1 : %2, %3, %4, %5, %6")
                                   .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
                                   .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
@@ -90,7 +77,6 @@ void SerialSettingsDialog::connectSerialPort() {
 
 // Disconnects the connected serial port
 // Sends an onDisconnect signal
-// BG: implemented serial port handling from pool
 void SerialSettingsDialog::disconnectSerialPort() {
 
     if(connPoolCOMIndex < 0) {
@@ -105,8 +91,6 @@ void SerialSettingsDialog::disconnectSerialPort() {
         connPoolCOMIndex = -1;
     }
 
-//    connectButton->setEnabled(true);
-//    disconnectButton->setEnabled(false);
     textField->append(tr("Disconnected."));
 
     setLimitationsWhileConnected(false);
@@ -128,7 +112,6 @@ void SerialSettingsDialog::readData(QString msg, quint64 timestamp)
 
 // Slot that is used to send commands over the connected serial port
 // Commands are strings, encoded using utf-8
-// GB modified
 void SerialSettingsDialog::sendCommand(QString cmd) {
 
     //if(!serialPort->isOpen())
@@ -155,7 +138,6 @@ void SerialSettingsDialog::createForm() {
     QGridLayout *mainLayout = new QGridLayout(this);
 
     paramGroup = new QGroupBox("Parameters");
-    //QGridLayout *paramLayout = new QGridLayout;
     QFormLayout *paramLayout = new QFormLayout;
 
     QLabel *baudRateLabel = new QLabel(tr("Baudrate"));
@@ -170,8 +152,6 @@ void SerialSettingsDialog::createForm() {
     parityBox = new QComboBox();
     stopBitsBox = new QComboBox();
 
-    // GB modified begin
-    // GB NOTE: using qFormLayout instead of grid, to make things fit on smaller screen area
     baudRateBox->setFixedWidth(70);
     dataBitsBox->setFixedWidth(70);
     flowControlBox->setFixedWidth(70);
@@ -183,7 +163,6 @@ void SerialSettingsDialog::createForm() {
     paramLayout->addRow(parityLabel, parityBox);
     paramLayout->addRow(stopBitsLabel, stopBitsBox);
     paramLayout->addRow(flowControlLabel, flowControlBox);
-    // GB modified end
 
     paramGroup->setLayout(paramLayout);
     mainLayout->addWidget(paramGroup, 0, 1);
@@ -194,9 +173,7 @@ void SerialSettingsDialog::createForm() {
     QHBoxLayout *serialPortInfoListLayout = new QHBoxLayout;
 
     serialPortInfoListBox = new QComboBox();
-    // GB: set width to fit better
     serialPortInfoListBox->setFixedWidth(70);
-    // GB added end
 
     serialPortInfoListLayout->addWidget(serialPortInfoListBox);
 
@@ -248,23 +225,16 @@ void SerialSettingsDialog::createForm() {
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-//    connectButton = new QPushButton(tr("Connect")); // moved to camera settings windows for clearer UX
-//    disconnectButton = new QPushButton(tr("Disconnect")); // moved to camera settings windows for clearer UX
     applyButton = new QPushButton(tr("Apply and Close"));
-//    cancelButton = new QPushButton(tr("Cancel")); // does not really make sense here, there is already a window close button for this
 
-//    buttonsLayout->addWidget(connectButton);
-//    buttonsLayout->addWidget(disconnectButton);
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
-
     buttonsLayout->addWidget(applyButton);
-//    buttonsLayout->addWidget(cancelButton);
 
     mainLayout->addLayout(buttonsLayout, 4, 0, 1, 2);
 
     setLayout(mainLayout);
 
-    this->resize(600, 370); // GB modified
+    this->resize(600, 370);
 }
 
 SerialSettingsDialog::~SerialSettingsDialog() {
@@ -296,10 +266,6 @@ void SerialSettingsDialog::apply()
     updateSettings();
     close();
 }
-
-//void SerialSettingsDialog::cancel() {
-//    close();
-//}
 
 void SerialSettingsDialog::checkCustomBaudRatePolicy(int idx)
 {

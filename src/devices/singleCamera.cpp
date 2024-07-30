@@ -2,7 +2,6 @@
 #include <pylon/TlFactory.h>
 #include <QThread>
 #include "singleCamera.h"
-#include "hardwareTriggerConfiguration.h"
 
 SingleCamera::SingleCamera(const String_t &fullname, QObject* parent)
         : SingleCamera(CDeviceInfo().SetFullName(fullname), parent) {
@@ -11,8 +10,6 @@ SingleCamera::SingleCamera(const String_t &fullname, QObject* parent)
 
 SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
         : Camera(parent), camera(CTlFactory::GetInstance().CreateDevice(di)),
-        cameraImageEventHandler(new SingleCameraImageEventHandler(parent)),
-        cameraConfigurationEventHandler(new CameraConfigurationEventHandler),
         frameCounter(new CameraFrameRateCounter(parent)),
         cameraCalibration(new CameraCalibration()),
         calibrationThread(new QThread()),
@@ -31,13 +28,6 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
-    // CTlFactory::GetInstance().CreateDevice( CDeviceInfo().SetFullName( fullname))
-    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
-    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
-
-    connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
-    connect(cameraConfigurationEventHandler, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
-
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
 
@@ -46,8 +36,18 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
     }
 
     try {
-        camera.RegisterConfiguration(new CAcquireContinuousConfiguration, RegistrationMode_ReplaceAll, Cleanup_Delete);
-        camera.RegisterConfiguration(cameraConfigurationEventHandler, RegistrationMode_Append, Cleanup_Delete);
+        cameraConfigurationEventHandler = new CameraConfigurationEventHandler;
+        connect(cameraConfigurationEventHandler, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
+        camera.RegisterConfiguration(cameraConfigurationEventHandler, RegistrationMode_ReplaceAll, Cleanup_Delete);
+
+        softwareTriggerConfiguration = new CAcquireContinuousConfiguration;
+        camera.RegisterConfiguration(softwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
+
+        cameraImageEventHandler = new SingleCameraImageEventHandler(parent);
+        connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
+        connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
+        //
+        connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
 
         camera.RegisterImageEventHandler(cameraImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
 
@@ -111,9 +111,16 @@ void SingleCamera::close() {
     camera.StopGrabbing();
     camera.Close();
     camera.DeregisterImageEventHandler(cameraImageEventHandler);
+    camera.DeregisterConfiguration(cameraConfigurationEventHandler);
+    if(hardwareTriggerConfiguration) {
+        camera.DeregisterConfiguration(hardwareTriggerConfiguration);
+    }
+    if(softwareTriggerConfiguration) {
+        camera.DeregisterConfiguration(softwareTriggerConfiguration);
+    }
 }
 
-void SingleCamera::enableHardwareTrigger(bool enabled) {
+void SingleCamera::enableHardwareTrigger(bool state) {
     std::cout<< "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << std::endl;
 
     frameCounter->reset();
@@ -125,11 +132,23 @@ void SingleCamera::enableHardwareTrigger(bool enabled) {
             camera.Close();
         }
 
-        if(enabled) {
-            camera.RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
+
+        if(hardwareTriggerConfiguration) {
+            camera.DeregisterConfiguration(hardwareTriggerConfiguration);
+            hardwareTriggerConfiguration = nullptr;
+        }
+        if(softwareTriggerConfiguration) {
+            camera.DeregisterConfiguration(softwareTriggerConfiguration);
+            softwareTriggerConfiguration = nullptr;
+        }
+
+        if(state) {
+            hardwareTriggerConfiguration = new HardwareTriggerConfiguration(lineSource);
+            camera.RegisterConfiguration(hardwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
             hardwareTriggerEnabled = true;
         } else {
-            camera.RegisterConfiguration(new CAcquireContinuousConfiguration, RegistrationMode_ReplaceAll, Cleanup_Delete);
+            softwareTriggerConfiguration = new CAcquireContinuousConfiguration;
+            camera.RegisterConfiguration(softwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
             hardwareTriggerEnabled = false;
         }
 
