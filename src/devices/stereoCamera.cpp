@@ -23,7 +23,6 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
 
     // Calibration thread working
     cameraCalibration->moveToThread(calibrationThread);
-    connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
@@ -58,6 +57,12 @@ StereoCamera::~StereoCamera() {
         cameras.Close();
     }
     delete cameraImageEventHandler;
+    if (cameraCalibration != nullptr)
+        cameraCalibration->deleteLater();
+    if (calibrationThread != nullptr) {
+        calibrationThread->quit();
+        calibrationThread->deleteLater();
+    }
 }
 
 // Attaches the main and secondary cameras to the camera array, based on their given device information

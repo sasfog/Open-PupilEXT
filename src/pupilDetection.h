@@ -180,7 +180,9 @@ public:
             return false;
     }
     bool hasOpenCamera() {
-        return (camera && camera->isOpen());
+        if (camera)
+            return camera->isOpen();
+        return false;
     }
     // GB added end
 

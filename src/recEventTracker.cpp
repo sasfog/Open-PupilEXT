@@ -25,6 +25,8 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
     if (!dataFile->open(QIODevice::ReadOnly))
     { //| QIODevice::Text)
         std::cout << "Could not open offline event log XML file. Check file availability or file access permission." << std::endl;
+        delete dataFile;
+        dataFile = nullptr;
         return;
     }
 
@@ -218,6 +220,8 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     if (dataFile->exists())
     {
         std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << ", writing cancelled." << std::endl;
+        delete dataFile;
+        dataFile = nullptr;
         // TODO: make it append
         return;
     }
@@ -229,7 +233,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         dataFile = nullptr;
     }
 
-    QTextStream *textStream = new QTextStream(dataFile);
+    QTextStream textStream(dataFile);
 
     QDomDocument document;
     QDomElement root = document.createElement("RecordedEvents");
@@ -258,7 +262,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         }
     }
 
-    *textStream << document.toString();
+    textStream << document.toString();
     dataFile->close();
 }
 
