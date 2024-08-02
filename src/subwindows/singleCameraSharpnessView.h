@@ -58,7 +58,7 @@ private:
 
 private slots:
 
-    void updateView(CameraImage *img);
+    void updateView(const CameraImage &img);
     void updateCameraFPS(double fps);
 
     void onFitClick();

@@ -27,14 +27,22 @@ Q_DECLARE_METATYPE(std::vector<double>)
     thus a recEventTracker instance also must exist
 */
 
+/** The temperature that we deem as default value when cannot be measured, and the minimum that can be measured */
+static const double MINIMUM_DEVICE_TEMPERATURE = -1.0;
+
 class CamTempMonitor : public QObject {
 
     Q_OBJECT
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
+
+    const int checkIntervalSec = 5;
+    const int warmupStableDeltaTime = 60;
+    const double warmupStableDeltaTemp = 0.5;
  
     bool m_running;
     Camera *camera;
     bool stereo;
+    std::vector<std::vector<double>> tempChecks;
  
 public:
     explicit CamTempMonitor(Camera *camera);
@@ -44,6 +52,8 @@ signals:
     void finished();
     void runningChanged(bool running);
     void camTempChecked(std::vector<double> temperatures);
+    void cameraWarmupHasDeltaTimeData();
+    void cameraWarmedUp();
  
 public slots:
     void run();

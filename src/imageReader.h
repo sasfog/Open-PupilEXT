@@ -166,7 +166,6 @@ public:
     }
 
     void setSynchronised(bool synchronised);
-    // GB added end
 
 private:
 
@@ -223,7 +222,7 @@ public slots:
 
 signals:
 
-    void onNewImage(const CameraImage &image);
+    void onNewImage(CameraImage image);
     void finished();
 
     void paused();

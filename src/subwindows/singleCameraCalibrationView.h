@@ -86,7 +86,7 @@ public slots:
 
 signals:
 
-    void onNewImage(const CameraImage &img);
+    void onNewImage(CameraImage img);
 
 };
 

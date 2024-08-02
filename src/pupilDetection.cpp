@@ -103,6 +103,11 @@ void PupilDetection::setCamera(Camera *m_camera) {
     if (camera != m_camera) {
         camera = m_camera;
 
+        // This can happen upon camera disconnect, especially important upon main window closing when a camera was open
+        // The m_camera is set to nullptr then, but the following code does not get executed because of this return;
+        if(!m_camera)
+            return;
+
         calibrated = false;
 
         if (camera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
@@ -196,7 +201,7 @@ void PupilDetection::setAlgorithm(QString method) {
 // GB: renamed and modified
 
 
-void PupilDetection::onNewSingleImageForOnePupil(CameraImage *cimg) {
+void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewSingleImageForOnePupilImpl(cimg);
@@ -213,7 +218,7 @@ void PupilDetection::onNewSingleImageForOnePupil(CameraImage *cimg) {
     }
 }
 
-void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
+void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 
     // Processing fps restriction not working correctly, timers overhead seem to break timing, left out for now
     //qDebug()<<cimg->filename;
@@ -224,12 +229,12 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
         return;
     }
 
-    cv::Mat bwFrame = image->img;
+    cv::Mat bwFrame = image.img;
 
     // Undistorting the whole image is rather slow (~4ms on our test system), use contour point undistort instead (>~1ms)
     if(!usePupilUndistort && useImageUndistort) {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-        bwFrame = singleCalibration->undistortImage(image->img);
+        bwFrame = singleCalibration->undistortImage(image.img);
         //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     }
 
@@ -294,16 +299,16 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
 
     // Drawing of pupil detections on the image is only performed at ~30fps
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image->frameNumber)) {
+        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
 
-        CameraImage *mimg = image;
-        mimg->img = image->img.clone();
+        const CameraImage &mimg = image;
+        mimg.img = image.img.clone();
 
         if(!usePupilUndistort && useImageUndistort) {
-            mimg->img = singleCalibration->undistortImage(image->img);
+            mimg.img = singleCalibration->undistortImage(image.img);
         }
         // GB modified: not necessary to copy twice
         //else {
@@ -343,14 +348,14 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE) {
             emit processedImage(mimg);
-            qDebug() << image->frameNumber;
+//            qDebug() << image.frameNumber;
         }
         //qDebug() << "frameNumber left pupilDetection: " << cimg->frameNumber;
     }
 
     //emit processedSingleImageForOnePupilData(cimg->timestamp, pupil, QString::fromStdString(cimg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
 
-    emit processedPupilData(image->timestamp, currentProcMode, Pupils, QString::fromStdString(image->filename));
+    emit processedPupilData(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
     // GB modified end
 
 
@@ -361,7 +366,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
-void PupilDetection::onNewSingleImageForTwoPupil(CameraImage *cimg) {
+void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewSingleImageForTwoPupilImpl(cimg);
@@ -379,19 +384,19 @@ void PupilDetection::onNewSingleImageForTwoPupil(CameraImage *cimg) {
 
 }
 
-void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
+void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
     if (!trackingOn) {
-        qDebug() << cimg->frameNumber;
+        qDebug() << cimg.frameNumber;
         emit processedImage(cimg);
         return;
     }
 
     // BG: NOTE: by default we only use the left and right halves of the input image
-    cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg->img.cols/2)-1, cimg->img.rows);
-    cv::Rect roiB = cv::Rect((int)std::ceil(cimg->img.cols/2)+1, 0, cimg->img.cols, cimg->img.rows);
-    cv::Mat bwFrameA = cimg->img;
-    cv::Mat bwFrameB = cimg->img;
+    cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
+    cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
+    cv::Mat bwFrameA = cimg.img;
+    cv::Mat bwFrameB = cimg.img;
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIsingleImageTwoPupilA.empty() && roiA != ROIsingleImageTwoPupilA && ROIsingleImageTwoPupilA.width<=bwFrameA.cols && ROIsingleImageTwoPupilA.height<=bwFrameA.rows) {
@@ -411,7 +416,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
         autoParamScheduled = false;
     }
 
-    if (cimg->img.channels() > 1) {
+    if (cimg.img.channels() > 1) {
         cv::cvtColor(bwFrameA, bwFrameA, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameB, bwFrameB, cv::COLOR_BGR2GRAY);
     }
@@ -463,19 +468,19 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
     Pupils.push_back(pupilB);
 
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==cimg->frameNumber)) {
+        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==cimg.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
 
-        CameraImage *mimg = cimg;
+        const CameraImage &mimg = cimg;
 //        mimg->img = cimg->img.clone();
 // //        mimg->imgB = cimg->img.clone(); // would be the same
 
         if(!usePupilUndistort && useImageUndistort) {
-            mimg->img = singleCalibration->undistortImage(cimg->img);
+            mimg.img = singleCalibration->undistortImage(cimg.img);
         } else {
-            mimg->img = cimg->img.clone();
+            mimg.img = cimg.img.clone();
         }
 
         std::vector<cv::Rect> ROIs;
@@ -494,7 +499,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
         if(camera->getType() == SINGLE_IMAGE_FILE)
                 emit processedImage(mimg);
     }
-    emit processedPupilData(cimg->timestamp, currentProcMode, Pupils, QString::fromStdString(cimg->filename));
+    emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
 
 }
 
@@ -503,7 +508,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
 // GB: renamed and modified
-void PupilDetection::onNewStereoImageForOnePupil(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
 
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
@@ -523,20 +528,20 @@ void PupilDetection::onNewStereoImageForOnePupil(CameraImage *simg) {
 }
 
 
-void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
 
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
     if (!trackingOn) {
-        qDebug() << simg->frameNumber;
+        qDebug() << simg.frameNumber;
         emit processedImage(simg);
         return;
     }
 
-    cv::Rect roi = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiSecondary = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Mat bwFrame = simg->img;
-    cv::Mat bwFrameSecondary = simg->imgSecondary;
+    cv::Rect roi = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiSecondary = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Mat bwFrame = simg.img;
+    cv::Mat bwFrameSecondary = simg.imgSecondary;
 
     // GB modified begin
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
@@ -558,7 +563,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     }
     // GB modified end
 
-    if (simg->img.channels() > 1) {
+    if (simg.img.channels() > 1) {
         cv::cvtColor(bwFrame, bwFrame, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameSecondary, bwFrameSecondary, cv::COLOR_BGR2GRAY);
     }
@@ -641,13 +646,13 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     Pupils.push_back(pupilSecondary);
 
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg->frameNumber)) {
+        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
-        CameraImage *mimg = simg;
-        mimg->img = simg->img.clone();
-        mimg->imgSecondary = simg->imgSecondary.clone();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
 
 
         std::vector<cv::Rect> ROIs;
@@ -668,14 +673,14 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     }
 
     //emit processedStereoImageForOnePupilData(simg->timestamp, pupil, pupilSecondary, QString::fromStdString(simg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-    emit processedPupilData(simg->timestamp, currentProcMode, Pupils, QString::fromStdString(simg->filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     // GB modified end
 }
 // Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
-void PupilDetection::onNewStereoImageForTwoPupil(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
 
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
@@ -693,25 +698,25 @@ void PupilDetection::onNewStereoImageForTwoPupil(CameraImage *simg) {
     }
 }
 
-void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
 
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        qDebug() << simg->frameNumber;
+        qDebug() << simg.frameNumber;
         emit processedImage(simg);
         return;
     }
 
-    cv::Rect roiA1 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiA2 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiB1 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiB2 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Mat bwFrameA1 = simg->img;
-    cv::Mat bwFrameA2 = simg->imgSecondary;
-    cv::Mat bwFrameB1 = simg->img;
-    cv::Mat bwFrameB2 = simg->imgSecondary;
+    cv::Rect roiA1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiA2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Mat bwFrameA1 = simg.img;
+    cv::Mat bwFrameA2 = simg.imgSecondary;
+    cv::Mat bwFrameB1 = simg.img;
+    cv::Mat bwFrameB2 = simg.imgSecondary;
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIstereoImageTwoPupilA1.empty() && roiA1 != ROIstereoImageTwoPupilA1 && ROIstereoImageTwoPupilA1.width<=bwFrameA1.cols && ROIstereoImageTwoPupilA1.height<=bwFrameA1.rows) {
@@ -743,7 +748,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
         autoParamScheduled = false;
     }
 
-    if (simg->img.channels() > 1) {
+    if (simg.img.channels() > 1) {
         cv::cvtColor(bwFrameA1, bwFrameA1, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameA2, bwFrameA2, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameB1, bwFrameB1, cv::COLOR_BGR2GRAY);
@@ -879,13 +884,13 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
     Pupils.push_back(pupilB2);
 
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg->frameNumber)) {
+        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
-        CameraImage *mimg = simg;
-        mimg->img = simg->img.clone();
-        mimg->imgSecondary = simg->imgSecondary.clone();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
 
         std::vector<cv::Rect> ROIs;
         if(useROIPreProcessing) {
@@ -907,7 +912,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
                 emit processedImage(mimg);
     }
 
-    emit processedPupilData(simg->timestamp, currentProcMode, Pupils, QString::fromStdString(simg->filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
 }
 
 // GB: I found this function like this, and did not bother it

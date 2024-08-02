@@ -581,14 +581,14 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 }
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
-    qDebug() << "Frame number arrived: " << frameNumber;
+//    qDebug() << "Frame number arrived: " << frameNumber;
     selectedFrameVal = frameNumber;
     if (!playImagesOn){
 
         slider->blockSignals(true);
         int gg = floor(99*((selectedFrameVal - 1)/(float)(numImagesTotal - 1)));
         //slider->setColorTickPos((selectedFrameVal)/(float)numImagesTotal);
-        qDebug() << "Set slider to: " << gg;
+//        qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
         fileCamera->seekToFrame(selectedFrameVal -1);

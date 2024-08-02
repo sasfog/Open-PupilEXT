@@ -31,7 +31,15 @@ class GraphPlot : public QWidget {
 
 public:
 
+    enum InteractionMode {
+        AUTO_SCROLL_X_AUTO_SCALE_Y = 1,
+        AUTO_SCROLL_X_MANUAL_SCALE_Y = 2,
+        MANUAL_SCALE_SCROLL_X_Y = 3,
+        AUTO_SCROLL_X_FIXED_SCALE_Y = 4,
+    };
+
     static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
+    uint64 lastTimestamp = 0;
 
     explicit GraphPlot(QString plotValue, ProcMode procMode=ProcMode::SINGLE_IMAGE_ONE_PUPIL, bool legend=false, QWidget *parent=0);
     ~GraphPlot() override;
@@ -43,8 +51,8 @@ private slots:
 
     void reset();
     void contextMenuRequest(QPoint pos);
-    void enableInteractions();
-    void enableYAxisInteraction();
+//    void enableInteractions();
+//    void enableYAxisInteraction();
 
 public slots:
 
@@ -56,7 +64,18 @@ public slots:
     void appendData(const double &fps);
     void appendData(const int &framecount);
 
+    void onPlaybackSafelyStopped();
+
 private:
+
+    QSettings *applicationSettings;
+    double yAxisLimitLowT;
+    double yAxisLimitHighT;
+    double yAxisLimitLow;
+    double yAxisLimitHigh;
+    double spinBoxStep;
+
+    InteractionMode currentInteractionMode = InteractionMode::AUTO_SCROLL_X_AUTO_SCALE_Y;
 
     QString plotValue;
 
@@ -66,11 +85,17 @@ private:
     QElapsedTimer timer;
     uint64 incrementedTimestamp;
 
-    bool interaction;
-    bool yinteraction;
+//    bool interaction;
+//    bool yinteraction;
 
     int updateDelay;
 
+    void loadYaxisSettings();
+    void saveYaxisSettings();
+
+private slots:
+    void setInteractionMode(InteractionMode m);
+    void updateYaxisRange();
 };
 
 #endif //PUPILEXT_GRAPHPLOT_H

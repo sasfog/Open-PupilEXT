@@ -5,12 +5,13 @@
 #include <QtGui/QtGui>
 #include <iostream>
 #include "dataTable.h"
+#include "./../SVGIconColorAdjuster.h"
 
 // GB: capitalized forst letters, nicer
 const QString DataTable::TIME = "Time";
 const QString DataTable::FRAME_NUMBER = "Frame#";
-const QString DataTable::CAMERA_FPS = "Camera fps";
-const QString DataTable::PUPIL_FPS = "Pupil tracking fps";
+const QString DataTable::CAMERA_FPS = "Camera/Image read FPS";
+const QString DataTable::PUPIL_FPS = "Processing FPS";
 const QString DataTable::PUPIL_CENTER_X = "Pupil center x";
 const QString DataTable::PUPIL_CENTER_Y = "Pupil center y";
 const QString DataTable::PUPIL_MAJOR = "Pupil major axis";
@@ -28,7 +29,7 @@ const QString DataTable::PUPIL_RATIO = "Pupil axis ratio";
 
 // Create a new DataTable, stereoMode decides wherever two or one column is displayed.
 // The different columns of the Datatable are defined in the header file using the constants.
-DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), procMode(procMode) {
+DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), procMode(procMode), applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     setWindowTitle("Data Table");
 
@@ -51,7 +52,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     tableContextMenu = new QMenu(this);
     // Caution when adding new actions to this menu, the handler onContextMenuClick depends on the plot value action to be the first
-    tableContextMenu->addAction(new QAction("Plot Value", this));
+    tableContextMenu->addAction(new QAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings),"Plot Value", this));
     connect(tableContextMenu, SIGNAL(triggered(QAction*)), this, SLOT(onContextMenuClick(QAction*)));
 
 
@@ -263,6 +264,9 @@ void DataTable::onProcessingFPS(double fps) {
 void DataTable::onContextMenuClick(QAction *action) {
 
     QString value = action->data().toString();
+
+    if(value == DataTable::TIME || value == DataTable::FRAME_NUMBER)
+        return;
 
     emit createGraphPlot(value);
 }

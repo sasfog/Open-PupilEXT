@@ -128,8 +128,8 @@ void ImageReader::run() {
 
             if (synchronised){
                 const QMutexLocker locker(imageMutex);
-                qDebug() << "imageReader locking";
-                qDebug() << "Current image index: " << currentImageIndex;
+//                qDebug() << "imageReader locking";
+//                qDebug() << "Current image index: " << currentImageIndex;
                 runImpl(startTime, elapsedDuration, img);
                 //qDebug() << "New Image generated, unlocking";
                 imageProcessed->wakeAll();

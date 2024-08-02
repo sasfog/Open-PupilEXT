@@ -105,9 +105,9 @@ public slots:
     bool isCOMConnected();
 
     void onConnectUDPClick();
-    void onDisconnectUDPClick();
+    void disconnectUDP();
     void onConnectCOMClick();
-    void onDisconnectCOMClick();
+    void disconnectCOM();
 
     void connectUDP(QHostAddress ip, quint16 port);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);

@@ -326,7 +326,7 @@ void StereoCameraSettingsDialog::createForm() {
     HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
     HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
     HWTstartStopButton->setFixedWidth(150);
-    HWTstartStopButton->setEnabled(serialSettings->isConnected());
+    HWTstartStopButton->setEnabled(serialSettings->isCOMConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
     HWTframerateLayout->addWidget(HWTframerateLabel);
@@ -432,10 +432,10 @@ void StereoCameraSettingsDialog::createForm() {
     setLimitationsWhileCameraNotOpen(true);
 
     connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameRateValue()));
-    connect(exposureInputBox, SIGNAL(valueChanged(int)), camera, SLOT(setExposureTimeValue(int)));
+    connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(setExposureTimeValue(int)));
     connect(binningBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onBinningModeChange(int)));
     connect(gainBox, SIGNAL(valueChanged(double)), this, SLOT(updateFrameRateValue()));
-    connect(gainBox, SIGNAL(valueChanged(double)), camera, SLOT(setGainValue(double)));
+    connect(gainBox, SIGNAL(valueChanged(double)), this, SLOT(setGainValue(double)));
 
     connect(imageROIwidthInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIwidth(int)));
     connect(imageROIheightInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIheight(int)));
@@ -601,7 +601,7 @@ void StereoCameraSettingsDialog::onLineSourceChange(int index) {
         camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
         HWTframerateBox->setEnabled(true);
         HWTtimeSpanBox->setEnabled(true);
-        HWTstartStopButton->setEnabled(serialSettings->isConnected());
+        HWTstartStopButton->setEnabled(serialSettings->isCOMConnected());
     } else {
         HWTframerateBox->setEnabled(false);
         HWTtimeSpanBox->setEnabled(false);
@@ -758,6 +758,8 @@ void StereoCameraSettingsDialog::closeStereoCamera() {
     // Disable all camera settings groups underneath
     // BG: migrated into a separate function
     setLimitationsWhileCameraNotOpen(true);
+
+    emit stereoCamerasClosed();
 }
 
 // Slot receiving signal that the settings changed, reload settings
@@ -1048,6 +1050,16 @@ void StereoCameraSettingsDialog::setLimitationsWhileCameraNotOpen(bool state) {
     }
 }
 
+void StereoCameraSettingsDialog::setExposureTimeValue(int value) {
+    camera->setExposureTimeValue(value);
+    updateFrameRateValue();
+}
+
+void StereoCameraSettingsDialog::setGainValue(double value) {
+    camera->setGainValue(value);
+    updateFrameRateValue();
+}
+
 void StereoCameraSettingsDialog::mainCameraBoxCurrentIndexChanged(int) {
     applicationSettings->setValue("StereoCameraSettingsDialog.mainCamera", mainCameraBox->currentText());
 }
@@ -1057,10 +1069,10 @@ void StereoCameraSettingsDialog::secondaryCameraBoxCurrentIndexChanged(int) {
 }
 
 void StereoCameraSettingsDialog::serialConnDisconnButtonClicked() {
-    if(serialSettings->isConnected()) {
+    if(serialSettings->isCOMConnected()) {
         stopHardwareTrigger();
 
-        serialSettings->disconnectSerialPort();
+        serialSettings->disconnectCOM();
         serialConnDisconnButtonLabel->setText("Connect");
         serialConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
         HWTstartStopButton->setEnabled(false);
@@ -1072,6 +1084,22 @@ void StereoCameraSettingsDialog::serialConnDisconnButtonClicked() {
     }
 }
 
+void StereoCameraSettingsDialog::setHWTlineSource(int lineSourceNum) {
+    if(!camera->isOpen() || HWTrunning)
+        return;
+    HWTlineSourceBox->setCurrentIndex(lineSourceNum-1);
+}
 
+void StereoCameraSettingsDialog::setHWTruntime(double runtimeMinutes) {
+    if(!camera->isOpen() || HWTrunning)
+        return;
+    HWTtimeSpanBox->setValue(runtimeMinutes);
+}
+
+void StereoCameraSettingsDialog::setHWTframerate(int fps) {
+    if(!camera->isOpen() || HWTrunning)
+        return;
+    HWTframerateBox->setValue(fps);
+}
 
 

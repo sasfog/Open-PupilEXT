@@ -44,6 +44,9 @@ public:
     cv::Size getImageSize() const;
  
 signals:
+    void startedToOpenCamera();
+    void couldNotOpenCamera();
+    void successfullyOpenedCamera();
     void finished();
 
     void GrabberDummyEvent(cv::Mat image);
@@ -149,6 +152,10 @@ public slots:
 signals:
     void fps(double fps);
     void framecount(int framecount);
+
+    void startedToOpenCamera();
+    void couldNotOpenCamera();
+    void successfullyOpenedCamera();
 
 };
 

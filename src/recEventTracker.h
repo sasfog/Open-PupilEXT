@@ -32,7 +32,7 @@ struct TrialIncrement {
 };
 struct TemperatureCheck {
     quint64 timestamp = 0;
-    std::vector<double> temperatures = {0,0};
+    std::vector<double> temperatures = {-1.0,-1.0};
 };
 struct Message {
     quint64 timestamp = 0;

@@ -39,6 +39,8 @@ class DataTable : public QWidget {
 
 public:
 
+    QMap<QString, int> map;
+
     static const QString TIME;
     static const QString FRAME_NUMBER;
     static const QString CAMERA_FPS;
@@ -63,6 +65,8 @@ public:
     QSize sizeHint() const override;
 
 private:
+
+    QSettings *applicationSettings;
 
     QTableView *tableView;
     QStandardItemModel *tableModel;
