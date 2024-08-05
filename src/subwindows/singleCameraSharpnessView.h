@@ -40,7 +40,7 @@ private:
     CameraCalibration *cameraCalibration;
 
     SharpnessCalculation *sharpnessWorker;
-    QThread *sharpnessThread;
+    QThread sharpnessThread;
 
     CalibrationHelpDialog *calibrationHelpDialog;
 
@@ -69,6 +69,8 @@ private slots:
     void onSizeBoxChange();
     void onShowHelpDialog();
 
+signals:
+    void finished();
 };
 
 #endif //PUPILEXT_SINGLECAMERASHARPNESSVIEW_H

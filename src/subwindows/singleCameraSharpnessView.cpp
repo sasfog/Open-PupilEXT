@@ -21,10 +21,10 @@ SingleCameraSharpnessView::SingleCameraSharpnessView(SingleCamera *camera, QWidg
 
     sharpnessWorker = new SharpnessCalculation();
 
-    sharpnessThread = new QThread();
-    sharpnessWorker->moveToThread(sharpnessThread);
-    connect(sharpnessThread, SIGNAL (finished()), sharpnessThread, SLOT (deleteLater()));
-    sharpnessThread->start();
+
+    sharpnessWorker->moveToThread(&sharpnessThread);
+    connect(&sharpnessThread, SIGNAL (finished()), sharpnessWorker, SLOT (deleteLater()));
+    sharpnessThread.start();
 
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -108,7 +108,12 @@ SingleCameraSharpnessView::SingleCameraSharpnessView(SingleCamera *camera, QWidg
 }
 
 SingleCameraSharpnessView::~SingleCameraSharpnessView() {
-
+    if (sharpnessWorker != nullptr){
+        //emit finished();
+        sharpnessThread.quit();
+        sharpnessThread.wait();
+        //delete sharpnessThread;
+    }
 }
 
 void SingleCameraSharpnessView::onShowHelpDialog() {
