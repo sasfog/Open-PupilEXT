@@ -1,22 +1,19 @@
 #pragma once
 
 /**
-    @author Gabor Benyei
+    @author Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/QObject>
 #include <QByteArray>
 #include <QTimer>
-
 #include <QSettings>
 #include <QCoreApplication>
-
 #include <QThread>
 //#include "devices/Camera.h"
 #include "devices/singleCamera.h"
 #include "devices/stereoCamera.h"
 #include "supportFunctions.h"
-
 #include "recEventTracker.h"
 
 Q_DECLARE_METATYPE(std::vector<double>)
@@ -26,9 +23,6 @@ Q_DECLARE_METATYPE(std::vector<double>)
     (whose temperature can be queried) is open, which is obviously a real camera device,
     thus a recEventTracker instance also must exist
 */
-
-/** The temperature that we deem as default value when cannot be measured, and the minimum that can be measured */
-static const double MINIMUM_DEVICE_TEMPERATURE = -1.0;
 
 class CamTempMonitor : public QObject {
 
@@ -45,6 +39,11 @@ class CamTempMonitor : public QObject {
     std::vector<std::vector<double>> tempChecks;
  
 public:
+
+    // The temperature that we deem as default value when cannot be measured, and the minimum that can be measured
+    // Note: not yet used in recEventTracker (problem accessing a const static value in a nonstatic class, perhaps some include problem?)
+    static constexpr double MINIMUM_DEVICE_TEMPERATURE = -1.0;
+
     explicit CamTempMonitor(Camera *camera);
     bool running() const;
  

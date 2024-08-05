@@ -4,7 +4,7 @@
 
 /**
     See https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
-    @author Moritz Lode
+    @author Moritz Lode, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>

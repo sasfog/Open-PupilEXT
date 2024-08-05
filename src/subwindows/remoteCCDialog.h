@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei, Attila Boncser
 */
 
 #include <QDialog>
@@ -105,12 +105,14 @@ public slots:
     bool isCOMConnected();
 
     void onConnectUDPClick();
-    void disconnectUDP();
+    void onDisconnectUDPClick();
     void onConnectCOMClick();
-    void disconnectCOM();
+    void onDisconnectCOMClick();
 
     void connectUDP(QHostAddress ip, quint16 port);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
+    void disconnectUDP();
+    void disconnectCOM();
 
 signals:
 

@@ -60,8 +60,8 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
 //        int diff = std::abs((int)(timeStamp - stereoImage.timestamp));
 //        std::cout<<"Grabresult timestamp diff: "<<diff<<std::endl;
 
-        int diff2 = std::abs((int)(frameNumber - stereoImage.frameNumber));
-        std::cout<<"Grabresult frameNumber diff: "<<diff2<<std::endl;
+//        int diff2 = std::abs((int)(frameNumber - stereoImage.frameNumber));
+//        std::cout<<"Grabresult frameNumber diff: "<<diff2<<std::endl;
 
         if (camera.GetDeviceInfo().GetModelName().find("Emu") != String_t::npos){
             stereoImage.timestamp += frameNumber;

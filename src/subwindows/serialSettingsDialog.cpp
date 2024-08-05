@@ -20,7 +20,7 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     this->setMinimumSize(520, 380);
-    this->setWindowTitle("Camera Serial Connection Settings");
+    this->setWindowTitle("Microcontroller Connection Settings");
 
     createForm();
 

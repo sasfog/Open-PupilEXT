@@ -3,7 +3,7 @@
 
 /**
     Partially code used from https://doc.qt.io/qt-5/qtserialport-terminal-example.html
-    @authors Moritz Lode, Qt Company Ltd.
+    @authors Moritz Lode, Qt Company Ltd., Gabor Benyei, Attila Boncser
 */
 
 #include <QDialog>

@@ -149,9 +149,9 @@ void RemoteCCDialog::createForm() {
     mainLayout->addWidget(comGroup);
 
     connect(connectUDPButton, SIGNAL(clicked()), this, SLOT(onConnectUDPClick()));
-    connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(disconnectUDP()));
+    connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(onDisconnectUDPClick()));
     connect(connectCOMButton, SIGNAL(clicked()), this, SLOT(onConnectCOMClick()));
-    connect(disconnectCOMButton, SIGNAL(clicked()), this, SLOT(disconnectCOM()));
+    connect(disconnectCOMButton, SIGNAL(clicked()), this, SLOT(onDisconnectCOMClick()));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(updateCOMDevices()));
 
     setLayout(mainLayout);
@@ -208,6 +208,10 @@ void RemoteCCDialog::onConnectUDPClick() {
     connectUDP(m_UDPip, m_UDPport);
 }
 
+void RemoteCCDialog::onDisconnectUDPClick() {
+    disconnectUDP();
+}
+
 void RemoteCCDialog::disconnectUDP() {
     disconnect(UDPsocket, SIGNAL(readyRead()), this, SLOT(processPendingUDPDatagrams()));
 
@@ -245,6 +249,10 @@ void RemoteCCDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
 void RemoteCCDialog::onConnectCOMClick() {
     updateSettings();
     connectCOM(m_currentSettingsCOM);
+}
+
+void RemoteCCDialog::onDisconnectCOMClick() {
+    disconnectCOM();
 }
 
 void RemoteCCDialog::disconnectCOM() {
@@ -576,7 +584,7 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                 else if(str.mid(3,3).toLower() == 'com')
                     w->PRGdisconnectStreamCOM();
             }
-        } else if(str[1].toLower() == 'c') { // for "camera serial" connection
+        } else if(str[1].toLower() == 'c') { // for Microcontroller ("camera serial") connection
             if(str[2].toLower() == 'c') {
                 // TODO: UDP connection to MCU, using W5500 ethernet module and the like
                 /*if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)

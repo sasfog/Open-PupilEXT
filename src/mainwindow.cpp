@@ -199,7 +199,8 @@ void MainWindow::onGettingsStartedWizardFinish() {
 
 void MainWindow::loadIcons() {
     fileOpenIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/document-open.svg"), applicationSettings);
-    cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings);
+//    cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings);
+    cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings);
     pupilDetectionSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/draw-circle.svg"), applicationSettings);
     remoteCCIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/computer-connection.svg"), applicationSettings);
     generalSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/mimetypes/16/application-x-sharedlib.svg"), applicationSettings);
@@ -250,7 +251,7 @@ void MainWindow::createActions() {
     //viewMenu->addAction(tr("Switch layout direction"), this, &MainWindow::switchLayoutDirection);
 
     QMenu *settingsMenu = menuBar()->addMenu(tr("Settings"));
-    settingsMenu->addAction(cameraSerialConnectionIcon, tr("Camera Serial Connection"), serialSettingsDialog, &SerialSettingsDialog::show);
+    settingsMenu->addAction(cameraSerialConnectionIcon, tr("Microcontroller Connection"), serialSettingsDialog, &SerialSettingsDialog::show);
     settingsMenu->addAction(pupilDetectionSettingsIcon, tr("Pupil Detection"), pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
     settingsMenu->addAction(remoteCCIcon, tr("Remote Control Connection"), remoteCCDialog, &RemoteCCDialog::show);
     settingsMenu->addAction(generalSettingsIcon, tr("General Settings"), generalSettingsDialog, &GeneralSettingsDialog::show);
@@ -534,7 +535,7 @@ void MainWindow::createStatusBar() {
     calibrationStatusIcon->setPixmap(calibrationIcon.pixmap(16, 16));
 
     // GB: renamed to be better descriptive, as now there are other purposes for serial connection too
-    QLabel *serialLabel = new QLabel("Camera Serial Conn.");
+    QLabel *serialLabel = new QLabel("Microcontroller Conn.");
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     serialStatusIcon = new QLabel();
     serialStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
@@ -1862,7 +1863,7 @@ void MainWindow::loadDataTableWindow() {
     }
 
     connect(pupilDetectionWorker, SIGNAL(fps(double)), childWidget, SLOT(onProcessingFPS(double)));
-    connect(childWidget, SIGNAL(createGraphPlot(QString)), this, SLOT(onCreateGraphPlot(QString)));
+    connect(childWidget, SIGNAL(createGraphPlot(DataTypes::DataType)), this, SLOT(onCreateGraphPlot(DataTypes::DataType)));
 
     mdiArea->addSubWindow(child);
     child->show();
@@ -1881,30 +1882,30 @@ void MainWindow::toggleFullscreen() {
     toggleFullscreenAct->setChecked(this->isMaximized());
 }
 
-void MainWindow::onCreateGraphPlot(const QString &value) {
+void MainWindow::onCreateGraphPlot(const DataTypes::DataType &value) {
 
     // Do not create duplicates
     QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
     for(auto mdiSubWindow : windows) {
-        if(mdiSubWindow->windowTitle() == value)
+        if(mdiSubWindow->windowTitle() == DataTypes::map.value(value))
             return;
     }
 
     // Now create the Graph Plot window
-    std::cout<<"Created GraphPlot slot: " << value.toStdString()<<std::endl;
+    std::cout<<"Created GraphPlot slot: " << DataTypes::map.value(value).toStdString()<<std::endl;
 
     QWidget *childWidget = new GraphPlot(value, pupilDetectionWorker->getCurrentProcMode(), false, this);
-    auto *child = new RestorableQMdiSubWindow(childWidget, "GraphPlot_"+value, this);
+    auto *child = new RestorableQMdiSubWindow(childWidget, "GraphPlot_" + DataTypes::map.value(value), this);
     child->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings));
 
     // switch values to connect different slots/signals to GraphPlot and the data
     /*if(value == DataTable::FRAME_NUMBER) {
 
         connect(signalPubSubHandler, SIGNAL (cameraFramecount(int)), childWidget, SLOT (appendData(int)));
-    } else*/ if(value == DataTable::CAMERA_FPS) {
+    } else*/ if(value == DataTypes::DataType::CAMERA_FPS) {
 
         connect(signalPubSubHandler, SIGNAL (cameraFPS(double)), childWidget, SLOT (appendData(double)));
-    } else if(value == DataTable::PUPIL_FPS) {
+    } else if(value == DataTypes::DataType::PUPIL_FPS) {
 
         connect(pupilDetectionWorker, SIGNAL (fps(double)), childWidget, SLOT (appendData(double)));
     } else {
@@ -1932,9 +1933,10 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 
 // GB: Repaired bug leading to crash when path was too short
 void MainWindow::onOpenImageDirectory() {
-    QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
+    QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.jpeg *.bmp *.tiff *.tif *.webp)"));
     dialog.setOptions(QFileDialog::DontResolveSymlinks); // BG: tried QFileDialog::DontUseNativeDialog flag too but it is slow. TODO: make own dialog
 
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
     dialog.setFileMode(QFileDialog::Directory);
 
     if(!dialog.exec())
@@ -1948,7 +1950,7 @@ void MainWindow::onOpenImageDirectory() {
     if (imageDir.isEmpty())
         return;
 
-    QStringList nameFilter = QStringList() << "*.png" << "*.jpg" << "*.bmp" << "*.tiff" << "*.jpeg" <<  "*.webp";
+    QStringList nameFilter = QStringList() << "*.png" << "*.jpg" << "*.jpeg" << "*.bmp" << "*.tiff" << "*.tif" <<  "*.webp";
     QStringList fileNames = imageDir.entryList(nameFilter, QDir::Files);
     QStringList folderNames = imageDir.entryList(QStringList() << "0" << "1", QDir::Dirs);
     if (fileNames.isEmpty() && folderNames.size() < 2)

@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERASETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 

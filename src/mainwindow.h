@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "subwindows/serialSettingsDialog.h"
@@ -42,6 +42,7 @@
 #include "recEventTracker.h"
 #include "SVGIconColorAdjuster.h"
 #include "playbackSynchroniser.h"
+#include "dataTypes.h"
 //#include <QtMultimedia/QCameraInfo>
 
 
@@ -52,7 +53,7 @@
 
     Creates threads for concurrent processing for i.e. calibration and pupil detection
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE:
         Moved image playback button functionality into a new dialog called ImagePlaybackSettingsDialog.
             Thus, onPlayImageDirectoryClick(), onPlayImageDirectoryFinished(), 
@@ -289,7 +290,7 @@ private slots:
     void singleCameraSelected(QAction *action);
     void stereoCameraSelected();
 
-    void onCreateGraphPlot(const QString &value);
+    void onCreateGraphPlot(const DataTypes::DataType &value);
 
     void dataTableClick();
     void toggleFullscreen();

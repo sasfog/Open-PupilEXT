@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERAVIEW_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/qobjectdefs.h>

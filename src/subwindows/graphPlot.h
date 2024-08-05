@@ -2,21 +2,20 @@
 #define PUPILEXT_GRAPHPLOT_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
 #include <QtCore/qobjectdefs.h>
-
 #include "qcustomplot/qcustomplot.h"
 #include "../pupil-detection-methods/Pupil.h"
-
 #include "../pupilDetection.h"
+#include "../dataTypes.h"
 
 /**
     Custom lineplot graph widget employing the QCustomPlot library for plotting
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE:
         Reorganized code to let it handle an std::vector of Pupils, in order to comply with new signal-slot strategy, which
         I introduced to manage different pupil detection processing modes (procModes)
@@ -41,7 +40,7 @@ public:
     static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
     uint64 lastTimestamp = 0;
 
-    explicit GraphPlot(QString plotValue, ProcMode procMode=ProcMode::SINGLE_IMAGE_ONE_PUPIL, bool legend=false, QWidget *parent=0);
+    explicit GraphPlot(DataTypes::DataType plotDataKey, ProcMode procMode=ProcMode::SINGLE_IMAGE_ONE_PUPIL, bool legend=false, QWidget *parent=0);
     ~GraphPlot() override;
 
     QSize sizeHint() const override;
@@ -77,7 +76,9 @@ private:
 
     InteractionMode currentInteractionMode = InteractionMode::AUTO_SCROLL_X_AUTO_SCALE_Y;
 
-    QString plotValue;
+    DataTypes::DataType plotDataKey;
+
+    ProcMode currentProcMode;
 
     QCustomPlot *customPlot;
     QCPGraph *graph;

@@ -8,16 +8,17 @@ uint64 GraphPlot::sharedTimestamp = 0;
 
 // Create a graph plot window showing the given plotvalue in real-time
 // QCustomPlot library is used for plotting
-GraphPlot::GraphPlot(QString plotValue, ProcMode procMode, bool legend, QWidget *parent) : 
-    QWidget(parent), 
-    customPlot(new QCustomPlot(parent)), 
-    plotValue(plotValue), 
-    incrementedTimestamp(0), 
+GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool legend, QWidget *parent) :
+        QWidget(parent),
+        customPlot(new QCustomPlot(parent)),
+        plotDataKey(_plotDataKey),
+        currentProcMode(procMode),
+        incrementedTimestamp(0),
 //    interaction(false),
 //    yinteraction(true),
-    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    setWindowTitle(plotValue);
+    setWindowTitle(DataTypes::map.value(plotDataKey));
     setMinimumSize(440, 210);
 
     // While this works, the scaling of the plot inside the window is wrong, unclear how to fix this
@@ -48,7 +49,7 @@ GraphPlot::GraphPlot(QString plotValue, ProcMode procMode, bool legend, QWidget 
     QPen pen3 = QPen(Qt::cyan, 0, Qt::SolidLine);
     QPen pen4 = QPen(Qt::yellow, 0, Qt::SolidLine);
     std::size_t numCols=1;
-    switch(procMode) {
+    switch(currentProcMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
             customPlot->addGraph();
             customPlot->graph(0)->setPen(pen1);
@@ -78,8 +79,13 @@ GraphPlot::GraphPlot(QString plotValue, ProcMode procMode, bool legend, QWidget 
 
 //    enableInteractions();
 //    enableYAxisInteraction();
-    // GB end
 
+    bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");
+    if(darkMode) {
+        customPlot->setBackground(QBrush("#242424"));
+    } else {
+        customPlot->setBackground(QBrush("white"));
+    }
 
     customPlot->legend->setVisible(legend);
 
@@ -122,7 +128,24 @@ void GraphPlot::reset() {
     lastTimestamp = 0;
 
     incrementedTimestamp = 0;
-    customPlot->graph(0)->data()->clear();
+//    customPlot->graph(0)->data()->clear();
+    switch(currentProcMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            customPlot->graph(0)->data()->clear();
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+            // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            customPlot->graph(0)->data()->clear();
+            customPlot->graph(1)->data()->clear();
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            customPlot->graph(0)->data()->clear();
+            customPlot->graph(1)->data()->clear();
+            customPlot->graph(2)->data()->clear();
+            customPlot->graph(3)->data()->clear();
+            break;
+    }
     customPlot->update();
 
     // GB TODO: IMPORTANT TODO: clean all plots
@@ -217,96 +240,97 @@ void GraphPlot::setInteractionMode(InteractionMode m) {
 //}
 
 void GraphPlot::loadYaxisSettings() {
-    yAxisLimitLow = applicationSettings->value("GraphPlot_"+plotValue.simplified().toLower()+"_yLow", QString::number(yAxisLimitLowT)).toDouble();
-    yAxisLimitHigh = applicationSettings->value("GraphPlot_"+plotValue.simplified().toLower()+"_yHigh", QString::number(yAxisLimitHighT)).toDouble();
-    currentInteractionMode = (InteractionMode)applicationSettings->value("GraphPlot_"+plotValue.simplified().toLower()+"_yHigh", QString::number((int)AUTO_SCROLL_X_AUTO_SCALE_Y)).toInt();
+    yAxisLimitLow = applicationSettings->value("GraphPlot_" + DataTypes::map.value(plotDataKey).simplified().toLower() + "_yLow", QString::number(yAxisLimitLowT)).toDouble();
+    yAxisLimitHigh = applicationSettings->value("GraphPlot_" + DataTypes::map.value(plotDataKey).simplified().toLower() + "_yHigh", QString::number(yAxisLimitHighT)).toDouble();
+    currentInteractionMode = (InteractionMode)applicationSettings->value("GraphPlot_" + DataTypes::map.value(plotDataKey).simplified().toLower() + "_interactionMode", QString::number((int)AUTO_SCROLL_X_AUTO_SCALE_Y)).toInt();
 }
 
 void GraphPlot::saveYaxisSettings() {
     yAxisLimitLow = customPlot->yAxis->range().lower;
     yAxisLimitHigh = customPlot->yAxis->range().upper;
-    applicationSettings->setValue("GraphPlot_"+plotValue.simplified().toLower()+"_yLow", yAxisLimitLow);
-    applicationSettings->setValue("GraphPlot_"+plotValue.simplified().toLower()+"_yHigh", yAxisLimitHigh);
-    applicationSettings->setValue("GraphPlot_"+plotValue.simplified().toLower()+"_interactionMode", currentInteractionMode);
+    applicationSettings->setValue("GraphPlot_" + DataTypes::map.value(plotDataKey).simplified().toLower() + "_yLow", yAxisLimitLow);
+    applicationSettings->setValue("GraphPlot_" + DataTypes::map.value(plotDataKey).simplified().toLower() + "_yHigh", yAxisLimitHigh);
+    applicationSettings->setValue("GraphPlot_" + DataTypes::map.value(plotDataKey).simplified().toLower() + "_interactionMode", currentInteractionMode);
 }
 
 // Sets Y axis label of the graph plot according to the current plot value
 // GB: capitalized first letter for fancy look
+// TODO: update for the data types map use
 void GraphPlot::setupPlotAxis() {
 
-    if(plotValue == DataTable::CAMERA_FPS) {
+    if(plotDataKey == DataTypes::DataType::CAMERA_FPS) {
         customPlot->yAxis->setLabel("Camera/Image read FPS");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 200.0;
         spinBoxStep = 10.0;
-    } else if(plotValue == DataTable::PUPIL_FPS) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_FPS) {
         customPlot->yAxis->setLabel("Processing FPS");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 200.0;
         spinBoxStep = 10.0;
-    } else if(plotValue == DataTable::PUPIL_CENTER_X) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_X) {
         customPlot->yAxis->setLabel("Pupil center [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 2040.0;
         spinBoxStep = 10.0;
-    } else if(plotValue == DataTable::PUPIL_CENTER_Y) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_Y) {
         customPlot->yAxis->setLabel("Pupil center [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 2040.0;
         spinBoxStep = 10.0;
-    } else if(plotValue == DataTable::PUPIL_MAJOR) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_MAJOR) {
         customPlot->yAxis->setLabel("Pupil major axis [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500.0;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_MINOR) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_MINOR) {
         customPlot->yAxis->setLabel("Pupil minor axis [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500.0;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_WIDTH) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_WIDTH) {
         customPlot->yAxis->setLabel("Pupil width [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500.0;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_HEIGHT) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_HEIGHT) {
         customPlot->yAxis->setLabel("Pupil height [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500.0;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_CONFIDENCE) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CONFIDENCE) {
         customPlot->yAxis->setLabel("Pupil confidence");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500;
         spinBoxStep = 0.1;
         customPlot->yAxis->setRange(-0.2, 1.2);
-    } else if(plotValue == DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
         customPlot->yAxis->setLabel("Pupil outline confidence");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 1.0;
         spinBoxStep = 0.1;
         customPlot->yAxis->setRange(-0.2, 1.2);
-    } else if(plotValue == DataTable::PUPIL_CIRCUMFERENCE) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CIRCUMFERENCE) {
         customPlot->yAxis->setLabel("Pupil circumference [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_RATIO) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_RATIO) {
         customPlot->yAxis->setLabel("Pupil axis ratio");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 1.0;
         spinBoxStep = 0.1;
-    } else if(plotValue == DataTable::PUPIL_DIAMETER) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_DIAMETER) {
         customPlot->yAxis->setLabel("Pupil diameter [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_UNDIST_DIAMETER) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_UNDIST_DIAMETER) {
         customPlot->yAxis->setLabel("Pupil undistorted diameter [px]");
         yAxisLimitLowT = 0.0;
         yAxisLimitHighT = 500;
         spinBoxStep = 1.0;
-    } else if(plotValue == DataTable::PUPIL_PHYSICAL_DIAMETER) {
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER) {
         customPlot->yAxis->setLabel("Pupil physical diameter [mm]");
         yAxisLimitLowT = 1.0;
         yAxisLimitHighT = 9.0;
@@ -328,8 +352,8 @@ void GraphPlot::appendData(const double &fps) {
     incrementedTimestamp += 1000;
     uint64 m_timestamp = incrementedTimestamp;
 
-    // add data
-    if(plotValue == DataTable::CAMERA_FPS || plotValue == DataTable::PUPIL_FPS) {
+    // Note: we currently only plot it for the main camera main view, as all their FPS's are equal
+    if(plotDataKey == DataTypes::DataType::CAMERA_FPS || plotDataKey == DataTypes::DataType::PUPIL_FPS) {
         customPlot->graph(0)->addData(m_timestamp/1000.0, fps);
     }
 
@@ -338,8 +362,8 @@ void GraphPlot::appendData(const double &fps) {
 
         if(currentInteractionMode != InteractionMode::MANUAL_SCALE_SCROLL_X_Y) {
             if((currentInteractionMode != InteractionMode::AUTO_SCROLL_X_MANUAL_SCALE_Y) &&
-                    (currentInteractionMode != InteractionMode::AUTO_SCROLL_X_FIXED_SCALE_Y) &&
-                    plotValue != DataTable::PUPIL_CONFIDENCE && plotValue != DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+               (currentInteractionMode != InteractionMode::AUTO_SCROLL_X_FIXED_SCALE_Y) &&
+               plotDataKey != DataTypes::DataType::PUPIL_CONFIDENCE && plotDataKey != DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
 
                 // rescale value (vertical) axis to fit the current data:
                 customPlot->graph(0)->rescaleValueAxis(false, true);
@@ -366,7 +390,7 @@ void GraphPlot::appendData(const int &framecount) {
     uint64 m_timestamp = incrementedTimestamp;
 
     // add data
-    if(plotValue == DataTable::FRAME_NUMBER) {
+    if(plotDataKey == DataTypes::DataType::FRAME_NUMBER) {
         customPlot->graph(0)->addData(m_timestamp/1000.0, framecount);
     }
 
@@ -375,8 +399,8 @@ void GraphPlot::appendData(const int &framecount) {
 
         if(currentInteractionMode != InteractionMode::MANUAL_SCALE_SCROLL_X_Y) {
             if((currentInteractionMode != InteractionMode::AUTO_SCROLL_X_MANUAL_SCALE_Y) &&
-                    (currentInteractionMode != InteractionMode::AUTO_SCROLL_X_FIXED_SCALE_Y) &&
-                    plotValue != DataTable::PUPIL_CONFIDENCE && plotValue != DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+               (currentInteractionMode != InteractionMode::AUTO_SCROLL_X_FIXED_SCALE_Y) &&
+               plotDataKey != DataTypes::DataType::PUPIL_CONFIDENCE && plotDataKey != DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
 
                 // rescale value (vertical) axis to fit the current data:
                 customPlot->graph(0)->rescaleValueAxis(false, true);
@@ -402,6 +426,12 @@ void GraphPlot::appendData(const int &framecount) {
 // GB: made it work with vector of pupils for different Proc modes
 void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
 
+    // TODO: something better?
+    if(currentProcMode != procMode) {
+        qDebug() << "Processing mode has changed. Cannot plot data this way";
+        return;
+    }
+
     if(sharedTimestamp==0)
         sharedTimestamp = timestamp;
     uint64 m_timestamp = timestamp - sharedTimestamp;
@@ -413,7 +443,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
     lastTimestamp = m_timestamp;
 
     std::size_t numCols=1;
-    switch(procMode) {
+    switch(currentProcMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
             //numCols=1;
             break;
@@ -430,31 +460,31 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
     // add data
     // GB: TODO: physical diameter is the same for two views, but is added as two different curves now..
     for(int i=0; i<numCols; i++) {
-        if(plotValue == DataTable::PUPIL_CENTER_X) {
+        if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_X) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.x);
-        } else if(plotValue == DataTable::PUPIL_CENTER_Y) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_Y) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.y);
-        } else if(plotValue == DataTable::PUPIL_MAJOR) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_MAJOR) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].majorAxis());
-        } else if(plotValue == DataTable::PUPIL_MINOR) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_MINOR) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].minorAxis());
-        } else if(plotValue == DataTable::PUPIL_WIDTH) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_WIDTH) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].width());
-        } else if(plotValue == DataTable::PUPIL_HEIGHT) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_HEIGHT) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].height());
-        } else if(plotValue == DataTable::PUPIL_CONFIDENCE) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_CONFIDENCE) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].confidence);
-        } else if(plotValue == DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].outline_confidence);
-        } else if(plotValue == DataTable::PUPIL_CIRCUMFERENCE) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_CIRCUMFERENCE) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].circumference());
-        } else if(plotValue == DataTable::PUPIL_RATIO) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_RATIO) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, (double)Pupils[i].majorAxis() / Pupils[i].minorAxis());
-        } else if(plotValue == DataTable::PUPIL_DIAMETER) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_DIAMETER) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].diameter());
-        } else if(plotValue == DataTable::PUPIL_UNDIST_DIAMETER) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_UNDIST_DIAMETER) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].undistortedDiameter);
-        } else if(plotValue == DataTable::PUPIL_PHYSICAL_DIAMETER) {
+        } else if(plotDataKey == DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].physicalDiameter);
         }
     }
@@ -465,15 +495,35 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
         if(currentInteractionMode != InteractionMode::MANUAL_SCALE_SCROLL_X_Y) {
             
             if((currentInteractionMode != InteractionMode::AUTO_SCROLL_X_MANUAL_SCALE_Y) &&
-                    (currentInteractionMode != InteractionMode::AUTO_SCROLL_X_FIXED_SCALE_Y) &&
-                    plotValue != DataTable::PUPIL_CONFIDENCE && plotValue != DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+               (currentInteractionMode != InteractionMode::AUTO_SCROLL_X_FIXED_SCALE_Y) &&
+               plotDataKey != DataTypes::DataType::PUPIL_CONFIDENCE && plotDataKey != DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
 
                 // rescale value (vertical) axis to fit the current data:
             //    customPlot->graph(0)->rescaleValueAxis(false, true);
             //    customPlot->graph(1)->rescaleValueAxis(false, true);
+                std::set<double> possibleMinima;
+                std::set<double> possibleMaxima;
+                bool ok;
+                QCPRange possibleRange;
                 for(int i=0; i<numCols; i++) {
-                    customPlot->graph(i)->rescaleValueAxis(false, true);
+                    ok = false;
+                    possibleRange = customPlot->graph(0)->data()->valueRange(ok);
+                    if (ok) {
+                        possibleMinima.insert(possibleRange.lower);
+                        possibleMaxima.insert(possibleRange.upper);
+                    }
                 }
+                QCPRange commonRange(yAxisLimitLowT, yAxisLimitHighT);
+                if(!possibleMinima.empty())
+                    commonRange.lower = *possibleMinima.begin();
+                if(!possibleMaxima.empty())
+                    commonRange.upper = *possibleMaxima.rbegin();
+
+                customPlot->yAxis->setRange(commonRange);
+
+//                for(int i=0; i<numCols; i++) {
+//                    customPlot->graph(i)->rescaleValueAxis(false, true);
+//                }
             }
             
             // make key axis range scroll with the data (at a constant range size of 15secs):
@@ -483,8 +533,8 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
 
         // if the first data is older than 4 minutes, remove 2 minutes of worth
         if((m_timestamp/1000.0) - customPlot->graph(0)->dataMainKey (0) > 240) {
-        //    customPlot->graph(0)->data()->removeBefore((m_timestamp/1000.0)-120);
-        //    customPlot->graph(1)->data()->removeBefore((m_timestamp/1000.0)-120);
+//            customPlot->graph(0)->data()->removeBefore((m_timestamp/1000.0)-120);
+//            customPlot->graph(1)->data()->removeBefore((m_timestamp/1000.0)-120);
             for(int i=0; i<numCols; i++) {
                 customPlot->graph(i)->data()->removeBefore((m_timestamp/1000.0)-120);
             }

@@ -41,17 +41,17 @@ void StereoCameraSettingsDialog::createForm() {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    serialConnGroup = new QGroupBox("1. Camera Serial Connection (needed for Hardware-triggered image acquisition)");
+    serialConnGroup = new QGroupBox("1. Microcontroller Connection (needed for Hardware-triggered image acquisition)");
     QFormLayout *serialConnGroupLayout = new QFormLayout();
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     serialConfigButton = new QPushButton();
-//    serialConfigButton->setText("Camera Serial Connection Settings");
-    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings));
+//    serialConfigButton->setText("Microcontroller Connection Settings");
+    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
 //    serialConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
     serialConfigButton->setStyleSheet("text-align:left;");
     serialConfigButton->setLayout(new QGridLayout);
-    QLabel* serialConfigButtonLabel = new QLabel("Camera Serial Connection Settings");
+    QLabel* serialConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
     serialConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     serialConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     serialConfigButton->layout()->addWidget(serialConfigButtonLabel);
@@ -475,7 +475,7 @@ void StereoCameraSettingsDialog::accept() {
         stopHardwareTrigger();
     }
 
-//    saveSettings(); // closing stereo camera already saves settings
+//    saveUniversalSettings(); // closing stereo camera already saves settings
     closeStereoCamera();
     QDialog::accept();
 }

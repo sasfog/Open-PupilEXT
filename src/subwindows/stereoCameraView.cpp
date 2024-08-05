@@ -73,6 +73,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
 
     // GB added/modified begin
+//    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
     showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
@@ -973,7 +974,8 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
         //qDebug() << "STEREO_IMAGE_ONE_PUPIL" << Qt::endl;
         mainVideoView->setDoubleROI(false);
         secondaryVideoView->setDoubleROI(false);
-        secondaryVideoView->setSelectionColor1(Qt::blue);
+        mainVideoView->setSelectionColor1(QColor(0,0,255,76)); // Qt::blue
+        secondaryVideoView->setSelectionColor1(QColor(0,255,0,76)); // Qt::green
         mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
         secondaryVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
 

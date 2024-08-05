@@ -77,6 +77,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
 
     // GB added/modified begin
+//    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
     showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
