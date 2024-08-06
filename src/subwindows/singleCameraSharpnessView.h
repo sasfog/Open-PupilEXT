@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERASHARPNESSVIEW_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Attila Boncser
 */
 
 #include <QtCore/qobjectdefs.h>

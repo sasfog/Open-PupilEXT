@@ -65,7 +65,7 @@ public slots:
 
 signals:
 
-    void processedImage(CameraImage *image);
+    void processedImage(CameraImage image);
 
 };
 

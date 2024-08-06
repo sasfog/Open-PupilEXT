@@ -3,7 +3,7 @@
 #define PUPILEXT_PUPILDETECTION_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/QObject>
@@ -329,15 +329,13 @@ public slots:
 
 signals:
 
-    void processedImage(CameraImage *image);
-    
-    // GB added/modified begin
-    void processedPlaybackImage(CameraImage *mimg);
-    void processedImage(CameraImage *mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
+    void processedImage(CameraImage image);
+
+//    void processedPlaybackImage(CameraImage mimg);
+    void processedImage(CameraImage mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
     void processedPupilData(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
 
     void onROIPreprocessingChanged(bool state);
-    // GB added/modified end
 
     void processingStarted();
     void processingFinished();

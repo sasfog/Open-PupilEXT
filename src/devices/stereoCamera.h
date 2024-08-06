@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERA_H
 
 /**
-    @authors Moritz Lode, Bényei Gábor
+    @authors Moritz Lode, Bényei Gábor, Attila Boncser
 */
 
 
@@ -16,6 +16,7 @@
 #include "cameraConfigurationEventHandler.h"
 #include "../stereoCameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
+#include "hardwareTriggerConfiguration.h"
 
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
@@ -25,7 +26,7 @@ using namespace Basler_UniversalCameraParams;
 
     The camera settings of the main camera are used for the secondary camera
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     BG NOTE: 
         Added getters/setters for changing image acquisition ROI size and offset,
         binning, as well as camera coreboard temperature
@@ -117,17 +118,18 @@ private:
 
     QDir settingsDirectory;
 
-    CBaslerUniversalInstantCameraArray cameras;
-
     uint64 cameraMainTime;
     uint64 cameraSecondaryTime;
     uint64 systemTime;
 
     String_t lineSource;
 
-    StereoCameraImageEventHandler *cameraImageEventHandler;
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler;
-
+    CBaslerUniversalInstantCameraArray cameras;
+    StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
     CameraFrameRateCounter *frameCounter;
 
     StereoCameraCalibration *cameraCalibration;
@@ -136,6 +138,8 @@ private:
     void synchronizeTime();
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
+
+    void safelyCloseCameras();
 
 public slots:
 

@@ -3,7 +3,7 @@
 
 /**
     Partially code used from https://doc.qt.io/qt-5/qtserialport-terminal-example.html
-    @authors Moritz Lode, Qt Company Ltd.
+    @authors Moritz Lode, Qt Company Ltd., Gabor Benyei, Attila Boncser
 */
 
 #include <QDialog>
@@ -12,6 +12,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/qtextedit.h>
 #include <QtCore/QSettings>
@@ -30,6 +31,14 @@ signals:
     onConnect(): Signal send at opening a serial connection
     onDisconnect(): Signal send to closing a serial connection
 */
+
+#define SERIAL_DEF_BAUDRATE 3
+#define SERIAL_DEF_DATABITS 3
+#define SERIAL_DEF_PARITY 0
+#define SERIAL_DEF_STOPBITS 0
+#define SERIAL_DEF_FLOWCONTROL 0
+
+
 class SerialSettingsDialog : public QDialog {
     Q_OBJECT
 
@@ -55,21 +64,20 @@ public:
 
     ConnPoolCOMInstanceSettings settings() const;
 
-    bool isConnected();
+    bool isCOMConnected();
 
 private:
 
-    //QSerialPort *serialPort;
-
-    // GB begin
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
-    // GB end
 
     ConnPoolCOMInstanceSettings m_currentSettings;
     QIntValidator *m_intValidator = nullptr;
 
     QSettings *applicationSettings;
+
+    QGroupBox *paramGroup;
+    QGroupBox *serialPortGroup;
 
     QLabel *descriptionLabel;
     QLabel *locationLabel;
@@ -80,9 +88,6 @@ private:
     QTextEdit *textField;
 
     QPushButton *applyButton;
-    QPushButton *cancelButton;
-    QPushButton *connectButton;
-    QPushButton *disconnectButton;
     QPushButton *clearButton;
     QPushButton *refreshButton;
 
@@ -107,17 +112,18 @@ private slots:
 
     void showPortInfo(int idx);
     void apply();
-    void cancel();
     void checkCustomBaudRatePolicy(int idx);
     void checkCustomDevicePathPolicy(int idx);
     void readData(QString msg, quint64 timestamp); // GB modified
     void updateDevices();
 
+    void setLimitationsWhileConnected(bool state);
 
 public slots:
 
+    void connectCOM(const ConnPoolCOMInstanceSettings &p);
     void connectSerialPort();
-    void disconnectSerialPort();
+    void disconnectCOM();
     void sendCommand(QString cmd);
 
 signals:

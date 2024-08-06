@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERA_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 
@@ -16,6 +16,7 @@
 #include "../frameRateCounter.h"
 #include "../cameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
+#include "hardwareTriggerConfiguration.h"
 
 
 using namespace Pylon;
@@ -27,7 +28,7 @@ using namespace Basler_UniversalCameraParams;
 /**
     SingleCamera represents a single camera (Basler camera)
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     BG NOTE: 
         Added getters/setters for changing image acquisition ROI size and offset,
         binning, as well as camera coreboard temperature
@@ -75,6 +76,7 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
+    bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
     int getAcquisitionFPSValue();
@@ -119,10 +121,11 @@ private:
 
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler;
 
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler = nullptr;
+    HardwareTriggerConfiguration *hardwareTriggerConfiguration = nullptr;
+    CAcquireContinuousConfiguration *softwareTriggerConfiguration = nullptr;
     CameraFrameRateCounter *frameCounter;
-
     CameraCalibration *cameraCalibration;
     QThread *calibrationThread;
 
@@ -137,7 +140,7 @@ public slots:
     void setLineSource(String_t value);
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
-    void enableHardwareTrigger(bool enabled);
+    void enableHardwareTrigger(bool state);
 
     // GB added begin
     bool setBinningVal(int value);

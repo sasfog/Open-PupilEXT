@@ -32,10 +32,10 @@ void SharpnessCalculation::onNewImage(CameraImage *cimg) {
 
         // If user changes boardsize in between frames it could result in errors
         cv::Size currentBoardSize = boardSize;
-        CameraImage* mimg = cimg;
+        const CameraImage &mimg = cimg;
 
-        if (cimg->img.channels() == 1) {
-            cv::cvtColor(cimg->img, mimg->img, cv::COLOR_GRAY2BGR);
+        if (cimg.img.channels() == 1) {
+            cv::cvtColor(cimg.img, mimg.img, cv::COLOR_GRAY2BGR);
         } else {
             mimg->img = cimg->img.clone();
         }

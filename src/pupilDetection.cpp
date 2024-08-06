@@ -103,6 +103,11 @@ void PupilDetection::setCamera(Camera *m_camera) {
     if (camera != m_camera) {
         camera = m_camera;
 
+        // This can happen upon camera disconnect, especially important upon main window closing when a camera was open
+        // The m_camera is set to nullptr then, but the following code does not get executed because of this return;
+        if(!m_camera)
+            return;
+
         calibrated = false;
 
         if (camera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
@@ -204,7 +209,7 @@ void PupilDetection::onNewSingleImageForOnePupil(CameraImage *cimg) {
   //      qDebug() << "pupilDetection image processed, unlocking";
         imagePublished->wakeAll();
         if (trackingOn) {
-            qDebug() << "Locking image processing";
+//            qDebug() << "Locking image processing";
             imageProcessed->wait(imageMutex);
         }
     }
@@ -299,8 +304,8 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
 
         drawTimer.start();
 
-        CameraImage *mimg = image;
-        mimg->img = image->img.clone();
+        const CameraImage &mimg = image;
+        mimg.img = image.img.clone();
 
         if(!usePupilUndistort && useImageUndistort) {
             mimg->img = singleCalibration->undistortImage(image->img);
@@ -343,7 +348,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE) {
             emit processedImage(mimg);
-            qDebug() << image->frameNumber;
+//            qDebug() << image.frameNumber;
         }
         //qDebug() << "frameNumber left pupilDetection: " << cimg->frameNumber;
     }
@@ -468,7 +473,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
 
         drawTimer.start();
 
-        CameraImage *mimg = cimg;
+        const CameraImage &mimg = cimg;
 //        mimg->img = cimg->img.clone();
 // //        mimg->imgB = cimg->img.clone(); // would be the same
 
@@ -645,9 +650,9 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
-        CameraImage *mimg = simg;
-        mimg->img = simg->img.clone();
-        mimg->imgSecondary = simg->imgSecondary.clone();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
 
 
         std::vector<cv::Rect> ROIs;
@@ -668,7 +673,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     }
 
     //emit processedStereoImageForOnePupilData(simg->timestamp, pupil, pupilSecondary, QString::fromStdString(simg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-    emit processedPupilData(simg->timestamp, currentProcMode, Pupils, QString::fromStdString(simg->filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     // GB modified end
 }
 // Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
@@ -883,9 +888,9 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
-        CameraImage *mimg = simg;
-        mimg->img = simg->img.clone();
-        mimg->imgSecondary = simg->imgSecondary.clone();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
 
         std::vector<cv::Rect> ROIs;
         if(useROIPreProcessing) {
@@ -1105,21 +1110,21 @@ void PupilDetection::performAutoParam() {
             break;
         default:
             return;
-    } 
-
-    // TODO: MEG KELL OLDANI !!
+    }
 
     // useROIPreProcessing &&  (( NEMJÓ, MINDENKÉPP KELL LÉTEZŐ ROI))
     if((rois[0].width == 0 || rois[0].height == 0))
         return;
 
-
-    // min 2 and max 8 mm means that the minimum is 1/4th of 8, 
+    // min 2 and max 8 mm means that the minimum is 1/4th of 8,
     // or in other words: 2 = 0.25 *8;
     // This rule of thumb however, affects e.g. ElSe's capabilities negatively sometimes,
     // so I used 0.2 here
+    float minToMaxDia = 0.25f;
 
-    float minToMaxDia = 0.2f;
+//    // min 1 and max 8 mm means that the minimum is 1/8th of 8,
+//    // or in other words: 1 = 0.125 *8;
+//    float minToMaxDia = 0.125f;
 
     // NOTE: These are only DIAMETER values!
     float pupSizeFactorMin = (autoParamPupSizePercent/100.0f *minToMaxDia);
@@ -1131,12 +1136,15 @@ void PupilDetection::performAutoParam() {
         // for each algorithm instance, we perform the pupilDetectionMethod-type-specific automatic parametrization
 
         //std::string algName = pupilDetectionMethods1[pupilDetectionIndex]->title();
-        float roiWidth = (float)rois[c].width;
-        float roiHeight = (float)rois[c].height;
+        float roiWidth = static_cast<float>( rois[c].width );
+        float roiHeight = static_cast<float>( rois[c].height );
+
         float minDim = (roiWidth<=roiHeight) ? roiWidth : roiHeight;
+        // bool isWidthTheMinDim = (roiWidth<=roiHeight) ? true : false;
+
         // now we get the RADIUS values
-        float minRadius = pupSizeFactorMin*minDim /2;
-        float maxRadius = pupSizeFactorMax*minDim /2;
+        float minRadius = pupSizeFactorMin*minDim /2.0f;
+        float maxRadius = pupSizeFactorMax*minDim /2.0f;
 
         //qDebug() << "roiWidth = " << roiWidth;
         //qDebug() << "roiHeight =" << roiHeight;
@@ -1145,81 +1153,85 @@ void PupilDetection::performAutoParam() {
         //qDebug() << "maxRadius =" << maxRadius;
         
         if(pupilDetectionIndex == 0) {
-                // ELSE
-                ElSe *alg = dynamic_cast<ElSe*>(algInstances[c]);
-                
-                alg->minAreaRatio = minRadius*minRadius*M_PI / (roiWidth*roiHeight);
-                alg->maxAreaRatio = maxRadius*maxRadius*M_PI / (roiWidth*roiHeight);
+            // ELSE
+            ElSe *alg = dynamic_cast<ElSe*>(algInstances[c]);
 
-                qDebug() << "Set AutoParam for algorithm ElSe, instance " << c;
-                qDebug() << "minAreaRatio =" << alg->minAreaRatio;
-                qDebug() << "maxAreaRatio =" << alg->maxAreaRatio;
+            // GB Note: Empirical correction
+            maxRadius *= 1.1;
+
+            alg->minAreaRatio = static_cast<float>( minRadius*minRadius*M_PI / (roiWidth*roiHeight) );
+            alg->maxAreaRatio = static_cast<float>( maxRadius*maxRadius*M_PI / (roiWidth*roiHeight) );
+
+            qDebug() << "Set AutoParam for algorithm ElSe, instance " << c;
+            qDebug() << "minAreaRatio =" << alg->minAreaRatio;
+            qDebug() << "maxAreaRatio =" << alg->maxAreaRatio;
                 
         } else if(pupilDetectionIndex == 1) {
-                // EXCUSE
-                ExCuSe *alg = dynamic_cast<ExCuSe*>(algInstances[c]);
+            // EXCUSE
+            ExCuSe *alg = dynamic_cast<ExCuSe*>(algInstances[c]);
 
-                alg->max_ellipse_radi = maxRadius;
+            alg->max_ellipse_radi = static_cast<int>(round(maxRadius));
 
-                qDebug() << "Set AutoParam for algorithm ExCuSe, instance " << c;
-                qDebug() << "max_ellipse_radi =" << alg->max_ellipse_radi;
-                
+            qDebug() << "Set AutoParam for algorithm ExCuSe, instance " << c;
+            qDebug() << "max_ellipse_radi =" << alg->max_ellipse_radi;
+
         } if(pupilDetectionIndex == 2) {
-                // PURE
-                PuRe *alg = dynamic_cast<PuRe*>(algInstances[c]);
+            // PURE
+            PuRe *alg = dynamic_cast<PuRe*>(algInstances[c]);
 
-                // These are just a relative reference. User cannot set these to keep them constant
-                // Anyway I guess a camera calibration that supports a precise px-to-mm mapping, could also be utilized here
-                // Now we just back-calculate the roi width (= inter-canthi distance) 
-                
-                // GB TODO: distance or half of distance is the ROI width? check paper!
-                
-                alg->meanCanthiDistanceMM = 8.0f / maxRadius * roiWidth;
-                alg->maxPupilDiameterMM = 8.0f;
-                alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
+            // These are just a relative reference. User cannot set these to keep them constant
+            // Anyway I guess a camera calibration that supports a precise px-to-mm mapping, could also be utilized here
+            // Now we just back-calculate the roi width (= inter-canthi distance)
 
-                qDebug() << "Set AutoParam for algorithm PuRe, instance " << c;
-                qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
-                qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
-                qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
+            alg->meanCanthiDistanceMM = (roiWidth / 2.0f) / maxRadius *8.0f; // THIS /2.0f is important. Image width is HALF of the canthi distance
+            alg->maxPupilDiameterMM = 8.0f;
+            alg->minPupilDiameterMM = 8.0f * minToMaxDia;
+
+            qDebug() << "Set AutoParam for algorithm PuRe, instance " << c;
+            qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
+            qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
+            qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
 
         } if(pupilDetectionIndex == 3) {
-                // PUREST
-                PuReST *alg = dynamic_cast<PuReST*>(algInstances[c]);
+            // PUREST
+            PuReST *alg = dynamic_cast<PuReST*>(algInstances[c]);
 
-                // same:
-                alg->meanCanthiDistanceMM = 8.0f / maxRadius * roiWidth;
-                alg->maxPupilDiameterMM = 8.0f;
-                alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
+            alg->meanCanthiDistanceMM = (roiWidth / 2.0f) / maxRadius *8.0f; // THIS /2.0f is important. Image width is HALF of the canthi distance
+            alg->maxPupilDiameterMM = 8.0f;
+            alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
 
-                qDebug() << "Set AutoParam for algorithm PuReSt, instance " << c;
-                qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
-                qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
-                qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
+            qDebug() << "Set AutoParam for algorithm PuReSt, instance " << c;
+            qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
+            qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
+            qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
 
         } if(pupilDetectionIndex == 4) {
-                // STARBURST
-                Starburst *alg = dynamic_cast<Starburst*>(algInstances[c]);
+            // STARBURST
+            Starburst *alg = dynamic_cast<Starburst*>(algInstances[c]);
 
-                alg->edge_threshold = 20;		//threshold of pupil edge points detection
-                alg->corneal_reflection_ratio_to_image_size = roiHeight / (maxRadius* 0.2f); // approx max size of the reflection relative to image height -> height/this
-                alg->crWindowSize = maxRadius * 1.5;		    //corneal reflection search window size
+            //threshold of pupil edge points detection
+            alg->edge_threshold = 18;
+            // approx max size of the reflection relative to image height -> height/this
+            alg->corneal_reflection_ratio_to_image_size = static_cast<int>( roiHeight / round((maxRadius* 0.2f)) );
+            //corneal reflection search window size
+            alg->crWindowSize = static_cast<int>( round(maxRadius * 2.0f) );
 
-                qDebug() << "Set AutoParam for algorithm Starburst, instance " << c;
-                qDebug() << "edge_threshold =" << alg->edge_threshold;
-                qDebug() << "corneal_reflection_ratio_to_image_size =" << alg->corneal_reflection_ratio_to_image_size;
-                qDebug() << "crWindowSize =" << alg->crWindowSize;
+            qDebug() << "Set AutoParam for algorithm Starburst, instance " << c;
+            qDebug() << "set now: edge_threshold =" << alg->edge_threshold;
+            qDebug() << "set now: corneal_reflection_ratio_to_image_size =" << alg->corneal_reflection_ratio_to_image_size;
+            qDebug() << "set now: crWindowSize =" << alg->crWindowSize;
 
         } if(pupilDetectionIndex == 5) {
-                // SWIRSKI2D
-                Swirski2D *alg = dynamic_cast<Swirski2D*>(algInstances[c]);
+            // SWIRSKI2D
+            Swirski2D *alg = dynamic_cast<Swirski2D*>(algInstances[c]);
 
-                alg->params.Radius_Min = minRadius;
-                alg->params.Radius_Max = maxRadius;
+            alg->params.Radius_Min = static_cast<int>( round(minRadius) );
+            alg->params.Radius_Max = static_cast<int>( round(maxRadius) );
 
-                qDebug() << "Set AutoParam for algorithm Swirski2D, instance " << c;
-                qDebug() << "params.Radius_Min =" << alg->params.Radius_Min;
-                qDebug() << "params.Radius_Max =" << alg->params.Radius_Max;
+            qDebug() << "Set AutoParam for algorithm Swirski2D, instance " << c;
+            qDebug() << "set now: params.Radius_Min =" << alg->params.Radius_Min;
+            qDebug() << "set now: params.Radius_Max =" << alg->params.Radius_Max;
+
         }
 
     }
@@ -1238,7 +1250,7 @@ void PupilDetection::configureCameraConnection(bool connectOrDisconnect) {
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+//        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
     } else {
         if (currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));

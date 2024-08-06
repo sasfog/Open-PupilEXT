@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERASETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 
@@ -17,6 +17,7 @@
 #include "../devices/stereoCamera.h"
 #include "serialSettingsDialog.h"
 #include "../camImageRegionsWidget.h"
+#include "../SVGIconColorAdjuster.h"
 
 // BG added
 #include "stereoCameraView.h" // BG NOTE: to connect with acquisition image ROI changes to view update
@@ -33,7 +34,7 @@ class StereoCameraSettingsDialog : public QDialog {
 
 public:
 
-    explicit StereoCameraSettingsDialog(StereoCamera *camera, SerialSettingsDialog *serialSettings, QWidget *parent = nullptr); 
+    explicit StereoCameraSettingsDialog(StereoCamera *cameraPtr, SerialSettingsDialog *serialSettings, QWidget *parent = nullptr);
 
     ~StereoCameraSettingsDialog() override;
 
@@ -57,31 +58,43 @@ private:
 
     QPushButton *saveButton;
     QPushButton *loadButton;
-    QPushButton *gainAutoOnceButton;
-    QPushButton *exposureAutoOnceButton;
-    QPushButton *startHWButton;
-    QPushButton *stopHWButton;
-    QPushButton *updateDevicesButton;
-    QPushButton *openButton;
-    QPushButton *closeButton;
+    QPushButton *autoGainOnceButton;
+    QPushButton *autoExposureOnceButton;
+    QPushButton *HWTstartStopButton;
 
-    QDoubleSpinBox *gainInputBox;
+    QPushButton *updateDevicesButton;
+    QPushButton *cameraOpenCloseButton;
+
+    QDoubleSpinBox *gainBox;
     QSpinBox *exposureInputBox;
 
     QComboBox *mainCameraBox;
     QComboBox *secondaryCameraBox;
+    QLabel *cameraOpenCloseButtonLabel;
 
     QLabel *frameRateValueLabel;
-    QCheckBox *framerateEnabled;
-    QSpinBox *framerateInputBox;
+    QRadioButton *SWTradioButton;
+    QCheckBox *SWTframerateEnabled;
+    QSpinBox *SWTframerateBox;
 
     QPushButton *serialConfigButton;
-    QComboBox *lineSourceBox;
+    QFormLayout *HWTgroupLayout;
+    QLabel *HWTframerateLabel;
+    QLabel *HWTlineSourceLabel;
+    QLabel *HWTtimeSpanLabel;
+    QComboBox *HWTlineSourceBox;
+    QLabel *serialConnDisconnButtonLabel;
+    QLabel *HWTstartStopButtonLabel;
+    bool HWTrunning = false;
+    QRadioButton *HWTradioButton;
+    QHBoxLayout *HWTframerateLayout;
+    QSpinBox *HWTframerateBox;
+    QDoubleSpinBox *HWTtimeSpanBox;
 
-    QSpinBox *triggerFramerateInputBox;
-    QDoubleSpinBox *triggerTimeSpanInputBox;
+    QGroupBox *serialConnGroup;
+    QPushButton *serialConnDisconnButton;
 
-    QGroupBox *hwTriggerGroup;
+    QGroupBox *triggerGroup;
     QGroupBox *analogGroup;
     QGroupBox *acquisitionGroup;
 
@@ -89,9 +102,8 @@ private:
     void updateForms();
     void loadSettings();
     void saveSettings();
-    
-    // BG added (+made global) begin
-    QHBoxLayout *framerateInputLayout; 
+
+    QHBoxLayout *SWTframerateLayout;
     QLabel *frameRateLabel;
     QLabel *exposureLabel;
 
@@ -115,24 +127,28 @@ private:
     CamImageRegionsWidget *camImageRegionsWidget;
 
     int lastUsedBinningVal = 0;
-    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
-    const int minImageSize = 64; 
-    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
-    const int imageSizeChangeSingleStep = 32;
-    // BG added end
 
 public slots:
     void setLimitationsWhileTracking(bool state);
-    void setLimitationsWhileUnconnected(bool state);
+    void setLimitationsWhileCameraNotOpen(bool state);
 
     void updateImageROISettingsValues();
     void updateCamImageRegionsWidget();
     void updateSensorSize();
 
+    void startHardwareTrigger();
+    void stopHardwareTrigger();
+    void setHWTlineSource(int lineSourceNum);
+    void setHWTruntime(double runtimeMinutes);
+    void setHWTframerate(int fps);
+
+    void setExposureTimeValue(int value);
+    void setGainValue(double value);
+
 private slots:
 
     void updateDevicesBox();
-    void onOpen();
+    void openStereoCamera();
     void closeStereoCamera();
 
     void saveButtonClick();
@@ -143,11 +159,6 @@ private slots:
 
     void onLineSourceChange(int index);
     void updateFrameRateValue();
-    void startHardwareTrigger();
-    void stopHardwareTrigger();
-
-    void onSerialDisconnect();
-    void onSerialConnect();
 
     void onSettingsChange();
 
@@ -157,7 +168,12 @@ private slots:
     void onSetImageROIoffsetY(int val);
     void onBinningModeChange(int index);
 
-    void updateImageROISettingsMin(int binningVal);
+    void mainCameraBoxCurrentIndexChanged(int);
+    void secondaryCameraBoxCurrentIndexChanged(int);
+    void HWTstartStopButtonClicked();
+    void cameraOpenCloseButtonClicked();
+    void serialConnDisconnButtonClicked();
+
     void updateImageROISettingsMax();
 
 public slots:
@@ -173,6 +189,9 @@ signals:
 
     void onImageROIChanged(QRect rect);
     void onSensorSizeChanged(QSize size);
+
+    void stereoCamerasOpened();
+    void stereoCamerasClosed();
 
 };
 

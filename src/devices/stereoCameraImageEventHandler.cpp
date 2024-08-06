@@ -57,11 +57,18 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         // We assume that when both cameras are started grabbing at the same time, the framenumbers should match (at each camera acquisition start, the framenumber is reset)
         // Combining images based on timestamps showed to be error prone as the time difference between the two images started to drift for unknown reasons
 
-        //int diff = std::abs((int)(timeStamp - stereoImage.timestamp));
-        //std::cout<<"Grabresult diff: "<<diff<<std::endl;
+//        int diff = std::abs((int)(timeStamp - stereoImage.timestamp));
+//        std::cout<<"Grabresult timestamp diff: "<<diff<<std::endl;
+
+//        int diff2 = std::abs((int)(frameNumber - stereoImage.frameNumber));
+//        std::cout<<"Grabresult frameNumber diff: "<<diff2<<std::endl;
+
         if (camera.GetDeviceInfo().GetModelName().find("Emu") != String_t::npos){
             stereoImage.timestamp += frameNumber;
         }
+
+        //std::cout << "Image frameNumber: " << stereoImage.frameNumber << std::endl;
+        //std::cout << "Received frameNumber: " << frameNumber << " Device id: " << camera.GetDeviceInfo().GetDeviceGUID() <<  std::endl;
         if(stereoImage.frameNumber == frameNumber) {
             // If framenumber matches the already contained image in the stereo image this means the missing second images is now found
             // Cameracontextvalue describes the index of the camera in a basler camera array (main or secondary)
@@ -73,6 +80,7 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
             //std::cout<< "Stereoimage complete: " << stereoImage.frameNumber << " " << stereoImage.timestamp <<std::endl;
             //std::cout<< "-------------------------------" <<std::endl;
             emit onNewGrabResult(stereoImage);
+//            std::cout << "STEREO GRAB RESULT: " << stereoImage.frameNumber << " AT TIME: " << stereoImage.timestamp << std::endl;
         } else {
             // Else, we have a "new" stereo image, set the timestamp, image and wait for the second missing one, then emit
             stereoImage.timestamp = timeStamp;
