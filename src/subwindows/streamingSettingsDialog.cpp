@@ -261,7 +261,6 @@ void StreamingSettingsDialog::disconnectCOM() {
     //emit onConnStateChanged();
 }
 
-// BG NOTE: code copied from serialSettingsDialog
 void StreamingSettingsDialog::fillCOMParameters() {
     baudRateBox->addItem(QStringLiteral("9600"), QSerialPort::Baud9600);
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
@@ -314,7 +313,6 @@ bool StreamingSettingsDialog::isCOMConnected() {
 }
 
 // Update current settings with the configuration from the form
-// BG NOTE: code mostly copied from serialSettingsDialog
 void StreamingSettingsDialog::updateSettings()
 {
     m_UDPip = QHostAddress(udpIpBox->getValue());
@@ -355,7 +353,6 @@ void StreamingSettingsDialog::updateSettings()
 }
 
 // Loads the serial port settings from application settings
-// BG: code mostly copied from serialSettingsDialog
 void StreamingSettingsDialog::loadSettings() {
 
     dataContainerUDPBox->setCurrentText(applicationSettings->value("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->itemText(0)).toString());
@@ -365,7 +362,7 @@ void StreamingSettingsDialog::loadSettings() {
     udpPortBox->setValue(applicationSettings->value("StreamingSettings.UDP.port", udpPortBox->value()).toInt());
 
     serialPortInfoListBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.name", serialPortInfoListBox->itemText(0)).toString());
-    baudRateBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.baudRate", baudRateBox->itemText(0)).toString());
+    baudRateBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.baudRate", baudRateBox->itemText(3)).toString());
     dataBitsBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataBits", dataBitsBox->itemText(0)).toString());
     parityBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.parity", parityBox->itemText(0)).toString());
     stopBitsBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.stopBits", stopBitsBox->itemText(0)).toString());
@@ -375,7 +372,6 @@ void StreamingSettingsDialog::loadSettings() {
 }
 
 // Saves serial port settings to application settings
-// BG: code mostly copied from serialSettingsDialog
 void StreamingSettingsDialog::saveSettings() {
 
     applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->currentText());
@@ -390,7 +386,7 @@ void StreamingSettingsDialog::saveSettings() {
     applicationSettings->setValue("StreamingSettings.COM.parity", parityBox->currentText());
     applicationSettings->setValue("StreamingSettings.COM.stopBits", stopBitsBox->currentText().toFloat());
     applicationSettings->setValue("StreamingSettings.COM.flowControl", flowControlBox->currentText());
-    //applicationSettings->setValue("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked());
+    //applicationSettings->setValue("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked());
 }
 
 /*
@@ -406,14 +402,12 @@ void StreamingSettingsDialog::updateCOMDevices() {
         serialPortInfoListBox->addItem(info.portName());
     }
 
-    // GB added begin
     // NOTE: also add item(s) assigned from our internal COM pool (which can be reused)
     // later NOTE: no need for this, because qt also seems to show the ports that PupilEXT has already opened
 //    std::vector<QString> poolPortNames = connPoolCOM->getOpenedNames();
 //    for(int i=0; i<poolPortNames.size(); i++) {
 //        serialPortInfoListBox->addItem(poolPortNames[i]);
 //    }
-    // GB added end
 }
 
 /*

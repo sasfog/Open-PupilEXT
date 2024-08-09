@@ -27,12 +27,12 @@
 
 
 /**
-    
     In this dialog the user can specify the means of connecting to another computer for listening
     for remote commands. This way, PupilEXT machine (like a "host PC") can be controlled from 
     the machine running e.g. Matlab or PsychoPy experiment code.
-    Some of the code regarding serial connection was copied from SerialSettingsDialog.
+    Some of the code regarding serial connection was copied from MCUSettingsDialogInst.
 
+    NOTE: used several parts of the code from former serialSettingsDialog made by ML
 */
 class RemoteCCDialog : public QDialog {
     Q_OBJECT

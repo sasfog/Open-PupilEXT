@@ -16,7 +16,6 @@ DataWriter::DataWriter(
     writerReady(false),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    // GB modified begin
     delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
@@ -35,7 +34,7 @@ DataWriter::DataWriter(
     qDebug() << fileName;
 
     /*
-    bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
+    bool pathWriteable = SupportFunctions::preparePath(fileName);
     if(!pathWriteable) {
         QMessageBox MsgBox;
         MsgBox.setText("Recording failure. Could not create path.");
@@ -61,9 +60,8 @@ DataWriter::DataWriter(
 
     textStream = new QTextStream(dataFile);
 
-    if(dataFile && textStream) // GB: extra safety
+    if(dataFile && textStream)
         writerReady=true;
-    // GB modified end
 
     // To not write again a header line to the file when it already existed (appending), check it
     if(!exists)
@@ -110,8 +108,6 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
         *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, dataStyle, d) << Qt::endl;
     }
 }
-
-
 
 // GB NOTE: I found two unreferenced functions here, called writePupilData() and writeStereoPupilData().
 // I tried to actualize their functionality, now manifested in a single function. This however needs different arguments now

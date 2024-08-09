@@ -6,6 +6,7 @@
 #include <QtWidgets/QSpinBox>
 #include <iostream>
 #include "generalSettingsDialog.h"
+#include "../supportFunctions.h"
 
 // Create a settings dialog for the general software settings
 // Settings are read upon creation from the QT application settings if existing
@@ -25,7 +26,6 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     readSettings();
     createForm();
 
-    // GB added/modified begin
     updateForm();
 
     connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatChange(int)));
@@ -39,7 +39,6 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
     connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
-    // GB added/modified end
 
     connect(applyButton, &QPushButton::clicked, this, &GeneralSettingsDialog::apply);
     connect(cancelButton, &QPushButton::clicked, this, &GeneralSettingsDialog::cancel);
@@ -52,7 +51,6 @@ void GeneralSettingsDialog::readSettings() {
         imageWriterFormat = m_imageWriterFormat;
     }
 
-    // GB begin
     const QString m_imageWriterDataRule = applicationSettings->value("imageWriterDataRule", QByteArray()).toString();
     if (!m_imageWriterDataRule.isEmpty()) {
         imageWriterDataRule = m_imageWriterDataRule;
@@ -73,42 +71,18 @@ void GeneralSettingsDialog::readSettings() {
         dataWriterDataRule = m_dataWriterDataRule;
     }
 
-    const QByteArray m_metaSnapshotsEnabled = applicationSettings->value("metaSnapshotsEnabled", "1").toByteArray();
-    //std::cout << m_metaSnapshotsEnabled.toStdString() << std::endl; //
-    if (!m_metaSnapshotsEnabled.isEmpty()) {
-        if(m_metaSnapshotsEnabled == "1" || m_metaSnapshotsEnabled == "true")
-            metaSnapshotsEnabled = true;
-        else
-            metaSnapshotsEnabled = false;
-    }
-    const QByteArray m_saveOfflineEventLog = applicationSettings->value("saveOfflineEventLog", "1").toByteArray();
-    //std::cout << m_saveOfflineEventLog.toStdString() << std::endl; //
-    if (!m_saveOfflineEventLog.isEmpty()) {
-        if(m_saveOfflineEventLog == "1" || m_saveOfflineEventLog == "true")
-            saveOfflineEventLog = true;
-        else
-            saveOfflineEventLog = false;
-    }
+    metaSnapshotsEnabled = SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings);
+    saveOfflineEventLog = SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings);
+    alwaysOnTop = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
 
     const int m_darkAdaptMode = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
     darkAdaptMode = m_darkAdaptMode;
     // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
 
-    const QByteArray m_alwaysOnTop = applicationSettings->value("alwaysOnTop", "0").toByteArray();
-    //std::cout << m_alwaysOnTop.toStdString() << std::endl; //
-    if (!m_alwaysOnTop.isEmpty()) {
-        if(m_alwaysOnTop == "1" || m_alwaysOnTop == "true")
-            alwaysOnTop = true;
-        else
-            alwaysOnTop = false;
-    }
-
-    // GB end
 }
 
 void GeneralSettingsDialog::updateForm() {
 
-    // GB modified begin
     // NOTE: thiw line below somehow does not work (always sets the index 0 element of the combobox)
     // imageWriterFormatBox->setCurrentText(imageWriterFormat);
     if(imageWriterFormat == "jpg")
@@ -154,7 +128,6 @@ void GeneralSettingsDialog::updateForm() {
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
     saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
     alwaysOnTopBox->setChecked(alwaysOnTop);
-    // GB modified end
 }
 
 // Saved the settings selected in the dialog to the QT application settings

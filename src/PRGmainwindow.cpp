@@ -75,7 +75,7 @@ void MainWindow::PRGsetOutPath(const QString &str) {
     outputDirectory = fullPath;
     //std::cout << "outputDirectory (image dir) after image dir setting = " << outputDirectory.toStdString() << std::endl;
 
-    // GB NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point, 
+    // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
     // which could later crash the GUI or whatever
     if(selectedCamera && selectedCamera->getType()!=SINGLE_IMAGE_FILE && selectedCamera->getType()!=STEREO_IMAGE_FILE)
         recordImagesAct->setDisabled(false);
@@ -91,7 +91,7 @@ void MainWindow::PRGsetCsvPathAndName(const QString &str) {
     pupilDetectionDataFile = fullPathAndName;
 
     QFileInfo fileInfo(pupilDetectionDataFile);
-    // GB NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point, 
+    // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
     // which could later crash the GUI or whatever
 
     // check if filename has extension
@@ -254,7 +254,7 @@ void MainWindow::PRGconnectRemoteUDP(QString conf) {
     if(!valid)
         return;
 
-    // GB TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
+    // TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
     // we could solve this in different ways
     remoteCCDialog->connectUDP(QHostAddress(ip), port);
 }
@@ -363,7 +363,7 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
     else 
         return;
 
-    // GB TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
+    // TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
     // we could solve this in different ways
     applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainer);
     applicationSettings->setValue("StreamingSettings.UDP.ip", ip);
@@ -454,7 +454,7 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
     streamingSettingsDialog->connectCOM(p);
 }
 void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
-    if(serialSettingsDialog->isCOMConnected())
+    if(MCUSettingsDialogInst->isCOMConnected())
         return;
 
     ConnPoolCOMInstanceSettings p;
@@ -519,7 +519,7 @@ void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
     p.stringFlowControl = QString::number(flowControl);
     p.localEchoEnabled = true; // always on now
 
-    serialSettingsDialog->connectCOM(p);
+    MCUSettingsDialogInst->connectCOM(p);
 }
 void MainWindow::PRGdisconnectRemoteUDP() {
     if(remoteCCDialog->isUDPConnected())
@@ -538,8 +538,8 @@ void MainWindow::PRGdisconnectStreamCOM() {
         streamingSettingsDialog->disconnectCOM();
 }
 void MainWindow::PRGdisconnectMicrocontrollerCOM() {
-    if(serialSettingsDialog->isCOMConnected())
-        serialSettingsDialog->disconnectCOM();
+    if(MCUSettingsDialogInst->isCOMConnected())
+        MCUSettingsDialogInst->disconnectCOM();
 }
 
 void MainWindow::PRGenableHWT(bool state) {

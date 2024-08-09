@@ -1,4 +1,4 @@
-#include "serialSettingsDialog.h"
+#include "MCUSettingsDialog.h"
 
 #include <QtWidgets>
 #include <QIntValidator>
@@ -13,7 +13,7 @@ static const char* blankString = "N/A";
 
 // Create the serial settings dialog
 // Settings are loaded if existing from the application settings
-SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent) :
+MCUSettingsDialog::MCUSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent) :
     QDialog(parent),
     m_intValidator(new QIntValidator(0, 4000000, this)),
     connPoolCOM(connPoolCOM),
@@ -26,13 +26,13 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
 
     baudRateBox->setInsertPolicy(QComboBox::NoInsert);
 
-    connect(applyButton, &QPushButton::clicked, this, &SerialSettingsDialog::apply);
+    connect(applyButton, &QPushButton::clicked, this, &MCUSettingsDialog::apply);
     connect(clearButton, &QPushButton::clicked, textField, &QTextEdit::clear);
-    connect(refreshButton, &QPushButton::clicked, this, &SerialSettingsDialog::updateDevices);
+    connect(refreshButton, &QPushButton::clicked, this, &MCUSettingsDialog::updateDevices);
 
-    connect(serialPortInfoListBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::showPortInfo);
-    connect(baudRateBox,  QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::checkCustomBaudRatePolicy);
-    connect(serialPortInfoListBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SerialSettingsDialog::checkCustomDevicePathPolicy);
+    connect(serialPortInfoListBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MCUSettingsDialog::showPortInfo);
+    connect(baudRateBox,  QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MCUSettingsDialog::checkCustomBaudRatePolicy);
+    connect(serialPortInfoListBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MCUSettingsDialog::checkCustomDevicePathPolicy);
 
     fillPortsParameters();
     fillPortsInfo();
@@ -40,10 +40,10 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
     loadSettings();
 
     // GB: new solution uses connect later, not here
-    //connect(serialPort, &QSerialPort::readyRead, this, &SerialSettingsDialog::readData);
+    //connect(serialPort, &QSerialPort::readyRead, this, &MCUSettingsDialogInst::readData);
 }
 
-void SerialSettingsDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
+void MCUSettingsDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
 
     int index = connPoolCOM->setupAndOpenConnection(p, ConnPoolPurposeFlag::CAMERA_TRIGGER);
     if(index >= 0) {
@@ -71,7 +71,7 @@ void SerialSettingsDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
 
 // Connects the serial port with the configured settings, if successful, displays a connected message to the textfield
 // Sends an onConnect signal on success
-void SerialSettingsDialog::connectSerialPort() {
+void MCUSettingsDialog::connectSerialPort() {
 
     updateSettings();
 
@@ -80,10 +80,10 @@ void SerialSettingsDialog::connectSerialPort() {
 
 // Disconnects the connected serial port
 // Sends an onDisconnect signal
-void SerialSettingsDialog::disconnectCOM() {
+void MCUSettingsDialog::disconnectCOM() {
 
     if(connPoolCOMIndex < 0) {
-        qDebug() << "SerialSettingsDialog::disconnectCOM(): connPoolCOMIndex value is invalid";
+        qDebug() << "MCUSettingsDialogInst::disconnectCOM(): connPoolCOMIndex value is invalid";
         return;
     }
 
@@ -103,7 +103,7 @@ void SerialSettingsDialog::disconnectCOM() {
 
 // Reads data from the serial port line by line
 // Displays the data on the textfield
-void SerialSettingsDialog::readData(QString msg, quint64 timestamp)
+void MCUSettingsDialog::readData(QString msg, quint64 timestamp)
 {
     // GB TODO: this is gotten by readAll, not readLine... is it okay?
     textField->append(msg);
@@ -115,7 +115,7 @@ void SerialSettingsDialog::readData(QString msg, quint64 timestamp)
 
 // Slot that is used to send commands over the connected serial port
 // Commands are strings, encoded using utf-8
-void SerialSettingsDialog::sendCommand(QString cmd) {
+void MCUSettingsDialog::sendCommand(QString cmd) {
 
     //if(!serialPort->isOpen())
     if(connPoolCOMIndex < 0 || !connPoolCOM->getInstance(connPoolCOMIndex)->isOpen())
@@ -136,7 +136,7 @@ void SerialSettingsDialog::sendCommand(QString cmd) {
     }
 }
 
-void SerialSettingsDialog::createForm() {
+void MCUSettingsDialog::createForm() {
 
     QGridLayout *mainLayout = new QGridLayout(this);
 
@@ -240,17 +240,17 @@ void SerialSettingsDialog::createForm() {
     this->resize(600, 370);
 }
 
-SerialSettingsDialog::~SerialSettingsDialog() {
+MCUSettingsDialog::~MCUSettingsDialog() {
     disconnectCOM();
 }
 
-ConnPoolCOMInstanceSettings SerialSettingsDialog::settings() const
+ConnPoolCOMInstanceSettings MCUSettingsDialog::settings() const
 {
     return m_currentSettings;
 }
 
 // Updates the form text with information on the serial port
-void SerialSettingsDialog::showPortInfo(int idx)
+void MCUSettingsDialog::showPortInfo(int idx)
 {
     if (idx == -1)
         return;
@@ -264,13 +264,13 @@ void SerialSettingsDialog::showPortInfo(int idx)
     pidLabel->setText(tr("Product Identifier: %1").arg(list.count() > 6 ? list.at(6) : tr(blankString)));
 }
 
-void SerialSettingsDialog::apply()
+void MCUSettingsDialog::apply()
 {
     updateSettings();
     close();
 }
 
-void SerialSettingsDialog::checkCustomBaudRatePolicy(int idx)
+void MCUSettingsDialog::checkCustomBaudRatePolicy(int idx)
 {
     const bool isCustomBaudRate = !baudRateBox->itemData(idx).isValid();
     baudRateBox->setEditable(isCustomBaudRate);
@@ -281,7 +281,7 @@ void SerialSettingsDialog::checkCustomBaudRatePolicy(int idx)
     }
 }
 
-void SerialSettingsDialog::checkCustomDevicePathPolicy(int idx)
+void MCUSettingsDialog::checkCustomDevicePathPolicy(int idx)
 {
     const bool isCustomPath = !serialPortInfoListBox->itemData(idx).isValid();
     serialPortInfoListBox->setEditable(isCustomPath);
@@ -289,7 +289,7 @@ void SerialSettingsDialog::checkCustomDevicePathPolicy(int idx)
         serialPortInfoListBox->clearEditText();
 }
 
-void SerialSettingsDialog::fillPortsParameters()
+void MCUSettingsDialog::fillPortsParameters()
 {
     baudRateBox->addItem(QStringLiteral("9600"), QSerialPort::Baud9600);
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
@@ -324,7 +324,7 @@ void SerialSettingsDialog::fillPortsParameters()
     flowControlBox->setCurrentIndex(SERIAL_DEF_FLOWCONTROL);
 }
 
-void SerialSettingsDialog::fillPortsInfo()
+void MCUSettingsDialog::fillPortsInfo()
 {
     serialPortInfoListBox->clear();
     QString description;
@@ -349,19 +349,17 @@ void SerialSettingsDialog::fillPortsInfo()
 
     serialPortInfoListBox->addItem(tr("Custom"));
 
-    // GB added begin
     // NOTE: also add item(s) assigned from our internal COM pool (which can be reused)
     // later NOTE: no need for this, because qt also seems to show the ports that PupilEXT has already opened
 //    std::vector<QString> poolPortNames = connPoolCOM->getOpenedNames();
 //    for(int i=0; i<poolPortNames.size(); i++) {
 //        serialPortInfoListBox->addItem(poolPortNames[i]);
 //    }
-    // GB added end
 }
 
 
 // Update current settings with the configuration from the form
-void SerialSettingsDialog::updateSettings()
+void MCUSettingsDialog::updateSettings()
 {
     m_currentSettings.name = serialPortInfoListBox->currentText();
 
@@ -395,40 +393,40 @@ void SerialSettingsDialog::updateSettings()
 }
 
 // Loads the serial port settings from application settings
-void SerialSettingsDialog::loadSettings() {
-    serialPortInfoListBox->setCurrentText(applicationSettings->value("SerialSettings.name", serialPortInfoListBox->itemText(0)).toString());
-    baudRateBox->setCurrentText(applicationSettings->value("SerialSettings.baudRate", baudRateBox->itemText(SERIAL_DEF_BAUDRATE)).toString());
-    dataBitsBox->setCurrentText(applicationSettings->value("SerialSettings.dataBits", dataBitsBox->itemText(SERIAL_DEF_DATABITS)).toString());
-    parityBox->setCurrentText(applicationSettings->value("SerialSettings.parity", parityBox->itemText(SERIAL_DEF_PARITY)).toString());
-    stopBitsBox->setCurrentText(applicationSettings->value("SerialSettings.stopBits", stopBitsBox->itemText(SERIAL_DEF_STOPBITS)).toString());
-    flowControlBox->setCurrentText(applicationSettings->value("SerialSettings.flowControl", flowControlBox->itemText(SERIAL_DEF_FLOWCONTROL)).toString());
-    localEchoCheckBox->setChecked(applicationSettings->value("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
+void MCUSettingsDialog::loadSettings() {
+    serialPortInfoListBox->setCurrentText(applicationSettings->value("MCUConnection.COM.name", serialPortInfoListBox->itemText(0)).toString());
+    baudRateBox->setCurrentText(applicationSettings->value("MCUConnection.COM.baudRate", baudRateBox->itemText(SERIAL_DEF_BAUDRATE)).toString());
+    dataBitsBox->setCurrentText(applicationSettings->value("MCUConnection.COM.dataBits", dataBitsBox->itemText(SERIAL_DEF_DATABITS)).toString());
+    parityBox->setCurrentText(applicationSettings->value("MCUConnection.COM.parity", parityBox->itemText(SERIAL_DEF_PARITY)).toString());
+    stopBitsBox->setCurrentText(applicationSettings->value("MCUConnection.COM.stopBits", stopBitsBox->itemText(SERIAL_DEF_STOPBITS)).toString());
+    flowControlBox->setCurrentText(applicationSettings->value("MCUConnection.COM.flowControl", flowControlBox->itemText(SERIAL_DEF_FLOWCONTROL)).toString());
+    localEchoCheckBox->setChecked(applicationSettings->value("MCUConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
     updateSettings();
 }
 
 // Saves serial port settings to application settings
-void SerialSettingsDialog::saveSettings() {
-    applicationSettings->setValue("SerialSettings.name", serialPortInfoListBox->currentText());
-    applicationSettings->setValue("SerialSettings.baudRate", baudRateBox->currentText().toInt());
-    applicationSettings->setValue("SerialSettings.dataBits", dataBitsBox->currentText().toInt());
-    applicationSettings->setValue("SerialSettings.parity", parityBox->currentText());
-    applicationSettings->setValue("SerialSettings.stopBits", stopBitsBox->currentText().toFloat());
-    applicationSettings->setValue("SerialSettings.flowControl", flowControlBox->currentText());
-    applicationSettings->setValue("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked());
+void MCUSettingsDialog::saveSettings() {
+    applicationSettings->setValue("MCUConnection.COM.name", serialPortInfoListBox->currentText());
+    applicationSettings->setValue("MCUConnection.COM.baudRate", baudRateBox->currentText().toInt());
+    applicationSettings->setValue("MCUConnection.COM.dataBits", dataBitsBox->currentText().toInt());
+    applicationSettings->setValue("MCUConnection.COM.parity", parityBox->currentText());
+    applicationSettings->setValue("MCUConnection.COM.stopBits", stopBitsBox->currentText().toFloat());
+    applicationSettings->setValue("MCUConnection.COM.flowControl", flowControlBox->currentText());
+    applicationSettings->setValue("MCUConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked());
 }
 
-bool SerialSettingsDialog::isCOMConnected() {
+bool MCUSettingsDialog::isCOMConnected() {
     if(connPoolCOMIndex >= 0)
         return connPoolCOM->getInstance(connPoolCOMIndex)->isOpen();
     
     return false;
 }
 
-void SerialSettingsDialog::updateDevices() {
+void MCUSettingsDialog::updateDevices() {
     fillPortsInfo();
 }
 
-void SerialSettingsDialog::setLimitationsWhileConnected(bool state) {
+void MCUSettingsDialog::setLimitationsWhileConnected(bool state) {
     paramGroup->setDisabled(state);
     serialPortGroup->setDisabled(state);
 }

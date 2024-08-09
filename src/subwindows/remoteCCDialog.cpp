@@ -3,11 +3,10 @@
 #include <QtWidgets/qformlayout.h>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QtWidgets>
-
 #include "remoteCCDialog.h"
 #include "../SVGIconColorAdjuster.h"
 
-#include "../mainwindow.h" // Can only be placed here
+#include "../mainwindow.h" // IMPORTANT: Can only be placed here
 
 
 RemoteCCDialog::RemoteCCDialog(
@@ -274,7 +273,6 @@ void RemoteCCDialog::disconnectCOM() {
     emit onConnStateChanged();
 }
 
-// BG NOTE: code copied from serialSettingsDialog
 void RemoteCCDialog::fillCOMParameters() {
     baudRateBox->addItem(QStringLiteral("9600"), QSerialPort::Baud9600);
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
@@ -327,7 +325,6 @@ bool RemoteCCDialog::isCOMConnected() {
 }
 
 // Update current settings with the configuration from the form
-// BG NOTE: code mostly copied from serialSettingsDialog
 void RemoteCCDialog::updateSettings()
 {
     m_UDPip = QHostAddress(udpIpBox->getValue());
@@ -365,14 +362,14 @@ void RemoteCCDialog::updateSettings()
 }
 
 // Loads the serial port settings from application settings
-// BG: code mostly copied from serialSettingsDialog
+// BG: code mostly copied from MCUSettingsDialogInst
 void RemoteCCDialog::loadSettings() {
 
     udpIpBox->setValue(applicationSettings->value("RemoteControlConnection.UDP.ip", udpIpBox->getValue()).toString());
     udpPortBox->setValue(applicationSettings->value("RemoteControlConnection.UDP.port", udpPortBox->value()).toInt());
 
     serialPortInfoListBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.name", serialPortInfoListBox->itemText(0)).toString());
-    baudRateBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.baudRate", baudRateBox->itemText(0)).toString());
+    baudRateBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.baudRate", baudRateBox->itemText(3)).toString());
     dataBitsBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.dataBits", dataBitsBox->itemText(0)).toString());
     parityBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.parity", parityBox->itemText(0)).toString());
     stopBitsBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.stopBits", stopBitsBox->itemText(0)).toString());
@@ -382,7 +379,7 @@ void RemoteCCDialog::loadSettings() {
 }
 
 // Saves serial port settings to application settings
-// BG: code mostly copied from serialSettingsDialog
+// BG: code mostly copied from MCUSettingsDialogInst
 void RemoteCCDialog::saveSettings() {
     applicationSettings->setValue("RemoteControlConnection.UDP.ip", udpIpBox->getValue());
     applicationSettings->setValue("RemoteControlConnection.UDP.port", udpPortBox->value());
@@ -393,7 +390,7 @@ void RemoteCCDialog::saveSettings() {
     applicationSettings->setValue("RemoteControlConnection.COM.parity", parityBox->currentText());
     applicationSettings->setValue("RemoteControlConnection.COM.stopBits", stopBitsBox->currentText().toFloat());
     applicationSettings->setValue("RemoteControlConnection.COM.flowControl", flowControlBox->currentText());
-    //applicationSettings->setValue("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked());
+    //applicationSettings->setValue("RemoteControlConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked());
 }
 
 /*
@@ -409,17 +406,15 @@ void RemoteCCDialog::updateCOMDevices() {
         serialPortInfoListBox->addItem(info.portName());
     }
 
-    // GB added begin
     // NOTE: also add item(s) assigned from our internal COM pool (which can be reused)
     // later NOTE: no need for this, because qt also seems to show the ports that PupilEXT has already opened
 //    std::vector<QString> poolPortNames = connPoolCOM->getOpenedNames();
 //    for(int i=0; i<poolPortNames.size(); i++) {
 //        serialPortInfoListBox->addItem(poolPortNames[i]);
 //    }
-    // GB added end
 }
 
-// GB TODO: something nicer?
+// TODO: something nicer?
 void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timestamp) {
 
     MainWindow *w = dynamic_cast<MainWindow*>(mainWindow);
@@ -432,14 +427,14 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
     }
     
     if(msg.at(0) == 'T' || msg.at(0) == 't') { // trigger signal for trial stepping, need to happen fast
-        // GB note: qstring cannot use str[0] == 'T'
+        // note: qstring cannot use str[0] == 'T'
         w->PRGincrementTrialCounter(timestamp);
         return;
     }
 
     QString str = SupportFunctions::simplifyReceivedMessage(msg);
 
-    // GB NOTE: toLower() is used to make identification of e.g. pup.det.algorithms safer
+    // NOTE: toLower() is used to make identification of e.g. pup.det.algorithms safer
 
     if(str[0].toLower() == 'm' && str.size()>=3) { // receive arbitrary message to be saved into output data file
         w->PRGlogRemoteMessage(timestamp, str.mid(2, str.length()-2).toLower());

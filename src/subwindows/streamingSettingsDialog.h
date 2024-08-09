@@ -1,4 +1,3 @@
-
 #pragma once
 
 /**
@@ -22,10 +21,10 @@
 #include "../dataStreamer.h"
 
 /**
-    
     In this dialog the user can specify the means of streaming pupil detection output to another machine.
-    Some of the code regarding serial connection was copied from SerialSettingsDialog.
+    Some of the code regarding serial connection was copied from MCUSettingsDialogInst.
 
+    NOTE: used several parts of the code from former serialSettingsDialog made by ML
 */
 class StreamingSettingsDialog : public QDialog {
     Q_OBJECT

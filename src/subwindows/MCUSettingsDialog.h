@@ -1,5 +1,4 @@
-#ifndef SETTINGSDIALOG_H
-#define SETTINGSDIALOG_H
+#pragma once
 
 /**
     Partially code used from https://doc.qt.io/qt-5/qtserialport-terminal-example.html
@@ -39,7 +38,7 @@ signals:
 #define SERIAL_DEF_FLOWCONTROL 0
 
 
-class SerialSettingsDialog : public QDialog {
+class MCUSettingsDialog : public QDialog {
     Q_OBJECT
 
 public:
@@ -59,8 +58,8 @@ public:
         bool localEchoEnabled;
     };*/
 
-    explicit SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
-    ~SerialSettingsDialog() override;
+    explicit MCUSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
+    ~MCUSettingsDialog() override;
 
     ConnPoolCOMInstanceSettings settings() const;
 
@@ -114,7 +113,7 @@ private slots:
     void apply();
     void checkCustomBaudRatePolicy(int idx);
     void checkCustomDevicePathPolicy(int idx);
-    void readData(QString msg, quint64 timestamp); // GB modified
+    void readData(QString msg, quint64 timestamp);
     void updateDevices();
 
     void setLimitationsWhileConnected(bool state);
@@ -132,5 +131,3 @@ signals:
     void onDisconnect();
 
 };
-
-#endif // SETTINGSDIALOG_H

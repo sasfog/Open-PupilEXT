@@ -60,5 +60,12 @@
         <file>icons/Breeze/applets/22/webcam.svg</file>
         <file>icons/Breeze/actions/22/show-gpu-effects.svg</file>
 
+        <file>icons/Breeze/actions/22/kdenlive-composite.svg</file>
+        <file>icons/Breeze/actions/22/view-preview.svg</file>
+        <file>icons/Breeze/actions/22/run-build.svg</file>
+
+        <file>icons/crosshairs-gaze-calibration.svg</file>
+        <file>icons/crosshairs-gaze-validation.svg</file>
+
     </qresource>
 </RCC>

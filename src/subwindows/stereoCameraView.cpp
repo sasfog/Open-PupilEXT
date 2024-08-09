@@ -72,7 +72,6 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     plotMenu->addAction(plotROIAct);
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
 
-    // GB added/modified begin
 //    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
@@ -151,7 +150,6 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilDetectionMenuAct = pupilDetectionMenu->menuAction();
     connect(pupilDetectionMenuAct, &QAction::triggered, this, &StereoCameraView::onPupilDetectionMenuClick);
 
-    // GB: renamed to be pore descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
     roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
     roiMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/16/highlight-pointer-spot.svg"), applicationSettings));
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
@@ -235,9 +233,6 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     // NOTE: added this to prevent the toolbar from popping bigger/smaller everytime saveROI and resetROI actions are revealed/hidden
     toolBar->setFixedHeight(36);
 
-    // GB added/modified end
-
-
 
     const QIcon okIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/dialog-ok-apply.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     saveROI = new QAction(okIcon, tr("Set ROI"), this);
@@ -262,10 +257,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     videoViewLayout->addWidget(mainVideoView);
     secondaryVideoView = new VideoView();
     videoViewLayout->addWidget(secondaryVideoView);
-    // GB added begin
     mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
     secondaryVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
-    // GB added end
     layout->addLayout(videoViewLayout);
 
     statusBar = new QStatusBar();
@@ -273,10 +266,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     QWidget *statusCameraFPSWidget = new QWidget();
     QHBoxLayout *statusBarLayout = new QHBoxLayout();
     statusBarLayout->setContentsMargins(8,0,8,0);
-    // GB modified begin
-    // GB NOTE: made it only appear if camera is not fileCamera. Also added separator
     QLabel *cameraFPSLabel = new QLabel();
-    if(camera->getType() != SINGLE_IMAGE_FILE)
+    if(camera->getType() != STEREO_IMAGE_FILE)
         cameraFPSLabel->setText("Camera FPS:");
     else
         cameraFPSLabel->setText("Image read FPS:");
@@ -291,7 +282,6 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     statusBarLayout->addWidget(cameraFPSValue);
     statusCameraFPSWidget->setLayout(statusBarLayout);
     statusBar->addPermanentWidget(statusCameraFPSWidget);
-    // GB modified end
 
     statusProcessingFPSWidget = new QWidget();
     QHBoxLayout *statusBarProcessingLayout = new QHBoxLayout();
@@ -303,8 +293,6 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     QLabel *processingFPSLabel = new QLabel("Processing FPS:");
     processingFPSValue = new QLabel();
 
-    // GB modified/added begin
-    // added separator vertical lines that belong to labels
     processingModeLabel = new QLabel();
 
     QFrame* processingAlgorithmSep = new QFrame();
@@ -328,7 +316,6 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     statusBarProcessingLayout->addWidget(processingAlgorithmSep);
     statusBarProcessingLayout->addWidget(processingFPSLabel);
     statusBarProcessingLayout->addWidget(processingFPSValue);
-    // GB modified/added end
 
     statusProcessingFPSWidget->setLayout(statusBarProcessingLayout);
 
@@ -340,23 +327,16 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
 
     setLayout(layout);
 
-    updateDelay = 33; // ~30fps
-
     connect(pupilDetection, SIGNAL(processingStarted()), this, SLOT(onPupilDetectionStart()));
     connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
     connect(pupilDetection, SIGNAL(fps(double)), this, SLOT(updateProcessingFPS(double)));
     connect(pupilDetection, SIGNAL (algorithmChanged()), this, SLOT (updateAlgorithmLabel()));
     connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (onPupilDetectionConfigChanged(QString)));
 
-    pupilDetection->setUpdateFPS(1000/updateDelay);
-
-    //connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    //connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage))); // this now has never relevance because signals always go through pupilDetection
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
 
-
-    // GB modified/added begin
-    // GB: onShowROI() and onShowPupilCenter() not handled in pupilDetection anymore. Taken care of in camera view and videoView
     connect(this, SIGNAL (onShowROI(bool)), mainVideoView, SLOT (onShowROI(bool)));
     connect(this, SIGNAL (onShowROI(bool)), secondaryVideoView, SLOT (onShowROI(bool)));
     connect(this, SIGNAL (onShowPupilCenter(bool)), mainVideoView, SLOT (onShowPupilCenter(bool)));
@@ -379,14 +359,9 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(autoParamSlider, SIGNAL(valueChanged(int)), autoParamPupSizeBox, SLOT(setValue(int)));
     connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), this, SLOT(onAutoParamPupSize(int)));
 
-    timer.start();
-    pupilViewTimer.start();
-
-    // GB NOTE: currently it loads the settings (for loading ROI settings), so the loadSettings call at the end is not necessary
+    // NOTE: currently it loads the settings (for loading ROI settings), so the loadSettings call at the end is not necessary
     updateForPupilDetectionProcMode();
     //loadSettings();
-    
-    // GB modified/added end
 }
 
 StereoCameraView::~StereoCameraView() {
@@ -398,24 +373,23 @@ StereoCameraView::~StereoCameraView() {
 void StereoCameraView::loadSettings() {
     // GB TODO: surely loads the bools always? Seems to be ok, but I remember to have seen cases in other code when the read value was "false" which was not parsed as 0
 
-    displayPupilView = applicationSettings->value("StereoCameraView.displayPupilView", false).toBool();
+    displayPupilView = SupportFunctions::readBoolFromQSettings("StereoCameraView.displayPupilView", false, applicationSettings);
     onDisplayPupilViewClick(displayPupilView);
     displayDetailAct->setChecked(displayPupilView);
 
-    plotPupilCenter = applicationSettings->value("StereoCameraView.plotPupilCenter", false).toBool();
+    plotPupilCenter = SupportFunctions::readBoolFromQSettings("StereoCameraView.plotPupilCenter", false, applicationSettings);
     onPlotPupilCenterClick(plotPupilCenter);
     plotCenterAct->setChecked(plotPupilCenter);
 
-    plotROIContour = applicationSettings->value("StereoCameraView.plotROIContour", false).toBool();
+    plotROIContour = SupportFunctions::readBoolFromQSettings("StereoCameraView.plotROIContour", false, applicationSettings);
     plotROIAct->setChecked(plotROIContour);
     onPlotROIClick(plotROIContour);
 
-    // GB added/modified begin
-    showAutoParamOverlay = applicationSettings->value("StereoCameraView.showAutoParamOverlay", false).toBool();
+    showAutoParamOverlay = SupportFunctions::readBoolFromQSettings("StereoCameraView.showAutoParamOverlay", false, applicationSettings);
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
 
-    showPositioningGuide = applicationSettings->value("StereoCameraView.showPositioningGuide", false).toBool();
+    showPositioningGuide = SupportFunctions::readBoolFromQSettings("StereoCameraView.showPositioningGuide", false, applicationSettings);
     if(camera->getType() == STEREO_IMAGE_FILE) {
         showPositioningGuideAct->setDisabled(true);
         showPositioningGuideAct->setChecked(false);
@@ -474,10 +448,7 @@ void StereoCameraView::loadSettings() {
         secondaryVideoView->setROI2SelectionR(SupportFunctions::calculateRoiR(initRoi, roiSecondary2D, roiSecondary2R));
     }
 
-    
-
-//    videoView->setAutoParamPupSize(applicationSettings->value("autoParamPupSizePercent", 50).toInt());   
-    // GB added/modified end
+//    videoView->setAutoParamPupSize(applicationSettings->value("autoParamPupSizePercent", 50).toInt());
 
 }
 
@@ -507,12 +478,10 @@ void StereoCameraView::onPupilDetectionStart() {
     processingConfigLabel->setText(pupilDetection->getCurrentConfigLabel());
     processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
 
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
 
-    // GB modified begin
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
-    // GB modified end
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 }
 
 // On stop of the pupil detection, disconnect the processed-image live-stream and show the camera image again
@@ -520,34 +489,21 @@ void StereoCameraView::onPupilDetectionStop() {
 
     statusBar->removeWidget(statusProcessingFPSWidget);
 
-    // GB modified/added begin
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
 
     mainVideoView->clearProcessedOverlayMemory();
     secondaryVideoView->clearProcessedOverlayMemory();
-    // GB modified/added end
 }
 
 void StereoCameraView::updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
 
-    if(timer.elapsed() <= updateDelay || cimg.img.empty()) 
+    if(cimg.img.empty())
         return;
-    
-    timer.restart();
-        
-    // GB: NOTE: disabled this feature, as it can occupy big space on smaller screens, 
-    // and is only useful in case of fileCamera, but now that has playbackControlDialog which shows the same already
-    //
-    //      QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
-    // QDateTime date = QDateTime::fromMSecsSinceEpoch(cimg.timestamp);
-    //      Display the date/time in the system specific locale format
-    // statusBar->showMessage(QLocale::system().toString(date));
 
-    // GB: NOTE:
-    // Now we are using stereo camera, so here are two videoViews, and it is necessary to know
+    // NOTE: Now we are using stereo camera, so here are two videoViews, and it is necessary to know
     // which videoView gets which two ROIs and pupils
     
     std::vector<cv::Rect> mainViewROIs;
@@ -578,10 +534,8 @@ void StereoCameraView::updateView(const CameraImage &cimg, const int &procMode, 
 // Update the live-view with images from the current update stream (either processed images or camera images)
 void StereoCameraView::updateView(const CameraImage &cimg) {
 
-    if(timer.elapsed() <= updateDelay || cimg.img.empty()) 
+    if(cimg.img.empty())
         return;
-    
-    timer.restart();
 
     // GB: NOTE: disabled this feature, as it can occupy big space on smaller screens, 
     // and is only useful in case of fileCamera, but now that has playbackControlDialog which shows the same already
@@ -594,24 +548,19 @@ void StereoCameraView::updateView(const CameraImage &cimg) {
     secondaryVideoView->updateView(cimg.imgSecondary);
 }
 
-// GB: adaptively rounded value for better visibility and comparability. Also it gets hidden if we are watching playback
 void StereoCameraView::updateCameraFPS(double fps) {
     currentCameraFPS = fps;
     //cameraFPSValue->setText(QString::number(fps));
 
-    // GB begin
     if(fps == 0)
         cameraFPSValue->setText("-");
     else if(fps > 0 && fps < 1)
         cameraFPSValue->setText(QString::number(fps,'f',4));
     else
         cameraFPSValue->setText(QString::number(round(fps)));
-    // GB end
 }
 
 // Updates the label showing the current pupil detection processing fps
-// To signal slow processing, the label is colored red when a certain threshold is broke
-// GB: adaptively rounded value for better visibility and comparability
 void StereoCameraView::updateProcessingFPS(double fps) {
 
     if(fps < currentCameraFPS*0.9) {
@@ -621,14 +570,12 @@ void StereoCameraView::updateProcessingFPS(double fps) {
     }
     //processingFPSValue->setText(QString::number(fps));
 
-    // GB begin
     if(fps == 0)
         processingFPSValue->setText("-");
     else if(fps > 0 && fps < 1)
         processingFPSValue->setText(QString::number(fps,'f',4));
     else
         processingFPSValue->setText(QString::number(round(fps)));
-    // GB end
 }
 
 // Updates the label displaying the current pupil detection algorithm used
@@ -638,7 +585,6 @@ void StereoCameraView::updateAlgorithmLabel() {
 
 
 // Updates the position and size of the small pupil view based on the latest pupil detection
-// GB: updated for 2 pupil version, and also reformed to use vector of Pupils
 void StereoCameraView::updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
     /*
     STEREO_IMAGE_TWO_PUPIL :
@@ -660,13 +606,10 @@ void StereoCameraView::updatePupilView(const CameraImage &cimg, const int &procM
                 pupilViewSize.push_back(QSize(0,0));
     }
 
-    // Update the view not too often, ~30fps
-    if(pupilViewTimer.elapsed() > updateDelay && pupilViewSize.size()>0) {
-        pupilViewTimer.restart();
+    if(pupilViewSize.size() > 0) {
 
         std::vector<QRect> targetsMain;
         std::vector<QRect> targetsSecondary;
-
         if(procMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             targetsMain.push_back( QRect( QPoint(
                         static_cast<int>(Pupils[0].center.x - (0.5 * pupilViewSize[0].width())),
@@ -708,8 +651,7 @@ void StereoCameraView::updatePupilView(quint64 timestamp, const Pupil &pupil, co
                                  static_cast<int>(pupilSec.size.height * 1.6));
     }
 
-    if(pupilViewTimer.elapsed() > updateDelay && pupil.valid(-2)) {
-        pupilViewTimer.restart();
+    if(pupil.valid(-2)) {
 
         // create a ROI around the pupil big enough to make changes visible
         QPoint tl = QPoint(static_cast<int>(pupil.center.x - (0.5 * pupilViewSize.width())),
@@ -766,7 +708,6 @@ void StereoCameraView::onSetROIClick(float roiSize) {
     toolBar->addAction(discardROISelection);
     toolBar->addAction(saveROI);
 
-    // GB modified/added begin
     tempROIs[0] = mainVideoView->getROI1SelectionR();
     tempROIs[1] = secondaryVideoView->getROI1SelectionR();
     mainVideoView->setROI1SelectionR(roiSize);
@@ -779,7 +720,6 @@ void StereoCameraView::onSetROIClick(float roiSize) {
         tempROIs[3] = secondaryVideoView->getROI2SelectionR();
         secondaryVideoView->setROI2SelectionR(roiSize);
     }
-    // GB modified/added end
     mainVideoView->showROISelection(true);
     secondaryVideoView->showROISelection(true);
 }
@@ -796,7 +736,7 @@ void StereoCameraView::onSaveROIClick() {
     if(secondaryVideoView->getDoubleROI())
         s4 = secondaryVideoView->saveROI2Selection();
     
-    if( s1 || s2 || s3 || s4 ) { // GB: if any is ok to set, we proceed
+    if( s1 || s2 || s3 || s4 ) {
         mainVideoView->showROISelection(false);
         secondaryVideoView->showROISelection(false);
         toolBar->removeAction(resetROI);
@@ -848,12 +788,11 @@ void StereoCameraView::onPlotROIClick(bool value) {
 
 
 // Saves the ROI selection to the application wide settings (which are persisted to file)
-// GB modified and renamed: now it saves main view, roi nr 1
+// saves main view, roi nr 1
 void StereoCameraView::saveMainROI1Selection(QRectF roiR) {
     qDebug() << "Saving Main ROI 1 selection" << Qt::endl;
-    
-    // GB modified begin
-    QRectF imageSize = mainVideoView->getImageSize(); // GB NOTE: we assume that both camera images are the same size
+
+    QRectF imageSize = mainVideoView->getImageSize();
     QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
@@ -865,17 +804,15 @@ void StereoCameraView::saveMainROI1Selection(QRectF roiR) {
         applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA1.rational", roiR);
         applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA1.discrete", roiD);
         //qDebug() << "Pupil A, viewpoint 1" << Qt::endl;
-    } 
-    // GB modified end
+    }
 }
 
 // Saves the ROI selection to the application wide settings (which are persisted to file)
-// GB modified: now it saves secondary view, roi nr 1
+// saves secondary view, roi nr 1
 void StereoCameraView::saveSecondaryROI1Selection(QRectF roiR) {
     qDebug() << "Saving Secondary ROI 1 selection" << Qt::endl;
-    
-    // GB modified begin
-    QRectF imageSize = mainVideoView->getImageSize(); // GB NOTE: we assume that both camera images are the same size
+
+    QRectF imageSize = mainVideoView->getImageSize();
     QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
@@ -887,14 +824,13 @@ void StereoCameraView::saveSecondaryROI1Selection(QRectF roiR) {
         applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA2.rational", roiR);
         applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA2.discrete", roiD);
         //qDebug() << "Pupil A, viewpoint 2" << Qt::endl;
-    } 
-    // GB modified end
+    }
 }
 
 void StereoCameraView::saveMainROI2Selection(QRectF roiR) {
     qDebug() << "Saving Main ROI 2 selection" << Qt::endl;
     
-    QRectF imageSize = mainVideoView->getImageSize(); // GB NOTE: we assume that both camera images are the same size
+    QRectF imageSize = mainVideoView->getImageSize();
     QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
     // STEREO_IMAGE_TWO_PUPIL
     applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilB1.rational", roiR);
@@ -905,7 +841,7 @@ void StereoCameraView::saveMainROI2Selection(QRectF roiR) {
 void StereoCameraView::saveSecondaryROI2Selection(QRectF roiR) {
     qDebug() << "Saving Secondary ROI 2 selection" << Qt::endl;
 
-    QRectF imageSize = mainVideoView->getImageSize(); // GB NOTE: we assume that both camera images are the same size
+    QRectF imageSize = mainVideoView->getImageSize();
     QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
     // STEREO_IMAGE_TWO_PUPIL
     applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilB2.rational", roiR);
@@ -1041,7 +977,6 @@ void StereoCameraView::onSensorSizeChanged(const QSize& size) {
     secondaryVideoView->setSensorSize(size);
 }
 
-// GB TODO: STRINGS
 void StereoCameraView::updateProcModeLabel() {
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::UNDETERMINED) {

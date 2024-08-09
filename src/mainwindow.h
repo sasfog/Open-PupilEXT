@@ -1,11 +1,10 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
-#include "subwindows/serialSettingsDialog.h"
+#include "subwindows/MCUSettingsDialog.h"
 #include "subwindows/singleCameraSettingsDialog.h"
 #include "devices/singleCamera.h"
 #include "devices/stereoCamera.h"
@@ -43,6 +42,7 @@
 #include "SVGIconColorAdjuster.h"
 #include "playbackSynchroniser.h"
 #include "dataTypes.h"
+#include "subwindows/sceneImageView.h"
 //#include <QtMultimedia/QCameraInfo>
 
 
@@ -52,20 +52,6 @@
     Creates all GUI and processing objects and handles/connects their signal-slot connections
 
     Creates threads for concurrent processing for i.e. calibration and pupil detection
-
-    NOTE: Modified by Gabor Benyei, 2023 jan
-    GB NOTE:
-        Moved image playback button functionality into a new dialog called ImagePlaybackSettingsDialog.
-            Thus, onPlayImageDirectoryClick(), onPlayImageDirectoryFinished(), 
-            and onStopImageDirectoryClick() were removed.
-        Added trial counter label in statusbar, which can only be seen if a physical camera device is opened.
-        Added manual forced reset and manual increment buttons for trial counter using Settings menu.
-        Added streaming settings action and its dialog, accessible when a device is opened. Streaming can be 
-            started if a streaming connection is alive, and GUI is kept enabled accordingly.
-        Recording now necessitates pupil detection tracking to be going on, this way it is safer to handle
-            (e.g. new procMode functionality allows pupilDetection output to change, and this should not happen 
-        while data is being written. Each line should keep consistency to the hearder of the csv instead).
-        Many minor changes were made, not mentioned here, but commented on the spot.
 */
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -78,6 +64,7 @@ public:
 protected:
 
     void closeEvent(QCloseEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event);
     void dragEnterEvent(QDragEnterEvent* e);
@@ -90,7 +77,7 @@ private:
     QSettings *applicationSettings;
     QDir settingsDirectory;
 
-    SerialSettingsDialog *serialSettingsDialog;
+    MCUSettingsDialog *MCUSettingsDialogInst;
     PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
     GeneralSettingsDialog *generalSettingsDialog;
     SubjectSelectionDialog *subjectSelectionDialog;
@@ -110,6 +97,7 @@ private:
     RestorableQMdiSubWindow *cameraViewWindow;
     RestorableQMdiSubWindow *sharpnessWindow;
     RestorableQMdiSubWindow *dataTableWindow;
+    RestorableQMdiSubWindow *sceneImageWindow;
 
     QIcon fileOpenIcon;
     QIcon cameraSerialConnectionIcon;
@@ -127,6 +115,7 @@ private:
     QIcon streamingSettingsIcon;
     QIcon imagePlaybackControlIcon;
     QIcon dataTableIcon;
+    QIcon sceneImageViewIcon;
 
     QMenu *windowMenu;
     QMenu *baslerCamerasMenu;
@@ -134,6 +123,7 @@ private:
 
     QAction *cameraViewAct;
     QAction *dataTableAct;
+    QAction *sceneImageViewAct;
 
     QAction *cameraAct;
     QAction *cameraSettingsAct;
@@ -164,11 +154,11 @@ private:
     QLabel *subjectConfigurationLabel;
     QLabel *currentStatusMessageLabel;
     
-    // GB: TODO: Move trackingOn into class instance, and get rid of others, use nullptr check instead. better like that I think. Also 
-    bool trackingOn = false; // GB: also accessible in pupildetection now
+    // TODO: Move trackingOn into class instance, and get rid of others, use nullptr check instead. better like that I think. Also
+    bool trackingOn = false; // NOTE: also accessible in pupildetection now
     bool recordOn = false;
     bool recordImagesOn = false;
-    //bool playImagesOn = false; // GB: from now can be checked via ImagePlaybackControlDialog
+    //bool playImagesOn = false; // NOTE: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
     bool cameraPlaying = true;
 
@@ -190,7 +180,6 @@ private:
     DataWriter *dataWriter;
     ImageWriter *imageWriter;
 
-    // GB added begin
     bool streamOn = false;
     bool remoteOn = false;
 
@@ -198,7 +187,7 @@ private:
     StreamingSettingsDialog *streamingSettingsDialog;
     ImagePlaybackControlDialog *imagePlaybackControlDialog;
 
-    // GB NOTE: made these two global to be able to pass singlecameraview instance pointer to ...CameraSettingsDialog constructors:
+    // made these two global to be able to pass singlecameraview instance pointer to ...CameraSettingsDialog constructors:
     SingleCameraView *singleCameraChildWidget; 
     StereoCameraView *stereoCameraChildWidget;
     
@@ -237,6 +226,7 @@ private:
     void loadCalibrationWindow();
     void loadSharpnessWindow();
     void loadDataTableWindow();
+    void loadSceneImageWindow();
 
     void stopCamera();
     void startCamera();
@@ -244,9 +234,9 @@ private:
     void resetStatus(bool isConnect);
 
     void openImageDirectory(QString imageDirectory);
+    void setRecentPath(QString path);
 
     void connectCameraPlaybackChangedSlots();
-    // GB added end
 
 private slots:
 
@@ -283,6 +273,8 @@ private slots:
 
     void onGeneralSettingsChange();
 
+    void onPupilDetectionProcModeChange(int);
+
     void cameraViewClick();
 
     void onRecordImageClick();
@@ -293,6 +285,7 @@ private slots:
     void onCreateGraphPlot(const DataTypes::DataType &value);
 
     void dataTableClick();
+    void sceneImageViewClick();
     void toggleFullscreen();
 
     void setLogFile();
@@ -313,7 +306,6 @@ private slots:
 
     void onGettingsStartedWizardFinish();
 
-    // GB added begin
     void singleWebcamSelected(QAction *action);
     void onSingleWebcamSettingsClick();
 
@@ -349,12 +341,10 @@ private slots:
 
     void createCamTempMonitor();
     void destroyCamTempMonitor();
-    // GB added end
 
 public slots:
 
-    // GB added begin
-    // GB NOTE: definitions of functions for programmatic control of GUI elements (their names beginning with PRG...)
+    // NOTE: definitions of functions for programmatic control of GUI elements (their names beginning with PRG...)
     // are stored in PRGmainwindow.cpp, to keep mainwindow.cpp cleaner
     void PRGlogRemoteMessage(const quint64 &timestamp, const QString &str);
 
@@ -411,7 +401,6 @@ public slots:
 
     void onStereoCamerasOpened();
     void onStereoCamerasClosed();
-    // GB added end
 
 signals:
     void commitTrialCounterIncrement(quint64 timestamp);
@@ -421,5 +410,3 @@ signals:
     void cameraPlaybackChanged();
 
 };
-
-#endif // MAINWINDOW_H

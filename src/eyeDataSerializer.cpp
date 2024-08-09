@@ -254,7 +254,6 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
                 result = result % delim % "trial" % delim;
                 result = result % "temperature_c";
             }
-                // GB TODO: check temp
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
@@ -348,7 +347,6 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
                 result = result % "temperatureMain_c" % delim;
                 result = result % "temperatureSec_c";
             }
-            // GB TODO: TEMP CHECK
             break;
         
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
@@ -429,7 +427,6 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
                 result = result % delim % QString::number(trialNum) % delim;
                 result = result % QString::number(temperatures[0]);
             }
-            // GB TODO: TEMP CHECK!
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
@@ -465,7 +462,6 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
                 result = result % QString::number(temperatures[0]) % delim;
                 result = result % QString::number(temperatures[1]);
             }
-            // GB TODO: TEMP CHECK!
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
@@ -524,7 +520,6 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
                 result = result % QString::number(temperatures[0]) % delim;
                 result = result % QString::number(temperatures[1]);
             }
-            // GB TODO: TEMP CHECK
             break;
         
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
@@ -559,7 +554,6 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
         //         QString::number(temperatures[0]) + delim +
         //         QString::number(temperatures[0])
         //     ;
-        //     // GB TODO: TEMP CHECK!
         //     //break;
         
         default:

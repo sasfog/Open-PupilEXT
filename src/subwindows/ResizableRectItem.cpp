@@ -65,7 +65,6 @@ void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
         resizeDirections.vertical = resizeDirections.VertNone;
     }
 
-    // GB begin
     //const QPointF &pos = event->pos();
     //QPointF pos = event->pos();
     Qt::KeyboardModifiers key = QApplication::queryKeyboardModifiers();
@@ -88,7 +87,6 @@ void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
                 resizeDirections.vertical = resizeDirections.Top;
         }
     }
-    // GB end
 
     if(resizeDirections.horizontal != resizeDirections.HorzNone && resizeDirections.vertical != resizeDirections.VertNone) {
         if((pos.x() > rect().center().x() && pos.y() > rect().center().y()) || (pos.x() < rect().center().x() && pos.y() < rect().center().y()))
@@ -205,7 +203,6 @@ void ResizableRectItem::resizeRect(QGraphicsSceneMouseEvent *event)
     qreal right = left + rect().width();
     qreal bottom = top + rect().height();
 
-    // GB begin   
     //const QPointF &pos = event->pos();
     QPointF pos = event->pos();
     Qt::KeyboardModifiers key = QApplication::queryKeyboardModifiers();
@@ -270,7 +267,6 @@ void ResizableRectItem::resizeRect(QGraphicsSceneMouseEvent *event)
         //std::cout << "Too small to the bottom" << std::endl;
         return;
     }
-    // GB end
 
     if (resizeDirections.horizontal == resizeDirections.Left) {
         left = pos.x() + horizontalDistance;

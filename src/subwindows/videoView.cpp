@@ -31,7 +31,6 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
         static_cast<int>(msize * 0.2), 
         static_cast<int>(msize * 0.2));
 
-    // GB modified begin
     if(usingDoubleROI) {
         roi2GraphicsView = new QGraphicsView(graphicsView);
         roi2GraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -56,7 +55,6 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     penROIunprocessed2.setWidth(2);
     penPupilOutline.setWidth(2);
     penPupilCenter.setWidth(2);
-    // GB modified end
 
     penROIunprocessed1 = QPen(selectionColorCorrect1);
     penROIunprocessed2 = QPen(selectionColorCorrect2);
@@ -73,18 +71,17 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
 
     //roi1Selection = new ResizableRectItem(QRectF(QPointF(32, 32), QPointF(200, 200)));
     roi1Selection = new ResizableRectItem(QRectF(QPointF(20, 20), QPointF(20 + 200, 20 + 150)), QSizeF(4,3) );
-    roi1Selection->setMinSize(QSizeF(30,30)); // GB
+    roi1Selection->setMinSize(QSizeF(30,30));
     roi1Selection->setBrush(selectionColorCorrect1);
     roi1Selection->setFlag(QGraphicsItem::ItemIsMovable);
     roi1Selection->setZValue(100);
     connect(roi1Selection, SIGNAL(onChange()), this, SLOT(onROI1Change()));
     roi1Selection->setVisible(false);
     graphicsScene->addItem(roi1Selection);
-    // GB modified begin
     if(usingDoubleROI) {
         //roi2Selection = new ResizableRectItem(QRectF(QPointF(32, 32), QPointF(200, 300))); // DIFFERENT POSITION
         roi2Selection = new ResizableRectItem(QRectF(QPointF(220, 20), QPointF(220 + 200, 20 + 150)), QSizeF(4,3) );
-        roi2Selection->setMinSize(QSizeF(30,30)); // GB
+        roi2Selection->setMinSize(QSizeF(30,30));
         roi2Selection->setBrush(selectionColorCorrect2);
         roi2Selection->setFlag(QGraphicsItem::ItemIsMovable);
         roi2Selection->setZValue(100);
@@ -92,8 +89,6 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
         roi2Selection->setVisible(false);
         graphicsScene->addItem(roi2Selection);
     }
-    // GB modified end
-
 
     currentImage = new ImageGraphicsItem();
     graphicsScene->addItem(currentImage);
@@ -109,12 +104,10 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     graphicsView->show();
     roi1GraphicsView->hide();
 
-    // GB added begin
     if(usingDoubleROI) {
         roi2GraphicsView->setScene(graphicsScene); 
         roi2GraphicsView->hide();
     }
-    // GB added end
 }
 
 void VideoView::setSelectionColor1(QColor color) {
@@ -131,8 +124,6 @@ void VideoView::setSelectionColor2(QColor color) {
 // If the widget is currently in FIT mode, scale the live-view according to the window size
 // If the lens pupil view is visible, it needs to be resized manually to preserve the size ratio to the large view
 void VideoView::resizeEvent(QResizeEvent *event) {
-
-    // GB: changed numbers to let both pupil views fit
 
     if(mode==FIT)
         graphicsView->fitInView(graphicsScene->sceneRect(), Qt::KeepAspectRatio);
@@ -544,7 +535,7 @@ void VideoView::updateViewInternal(const cv::Mat &img) {
     cv::Mat bgrFrame = img; 
     if (img.channels() == 1)
         cv::cvtColor(img, bgrFrame, cv::COLOR_GRAY2BGR);
-    QImage qImg = cvMatToQImage(bgrFrame);
+    QImage qImg = SupportFunctions::cvMatToQImage(bgrFrame);
 
     // added by Gabor Benyei (kheki4) on 2022.11.07, 
     // Reason: when camera binning is changed, the Pylon library sends a request to the camera to send new images considering the newly set binning value
@@ -564,30 +555,24 @@ void VideoView::updateViewInternal(const cv::Mat &img) {
     graphicsScene->addItem(currentImage);
 
     if(!initialFit) {
-        //imageSize = img.size(); // GB: moved  to updateView
-        //std::cout << "SETTING SCENE RECT: width = " << img.cols << " ; height = " << img.rows << std::endl;
 
         graphicsScene->setSceneRect(0, 0, img.cols, img.rows);
         if(mode==FIT) {
             graphicsView->fitInView(graphicsScene->sceneRect(), Qt::KeepAspectRatio);
         }
 
-        // GB modified begin
         /*
         // GB: this should never cause a problem from now on, as ROIs during setting are expressed as ratios of image width and height
         // ML: ADDED START 20.06.21
         // Reason: Prevent error if the ROI is bigger than the image itself
         QRectF roi1 = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
         if(!graphicsScene->sceneRect().contains(roi1)) {
-            // GB begin
             roi1SelectionRectLastR = QRectF(0.1, 0.35, 0.3, 0.3); 
             roi1Selection->setRect(QRect(roi1SelectionRectLastR.x()*img.cols,roi1SelectionRectLastR.y()*img.rows,roi1SelectionRectLastR.width()*img.cols,roi1SelectionRectLastR.height()*img.rows));
-            // GB end
             saveROI1Selection();
         }
         // ML: ADDED END
 
-        // GB added begin
         if(usingDoubleROI) {
             QRectF roi2 = roi2Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
             if(!graphicsScene->sceneRect().contains(roi2)) {
@@ -596,9 +581,7 @@ void VideoView::updateViewInternal(const cv::Mat &img) {
                 saveROI2Selection();
             }
         }
-        // GB added end
         */
-        // GB modified end
 
         initialFit = true;
     }
@@ -697,7 +680,6 @@ void VideoView::showROISelection(bool value) {
 // If the selected ROI is outside of image bounds nothing is transmitted and false returned i.e. no new ROI is set
 bool VideoView::saveROI1Selection() {
 
-    // GB modified begin
     //QRectF roi = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
     //QRectF roiDBoundingRect = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
     QRectF roiD = roi1Selection->sceneBoundingRect();
@@ -715,7 +697,7 @@ bool VideoView::saveROI1Selection() {
     std::cout << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width()<<std::endl;
     std::cout << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height()<<std::endl;
 
-    // GB modified: removed initialFit restriction
+    // note: removed initialFit restriction
     if(roiR.size().width() > 1 ||  roiR.size().height() > 1) {
         std::cout<<"Saving ROI1 Selection: out of image bounds."<<std::endl;
         return false;
@@ -742,7 +724,6 @@ bool VideoView::saveROI1Selection() {
     emit onROI1SelectionD(roiD);
 
     return true;
-    // GB modified end
 }
 
 // Saves the current selected rect by the ROI selection (GB: ROI nr 2)
@@ -766,7 +747,7 @@ bool VideoView::saveROI2Selection() {
     std::cout << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width()<<std::endl;
     std::cout << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height()<<std::endl;
 
-    // GB modified: removed initialFit restriction
+    // note: removed initialFit restriction
     if(roiR.size().width() > 1 ||  roiR.size().height() > 1) {
         std::cout<<"Saving ROI2 Selection: out of image bounds."<<std::endl;
         return false;
@@ -792,7 +773,6 @@ void VideoView::resetROISelection() {
 
     float defSf = 0.7f;
 
-    // GB modified begin
     // GB NOTE: modified to work with rational number size ROIs. ALso added code to use roi1SelectionRectLastR and roi2SelectionRectLastR
     float minSize = std::min(imageSize.width, imageSize.height);
     if(!usingDoubleROI) {
@@ -836,12 +816,10 @@ void VideoView::resetROISelection() {
             graphicsScene->sceneRect().contains(QRect(roi2SelectionRectLastR.x()*imageSize.width,roi2SelectionRectLastR.y()*imageSize.height,roi2SelectionRectLastR.width()*imageSize.width,roi2SelectionRectLastR.height()*imageSize.height)) << 
             " size: " << roiR.topLeft().x() << ":" << roiR.topLeft().x() << " - " << roiR.height() << std::endl;
     }
-    // GB modified end
 }
 
 // Event handler when the selection of the ROI (GB: ROI nr 1) is changed i.e. the user moved the selection
 // To signal a invalid selection, the ROI selection is colored red if it goes outside the scene
-// GB: modified that selection color brushes are now stored in global variables
 void VideoView::onROI1Change() {
     QRectF roiD = roi1Selection->sceneBoundingRect();
 
@@ -857,7 +835,6 @@ void VideoView::onROI1Change() {
 
 // Event handler when the selection of the ROI (GB: ROI nr 2) is changed i.e. the user moved the selection
 // To signal a invalid selection, the ROI selection is colored red if it goes outside the scene
-// GB: added, and now using global selection color brushes
 void VideoView::onROI2Change() {
     if(!usingDoubleROI)
         return;
@@ -917,8 +894,7 @@ void VideoView::setROI1SelectionR(QRectF roiR) {
     qDebug() << "roi1Selection->setRect() via setROI1Selection(QRectF roi) (RATIO): " << roiR; 
 }
 
-// Sets a ROI (GB: ROI nr 2) selection based on a given rectangle
-// GB: added, and modified for RATIO ROIs
+// Sets a ROI (and ROI nr 2) selection based on a given rectangle
 void VideoView::setROI2SelectionR(QRectF roiR) {
     if(roiR.isEmpty() || !usingDoubleROI)
         return;
