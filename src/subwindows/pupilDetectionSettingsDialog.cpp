@@ -520,3 +520,7 @@ void PupilDetectionSettingsDialog::updateProcModeCompatibility() {
     }
     //procModeGroup->setEnabled(state);
 }
+
+void PupilDetectionSettingsDialog::onDisableProcModeSelector(bool state) {
+    procModeGroup->setEnabled(!state);
+}

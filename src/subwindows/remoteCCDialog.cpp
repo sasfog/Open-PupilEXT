@@ -11,10 +11,12 @@
 
 RemoteCCDialog::RemoteCCDialog(
     ConnPoolCOM *connPoolCOM,
+    ConnPoolUDP *connPoolUDP,
     QWidget *parent) :
     QDialog(parent),
     mainWindow(parent),
     connPoolCOM(connPoolCOM),
+    connPoolUDP(connPoolUDP),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     this->setMinimumSize(280, 330); 
@@ -154,57 +156,32 @@ void RemoteCCDialog::createForm() {
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(updateCOMDevices()));
 
     setLayout(mainLayout);
-    
-    connect(this, SIGNAL(UDPmessageReceived(QString, quint64)), this, SLOT(interpretCommand(QString, quint64)));
 }
 
-void RemoteCCDialog::connectUDP(QHostAddress ip, quint16 port) {
-    UDPsocket = new QUdpSocket(this);
+void RemoteCCDialog::connectUDP(const ConnPoolUDPInstanceSettings &p) {
 
-    bool success = UDPsocket->bind(ip, port);
-    if(!success) {
-        qDebug() << "Could not open UDP socket for listening";
-        UDPsocket->close();
-        delete UDPsocket;
-        UDPsocket = nullptr;
+    int index = connPoolUDP->setupAndOpenConnection(p, ConnPoolPurposeFlag::REMOTE_CONTROL);
+    if(index >= 0) {
+        connectUDPButton->setEnabled(false);
+        disconnectUDPButton->setEnabled(true);
 
-        return;
+        connPoolUDPIndex = index;
+        connPoolUDP->subscribeListener(index, this, SLOT(interpretCommand(QString, quint64)));
+
+        //emit onCOMConnect();
+        emit onConnStateChanged();
+    } else {
+        if(connPoolUDP->getInstance(connPoolUDPIndex) != nullptr) {
+            QString errMsg = connPoolUDP->getInstance(connPoolUDPIndex)->errorString();
+            QMessageBox::critical(this, tr("Error"), connPoolUDP->getInstance(connPoolUDPIndex)->errorString());
+        }
+        qDebug() << "Error while connecting to the specified UDP port. It is possibly already in use by another application.";
     }
-    
-    connectUDPButton->setEnabled(false);
-    disconnectUDPButton->setEnabled(true);
-
-    connect(UDPsocket, SIGNAL(readyRead()), this, SLOT(processPendingUDPDatagrams()));
-    
-    onConnStateChanged();
 }
-
-void RemoteCCDialog::processPendingUDPDatagrams() {
-    //qDebug() << "processPendingDatagrams()";
-    QHostAddress sender;
-    quint16 port;
-    QByteArray datagram;
-    while(UDPsocket->hasPendingDatagrams())
-    {
-        quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-        //qDebug() << "Got message at unix time: " << QString::number(timestamp);
-
-        datagram.resize(UDPsocket->pendingDatagramSize());
-        UDPsocket->readDatagram(datagram.data(),datagram.size(),&sender,&port);
-        emit UDPmessageReceived(QString::fromStdString(datagram.toStdString()), timestamp);
-    }
-    
-    // NOTE: Somehow there is always one more "dummy" readDatagram call to make, 
-    // otherwise no new readyRead() will be emitted, and this function would never be called again. 
-    // Is this a Qt bug? Seen in Qt 5.15
-    datagram.resize(UDPsocket->pendingDatagramSize());
-    UDPsocket->readDatagram(datagram.data(),datagram.size(),&sender,&port);
-};
 
 void RemoteCCDialog::onConnectUDPClick() {
     updateSettings();
-    connectUDP(m_UDPip, m_UDPport);
+    connectUDP(m_currentSettingsUDP);
 }
 
 void RemoteCCDialog::onDisconnectUDPClick() {
@@ -212,11 +189,16 @@ void RemoteCCDialog::onDisconnectUDPClick() {
 }
 
 void RemoteCCDialog::disconnectUDP() {
-    disconnect(UDPsocket, SIGNAL(readyRead()), this, SLOT(processPendingUDPDatagrams()));
+    if(connPoolUDPIndex < 0) {
+        qDebug() << "RemoteCCDialog::disconnectUDP(): connPoolUDPIndex value is invalid";
+        return;
+    }
 
-    UDPsocket->close();
-    delete UDPsocket;
-    UDPsocket = nullptr;
+    if(connPoolUDP->getInstance(connPoolUDPIndex)->isOpen()) {
+        connPoolUDP->unsubscribeListener(connPoolUDPIndex, this, SLOT(interpretCommand(QString, quint64)));
+        connPoolUDP->closeConnection(connPoolUDPIndex, ConnPoolPurposeFlag::REMOTE_CONTROL);
+    }
+    connPoolUDPIndex = -1;
 
     connectUDPButton->setEnabled(true);
     disconnectUDPButton->setEnabled(false);
@@ -309,7 +291,7 @@ bool RemoteCCDialog::isAnyConnected() {
 }
 
 bool RemoteCCDialog::isUDPConnected() {
-    if( UDPsocket==nullptr) /*||
+    if(connPoolUDPIndex < 0 || !connPoolUDP->getInstance(connPoolUDPIndex)->isOpen()) /*||
         connPoolUDP->getInstance(connPoolUDPIndex)->state() == QAbstractSocket::ClosingState || 
         connPoolUDP->getInstance(connPoolUDPIndex)->state() == QAbstractSocket::UnconnectedState )*/
         return false;
@@ -327,8 +309,8 @@ bool RemoteCCDialog::isCOMConnected() {
 // Update current settings with the configuration from the form
 void RemoteCCDialog::updateSettings()
 {
-    m_UDPip = QHostAddress(udpIpBox->getValue());
-    m_UDPport = udpPortBox->value();
+    m_currentSettingsUDP.ipAddress = QHostAddress(udpIpBox->getValue());
+    m_currentSettingsUDP.portNumber = udpPortBox->value();
 
     m_currentSettingsCOM.name = serialPortInfoListBox->currentText();
 
@@ -365,8 +347,8 @@ void RemoteCCDialog::updateSettings()
 // BG: code mostly copied from MCUSettingsDialogInst
 void RemoteCCDialog::loadSettings() {
 
-    udpIpBox->setValue(applicationSettings->value("RemoteControlConnection.UDP.ip", udpIpBox->getValue()).toString());
-    udpPortBox->setValue(applicationSettings->value("RemoteControlConnection.UDP.port", udpPortBox->value()).toInt());
+    udpIpBox->setValue(applicationSettings->value("RemoteControlConnection.UDP.ipAddress", udpIpBox->getValue()).toString());
+    udpPortBox->setValue(applicationSettings->value("RemoteControlConnection.UDP.portNumber", udpPortBox->value()).toInt());
 
     serialPortInfoListBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.name", serialPortInfoListBox->itemText(0)).toString());
     baudRateBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.baudRate", baudRateBox->itemText(3)).toString());
@@ -381,8 +363,8 @@ void RemoteCCDialog::loadSettings() {
 // Saves serial port settings to application settings
 // BG: code mostly copied from MCUSettingsDialogInst
 void RemoteCCDialog::saveSettings() {
-    applicationSettings->setValue("RemoteControlConnection.UDP.ip", udpIpBox->getValue());
-    applicationSettings->setValue("RemoteControlConnection.UDP.port", udpPortBox->value());
+    applicationSettings->setValue("RemoteControlConnection.UDP.ipAddress", udpIpBox->getValue());
+    applicationSettings->setValue("RemoteControlConnection.UDP.portNumber", udpPortBox->value());
     
     applicationSettings->setValue("RemoteControlConnection.COM.name", serialPortInfoListBox->currentText());
     applicationSettings->setValue("RemoteControlConnection.COM.baudRate", baudRateBox->currentText().toInt());
@@ -581,16 +563,15 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             }
         } else if(str[1].toLower() == 'c') { // for Microcontroller ("camera serial") connection
             if(str[2].toLower() == 'c') {
-                // TODO: UDP connection to MCU, using W5500 ethernet module and the like
-                /*if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
+                if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
                     w->PRGconnectMicrocontrollerUDP(str.mid(7, str.length()-7));
-                else*/ if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
+                else if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
                     w->PRGconnectMicrocontrollerCOM(str.mid(7, str.length()-7).toUpper());
             } else if(str[2].toLower() == 'd') {
-                /*if(str.mid(3,3).toLower() == 'udp')
-                    w->PRGdisconnectMicrocontrollerUDP();
-                else*/ if(str.mid(3,3).toLower() == 'com')
-                    w->PRGdisconnectMicrocontrollerCOM();
+                if(str.mid(3,3).toLower() == 'udp')
+                    w->PRGdisconnectMicrocontroller();
+                else if(str.mid(3,3).toLower() == 'com')
+                    w->PRGdisconnectMicrocontroller();
             }
         }
         return;

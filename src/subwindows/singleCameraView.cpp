@@ -80,7 +80,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
     showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
-    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
@@ -408,14 +408,16 @@ void SingleCameraView::loadSettings() {
     QRectF roi1;
     QRectF roi2;
     if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-        roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
+        roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
     } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-        roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.rational", QRectF()).toRectF();
-        roi2 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.rational", QRectF()).toRectF();
+        roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roi2 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-    //     roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF()).toRectF();
-    //     roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF()).toRectF();
+    //     roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+    //     roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
+
+    /*
     QRectF initRoi = camera->getImageROI();
     if(!roi1.isEmpty()) {
         QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
@@ -427,6 +429,7 @@ void SingleCameraView::loadSettings() {
         
         videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi2D, roi2));
     }
+    */
 }
 
 // Opens a contextmenu on the toolbar for settings the viewport options
@@ -533,9 +536,9 @@ void SingleCameraView::onPupilDetectionConfigChanged(QString config) {
     processingConfigLabel->setText(config);
     autoParamMenu->setEnabled(isAutoParamModificationEnabled());
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
-    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
     emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
@@ -633,18 +636,23 @@ void SingleCameraView::onDisplayPupilViewClick(bool value) {
 }
 
 void SingleCameraView::onSetROIClick(float roiSize) {
-    toolBar->addAction(resetROI);
-    toolBar->addAction(discardROISelection);
-    toolBar->addAction(saveROI);
-    
+
     tempROIRect1 = videoView->getROI1SelectionR();
     videoView->setROI1SelectionR(roiSize);
     if(videoView->getDoubleROI()) {
         tempROIRect2 = videoView->getROI2SelectionR();
         videoView->setROI2SelectionR(roiSize);
     }
-    //videoView->resetROISelection();
-    videoView->showROISelection(true);
+
+    if(roiSize == -1.0) {// "Custom"
+        emit doingPupilDetectionROIediting(true);
+
+        toolBar->addAction(resetROI);
+        toolBar->addAction(discardROISelection);
+        toolBar->addAction(saveROI);
+
+        videoView->showROISelection(true);
+    }
 }
 
 void SingleCameraView::onSaveROIClick() {
@@ -661,6 +669,8 @@ void SingleCameraView::onSaveROIClick() {
         toolBar->removeAction(saveROI);
         toolBar->removeAction(discardROISelection);
     }
+
+    emit doingPupilDetectionROIediting(false);
 }
 
 // One method for discarding one or both ROIs
@@ -696,8 +706,8 @@ void SingleCameraView::onPlotPupilCenterClick(bool value) {
 void SingleCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("SingleCameraView.plotROIContour", plotROIContour);
-    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
     emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
@@ -816,7 +826,20 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
     videoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
     loadSettings(); // same as onSettingsChange()
 
+    // The following ones are NEEDED HERE, because they need to happen after we loaded new ROIs using loadSettings();
+    // But they are also be needed for setting the right colour of the ROI rectangles, as these calls also do that
+    if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+        videoView->onROI1Change();
+    } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        videoView->onROI1Change();
+        videoView->onROI2Change();
+    }  else {
+        //qDebug() << "Processing mode is undetermined" << Qt::endl;
+    }
+
     updateProcModeLabel();
+
+//    videoView->update();
 
     // at last, we update the videoView to redraw the ROI overlay
     videoView->drawOverlay();

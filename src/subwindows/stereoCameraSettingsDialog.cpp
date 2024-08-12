@@ -21,7 +21,7 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
         settingsDirectory.mkdir(".");
     }
 
-    setMinimumSize(500, 760);
+    setMinimumSize(540, 900);
 
     setWindowTitle(QString("Stereo Camera Settings"));
 
@@ -54,8 +54,8 @@ void StereoCameraSettingsDialog::createForm() {
     MCUConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
     MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
-    MCUConfigButton->setFixedWidth(230);
-//    MCUConfigButton->setFixedHeight(25); //
+    MCUConfigButton->setFixedWidth(250);
+    MCUConfigButton->setMinimumHeight(26);
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConnDisconnButton = new QPushButton(); // Will change to disconnect when connected
     MCUConnDisconnButton->setLayout(new QGridLayout);
@@ -65,7 +65,7 @@ void StereoCameraSettingsDialog::createForm() {
     MCUConnDisconnButton->layout()->addWidget(MCUConnDisconnButtonLabel);
     MCUConnDisconnButton->layout()->setContentsMargins(5, 5, 5, 5);
     MCUConnDisconnButton->setFixedWidth(150);
-//    MCUConnDisconnButton->setFixedHeight(25); //
+    MCUConnDisconnButton->setMinimumHeight(26);
 
     QHBoxLayout *MCUConnRow1 = new QHBoxLayout;
     MCUConnRow1->addSpacerItem(sp10);
@@ -231,7 +231,7 @@ void StereoCameraSettingsDialog::createForm() {
     binningBox->addItem(QString("1 (no binning)"));
     binningBox->addItem(QString("2"));
     binningBox->addItem(QString("4"));
-    binningBox->setFixedWidth(100);
+    binningBox->setMinimumWidth(120);
     imageROIlayoutRow5->addWidget(binningLabel);
     imageROIlayoutRow5->addWidget(binningBox);
     imageROIlayoutRow5->addStretch();
@@ -323,7 +323,7 @@ void StereoCameraSettingsDialog::createForm() {
     HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
     HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
     HWTstartStopButton->setFixedWidth(150);
-    HWTstartStopButton->setEnabled(MCUSettings->isCOMConnected());
+    HWTstartStopButton->setEnabled(MCUSettings->isConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
     HWTframerateLayout->addWidget(HWTframerateLabel);
@@ -592,7 +592,7 @@ void StereoCameraSettingsDialog::onLineSourceChange(int index) {
         camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
         HWTframerateBox->setEnabled(true);
         HWTtimeSpanBox->setEnabled(true);
-        HWTstartStopButton->setEnabled(MCUSettings->isCOMConnected());
+        HWTstartStopButton->setEnabled(MCUSettings->isConnected());
     } else {
         HWTframerateBox->setEnabled(false);
         HWTtimeSpanBox->setEnabled(false);
@@ -1053,15 +1053,15 @@ void StereoCameraSettingsDialog::secondaryCameraBoxCurrentIndexChanged(int) {
 }
 
 void StereoCameraSettingsDialog::MCUConnDisconnButtonClicked() {
-    if(MCUSettings->isCOMConnected()) {
+    if(MCUSettings->isConnected()) {
         stopHardwareTrigger();
 
-        MCUSettings->disconnectCOM();
+        MCUSettings->doDisconnect();
         MCUConnDisconnButtonLabel->setText("Connect");
         MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
         HWTstartStopButton->setEnabled(false);
     } else {
-        MCUSettings->connectSerialPort();
+        MCUSettings->doConnect();
         MCUConnDisconnButtonLabel->setText("Disconnect");
         MCUConnDisconnButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
         HWTstartStopButton->setEnabled(true);

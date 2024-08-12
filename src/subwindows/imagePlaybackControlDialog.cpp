@@ -110,6 +110,10 @@ void ImagePlaybackControlDialog::createForm() {
     trialValLabel = new QLabel("-");
     infoLayout->addRow(trialLabel, trialValLabel);
 
+    QLabel *messageLabel = new QLabel(tr("Message:"));
+    messageValLabel = new QLabel("-");
+    infoLayout->addRow(messageLabel, messageValLabel);
+
     infoGroup->setLayout(infoLayout);
     layout->addWidget(infoGroup, 0, 0, 1, 1);
 
@@ -247,8 +251,10 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
     //elapsedTimeValLabel->setText(QString::number(elapsedMs));
     elapsedTimeValLabel->setText(timeElapsed.toString("hh:mm:ss") + "\t/ " + timeTotal.toString("hh:mm:ss"));
     percentValLabel->setText(QString::number((float)(frameNumber+1)/(float)numImagesTotal*(float)100,'f',1)); 
-    if(recEventTracker)
-        trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(currTimestamp).trialNumber)); 
+    if(recEventTracker) {
+        trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(currTimestamp).trialNumber));
+        messageValLabel->setText(SupportFunctions::shortenStringForDisplay(recEventTracker->getMessage(currTimestamp).messageString,20));
+    }
 
     lastTimestamp = currTimestamp;
     lastPlayedFrame = frameNumber;
@@ -305,8 +311,10 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         //elapsedTimeValLabel->setText(QString::number(elapsedMs));
         elapsedTimeValLabel->setText(timeElapsed.toString("hh:mm:ss") + "\t/ " + timeTotal.toString("hh:mm:ss"));
         percentValLabel->setText(QString::number((float)(frameNumber+1)/(float)numImagesTotal*(float)100,'f',1));
-        if(recEventTracker)
+        if(recEventTracker) {
             trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(timestamp).trialNumber));
+            messageValLabel->setText(SupportFunctions::shortenStringForDisplay(recEventTracker->getMessage(timestamp).messageString,20));
+        }
 
         // NOTE: workaround to not emit valuechanged signals, so it gets emitted only if the user interacts with it
         slider->blockSignals(true);

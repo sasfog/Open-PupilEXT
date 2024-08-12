@@ -7,11 +7,13 @@
 
 DataStreamer::DataStreamer(
     ConnPoolCOM *connPoolCOM,
+    ConnPoolUDP *connPoolUDP,
     RecEventTracker *recEventTracker,
     QObject *parent
     ) : 
     QObject(parent),
     connPoolCOM(connPoolCOM),
+    connPoolUDP(connPoolUDP),
     recEventTracker(recEventTracker),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
 {
@@ -20,13 +22,10 @@ DataStreamer::DataStreamer(
 
 }
 
-void DataStreamer::startUDPStreamer(QUdpSocket *socket, QHostAddress ip, quint16 port, DataContainer dataContainer) {
-    UDPStreamingOn = true;
-    UDPsocket = socket;
-    UDPip = ip;
-    UDPport = port;
+void DataStreamer::startUDPStreamer(int poolIndex, DataContainer dataContainer) {
+    connPoolUDPIndex = poolIndex;
     UDPdataContainer = dataContainer;
-    qDebug() << "Now starting UDP streaming to ip: " << ip << " and port " << port << " using data container " << dataContainer;
+    qDebug() << "Now starting UDP streaming to ip: " << connPoolUDP->getInstance(poolIndex)->objectName() << " and port " << connPoolUDP->getInstance(poolIndex)->localPort() << " using data container " << dataContainer;
 }
 
 void DataStreamer::startCOMStreamer(int poolIndex, DataContainer dataContainer) {
@@ -36,10 +35,7 @@ void DataStreamer::startCOMStreamer(int poolIndex, DataContainer dataContainer) 
 }
     
 void DataStreamer::stopUDPStreamer() {
-    UDPStreamingOn = false;
-    UDPsocket = nullptr;
-    UDPip = QHostAddress();
-    UDPport = 0;
+    connPoolUDPIndex = -1;
     UDPdataContainer = DataContainer::CSV;
     qDebug() << "Stopping UDP streaming";
 }
@@ -53,12 +49,12 @@ void DataStreamer::stopCOMStreamer() {
 // On new pupil data, stream it
 void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
 
-    // BG: TODO: improve this code
     uint trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
     std::vector<double> d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
 
     bool anyUsed = false;
-    if( UDPStreamingOn && UDPsocket != nullptr) {
+    if(connPoolUDPIndex >= 0 && connPoolUDP->getInstance(connPoolUDPIndex) != nullptr) {
+    //if( UDPStreamingOn && UDPsocket != nullptr) {
         QString str = "";
         if(UDPdataContainer == DataContainer::CSV)
             str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, d);
@@ -69,7 +65,7 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
         else if(UDPdataContainer == DataContainer::YAML)
             str = EyeDataSerializer::pupilToYAML(timestamp, procMode, Pupils, filename, trialNumber, d);
 
-        UDPsocket->writeDatagram( (str + '\n').toUtf8(), UDPip, UDPport );
+        connPoolUDP->writeToInstance( connPoolUDPIndex, (str + '\n').toUtf8() );
         anyUsed = true;
     }
     if(connPoolCOMIndex >= 0 && connPoolCOM->getInstance(connPoolCOMIndex) != nullptr) {
@@ -83,7 +79,7 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
         else if(COMdataContainer == DataContainer::YAML)
             str = EyeDataSerializer::pupilToYAML(timestamp, procMode, Pupils, filename, trialNumber, d);
 
-        connPoolCOM->getInstance(connPoolCOMIndex)->write( (str + '\n').toUtf8() );
+        connPoolCOM->writeToInstance( connPoolCOMIndex, (str + '\n').toUtf8() );
         anyUsed = true;
     }
 
@@ -97,7 +93,7 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
 
 int DataStreamer::getNumActiveStreamers() {
     int num = 0;
-    if( UDPsocket != nullptr) {
+    if(connPoolUDPIndex >= 0 && connPoolUDP->getInstance(connPoolUDPIndex) != nullptr) {
         num++;
     }
     if(connPoolCOMIndex >= 0 && connPoolCOM->getInstance(connPoolCOMIndex) != nullptr) {

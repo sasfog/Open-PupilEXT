@@ -17,7 +17,7 @@
 #include "imageGraphicsItem.h"
 #include "ResizableRectItem.h"
 #include <QtWidgets/QHBoxLayout>
-
+#include <QDebug>
 #include "../pupilDetection.h"
 
 enum ViewMode {FIT = 0, FULL = 1, ZOOM = 2};
@@ -41,6 +41,10 @@ class VideoView : public QWidget {
 public:
 
     enum ROIAllowedArea {ALL = 0, LEFT_HALF = 1, RIGHT_HALF = 2};
+
+    static constexpr QRectF defaultROImiddleR = QRectF( 0.35, 0.35, 0.3, 0.3 );
+    static constexpr QRectF defaultROIleftHalfR = QRectF( 0.05, 0.35, 0.3, 0.3 );
+    static constexpr QRectF defaultROIrightHalfR = QRectF( 0.65, 0.35, 0.3, 0.3 );
 
     explicit VideoView(bool usingDoubleROI=false, QColor selectionColor1=Qt::blue, QColor selectionColor2=Qt::green, QWidget *parent=0);
 

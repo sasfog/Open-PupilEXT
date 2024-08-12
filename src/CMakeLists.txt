@@ -62,7 +62,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         execArgParser.h execArgParser.cpp eyeDataSerializer.h eyeDataSerializer.cpp camTempMonitor.h camTempMonitor.cpp dataStreamer.h dataStreamer.cpp metaSnapshotOrganizer.h metaSnapshotOrganizer.cpp
         devices/singleWebcam.h devices/singleWebcam.cpp devices/singleWebcamImageEventHandler.h devices/singleWebcamImageEventHandler.cpp
         subwindows/singleWebcamSettingsDialog.h subwindows/singleWebcamSettingsDialog.cpp
-        connPoolCOM.h PRGmainwindow.cpp
+        connPoolCOM.h connPoolUDP.h PRGmainwindow.cpp
         recEventTracker.h recEventTracker.cpp
         subwindows/streamingSettingsDialog.h subwindows/streamingSettingsDialog.cpp
         subwindows/singleWebcamCalibrationView.h subwindows/singleWebcamCalibrationView.cpp

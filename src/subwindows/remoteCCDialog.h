@@ -16,6 +16,7 @@
 
 #include "IPCtrl.h"
 #include "../connPoolCOM.h"
+#include "../connPoolUDP.h"
 
 #include "../pupilDetection.h"
 #include "../dataWriter.h"
@@ -42,6 +43,7 @@ public:
     //explicit RemoteCCDialog(ConnPoolUDP *connPoolUdp, ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
     explicit RemoteCCDialog( 
         ConnPoolCOM *connPoolCOM,
+        ConnPoolUDP *connPoolUDP,
         QWidget *parent = nullptr);
 
     ~RemoteCCDialog() override;
@@ -51,9 +53,11 @@ private:
 
     QWidget *mainWindow;
 
+    ConnPoolUDP *connPoolUDP;
+    int connPoolUDPIndex = -1;
+
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
-
 
     void createForm();
 
@@ -62,10 +66,7 @@ private:
     IPCtrl *udpIpBox;
     QSpinBox *udpPortBox;
 
-    QUdpSocket *UDPsocket = nullptr;
-    QHostAddress m_UDPip;
-    quint16 m_UDPport;
-
+    ConnPoolUDPInstanceSettings m_currentSettingsUDP;
     ConnPoolCOMInstanceSettings m_currentSettingsCOM;
 
     QPushButton *refreshButton;
@@ -92,7 +93,6 @@ private:
 private slots:
     void updateCOMDevices();
 
-    void processPendingUDPDatagrams();
     //void readData(const QString &msg);
     void interpretCommand(const QString &msg, const quint64 &timestamp);
 
@@ -109,7 +109,7 @@ public slots:
     void onConnectCOMClick();
     void onDisconnectCOMClick();
 
-    void connectUDP(QHostAddress ip, quint16 port);
+    void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
     void disconnectUDP();
     void disconnectCOM();

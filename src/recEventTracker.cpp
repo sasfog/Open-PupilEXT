@@ -345,6 +345,13 @@ uint RecEventTracker::getLastCommissionedTrialNumber()
 {
     return bufferTrialCounter;
 }
+QString RecEventTracker::getLastMessage()
+{
+    if(messages.size()==0)
+        return "";
+
+    return messages[messages.size()-1].messageString;
+}
 void RecEventTracker::resetBufferTrialCounter(const quint64 &timestamp)
 {
 
@@ -356,6 +363,13 @@ void RecEventTracker::resetBufferTrialCounter(const quint64 &timestamp)
 
     bufferTrialCounter = 0;
     addTrialIncrement(timestamp); // will increase counter instantly to 1
+}
+void RecEventTracker::resetBufferMessageRegister(const quint64 &timestamp)
+{
+    if (mode == STORAGE)
+        return;
+
+    addMessage(timestamp,"");
 }
 bool RecEventTracker::isReady()
 {
@@ -389,6 +403,24 @@ RecEventTracker::TrialIncrement RecEventTracker::getTrialIncrement(quint64 times
             //        "timestamp " << trialIncrements[trialIncrements.size()-i].timestamp <<
             //        "trial number " << trialIncrements[trialIncrements.size()-i].trialNumber;
             return trialIncrements[trialIncrements.size() - i];
+        }
+        i++;
+    }
+    return (emptyElem);
+}
+
+RecEventTracker::Message RecEventTracker::getMessage(quint64 timestamp)
+{
+    Message emptyElem;
+    if (messages.size() < 1)
+        return emptyElem;
+
+    size_t i = 1;
+    while (i <= messages.size())
+    {
+        if (messages[messages.size() - i].timestamp < timestamp)
+        {
+            return messages[trialIncrements.size() - i];
         }
         i++;
     }

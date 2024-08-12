@@ -76,7 +76,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
     showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
-    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
@@ -371,7 +371,6 @@ StereoCameraView::~StereoCameraView() {
 // Loads the view settings from the application wide settings
 // Application settings contain both ROI selection if available
 void StereoCameraView::loadSettings() {
-    // GB TODO: surely loads the bools always? Seems to be ok, but I remember to have seen cases in other code when the read value was "false" which was not parsed as 0
 
     displayPupilView = SupportFunctions::readBoolFromQSettings("StereoCameraView.displayPupilView", false, applicationSettings);
     onDisplayPupilViewClick(displayPupilView);
@@ -418,15 +417,21 @@ void StereoCameraView::loadSettings() {
     QRectF roiSecondary1R;
     QRectF roiSecondary2R;
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.rational", QRectF()).toRectF();
-        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.rational", QRectF()).toRectF();
+        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
+        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA1.rational", QRectF()).toRectF();
-        roiMain2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.rational", QRectF()).toRectF();
-        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA2.rational", QRectF()).toRectF();
-        roiSecondary2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.rational", QRectF()).toRectF();
+        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA1.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roiMain2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
+        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA2.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roiSecondary2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
 
+    mainVideoView->setROI1SelectionR(roiMain1R);
+    mainVideoView->setROI2SelectionR(roiMain2R);
+    secondaryVideoView->setROI1SelectionR(roiSecondary1R);
+    secondaryVideoView->setROI2SelectionR(roiSecondary2R);
+
+    /*
     QRectF initRoi = camera->getImageROI();
     if(!roiMain1R.isEmpty()) {
         QRectF roiMain1D = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.discrete", QRectF()).toRectF();
@@ -447,6 +452,7 @@ void StereoCameraView::loadSettings() {
         QRectF roiSecondary2D = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.discrete", QRectF()).toRectF();
         secondaryVideoView->setROI2SelectionR(SupportFunctions::calculateRoiR(initRoi, roiSecondary2D, roiSecondary2R));
     }
+    */
 
 //    videoView->setAutoParamPupSize(applicationSettings->value("autoParamPupSizePercent", 50).toInt());
 
@@ -704,10 +710,6 @@ void StereoCameraView::onDisplayPupilViewClick(bool value) {
 // Opens the ROI selection
 void StereoCameraView::onSetROIClick(float roiSize) {
 
-    toolBar->addAction(resetROI);
-    toolBar->addAction(discardROISelection);
-    toolBar->addAction(saveROI);
-
     tempROIs[0] = mainVideoView->getROI1SelectionR();
     tempROIs[1] = secondaryVideoView->getROI1SelectionR();
     mainVideoView->setROI1SelectionR(roiSize);
@@ -720,8 +722,17 @@ void StereoCameraView::onSetROIClick(float roiSize) {
         tempROIs[3] = secondaryVideoView->getROI2SelectionR();
         secondaryVideoView->setROI2SelectionR(roiSize);
     }
-    mainVideoView->showROISelection(true);
-    secondaryVideoView->showROISelection(true);
+
+    if(roiSize == -1.0) {// "Custom"
+        emit doingPupilDetectionROIediting(true);
+
+        toolBar->addAction(resetROI);
+        toolBar->addAction(discardROISelection);
+        toolBar->addAction(saveROI);
+
+        mainVideoView->showROISelection(true);
+        secondaryVideoView->showROISelection(true);
+    }
 }
 
 // Saves the current ROI selection
@@ -743,6 +754,11 @@ void StereoCameraView::onSaveROIClick() {
         toolBar->removeAction(saveROI);
         toolBar->removeAction(discardROISelection);
     }
+
+    mainVideoView->drawOverlay();
+    secondaryVideoView->drawOverlay();
+
+    emit doingPupilDetectionROIediting(false);
 }
 
 // Reset/Discard the current ROI selection dialog
@@ -781,8 +797,8 @@ void StereoCameraView::onPlotPupilCenterClick(bool value) {
 void StereoCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("StereoCameraView.plotROIContour", plotROIContour);
-    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
     emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
@@ -859,12 +875,11 @@ void StereoCameraView::onPupilDetectionConfigChanged(QString config) {
     processingConfigLabel->setText(config);
     autoParamMenu->setEnabled(isAutoParamModificationEnabled());
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
-    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
     emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
-
 
 
 void StereoCameraView::onAutoParamPupSize(int value) {
@@ -924,6 +939,8 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
         //qDebug() << "STEREO_IMAGE_TWO_PUPIL" << Qt::endl;
         mainVideoView->setDoubleROI(true);
         secondaryVideoView->setDoubleROI(true);
+        mainVideoView->setSelectionColor1(QColor(0,0,255,76)); // Qt::blue
+        mainVideoView->setSelectionColor2(QColor(0,255,0,76)); // Qt::green
         secondaryVideoView->setSelectionColor1(QColor(144, 55, 212, 76)); // purple
         secondaryVideoView->setSelectionColor2(QColor(214, 140, 49,76)); // orange
         mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
@@ -948,7 +965,24 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
     secondaryVideoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
     loadSettings(); // same as onSettingsChange()
 
+    // The following ones are NEEDED HERE, because they need to happen after we loaded new ROIs using loadSettings();
+    // But they are also be needed for setting the right colour of the ROI rectangles, as these calls also do that
+    if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
+        mainVideoView->onROI1Change();
+        secondaryVideoView->onROI1Change();
+    } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
+        mainVideoView->onROI1Change();
+        mainVideoView->onROI2Change();
+        secondaryVideoView->onROI1Change();
+        secondaryVideoView->onROI2Change();
+    }  else {
+        //qDebug() << "Processing mode is undetermined" << Qt::endl;
+    }
+
     updateProcModeLabel();
+
+//    mainVideoView->update();
+//    secondaryVideoView->update();
 
     // at last, we update the videoView to redraw the ROI overlay
     mainVideoView->drawOverlay();

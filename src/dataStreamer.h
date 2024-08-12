@@ -24,6 +24,7 @@
 #include "recEventTracker.h"
 #include "eyeDataSerializer.h"
 #include "connPoolCOM.h"
+#include "connPoolUDP.h"
 
 
 // TODO: make a kind of HTTP "REST API-like" thing with only a few accepted requests, 
@@ -44,13 +45,15 @@ public:
 
     explicit DataStreamer(
         ConnPoolCOM *connPoolCOM,
+        ConnPoolUDP *connPoolUDP,
         RecEventTracker *recEventTracker,
         QObject *parent
         ); 
     ~DataStreamer() override;
     void close();
 
-    void startUDPStreamer(QUdpSocket *socket, QHostAddress ip, quint16 port, DataContainer dataContainer);
+//    void startUDPStreamer(QUdpSocket *socket, QHostAddress ip, quint16 port, DataContainer dataContainer);
+    void startUDPStreamer(int poolIndex, DataContainer dataContainer);
     void startCOMStreamer(int poolIndex, DataContainer dataContainer);
     
     void stopUDPStreamer();
@@ -62,11 +65,14 @@ private:
 
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
+
+    ConnPoolUDP *connPoolUDP;
+    int connPoolUDPIndex = -1;
     
-    bool UDPStreamingOn = false;
-    QUdpSocket *UDPsocket;
-    QHostAddress UDPip;
-    quint16 UDPport;
+//    bool UDPStreamingOn = false;
+//    QUdpSocket *UDPsocket;
+//    QHostAddress UDPip;
+//    quint16 UDPport;
 
     DataContainer UDPdataContainer;
     DataContainer COMdataContainer;

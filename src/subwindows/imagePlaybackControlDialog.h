@@ -85,6 +85,7 @@ private:
     QLabel *acqFPSValLabel;
     QLabel *percentValLabel;
     QLabel *trialValLabel;
+    QLabel *messageValLabel;
 
     int numImagesTotal = -1;
     uint64_t lastTimestamp = 0;

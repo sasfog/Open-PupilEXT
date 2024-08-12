@@ -88,6 +88,7 @@ private slots:
 public slots:
 
     void onSettingsChange();
+    void onDisableProcModeSelector(bool state);
 
 signals:
     void pupilDetectionProcModeChanged(int val);

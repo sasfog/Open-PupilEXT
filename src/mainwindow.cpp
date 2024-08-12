@@ -42,6 +42,7 @@ MainWindow::MainWindow():
                           recEventTracker(nullptr),
                           camTempMonitor(nullptr),
                           connPoolCOM(new ConnPoolCOM(this)),
+                          connPoolUDP(new ConnPoolUDP(this)),
                           dataStreamer(nullptr),
                           imagePlaybackControlDialog(nullptr),
 
@@ -63,11 +64,11 @@ MainWindow::MainWindow():
     imagePublished = new QWaitCondition();
     imageProcessed = new QWaitCondition();
     pupilDetectionWorker = new PupilDetection(imageMutex, imagePublished, imageProcessed);
-    MCUSettingsDialogInst = new MCUSettingsDialog(connPoolCOM, this);
+    MCUSettingsDialogInst = new MCUSettingsDialog(connPoolCOM, connPoolUDP, this);
     MCUSettingsDialogInst->setWindowIcon(cameraSerialConnectionIcon);
-    remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter,
+    remoteCCDialog = new RemoteCCDialog(connPoolCOM, connPoolUDP, this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter,
     remoteCCDialog->setWindowIcon(remoteCCIcon);
-    streamingSettingsDialog = new StreamingSettingsDialog(connPoolCOM, pupilDetectionWorker, dataStreamer, this);
+    streamingSettingsDialog = new StreamingSettingsDialog(connPoolCOM, connPoolUDP, pupilDetectionWorker, dataStreamer, this);
     streamingSettingsDialog->setWindowIcon(streamingSettingsIcon);
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
@@ -317,7 +318,7 @@ void MainWindow::createActions() {
     cameraMenu->addAction(wact2);
 
     /*
-    openCVCamerasMenu = cameraMenu->addMenu(QIcon(":/icons/OpenCV.svg"), tr("&Single Webcam (OpenCV UVC)")); // icons/Breeze/applets/22/webcam.svg
+    openCVCamerasMenu = cameraMenu->addMenu(QIcon(":/icons/OpenCV.svg"), tr("&Single Webcam (OpenCV UVC)")); // icons/Breeze/devices/22/camera-web.svg
     updateOpenCVCamerasMenu();
     connect(openCVCamerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleWebcamSelected(QAction *)));
     connect(openCVCamerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateOpenCVCamerasMenu()));
@@ -360,6 +361,15 @@ void MainWindow::createActions() {
     manualIncTrialAct->setEnabled(false);
     connect(manualIncTrialAct, SIGNAL(triggered()), this, SLOT(incrementTrialCounter()));
     settingsMenu->addAction(manualIncTrialAct);
+
+    toolBar->addSeparator();
+
+    const QIcon forceResetMessageIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/messageEmpty.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
+    forceResetMessageAct = new QAction(forceResetMessageIcon, tr("Force reset message register"), this);
+    forceResetMessageAct->setEnabled(false);
+    //connect(forceResetMessageAct, &QAction::triggered, this, &MainWindow::forceResetMessageRegister);
+    connect(forceResetMessageAct, SIGNAL(triggered()), this, SLOT(forceResetMessageRegister()));
+    settingsMenu->addAction(forceResetMessageAct);
 
     toolBar->addSeparator();
 
@@ -440,7 +450,7 @@ void MainWindow::createActions() {
     //fileMenu->addAction(newAct);
     toolBar->addAction(streamingSettingsAct);
     //streamingSettingsAct->setDisabled(true);
-    streamingSettingsAct->setDisabled(true);
+//    streamingSettingsAct->setDisabled(true); // This should be enabled even if no camera is connected. It is like remote control conn settings dialog
 
     const QIcon streamIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/media-record-green.svg"), applicationSettings);
     streamAct = new QAction(streamIcon, tr("Stream"), this);
@@ -560,10 +570,8 @@ void MainWindow::createStatusBar() {
     statusBarLayout->addWidget(warmedUpStatusIcon);
 
     trialWidget = new QWidget();
-
     QHBoxLayout *trialWidgetLayout = new QHBoxLayout(trialWidget);
     trialWidgetLayout->setContentsMargins(8,0,8,0);
-
     QLabel *trialLabel = new QLabel("Trial: ");
     currentTrialLabel = new QLabel();
     trialWidgetLayout->addWidget(trialLabel);
@@ -573,9 +581,23 @@ void MainWindow::createStatusBar() {
     //sep->setFrameShadow(QFrame::Sunken);
     //statusBarLayout->addWidget(sep);
     updateCurrentTrialLabel();
-
     statusBar()->addPermanentWidget(trialWidget);
     trialWidget->setVisible(false);
+
+    messageWidget = new QWidget();
+    QHBoxLayout *messageWidgetLayout = new QHBoxLayout(messageWidget);
+    messageWidgetLayout->setContentsMargins(8,0,8,0);
+    QLabel *messageLabel = new QLabel("Message: ");
+    currentMessageLabel = new QLabel();
+    messageWidgetLayout->addWidget(messageLabel);
+    messageWidgetLayout->addWidget(currentMessageLabel);
+    //QFrame* sep = new QFrame();
+    //sep->setFrameShape(QFrame::VLine);
+    //sep->setFrameShadow(QFrame::Sunken);
+    //statusBarLayout->addWidget(sep);
+    updateCurrentMessageLabel();
+    statusBar()->addPermanentWidget(messageWidget);
+    messageWidget->setVisible(false);
 
     statusBar()->addPermanentWidget(widget);
 
@@ -924,7 +946,7 @@ void MainWindow::onTrackActClick() {
             singleWebcamSettingsDialog->setLimitationsWhileTracking(false);
         
         recordAct->setDisabled(true);
-        //streamAct->setDisabled(true);
+        streamAct->setDisabled(true);
     } else {
         // Activate tracking
 
@@ -1008,6 +1030,8 @@ void MainWindow::onTrackActClick() {
 
         if(!pupilDetectionDataFile.isEmpty())
             recordAct->setDisabled(false);
+        if(streamingSettingsDialog && streamingSettingsDialog->isAnyConnected())
+            streamAct->setEnabled(true);
     }
 }
 
@@ -1039,15 +1063,17 @@ void MainWindow::onStreamClick() {
             return;
 
         safelyResetTrialCounter();
+        safelyResetMessageRegister();
 
         dataStreamer = new DataStreamer(
             connPoolCOM,
+            connPoolUDP,
             recEventTracker,
             this
             );
         
         if(streamingSettingsDialog->isUDPConnected()) {
-            dataStreamer->startUDPStreamer(streamingSettingsDialog->getUDPsocket(), streamingSettingsDialog->getUDPip(), streamingSettingsDialog->getUDPport(), streamingSettingsDialog->getDataContainerUDP());
+            dataStreamer->startUDPStreamer(streamingSettingsDialog->getConnPoolUDPIndex(), streamingSettingsDialog->getDataContainerUDP());
             streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
         } if(streamingSettingsDialog->isCOMConnected()) {
             dataStreamer->startCOMStreamer(streamingSettingsDialog->getConnPoolCOMIndex(), streamingSettingsDialog->getDataContainerCOM());
@@ -1105,6 +1131,7 @@ void MainWindow::onRecordClick() {
         }
 
         safelyResetTrialCounter();
+        safelyResetMessageRegister();
         
         QFileInfo fi(pupilDetectionDataFile);
         QDir pupilDetectionDir = fi.dir();
@@ -1164,6 +1191,7 @@ void MainWindow::onRecordImageClick() {
         // Activate recording
 
         safelyResetTrialCounter();
+        safelyResetMessageRegister();
         imageRecStartTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         if(outputDirectory.isEmpty())
@@ -1235,16 +1263,19 @@ void MainWindow::onCameraDisconnectClick() {
     }
 
     if (singleCameraChildWidget) {
+        disconnect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
         singleCameraChildWidget->deleteLater();
         singleCameraChildWidget = nullptr;
     }
     if (stereoCameraChildWidget) {
+        disconnect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
         stereoCameraChildWidget->deleteLater();
         stereoCameraChildWidget = nullptr;
     }
     if(recEventTracker) {
         disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
         disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+        disconnect(this, SIGNAL(commitMessageRegisterReset(quint64)), recEventTracker, SLOT(resetBufferMessageRegister(quint64)));
         disconnect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
 
         recEventTracker->close();
@@ -1330,8 +1361,8 @@ void MainWindow::onCameraDisconnectClick() {
         onHwTriggerDisable();
     }
 
-    if(MCUSettingsDialogInst->isCOMConnected()) {
-        MCUSettingsDialogInst->disconnectCOM();
+    if(MCUSettingsDialogInst->isConnected()) {
+        MCUSettingsDialogInst->doDisconnect();
     }
     if(MCUSettingsDialogInst->isVisible()) {
         MCUSettingsDialogInst->close();
@@ -1371,6 +1402,7 @@ void MainWindow::singleCameraSelected(QAction *action) {
     }
 
     //safelyResetTrialCounter();
+    //safelyResetMessageRegister();
 
     if(dynamic_cast<SingleCamera*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
@@ -1399,8 +1431,10 @@ void MainWindow::singleCameraSelected(QAction *action) {
     recEventTracker = new RecEventTracker();
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitMessageRegisterReset(quint64)), recEventTracker, SLOT(resetBufferMessageRegister(quint64)));
     connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
+    safelyResetMessageRegister();
 
     createCamTempMonitor();
 
@@ -1425,6 +1459,7 @@ void MainWindow::singleWebcamSelected(QAction *action) {
     }
 
     //safelyResetTrialCounter();
+    //safelyResetMessageRegister();
 
     if(dynamic_cast<SingleWebcam*>(selectedCamera)->getCameraCalibration()->isCalibrated())
         onCameraCalibrationEnabled();
@@ -1460,8 +1495,10 @@ void MainWindow::singleWebcamSelected(QAction *action) {
     recEventTracker = new RecEventTracker();
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitMessageRegisterReset(quint64)), recEventTracker, SLOT(resetBufferMessageRegister(quint64)));
     connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
+    safelyResetMessageRegister();
 
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), singleCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
 
@@ -1486,6 +1523,7 @@ void MainWindow::stereoCameraSelected() {
     }
 
     //safelyResetTrialCounter();
+    //safelyResetMessageRegister();
 
     connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
     connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
@@ -1516,8 +1554,10 @@ void MainWindow::stereoCameraSelected() {
     recEventTracker = new RecEventTracker();
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitMessageRegisterReset(quint64)), recEventTracker, SLOT(resetBufferMessageRegister(quint64)));
     connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
+    safelyResetMessageRegister();
     
     createCamTempMonitor();
 
@@ -1575,6 +1615,7 @@ void MainWindow::cameraViewClick() {
         //SingleCameraView *childWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
         singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this); // changed by kheki4 on 2022.10.24, NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
+        connect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
         RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(singleCameraChildWidget, "SingleCameraView", this);
         //SingleCameraView *child = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
@@ -1585,7 +1626,7 @@ void MainWindow::cameraViewClick() {
         cameraViewWindow = child;
 
         if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM)
-            cameraViewWindow->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/applets/22/webcam.svg"), applicationSettings));
+            cameraViewWindow->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-web.svg"), applicationSettings));
         else
             cameraViewWindow->setWindowIcon(singleCameraIcon);
 
@@ -1595,6 +1636,7 @@ void MainWindow::cameraViewClick() {
         ) ) {
         stereoCameraChildWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this);
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraChildWidget, SLOT (onSettingsChange()));
+        connect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
         RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(stereoCameraChildWidget, "StereoCameraView", this);
         mdiArea->addSubWindow(child);
@@ -1962,6 +2004,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
         }
     }
     safelyResetTrialCounter();
+    safelyResetMessageRegister();
 
     selectedCamera = new FileCamera(imageDirectory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this);
     std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
@@ -2124,18 +2167,6 @@ void MainWindow::onSerialDisconnect() {
     serialStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
 }
 
-void MainWindow::onRemoteEnable() {
-    remoteOn = true;
-    const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
-    remoteStatusIcon->setPixmap(remoteIcon.pixmap(12, 12));
-}
-
-void MainWindow::onRemoteDisable() {
-    remoteOn = false;
-    const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
-    remoteStatusIcon->setPixmap(remoteIcon.pixmap(16, 16));
-}
-
 void MainWindow::onHwTriggerEnable() {
     hwTriggerOn = true;
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
@@ -2273,6 +2304,7 @@ void MainWindow::logRemoteMessage(const quint64 &timestamp, const QString &str) 
     if(!selectedCamera || (selectedCamera && (selectedCamera->getType()==SINGLE_IMAGE_FILE || selectedCamera->getType()==STEREO_IMAGE_FILE)) || !recEventTracker )
         return;
     emit commitRemoteMessage(timestamp, str);
+    updateCurrentMessageLabel();
 }
 
 void MainWindow::updateCurrentTrialLabel() {
@@ -2298,16 +2330,31 @@ void MainWindow::updateCurrentTrialLabel() {
     }
 }
 
+void MainWindow::updateCurrentMessageLabel() {
+    if(recEventTracker) {
+        QString str = recEventTracker->getLastMessage();
+        currentMessageLabel->setText(SupportFunctions::shortenStringForDisplay(str,20));
+    } else {
+        currentMessageLabel->setText("-");
+    }
+}
 
+// Only called when someone wants to start a new recording.
+// This function is to be called only from GUI interaction.
 void MainWindow::safelyResetTrialCounter() {
-    // Only called when someone wants to start a new recording.
-    // This function is to be called only from GUI interaction.
     quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     safelyResetTrialCounter(timestamp);
-}        
+}
 
+// Only called when someone wants to start a new recording.
+// This function is to be called only from GUI interaction.
+void MainWindow::safelyResetMessageRegister() {
+    quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    safelyResetMessageRegister(timestamp);
+}
+
+// Only called when someone wants to start a new recording.
 void MainWindow::safelyResetTrialCounter(const quint64 &timestamp) {
-    // Only called when someone wants to start a new recording.
     if(streamOn || recordOn || !recEventTracker)
         return;
     //recEventTracker->resetBufferTrialCounter(timestamp);
@@ -2315,16 +2362,25 @@ void MainWindow::safelyResetTrialCounter(const quint64 &timestamp) {
     updateCurrentTrialLabel();
 }
 
+// Only called when someone wants to start a new recording.
+void MainWindow::safelyResetMessageRegister(const quint64 &timestamp) {
+    if(streamOn || recordOn || !recEventTracker)
+        return;
+    //recEventTracker->resetBufferMessageRegister(timestamp);
+    emit commitMessageRegisterReset(timestamp);
+    updateCurrentMessageLabel();
+}
+
 void MainWindow::forceResetTrialCounter() {
     quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     forceResetTrialCounter(timestamp);
 }
 
+// Can be used when e.g. there is a streaming going on, but the experiment PC sends a remote control command
+// to start a new csv recording. As streaming is on, trial counter would not automatically reset,
+// But if we call this method, it will.
+// This also can be called from general settings
 void MainWindow::forceResetTrialCounter(const quint64 &timestamp) {
-    // Can be used when e.g. there is a streaming going on, but the experiment PC sends a remote control command 
-    // to start a new csv recording. As streaming is on, trial counter would not automatically reset, 
-    // But if we call this method, it will.
-    // This also can be called from general settings
     if(!recEventTracker)
         return;
     //recEventTracker->resetBufferTrialCounter(timestamp);
@@ -2332,16 +2388,22 @@ void MainWindow::forceResetTrialCounter(const quint64 &timestamp) {
     updateCurrentTrialLabel();
 }
 
+void MainWindow::forceResetMessageRegister() {
+    quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    forceResetMessageRegister(timestamp);
+}
 
-
-
-
-///////////////////////////////////////////////////////////////////
-
+void MainWindow::forceResetMessageRegister(const quint64 &timestamp) {
+    if(!recEventTracker)
+        return;
+    //recEventTracker->resetBufferMessageRegister(timestamp);
+    emit commitMessageRegisterReset(timestamp);
+    updateCurrentMessageLabel();
+}
 
 void MainWindow::onStreamingUDPConnect() {
     if(dataStreamer) {
-        dataStreamer->startUDPStreamer(streamingSettingsDialog->getUDPsocket(), streamingSettingsDialog->getUDPip(), streamingSettingsDialog->getUDPport(), streamingSettingsDialog->getDataContainerUDP());
+        dataStreamer->startUDPStreamer(streamingSettingsDialog->getConnPoolUDPIndex(), streamingSettingsDialog->getDataContainerUDP());
         streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
     }
     streamAct->setDisabled(false);  
@@ -2474,7 +2536,7 @@ void MainWindow::resetStatus(bool isConnect)
         subjectsAct->setEnabled(true);
         trackAct->setEnabled(true);
         logFileAct->setEnabled(true);
-        //streamAct->setEnabled(true);
+        streamAct->setEnabled( streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() );
 
 //        cameraSettingsAct->setEnabled(false);
         cameraViewAct->setEnabled(true); // In the View menu
@@ -2485,8 +2547,9 @@ void MainWindow::resetStatus(bool isConnect)
         forceResetTrialAct->setEnabled(imageRecordingEnabled);
         manualIncTrialAct->setEnabled(imageRecordingEnabled);
 
-        streamingSettingsAct->setEnabled(true);
+//        streamingSettingsAct->setEnabled(true);
         trialWidget->setVisible( (selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE) );
+        messageWidget->setVisible( (selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE) );
     }
     else {
         cameraAct->setEnabled(true);
@@ -2497,7 +2560,7 @@ void MainWindow::resetStatus(bool isConnect)
         subjectsAct->setEnabled(false);
         trackAct->setEnabled(false);
         logFileAct->setEnabled(false);
-        //streamAct->setEnabled(false);
+        streamAct->setEnabled(false);
 
         cameraViewAct->setEnabled(false); // In the View menu
         dataTableAct->setEnabled(false); // In the View menu
@@ -2507,8 +2570,9 @@ void MainWindow::resetStatus(bool isConnect)
         forceResetTrialAct->setEnabled(false);
         manualIncTrialAct->setEnabled(false);
 
-        streamingSettingsAct->setEnabled(false);
+//        streamingSettingsAct->setEnabled(false); / This should be enabled even if disconnected from camera
         trialWidget->setVisible(false);
+        messageWidget->setVisible(false);
 
         recordAct->setEnabled(false); //
         cameraPlaying = true; //

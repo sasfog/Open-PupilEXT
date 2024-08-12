@@ -4,11 +4,10 @@
 #include <QPainter>
 #include <QGraphicsScene>
 #include <QCursor>
-
+#include <QDebug>
+#include <QApplication>
 #include <QtMath>
 #include <iostream>
-
-#include <QApplication>
 
 static ResizeDirections resizeDirections;
 
@@ -171,6 +170,7 @@ void ResizableRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 void ResizableRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QGraphicsRectItem::paint(painter, option, widget);
+//    qDebug() << "painter brush: " << painter->brush().color().toRgb();
 
     // We draw the inner-rect after main rect.
     // Drawing order matters if alpha-transparency is used.

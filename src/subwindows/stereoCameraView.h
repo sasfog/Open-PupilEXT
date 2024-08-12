@@ -171,5 +171,6 @@ signals:
     void onChangeShowAutoParamOverlay(bool state);
     void onChangeShowPositioningGuide(bool state);
     void cameraPlaybackChanged();
+    void doingPupilDetectionROIediting(bool state);
 
 };

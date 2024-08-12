@@ -30,6 +30,7 @@
 #include "subwindows/remoteCCDialog.h"
 #include "subwindows/streamingSettingsDialog.h"
 #include "connPoolCOM.h"
+#include "connPoolUDP.h"
 #include "devices/singleWebcam.h"
 #include "subwindows/singleWebcamSettingsDialog.h"
 #include "subwindows/singleWebcamCalibrationView.h"
@@ -181,7 +182,6 @@ private:
     ImageWriter *imageWriter;
 
     bool streamOn = false;
-    bool remoteOn = false;
 
     RemoteCCDialog *remoteCCDialog;
     StreamingSettingsDialog *streamingSettingsDialog;
@@ -199,6 +199,7 @@ private:
     quint64 imageRecStartTimestamp;
 
     ConnPoolCOM *connPoolCOM;
+    ConnPoolUDP *connPoolUDP;
 
     QSpinBox *webcamDeviceBox;
 
@@ -209,9 +210,12 @@ private:
 
     QAction *forceResetTrialAct;
     QAction *manualIncTrialAct;
+    QAction *forceResetMessageAct;
 
     QWidget *trialWidget;
     QLabel *currentTrialLabel;
+    QWidget *messageWidget;
+    QLabel *currentMessageLabel;
     QLabel *remoteStatusIcon;
 
     DataStreamer *dataStreamer;
@@ -312,9 +316,6 @@ private slots:
     void onStreamClick();
     void onStreamingSettingsClick();
 
-    void onRemoteEnable();
-    void onRemoteDisable();
-
     void onPlaybackSafelyStarted();
     void onPlaybackSafelyPaused();
     void onPlaybackSafelyStopped();
@@ -330,6 +331,11 @@ private slots:
     void incrementTrialCounter();
     void incrementTrialCounter(const quint64 &timestamp);
     void logRemoteMessage(const quint64 &timestamp, const QString &str);
+    void updateCurrentMessageLabel();
+    void safelyResetMessageRegister();
+    void safelyResetMessageRegister(const quint64 &timestamp);
+    void forceResetMessageRegister();
+    void forceResetMessageRegister(const quint64 &timestamp);
 
     void onStreamingUDPConnect();
     void onStreamingUDPDisconnect();
@@ -362,6 +368,7 @@ public slots:
     void PRGstreamStop();
     void PRGincrementTrialCounter(const quint64 &timestamp);
     void PRGforceResetTrialCounter(const quint64 &timestamp);
+    // NOTE: there is no programmatic implementation for resetting the message register. It can be done by sending a blank message
     void PRGsetOutPath(const QString &str);
     void PRGsetCsvPathAndName(const QString &str);
     
@@ -374,12 +381,13 @@ public slots:
     void PRGconnectRemoteCOM(QString conf);
     void PRGconnectStreamUDP(QString conf);
     void PRGconnectStreamCOM(QString conf);
+    void PRGconnectMicrocontrollerUDP(QString conf);
     void PRGconnectMicrocontrollerCOM(QString conf);
     void PRGdisconnectRemoteUDP();
     void PRGdisconnectRemoteCOM();
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
-    void PRGdisconnectMicrocontrollerCOM();
+    void PRGdisconnectMicrocontroller();
 
     void PRGenableHWT(bool state);
     void PRGstartHWT();
@@ -406,6 +414,7 @@ signals:
     void commitTrialCounterIncrement(quint64 timestamp);
     void commitTrialCounterReset(quint64 timestamp);
     void commitRemoteMessage(quint64 timestamp, QString str);
+    void commitMessageRegisterReset(quint64 timestamp);
 
     void cameraPlaybackChanged();
 

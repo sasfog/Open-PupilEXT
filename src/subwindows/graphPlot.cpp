@@ -144,7 +144,7 @@ void GraphPlot::reset() {
             break;
     }
     customPlot->update();
-    customPlot->replot();
+    // customPlot->replot(); // yet it is good to see the plot when playback just stopped, until we restart it
 }
 
 // On right click on the plot a context menu is created at the position of the click

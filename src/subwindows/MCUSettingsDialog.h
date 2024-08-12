@@ -15,8 +15,11 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/qtextedit.h>
 #include <QtCore/QSettings>
-
+#include <QRadioButton>
+#include <QSpinBox>
 #include "../connPoolCOM.h"
+#include "../connPoolUDP.h"
+#include "IPCtrl.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -43,40 +46,46 @@ class MCUSettingsDialog : public QDialog {
 
 public:
 
-    /*struct Settings {
-        QString name;
-        qint32 baudRate;
-        QString stringBaudRate;
-        QSerialPort::DataBits dataBits;
-        QString stringDataBits;
-        QSerialPort::Parity parity;
-        QString stringParity;
-        QSerialPort::StopBits stopBits;
-        QString stringStopBits;
-        QSerialPort::FlowControl flowControl;
-        QString stringFlowControl;
-        bool localEchoEnabled;
-    };*/
+    enum class ConnectionMethod {
+        UDP = 1,
+        COM = 2,
+    };
 
-    explicit MCUSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
+    explicit MCUSettingsDialog(ConnPoolCOM *connPoolCOM, ConnPoolUDP *connPoolUDP, QWidget *parent = nullptr);
     ~MCUSettingsDialog() override;
 
-    ConnPoolCOMInstanceSettings settings() const;
+//    ConnPoolCOMInstanceSettings getCOMsettings() const;
 
-    bool isCOMConnected();
+    bool isConnected();
 
 private:
+
+    ConnectionMethod currentConnectionMethod = ConnectionMethod::COM;
+
+    ConnPoolUDP *connPoolUDP;
+    int connPoolUDPIndex = -1;
 
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
 
-    ConnPoolCOMInstanceSettings m_currentSettings;
+    ConnPoolCOMInstanceSettings m_currentSettingsCOM;
+    ConnPoolUDPInstanceSettings m_currentSettingsUDP;
     QIntValidator *m_intValidator = nullptr;
 
     QSettings *applicationSettings;
 
-    QGroupBox *paramGroup;
-    QGroupBox *serialPortGroup;
+    QGroupBox *UDPGroup;
+    QLabel *udpIpLabel;
+    QLabel *udpPortLabel;
+    IPCtrl *udpIpBox;
+    QSpinBox *udpPortBox;
+
+    QRadioButton *UDPRadioButton;
+    QRadioButton *COMRadioButton;
+
+    QGroupBox *COMGroup;
+    QFrame *paramFrame;
+    QFrame *serialInfoFrame;
 
     QLabel *descriptionLabel;
     QLabel *locationLabel;
@@ -107,6 +116,9 @@ private:
     void saveSettings();
     void loadSettings();
 
+    bool isCOMConnected();
+    bool isUDPConnected();
+
 private slots:
 
     void showPortInfo(int idx);
@@ -116,13 +128,28 @@ private slots:
     void readData(QString msg, quint64 timestamp);
     void updateDevices();
 
+    void onUDPRadioButtonChecked(bool state);
+    void onCOMRadioButtonChecked(bool state);
+
     void setLimitationsWhileConnected(bool state);
+
+    void disconnectUDP();
+    void disconnectCOM();
+
+    void sendCommandUDP(QString cmd);
+    void sendCommandCOM(QString cmd);
 
 public slots:
 
+    void selectConnectionMethod(ConnectionMethod connectionMethod);
+
+    // NOTE: cannot call these connect() and disconnect() because it would mess up the Qt signal-slot connect and disconnect functions
+    void doConnect();
+    void doDisconnect();
+
+    void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
-    void connectSerialPort();
-    void disconnectCOM();
+
     void sendCommand(QString cmd);
 
 signals:
