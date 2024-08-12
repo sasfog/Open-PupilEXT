@@ -510,9 +510,8 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                 w->PRGsetHWTframerate(val);
             }
         } else if(str[1].toLower() == 'h') { // set software-based triggering settings
-            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // set line source
-                bool state = (str[4].digitValue() == 1);
-                w->PRGenableSWTframerateLimiting(state);
+            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // enable sofwtare triggering framerate limiting
+                w->PRGenableSWTframerateLimiting(str.mid(4, str.length()-4).toLower());
             } else if(str[2].toLower() == 'f' && str.size()>=5) {
                 bool ok;
                 int val = str.mid(4, str.length()-4).toInt(&ok);
@@ -561,17 +560,14 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                 else if(str.mid(3,3).toLower() == 'com')
                     w->PRGdisconnectStreamCOM();
             }
-        } else if(str[1].toLower() == 'c') { // for Microcontroller ("camera serial") connection
+        } else if(str[1].toLower() == 'm') { // for Microcontroller ("camera serial") connection
             if(str[2].toLower() == 'c') {
                 if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
                     w->PRGconnectMicrocontrollerUDP(str.mid(7, str.length()-7));
                 else if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
                     w->PRGconnectMicrocontrollerCOM(str.mid(7, str.length()-7).toUpper());
             } else if(str[2].toLower() == 'd') {
-                if(str.mid(3,3).toLower() == 'udp')
-                    w->PRGdisconnectMicrocontroller();
-                else if(str.mid(3,3).toLower() == 'com')
-                    w->PRGdisconnectMicrocontroller();
+                w->PRGdisconnectMicrocontroller();
             }
         }
         return;

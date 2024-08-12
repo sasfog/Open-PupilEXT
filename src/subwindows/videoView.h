@@ -189,6 +189,8 @@ public slots:
     void onROI1Change();
     void onROI2Change();
 
+    void refitPupilDetailViews();
+
 signals:
 
     // these emit a QRectF, which has its x, y, width, height expressed as pixels of image width and height

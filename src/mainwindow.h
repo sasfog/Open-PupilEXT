@@ -395,7 +395,7 @@ public slots:
     void PRGsetHWTlineSource(int lineSourceNum);
     void PRGsetHWTruntime(float runtimeMinutes);
     void PRGsetHWTframerate(int fps);
-    void PRGenableSWTframerateLimiting(bool state);
+    void PRGenableSWTframerateLimiting(const QString &state);
     void PRGsetSWTframerate(int fps);
 
     void PRGsetExposure(int value);

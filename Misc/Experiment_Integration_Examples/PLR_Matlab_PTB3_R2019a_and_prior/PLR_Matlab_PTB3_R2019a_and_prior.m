@@ -23,7 +23,7 @@ pupilEXT.UDP_Port = 6900;
 
 % pupilEXT.Method = 1;
 % pupilEXT.COM_Port = 'COM1';
-% pupilEXT.COM_BaudRate = 9600;
+% pupilEXT.COM_BaudRate = 115200;
 
 pupilEXT.RecordingsPath = 'C:/PupilEXT_Recordings'; % A slash at the end is not necessary
 pupilEXT.ParticipantName = participantName;

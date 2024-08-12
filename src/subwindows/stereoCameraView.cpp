@@ -431,31 +431,7 @@ void StereoCameraView::loadSettings() {
     secondaryVideoView->setROI1SelectionR(roiSecondary1R);
     secondaryVideoView->setROI2SelectionR(roiSecondary2R);
 
-    /*
-    QRectF initRoi = camera->getImageROI();
-    if(!roiMain1R.isEmpty()) {
-        QRectF roiMain1D = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.discrete", QRectF()).toRectF();
-        mainVideoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roiMain1D, roiMain1R));
-        //mainVideoView->saveROI1Selection(); // GB: why save just after loading?
-    }
-    if(!roiMain2R.isEmpty()) {
-        QRectF roiMain2D = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.discrete", QRectF()).toRectF();
-        mainVideoView->setROI2SelectionR(SupportFunctions::calculateRoiR(initRoi, roiMain2D, roiMain2R));
-    }
-
-    if(!roiSecondary1R.isEmpty()) {
-        QRectF roiSecondary1D = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.discrete", QRectF()).toRectF();
-        secondaryVideoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roiSecondary1D, roiSecondary1R));
-        //secondaryVideoView->saveROI1Selection(); // GB: why save just after loading?
-    }
-    if(!roiSecondary2R.isEmpty()) {
-        QRectF roiSecondary2D = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.discrete", QRectF()).toRectF();
-        secondaryVideoView->setROI2SelectionR(SupportFunctions::calculateRoiR(initRoi, roiSecondary2D, roiSecondary2R));
-    }
-    */
-
 //    videoView->setAutoParamPupSize(applicationSettings->value("autoParamPupSizePercent", 50).toInt());
-
 }
 
 // Opens a contextmenu on the toolbar for settings the viewport options
@@ -589,7 +565,6 @@ void StereoCameraView::updateAlgorithmLabel() {
     processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
 }
 
-
 // Updates the position and size of the small pupil view based on the latest pupil detection
 void StereoCameraView::updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
     /*
@@ -643,34 +618,6 @@ void StereoCameraView::updatePupilView(const CameraImage &cimg, const int &procM
         secondaryVideoView->updatePupilViews(targetsSecondary);
     }
 }
-
-/*
-// Updates position and size of the small lens view of the pupil on receiving of a new pupil detection result
-void StereoCameraView::updatePupilView(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename) {
-
-    // If the view is not yet initialized, set a fixed size for it
-    // This is done only once after activation to not switch sizes at each pupil update which makes the pupil view to jitterish
-    if(displayPupilView && !initPupilViewSize && pupil.valid(-2) && pupilSec.valid(-2)) {
-        initPupilViewSize = true;
-        pupilViewSize = QSize(static_cast<int>(pupil.size.width * 1.6), static_cast<int>(pupil.size.height * 1.6));
-        pupilViewSizeSec = QSize(static_cast<int>(pupilSec.size.width * 1.6),
-                                 static_cast<int>(pupilSec.size.height * 1.6));
-    }
-
-    if(pupil.valid(-2)) {
-
-        // create a ROI around the pupil big enough to make changes visible
-        QPoint tl = QPoint(static_cast<int>(pupil.center.x - (0.5 * pupilViewSize.width())),
-                           static_cast<int>(pupil.center.y - (0.5 * pupilViewSize.width())));
-        QPoint tlSec = QPoint(static_cast<int>(pupilSec.center.x - (0.5 * pupilViewSizeSec.width())),
-                              static_cast<int>(pupilSec.center.y - (0.5 * pupilViewSizeSec.width())));
-
-        mainVideoView->updatePupil1View(QRect(tl, pupilViewSize));
-        secondaryVideoView->updatePupil1View(QRect(tlSec, pupilViewSizeSec));
-    }
-    
-}
-*/
 
 // Fit button click, adjusts the camera-view to the current window size
 void StereoCameraView::onFitClick() {
@@ -987,6 +934,9 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
     // at last, we update the videoView to redraw the ROI overlay
     mainVideoView->drawOverlay();
     secondaryVideoView->drawOverlay();
+
+    mainVideoView->refitPupilDetailViews();
+    secondaryVideoView->refitPupilDetailViews();
 }
 
 void StereoCameraView::onShowAutoParamOverlay(bool state) {

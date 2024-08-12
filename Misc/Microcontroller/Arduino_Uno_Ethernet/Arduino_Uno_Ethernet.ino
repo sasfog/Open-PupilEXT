@@ -15,7 +15,7 @@
 
 #define ETH_CS_PIN 10 // configure the CS pin
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; // You can provide an own mac address but it is not important
-IPAddress ip(192, 168, 40, 120); // The IP is important, you can set your own if you wish
+IPAddress ip(192, 168, 40, 200); // The IP is important, you can set your own if you wish
 unsigned int listenPort = 7000; // Local port to listen on
 
 // NOTE: Example serial command to the board: <TX30000X500000>

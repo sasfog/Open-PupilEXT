@@ -630,11 +630,15 @@ void MainWindow::PRGsetHWTframerate(int fps) {
     else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setHWTframerate(fps);
 }
-void MainWindow::PRGenableSWTframerateLimiting(bool state) {
+void MainWindow::PRGenableSWTframerateLimiting(const QString &state) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
         return;
 
-    singleCameraSettingsDialog->enableAcquisitionFrameRate(state);
+    if(state == "true" || state == "1") {
+        singleCameraSettingsDialog->enableAcquisitionFrameRate(true);
+    } else if(state == "false" || state == "0") {
+        singleCameraSettingsDialog->enableAcquisitionFrameRate(false);
+    }
 }
 void MainWindow::PRGsetSWTframerate(int fps) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)

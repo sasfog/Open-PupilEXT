@@ -23,24 +23,10 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     roi1GraphicsView = new QGraphicsView(graphicsView);
     roi1GraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     roi1GraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    int msize = std::max(graphicsView->width(), graphicsView->height());
-    roi1GraphicsView->setGeometry(
-        static_cast<int>(graphicsView->width() - (msize * 0.99)), 
-        static_cast<int>(msize * 0.01), 
-        static_cast<int>(msize * 0.2), 
-        static_cast<int>(msize * 0.2));
-
     if(usingDoubleROI) {
         roi2GraphicsView = new QGraphicsView(graphicsView);
         roi2GraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         roi2GraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-        roi2GraphicsView->setGeometry(
-            static_cast<int>(graphicsView->width() - (msize * 0.21)), 
-            static_cast<int>(msize * 0.01), 
-            static_cast<int>(msize * 0.2), 
-            static_cast<int>(msize * 0.2));
     }
 
     bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");
@@ -109,6 +95,8 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
         roi2GraphicsView->setScene(graphicsScene); 
         roi2GraphicsView->hide();
     }
+
+    refitPupilDetailViews();
 }
 
 void VideoView::setSelectionColor1(QColor color) {
@@ -121,32 +109,29 @@ void VideoView::setSelectionColor2(QColor color) {
     penROIunprocessed2 = QPen(selectionColorCorrect2);
 }
 
+void VideoView::refitPupilDetailViews() {
+    int msize = std::max(graphicsView->width(), graphicsView->height());
+    roi1GraphicsView->setGeometry(
+            static_cast<int>(graphicsView->width() - (msize * 0.99)),
+            static_cast<int>(msize * 0.01),
+            static_cast<int>(msize * 0.2),
+            static_cast<int>(msize * 0.2));
+    if(usingDoubleROI) {
+        roi2GraphicsView->setGeometry(
+                static_cast<int>(graphicsView->width() - (msize * 0.21)),
+                static_cast<int>(msize * 0.01),
+                static_cast<int>(msize * 0.2),
+                static_cast<int>(msize * 0.2));
+    }
+}
+
 // Event handler when the widget is resized
 // If the widget is currently in FIT mode, scale the live-view according to the window size
 // If the lens pupil view is visible, it needs to be resized manually to preserve the size ratio to the large view
 void VideoView::resizeEvent(QResizeEvent *event) {
-
     if(mode==FIT)
         graphicsView->fitInView(graphicsScene->sceneRect(), Qt::KeepAspectRatio);
-
-    int msize;
-    if(roi1GraphicsView->isVisible()) {
-        msize = std::max(event->size().width(), event->size().height());
-        roi1GraphicsView->setGeometry(
-            static_cast<int>(event->size().width() - (msize * 0.99)), 
-            static_cast<int>(msize * 0.01), 
-            static_cast<int>(msize * 0.2), 
-            static_cast<int>(msize * 0.2));
-    }
-
-    if(usingDoubleROI && roi2GraphicsView->isVisible()) {
-        msize = std::max(event->size().width(), event->size().height());
-        roi2GraphicsView->setGeometry(
-            static_cast<int>(event->size().width() - (msize * 0.21)), 
-            static_cast<int>(msize * 0.01), 
-            static_cast<int>(msize * 0.2), 
-            static_cast<int>(msize * 0.2));
-    }
+    refitPupilDetailViews();
 }
 
 QSize VideoView::sizeHint() const {

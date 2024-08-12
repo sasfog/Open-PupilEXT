@@ -24,7 +24,7 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
         settingsDirectory.mkdir(".");
     }
 
-    setMinimumSize(580, 710);
+    setMinimumSize(500, 610);
 
     setWindowTitle(QString("[%1] Camera Settings").arg(camera->getFriendlyName()));
 

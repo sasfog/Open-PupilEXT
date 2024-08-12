@@ -52,7 +52,7 @@ We aimed to provide a professional open-source pupillometry measurement platform
 - [x]  Tracking and storing trial increment/"trigger" events and timestamped textual messages in recordings (image and data recordings too), for use in any psychophysiology pupillometry experiment
 - [x]  Remote control capability to let an Experiment computer to control PupilEXT on the Host computer (Ready-to-use PsychoPy and Matlab Psychtoolbox examples included), over Ethernet or Serial cable connection
 - [x]  Different image processing modes to support different physical arrangements of cameras and number of eyes (1 or 2 cameras, and for 1 or 2 pupils = 2x2 processing modes)
-- [x]  Stereo camera image acquisition triggering can now be controller over ethernet to support long distances between the Experiment and Host computers
+- [x]  Stereo camera image acquisition triggering can now be controlled over ethernet to support long distances between the Experiment and Host computers
 - [x]  Live streaming pupil detection output, for interactive paradigms and human-computer interaction research
 - [x]  Ability to start the program using executable arguments (e.g. for scheduled automatic warmup start after computer boot-up)
 - [x]  Device temperature monitoring and logging, with camera-warmup indication, to minimize warmup system drift artefacts

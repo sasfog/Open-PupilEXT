@@ -416,20 +416,6 @@ void SingleCameraView::loadSettings() {
     //     roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
     //     roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
-
-    /*
-    QRectF initRoi = camera->getImageROI();
-    if(!roi1.isEmpty()) {
-        QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
-        
-        videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi1D, roi1));
-    }
-    if(!roi2.isEmpty()) {
-        QRectF roi2D = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.discrete", QRectF()).toRectF();
-        
-        videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi2D, roi2));
-    }
-    */
 }
 
 // Opens a contextmenu on the toolbar for settings the viewport options
@@ -542,7 +528,6 @@ void SingleCameraView::onPupilDetectionConfigChanged(QString config) {
     emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
-
 // Updates the position and size of the small pupil view based on the latest pupil detection
 // GB: updated for 2 pupil version, and also reformed to use vector of Pupils
 void SingleCameraView::updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
@@ -570,29 +555,6 @@ void SingleCameraView::updatePupilView(const CameraImage &cimg, const int &procM
         videoView->updatePupilViews(targets);
     }
 }
-
-/*
-void SingleCameraView::updatePupilView(quint64 timestamp, const Pupil &pupil, const QString &filename) {
-
-    // If the view is not yet initialized, set a fixed size for it
-    // This is done only once after activation to not switch sizes at each pupil update which makes the pupil view to jitterish
-    if(displayPupilView && !initPupilViewSize && pupil.valid(-2)) {
-        initPupilViewSize = true;
-
-        pupilViewSize = QSize(static_cast<int>(pupil.size.width * 1.6), static_cast<int>(pupil.size.height * 1.6));
-    }
-
-    if(pupil.valid(-2)) {
-
-        //std::cout<<pupil.center.x<<", "<<pupil.center.y<<"; "<<pupil.size.width<<", "<<pupil.size.height<<std::endl;
-        // Create a ROI around the pupil big enough to make changes visible
-        QPoint tl = QPoint(static_cast<int>(pupil.center.x - (0.5 * pupilViewSize.width())),
-                           static_cast<int>(pupil.center.y - (0.5 * pupilViewSize.width())));
-        videoView->updatePupil1View(QRect(tl, pupilViewSize));
-    }
-
-}
-*/
 
 // Click event handler
 // Fits the camera view to the size of the window
@@ -843,6 +805,8 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
 
     // at last, we update the videoView to redraw the ROI overlay
     videoView->drawOverlay();
+
+    videoView->refitPupilDetailViews();
 }
 
 void SingleCameraView::onShowAutoParamOverlay(bool state) {
