@@ -81,6 +81,10 @@ private:
     QChar delim; 
     RecEventTracker *recEventTracker;
 
+    uint _trialNumber = 1;
+    QString _message = "";
+    std::vector<double> _d = {-1.0,-1.0};
+
 public slots:
 
     void newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename);

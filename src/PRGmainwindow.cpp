@@ -198,8 +198,12 @@ void MainWindow::PRGsetImageOutputFormat(QString format) {
         return;
 
     format.replace(".", "");
-    if(format=="tif" || format=="tiff" || format =="jpg"  || format =="jpeg" || format=="bmp" || format=="png" || format=="pgm") {
-        applicationSettings->setValue("imageWriterFormat", format);
+    if(format=="tiff" || format=="tif" || format =="png"  || format =="bmp" || format=="jpeg" || format=="jpg" ||  format=="webp" || format=="pgm") {
+        if(format=="tif")
+            format="tiff";
+        else if(format=="jpg")
+            format="jpeg";
+        applicationSettings->setValue("imageWriterFormat.chosenFormat", format);
     }
 }
 

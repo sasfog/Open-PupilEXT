@@ -39,9 +39,11 @@ private:
 
     QSettings *applicationSettings;
     QDir outputDirectory, outputDirectorySecondary;
-    QString imageWriterFormat;
+    QString imageWriterFormatString;
     QString imageWriterDataRule;
     bool stereoMode;
+
+    std::vector<int> writeParams = std::vector<int>();
 
 public slots:
 

@@ -416,6 +416,9 @@ void SingleCameraView::loadSettings() {
     //     roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
     //     roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
+
+    videoView->setROI1SelectionR(roi1);
+    videoView->setROI2SelectionR(roi2);
 }
 
 // Opens a contextmenu on the toolbar for settings the viewport options

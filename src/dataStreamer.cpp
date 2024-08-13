@@ -49,21 +49,22 @@ void DataStreamer::stopCOMStreamer() {
 // On new pupil data, stream it
 void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
 
-    uint trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
-    std::vector<double> d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
+    _trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
+    _message = recEventTracker->getMessage(timestamp).messageString;
+    _d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
 
     bool anyUsed = false;
     if(connPoolUDPIndex >= 0 && connPoolUDP->getInstance(connPoolUDPIndex) != nullptr) {
     //if( UDPStreamingOn && UDPsocket != nullptr) {
         QString str = "";
         if(UDPdataContainer == DataContainer::CSV)
-            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, d);
+            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, _d, _message);
         else if(UDPdataContainer == DataContainer::JSON)
-            str = EyeDataSerializer::pupilToJSON(timestamp, procMode, Pupils, filename, trialNumber, d);
+            str = EyeDataSerializer::pupilToJSON(timestamp, procMode, Pupils, filename, _trialNumber, _d, _message);
         else if(UDPdataContainer == DataContainer::XML)
-            str = EyeDataSerializer::pupilToXML(timestamp, procMode, Pupils, filename, trialNumber, d);
+            str = EyeDataSerializer::pupilToXML(timestamp, procMode, Pupils, filename, _trialNumber, _d, _message);
         else if(UDPdataContainer == DataContainer::YAML)
-            str = EyeDataSerializer::pupilToYAML(timestamp, procMode, Pupils, filename, trialNumber, d);
+            str = EyeDataSerializer::pupilToYAML(timestamp, procMode, Pupils, filename, _trialNumber, _d, _message);
 
         connPoolUDP->writeToInstance( connPoolUDPIndex, (str + '\n').toUtf8() );
         anyUsed = true;
@@ -71,13 +72,13 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
     if(connPoolCOMIndex >= 0 && connPoolCOM->getInstance(connPoolCOMIndex) != nullptr) {
         QString str = "";
         if(COMdataContainer == DataContainer::CSV)
-            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, d);
+            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, _d, _message);
         else if(COMdataContainer == DataContainer::JSON)
-            str = EyeDataSerializer::pupilToJSON(timestamp, procMode, Pupils, filename, trialNumber, d);
+            str = EyeDataSerializer::pupilToJSON(timestamp, procMode, Pupils, filename, _trialNumber, _d, _message);
         else if(COMdataContainer == DataContainer::XML)
-            str = EyeDataSerializer::pupilToXML(timestamp, procMode, Pupils, filename, trialNumber, d);
+            str = EyeDataSerializer::pupilToXML(timestamp, procMode, Pupils, filename, _trialNumber, _d, _message);
         else if(COMdataContainer == DataContainer::YAML)
-            str = EyeDataSerializer::pupilToYAML(timestamp, procMode, Pupils, filename, trialNumber, d);
+            str = EyeDataSerializer::pupilToYAML(timestamp, procMode, Pupils, filename, _trialNumber, _d, _message);
 
         connPoolCOM->writeToInstance( connPoolCOMIndex, (str + '\n').toUtf8() );
         anyUsed = true;

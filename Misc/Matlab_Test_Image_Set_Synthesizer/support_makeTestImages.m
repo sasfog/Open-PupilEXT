@@ -77,7 +77,19 @@ function support_makeTestImages(Config)
             tIndex = Config.oneTrialLenMs/1000*Config.fps*(c-1) +1;
             tst = num2str(t(tIndex),'%12.f');
             trn = num2str(c);
-            line = ['<TrialIncrement TimestampMs="' tst '" TrialNumber="' trn '" />'];
+            line = ['<TrialIncrement TrialNumber="' trn '" TimestampMs="' tst '" />'];
+            fprintf( fid, '%s\n', line );
+        end
+        for c = 1:Config.numTrials
+            tIndex = Config.oneTrialLenMs/1000*Config.fps*(c-1) +1;
+            tst = num2str(t(tIndex),'%12.f');
+            tmg = ['STIM_PRES_' num2str(c)];
+            line = ['<Message MessageString="' tmg '" TimestampMs="' tst '" />'];
+            fprintf( fid, '%s\n', line );
+            %
+            tst = num2str(t(tIndex+(Config.oneTrialLenMs/2)/1000*Config.fps),'%12.f');
+            tmg = ['RESP_' num2str(c)];
+            line = ['<Message MessageString="' tmg '" TimestampMs="' tst '" />'];
             fprintf( fid, '%s\n', line );
         end
         line = ['</RecordedEvents>'];

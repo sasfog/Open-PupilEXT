@@ -99,13 +99,15 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
 
     // GB: serialization is moved to EyeDataSerializer as yet the method is used by dataStreamer too
     if (textStream->status() == QTextStream::Ok) {
-        uint trialNumber = 1;
-        std::vector<double> d = {0,0};
+//        uint _trialNumber = 1;
+//        QString _message = "";
+//        std::vector<double> _d = {-1.0,-1.0};
         if(recEventTracker) {
-            trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
-            d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
+            _trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
+            _message = recEventTracker->getMessage(timestamp).messageString;
+            _d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
         }
-        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, dataStyle, d) << Qt::endl;
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, dataStyle, _d, _message) << Qt::endl;
     }
 }
 
@@ -122,12 +124,14 @@ void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, c
     for(int i=0; i<pupilData.size(); i++) {
         if (textStream->status() == QTextStream::Ok) {
             uint trialNumber = 1;
+            QString message = "";
             std::vector<double> d = {0,0};
             if(recEventTracker) {
                 recEventTracker->getTrialIncrement(timestamps[i]).trialNumber;
+                message = recEventTracker->getMessage(timestamps[i]).messageString;
                 d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
             }
-            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d) << Qt::endl;
+            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d, message) << Qt::endl;
         }
         ++framePos;
     }

@@ -101,7 +101,7 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `GC <delimiter>` - Set global delimiter character. Accepted characters are a comma, a semicolon or tab character. Cannot be altered while a data ("csv") recording is going on.
 
-`GI <format>` - Set image recording output format. Format name should be provided: `tiff` or `bmp` or `jpg`. Cannot be altered while an image recording is going on.
+`GI <format>` - Set image recording output format. Format name should be provided: `tiff` or `png` or `bmp` or `jpeg` or `webp` or `pgm`. Cannot be altered while an image recording is going on.
 
 `PA <algorithm>` - Set pupil detection algorithm. Accepted algorithms: `else` or `excuse` or `pure` or `purest` or `starburst` or `swirski2d`.
 

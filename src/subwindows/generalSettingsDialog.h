@@ -23,14 +23,10 @@ public:
     explicit GeneralSettingsDialog(QWidget *parent = nullptr);
     ~GeneralSettingsDialog() override;
 
-    int getPlaybackSpeed() const;
-    bool getPlaybackLoop() const;
-
-    QString getImageWriterFormat() const;
-    QString getImageWriterDataRule() const;
-
-    QString getDataWriterDataRule() const;
-    QString getDataWriterDataStyle() const;
+//    QString getImageWriterFormat() const;
+//    QString getImageWriterDataRule() const;
+//    QString getDataWriterDataRule() const;
+//    QString getDataWriterDataStyle() const;
     bool getMetaSnapshotsEnabled() const;
     bool getSaveOfflineEventLog() const;
     bool getAlwaysOnTop() const;
@@ -43,6 +39,17 @@ private:
     QGroupBox *imageWriterGroup;
     QString imageWriterFormat;
     QString imageWriterDataRule;
+
+    QWidget *formatPngCompressionWidget;
+    QComboBox *formatPngCompressionBox;
+    QWidget *formatJpegQualityWidget;
+    QSpinBox *formatJpegQualityBox;
+    QWidget *formatWebpQualityWidget;
+    QSpinBox *formatWebpQualityBox;
+
+    int imageWriterFormatPngCompression;
+    int imageWriterFormatJpegQuality;
+    int imageWriterFormatWebpQuality;
 
     QPushButton *applyButton;
     QPushButton *cancelButton;
@@ -81,12 +88,10 @@ public slots:
     void onImageWriterFormatChange(int index);
     void onImageWriterDataRuleChange(int index);
     void readSettings();
-    //void setPlaybackSpeed(int playbackSpeed);
-    void setImageWriterFormat(const QString &imageWriterFormat);
-    void setImageWriterDataRule(const QString &imageWriterDataRule);
-    void setDataWriterDataRule(const QString &dataWriterDataRule);
-    void setDataWriterDataStyle(const QString &m_dataWriterDataStyle);
-    //void setPlaybackLoop(int m_state);
+//    void setImageWriterFormat(const QString &imageWriterFormat);
+//    void setImageWriterDataRule(const QString &imageWriterDataRule);
+//    void setDataWriterDataRule(const QString &dataWriterDataRule);
+//    void setDataWriterDataStyle(const QString &m_dataWriterDataStyle);
 
     void onDataWriterDelimiterChange(int index);
     void onDataWriterDataStyleChange(int index);
@@ -95,6 +100,10 @@ public slots:
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
     void setAlwaysOnTop(int m_state);
+
+    void onImageWriterFormatPngCompressionChange(int index);
+    void onImageWriterFormatJpegQualityChange(int value);
+    void onImageWriterFormatWebpQualityChange(int value);
 
     void setLimitationsWhileImageWriting(bool state);
     void setLimitationsWhileDataWriting(bool state);

@@ -363,7 +363,13 @@ The data set is divided into three parts. Please download all three files first.
 
 **Synthesized test image sets for developer contributors**
 
-Starting from the v0.1.2. source code version on the Experimental-Community-Version branch, we also include Matlab scripts that can be used to synthesize artificial pupil image sets for testing pupil detection algorithms, and the Automatic Parametrization feature of PupilEXT. These can generate artificial pupillary response signals using the most common periodic signal waveforms (triangle, sinus, sawtooth, square), and generate a perfect temporal fidelity image set corresponding to the pupillary response signals. The scripts also generate image annotation data that can be read using PupilEXT release v0.1.2. and contain trial start annotations (psychopsysiological trigger timestamps) at each waveform repetition. The script was tested using Matlab R2020b, and can be found in the folder: [``Misc/Matlab_Test_Image_Set_Synthesizer/``](Misc/Matlab_Test_Image_Set_Synthesizer/).
+Starting from the v0.1.2. source code version on the Experimental-Community-Version branch, we also include Matlab scripts that can be used to synthesize artificial pupil image sets for testing pupil detection algorithms, and the Automatic Parametrization feature of PupilEXT. These can generate artificial pupillary response signals using the most common periodic signal waveforms (triangle, sinus, sawtooth, square), and generate a perfect temporal fidelity image set corresponding to the pupillary response signals. The scripts also generate image annotation data that can be read using PupilEXT release v0.1.2. and contain trial start annotations (psychopsysiological trigger timestamps) at each waveform repetition. The script was tested using Matlab R2020b, and can be found in the folder: [``Misc/Matlab_Test_Image_Set_Synthesizer/``](Misc/Matlab_Test_Image_Set_Synthesizer/)
+
+If you would like to use synthesized test image sets right now, you can just download pre-generated image sets made with the very same scripts with basic settings, here: [``https://drive.google.com/file/d/1l9mYBhGvpeID_vNuX0WdsBHlz-fNvrTD/view?usp=sharing``](https://drive.google.com/file/d/1l9mYBhGvpeID_vNuX0WdsBHlz-fNvrTD/view?usp=sharing)
+
+<p align="center">
+  <img src="Misc/img/SynthImageSetScreenshot.png">
+</p>
 
 **Note on externally acquired images**
 

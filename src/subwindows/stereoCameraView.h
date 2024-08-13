@@ -105,7 +105,11 @@ private:
 
     void loadSettings();
     bool isAutoParamModificationEnabled();
-    
+
+    void paintEvent(QPaintEvent *event) override {
+        mainVideoView->drawOverlay();
+        secondaryVideoView->drawOverlay();
+    };
 
 public slots:
 

@@ -96,6 +96,10 @@ private:
     void loadSettings();
     bool isAutoParamModificationEnabled();
 
+    void paintEvent(QPaintEvent *event) override {
+        videoView->drawOverlay();
+    };
+
 public slots:
 
     void onViewportMenuClick();

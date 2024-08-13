@@ -13,6 +13,7 @@ classdef PupilEXT
       Method = 0 
       UDP_IP = '192.168.40.1';
       UDP_Port = 6900;
+      UDP_LocalPort = 6900;
       UDP_Conn
       COM_Port = 'COM1';
       COM_BaudRate = 115200;
@@ -41,7 +42,10 @@ classdef PupilEXT
       function obj = setupConnectionLayer(obj)
           try
               if obj.Method == 0
-                  obj.UDP_Conn = pnet('udpsocket', obj.UDP_Port);
+                  obj.UDP_Conn = pnet('udpsocket', obj.UDP_LocalPort);
+                  if obj.UDP_Conn == -1
+                      error('Could not open UDP port. Possibly in use already.');
+                  end
               else 
                   obj.COM_Conn = serial(obj.COM_Port);
                   set(obj.COM_Conn,'BaudRate',obj.COM_BaudRate);

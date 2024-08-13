@@ -10,6 +10,12 @@ pupilEXT.Enabled = true;
 pupilEXT.Method = 0;
 pupilEXT.UDP_IP = '127.0.0.1';
 pupilEXT.UDP_Port = 6900;
+% For simplicity we use the same local port number as the target port 
+% number by default, but if you operate on localhost (i.e. the experiment 
+% computer and host computer are physically the same), then you may
+% want to specify some other local port because Matlab and PupilEXT cannot
+% bind the same one port for themselves.
+pupilEXT.UDP_LocalPort = 6500; 
 
 % pupilEXT.Method = 1;
 % pupilEXT.COM_Port = 'COM6';
@@ -24,7 +30,7 @@ pupilEXT.ImageRecordingFormat = 'tiff';
 pupilEXT = pupilEXT.setupHostConnection();
 
 pupilEXT.incrementTrial();
-pupilEXT.sendMessage(['TRIAL ' num2str(1)]);
+pupilEXT.sendMessage(['STIM_PRES_' num2str(1)]);
 
 pupilEXT.openSingleCamera('Basler camera name')
 pupilEXT.openStereoCamera('Basler camera name 1', 'Basler camera name 2')
@@ -42,7 +48,6 @@ pupilEXT.forceResetTrialCounter();
 pupilEXT.setPupilDetectionAlgorithm('ElSe');
 pupilEXT.setUsingROIAreaSelection(true);
 pupilEXT.setComputeOutlineConfidence(true);
-
 pupilEXT.connectRemoteControlUDP('192.168.40.3', 6900);
 pupilEXT.connectRemoteControlCOM('COM1', 115200);
 pupilEXT.disconnectRemoteControlUDP();

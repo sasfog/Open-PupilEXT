@@ -354,10 +354,11 @@ void PupilDetectionSettingsDialog::loadSettings() {
 // Save the detection settings to the application settings which are persisted on disk
 void PupilDetectionSettingsDialog::saveUniversalSettings() {
     if(!pupilDetection->isTrackingOn() && procModeBox->currentIndex()!=0) {
-        if(!pupilDetection->isStereo())
+        if(!pupilDetection->isStereo()) {
             applicationSettings->setValue("PupilDetectionSettingsDialog.singleCam.procMode", procModeBox->currentIndex());
-        else
+        } else {
             applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", procModeBox->currentIndex());
+        }
     }
 
     applicationSettings->setValue("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText());

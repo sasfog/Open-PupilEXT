@@ -151,6 +151,7 @@ MainWindow::MainWindow():
     connect(streamingSettingsDialog, SIGNAL (onCOMConnect()), this, SLOT (onStreamingCOMConnect()));
     connect(streamingSettingsDialog, SIGNAL (onCOMDisconnect()), this, SLOT (onStreamingCOMDisconnect())); 
 
+    /*
     // if proc mode settings are not interpretable, reset them
     ProcMode pmSingle = (ProcMode)applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt();
     ProcMode pmStereo = (ProcMode)applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt();
@@ -166,6 +167,7 @@ MainWindow::MainWindow():
 
         applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL);
     }
+    */
 
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), pupilDetectionWorker, SLOT (setCurrentProcMode(int)));
 
@@ -362,7 +364,7 @@ void MainWindow::createActions() {
     connect(manualIncTrialAct, SIGNAL(triggered()), this, SLOT(incrementTrialCounter()));
     settingsMenu->addAction(manualIncTrialAct);
 
-    toolBar->addSeparator();
+    settingsMenu->addSeparator();
 
     const QIcon forceResetMessageIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/messageEmpty.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     forceResetMessageAct = new QAction(forceResetMessageIcon, tr("Force reset message register"), this);
@@ -1033,6 +1035,12 @@ void MainWindow::onTrackActClick() {
         if(streamingSettingsDialog && streamingSettingsDialog->isAnyConnected())
             streamAct->setEnabled(true);
     }
+
+    if(stereoCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE)) {
+        stereoCameraChildWidget->update();
+    } else if(singleCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA || selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE)) {
+        singleCameraChildWidget->update();
+    }
 }
 
 void MainWindow::onStreamingSettingsClick() {
@@ -1190,9 +1198,10 @@ void MainWindow::onRecordImageClick() {
     } else {
         // Activate recording
 
-        safelyResetTrialCounter();
-        safelyResetMessageRegister();
         imageRecStartTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // trial counter and message register are both reset with a first entry that corresponds to recording start
+        safelyResetTrialCounter(imageRecStartTimestamp);
+        safelyResetMessageRegister(imageRecStartTimestamp);
 
         if(outputDirectory.isEmpty())
             return;
@@ -1924,7 +1933,8 @@ void MainWindow::onCreateGraphPlot(const DataTypes::DataType &value) {
 }
 
 void MainWindow::onOpenImageDirectory() {
-    QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.jpeg *.bmp *.tiff *.tif *.webp)"));
+    //QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.jpeg *.bmp *.tiff *.tif *.webp)"));
+    QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm)"));
     dialog.setOptions(QFileDialog::DontResolveSymlinks); // BG: tried QFileDialog::DontUseNativeDialog flag too but it is slow. TODO: make own dialog
 
     dialog.setOption(QFileDialog::ShowDirsOnly, true);
@@ -1940,7 +1950,8 @@ void MainWindow::onOpenImageDirectory() {
     if (imageDir.isEmpty())
         return;
 
-    QStringList nameFilter = QStringList() << "*.png" << "*.jpg" << "*.jpeg" << "*.bmp" << "*.tiff" << "*.tif" <<  "*.webp";
+//    QStringList nameFilter = QStringList() << "*.png" << "*.jpg" << "*.jpeg" << "*.bmp" << "*.tiff" << "*.tif" <<  "*.webp";
+    QStringList nameFilter = QStringList() << "*.tiff" << "*.tif" << "*.png" << "*.bmp" << "*.jpeg" << "*.jpg" <<  "*.jpe" <<  "*.jp3" <<  "*.webp" <<  "*.pgm";
     QStringList fileNames = imageDir.entryList(nameFilter, QDir::Files);
     QStringList folderNames = imageDir.entryList(QStringList() << "0" << "1", QDir::Dirs);
     if (fileNames.isEmpty() && folderNames.size() < 2)
@@ -2018,11 +2029,10 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
 
         int pmSingle = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt();
-        if( pmSingle != ProcMode::SINGLE_IMAGE_ONE_PUPIL ||
-            pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL // ||
+        if( pmSingle != ProcMode::SINGLE_IMAGE_ONE_PUPIL &&
+            pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL // &&
             // pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL
                 )
-
             pmSingle = ProcMode::SINGLE_IMAGE_ONE_PUPIL;
         pupilDetectionWorker->setCurrentProcMode(pmSingle);
         // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place
@@ -2033,7 +2043,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getStereoCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
 
         int pmStereo = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt();
-        if( pmStereo != ProcMode::STEREO_IMAGE_ONE_PUPIL ||
+        if( pmStereo != ProcMode::STEREO_IMAGE_ONE_PUPIL &&
             pmStereo != ProcMode::STEREO_IMAGE_TWO_PUPIL )
             pmStereo = ProcMode::STEREO_IMAGE_ONE_PUPIL;
         pupilDetectionWorker->setCurrentProcMode(pmStereo);
@@ -2546,6 +2556,7 @@ void MainWindow::resetStatus(bool isConnect)
         recordImagesAct->setEnabled(imageRecordingEnabled && !outputDirectory.isEmpty());
         forceResetTrialAct->setEnabled(imageRecordingEnabled);
         manualIncTrialAct->setEnabled(imageRecordingEnabled);
+        forceResetMessageAct->setEnabled(imageRecordingEnabled);
 
 //        streamingSettingsAct->setEnabled(true);
         trialWidget->setVisible( (selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE) );
@@ -2569,6 +2580,7 @@ void MainWindow::resetStatus(bool isConnect)
         recordImagesAct->setEnabled(false);
         forceResetTrialAct->setEnabled(false);
         manualIncTrialAct->setEnabled(false);
+        forceResetMessageAct->setEnabled(false);
 
 //        streamingSettingsAct->setEnabled(false); / This should be enabled even if disconnected from camera
         trialWidget->setVisible(false);
@@ -2691,8 +2703,11 @@ void MainWindow::dropEvent(QDropEvent* e)
         qDebug() << "Attempting to open: " << fileInfo.filePath();
         openImageDirectory(fileInfo.filePath());
     } else if(fileInfo.isFile()) {
-        // TODO: do this with a QMap that is stored in persistence/QSettings
-        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "jpg" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
+        // TODO: shorter, cleaner, better
+        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "tif" || fileInfo.completeSuffix() == "png"  ||
+            fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "jpeg" || fileInfo.completeSuffix() == "jpg" ||
+            fileInfo.completeSuffix() == "jpe" ||  fileInfo.completeSuffix() == "jp2" ||  fileInfo.completeSuffix() == "webp" ||
+            fileInfo.completeSuffix() == "pgm" ||
             fileInfo.fileName() == "imagerec_meta.xml" || fileInfo.fileName() == "offline_event_log.xml" ||
             fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml" ) {
 

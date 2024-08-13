@@ -68,6 +68,10 @@ private:
     DataWriterDataStyle dataStyle;
     RecEventTracker *recEventTracker;
 
+    uint _trialNumber = 1;
+    QString _message = "";
+    std::vector<double> _d = {-1.0,-1.0};
+
     QString header;
 
     QFile *dataFile;
