@@ -6,6 +6,10 @@
 #include "videoView.h"
 #include "../supportFunctions.h"
 
+constexpr QRectF VideoView::defaultROImiddleR;
+constexpr QRectF VideoView::defaultROIleftHalfR;
+constexpr QRectF VideoView::defaultROIrightHalfR;
+
 // Creates a new live-view widget
 VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selectionColor2, QWidget *parent) : 
     QWidget(parent), 

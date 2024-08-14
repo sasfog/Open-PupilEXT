@@ -10,8 +10,7 @@ qt5_add_resources(RESOURCE_ADDED ${RESOURCE})
 set(APP_ICON_RESOURCE_WINDOWS "${PROJECT_SOURCE_DIR}/PupilExt.rc")
 
 set(MACOSX_BUNDLE_ICON_FILE icon.icns)
-set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns
-        subwindows/sceneImageView.h)
+set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns)
 set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 
@@ -83,6 +82,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         dataTypes.cpp
         dataTypes.h
         subwindows/sceneImageView.cpp
+        subwindows/sceneImageView.h
         subwindows/sceneImageWidget.cpp
         subwindows/sceneImageWidget.h
 )
