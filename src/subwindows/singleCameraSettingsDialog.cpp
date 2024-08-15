@@ -25,7 +25,7 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
     }
 
 #ifdef Q_OS_WIN // Q_OS_MACOS
-    setMinimumSize(500, 610);
+    setMinimumSize(500, 630);
 #else
     setMinimumSize(500, 720);
 #endif
@@ -88,6 +88,7 @@ void SingleCameraSettingsDialog::createForm() {
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
+    exposureInputLayout->setMargin(0);
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:"));
     exposureLabel->setFixedWidth(90);
@@ -113,6 +114,7 @@ void SingleCameraSettingsDialog::createForm() {
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
+    imageROIlayoutRow1->setMargin(0);
     imageROIlayoutRow1->setContentsMargins(0,0,0,0);
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
     imageROIwidthLabel->setMinimumWidth(120);
@@ -130,6 +132,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
+    imageROIlayoutRow2->setMargin(0);
     imageROIlayoutRow2->setContentsMargins(0,0,0,0);
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
     imageROIheightLabel->setMinimumWidth(120);
@@ -147,6 +150,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
+    imageROIlayoutRow3->setMargin(0);
     imageROIlayoutRow3->setContentsMargins(0,0,0,0);
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
     imageROIoffsetXLabel->setMinimumWidth(120);
@@ -164,6 +168,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
+    imageROIlayoutRow4->setMargin(0);
     imageROIlayoutRow4->setContentsMargins(0,0,0,0);
     //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
@@ -193,6 +198,7 @@ void SingleCameraSettingsDialog::createForm() {
     acquisitionLayout->addLayout(imageROIlayoutHBlock);
 
     QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
+    imageROIlayoutRow5->setMargin(0);
     imageROIlayoutRow5->setContentsMargins(0,0,0,0);
     binningLabel = new QLabel(tr("Binning:"));
     binningLabel->setFixedWidth(70);
@@ -288,6 +294,7 @@ void SingleCameraSettingsDialog::createForm() {
 
     HWTstartStopButton = new QPushButton("Start Image Acquisition");
     HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+    HWTstartStopButton->setMinimumWidth(190);
     HWTstartStopButton->setFixedWidth(150);
     HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && MCUSettings->isConnected());
 
@@ -301,6 +308,7 @@ void SingleCameraSettingsDialog::createForm() {
     triggerGroupLayout->addRow(HWTradioButton, HWTframerateLayout);
 
     HWTgroupLayout = new QFormLayout();
+    HWTgroupLayout->setMargin(0);
     HWTgroupLayout->setContentsMargins(0,0,0,0);
 
     QSpacerItem *sp6 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
