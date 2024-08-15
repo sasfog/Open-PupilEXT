@@ -47,7 +47,7 @@ void StereoCameraSettingsDialog::createForm() {
 //    MCUConfigButton->setText("Microcontroller Connection Settings");
     MCUConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
 //    MCUConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
-    MCUConfigButton->setStyleSheet("text-align:left;");
+    MCUConfigButton->setStyleSheet("QPushButton { text-align:left; border: 1px solid #757575; border-radius: 5px;}");
     MCUConfigButton->setLayout(new QGridLayout);
     QLabel* MCUConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
     MCUConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -55,23 +55,15 @@ void StereoCameraSettingsDialog::createForm() {
     MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
     MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
     MCUConfigButton->setMinimumWidth(270);
-    MCUConfigButton->setMinimumHeight(30);
+    MCUConfigButton->setMinimumHeight(22);
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConnDisconnButton = new QPushButton("Connect"); // Will change to disconnect when connected
     MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
-
-//    static_cast<QPalette>(MCUConnDisconnButton->palette()).setColor(QPalette::Button, QColor("#f5ab87"));
-//    MCUConnDisconnButton->setLayout(new QGridLayout);
-//    MCUConnDisconnButtonLabel = new QLabel("Connect");
-//    MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
-//    MCUConnDisconnButtonLabel->setAlignment(Qt::AlignCenter);
-//    MCUConnDisconnButton->layout()->addWidget(MCUConnDisconnButtonLabel);
-//    MCUConnDisconnButton->layout()->setContentsMargins(5, 5, 5, 5);
-    MCUConnDisconnButton->update();
     MCUConnDisconnButton->setFixedWidth(150);
-    MCUConnDisconnButton->setMinimumHeight(30);
+    MCUConnDisconnButton->setMinimumHeight(22);
 
     QHBoxLayout *MCUConnRow1 = new QHBoxLayout;
+    MCUConnRow1->setContentsMargins(0,0,0,0);
     MCUConnRow1->addSpacerItem(sp10);
     MCUConnRow1->addWidget(MCUConfigButton);
     MCUConnRow1->addSpacerItem(sp9);
@@ -102,6 +94,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     QWidget *tmp = new QWidget();
     QHBoxLayout *cameraButtonLayout = new QHBoxLayout();
+    cameraButtonLayout->setContentsMargins(0,0,0,0);
     updateDevicesButton = new QPushButton(tr("Refresh Devices"));
     QSpacerItem *sp11 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     cameraOpenCloseButton = new QPushButton();
@@ -379,6 +372,7 @@ void StereoCameraSettingsDialog::createForm() {
     analogGroup = new QGroupBox("5. Image Analog Control");
     QFormLayout *analogLayout = new QFormLayout();
     QHBoxLayout *gainLayout = new QHBoxLayout();
+    gainLayout->setContentsMargins(0,0,0,0);
 
     QLabel *gainLabel = new QLabel(tr("Gain [dB]:"));
     gainLabel->setMinimumWidth(80);
@@ -1067,22 +1061,12 @@ void StereoCameraSettingsDialog::MCUConnDisconnButtonClicked() {
 
         MCUSettings->doDisconnect();
         MCUConnDisconnButton->setText("Connect");
-
         MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
-//        static_cast<QPalette>(MCUConnDisconnButton->palette()).setColor(QPalette::Button, QColor("#f5ab87"));
-//        MCUConnDisconnButton->update();
-//        MCUConnDisconnButtonLabel->setText("Connect");
-//        MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
         HWTstartStopButton->setEnabled(false);
     } else {
         MCUSettings->doConnect();
         MCUConnDisconnButton->setText("Disconnect");
-
         MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
-//        static_cast<QPalette>(MCUConnDisconnButton->palette()).setColor(QPalette::Button, QColor("#c3f558"));
-//        MCUConnDisconnButton->update();
-//        MCUConnDisconnButtonLabel->setText("Disconnect");
-//        MCUConnDisconnButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
         HWTstartStopButton->setEnabled(true);
     }
 }
