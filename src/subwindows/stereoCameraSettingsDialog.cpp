@@ -21,7 +21,7 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
         settingsDirectory.mkdir(".");
     }
 
-    setMinimumSize(500, 740);
+    setMinimumSize(500, 700);
 
     setWindowTitle(QString("Stereo Camera Settings"));
 
@@ -41,6 +41,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed for Hardware-triggered image acquisition)");
     QFormLayout *MCUConnGroupLayout = new QFormLayout();
+    MCUConnGroupLayout->setContentsMargins(10,5,10,5);
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConfigButton = new QPushButton();
@@ -50,11 +51,11 @@ void StereoCameraSettingsDialog::createForm() {
     MCUConfigButton->setStyleSheet("QPushButton { text-align:left; border: 1px solid #757575; border-radius: 5px;}");
     MCUConfigButton->setLayout(new QGridLayout);
     QLabel* MCUConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
-    MCUConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    MCUConfigButtonLabel->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
     MCUConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
     MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
-    MCUConfigButton->setMinimumWidth(270);
+    MCUConfigButton->setMinimumWidth(250);
     MCUConfigButton->setMinimumHeight(22);
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConnDisconnButton = new QPushButton("Connect"); // Will change to disconnect when connected
@@ -80,6 +81,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     QGroupBox *cameraGroup = new QGroupBox("2. Camera Selection");
     QFormLayout *cameraLayout = new QFormLayout();
+    cameraLayout->setContentsMargins(10,5,10,5);
 
     QLabel *mainCameraLabel = new QLabel(tr("Main:"));
     mainCameraBox = new QComboBox();
@@ -119,8 +121,10 @@ void StereoCameraSettingsDialog::createForm() {
 
     acquisitionGroup = new QGroupBox("3. Image Acquisition Control");
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
-    
+    acquisitionLayout->setContentsMargins(10,5,10,5);
+
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
+    exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:")); 
     exposureLabel->setFixedWidth(80);
     exposureInputBox = new QSpinBox();
@@ -222,6 +226,7 @@ void StereoCameraSettingsDialog::createForm() {
     acquisitionLayout->addLayout(imageROIlayoutHBlock);
 
     QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
+    imageROIlayoutRow5->setContentsMargins(0,0,0,0);
     binningLabel = new QLabel(tr("Binning:"));
     binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
@@ -258,6 +263,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     triggerGroup = new QGroupBox("4. Image Acquisition Triggering and Framerate setting");
     QFormLayout *triggerGroupLayout = new QFormLayout();
+    triggerGroupLayout->setContentsMargins(10,5,10,5);
 
     SWTradioButton = new QRadioButton("Software triggering:", this);
     SWTradioButton->setFixedHeight(20);
@@ -371,6 +377,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     analogGroup = new QGroupBox("5. Image Analog Control");
     QFormLayout *analogLayout = new QFormLayout();
+    analogLayout->setContentsMargins(10,5,10,5);
     QHBoxLayout *gainLayout = new QHBoxLayout();
     gainLayout->setContentsMargins(0,0,0,0);
 
