@@ -518,6 +518,26 @@ void MainWindow::createStatusBar() {
     QHBoxLayout *statusBarLayout = new QHBoxLayout(widget);
     statusBarLayout->setContentsMargins(8,0,8,0);
 
+    trialWidget = new QWidget();
+    QHBoxLayout *trialWidgetLayout = new QHBoxLayout(trialWidget);
+    trialWidgetLayout->setContentsMargins(8,0,8,0);
+    QLabel *trialLabel = new QLabel("Trial: ");
+    currentTrialLabel = new QLabel();
+    trialWidgetLayout->addWidget(trialLabel);
+    trialWidgetLayout->addWidget(currentTrialLabel);
+    updateCurrentTrialLabel();
+    trialWidget->setVisible(false);
+
+    messageWidget = new QWidget();
+    QHBoxLayout *messageWidgetLayout = new QHBoxLayout(messageWidget);
+    messageWidgetLayout->setContentsMargins(8,0,8,0);
+    QLabel *messageLabel = new QLabel("Message: ");
+    currentMessageLabel = new QLabel();
+    messageWidgetLayout->addWidget(messageLabel);
+    messageWidgetLayout->addWidget(currentMessageLabel);
+    updateCurrentMessageLabel();
+    messageWidget->setVisible(false);
+
     QLabel *remoteLabel = new QLabel("Remote Control Conn.");
     const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     remoteStatusIcon = new QLabel();
@@ -542,6 +562,8 @@ void MainWindow::createStatusBar() {
     warmedUpStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
     warmedUpStatusIcon->setEnabled(false);
 
+    QLabel *versionLabel = new QLabel(QCoreApplication::applicationVersion());
+
     QFrame* sep1 = new QFrame();
     sep1->setFrameShape(QFrame::VLine);
     sep1->setFrameShadow(QFrame::Plain);
@@ -554,7 +576,23 @@ void MainWindow::createStatusBar() {
     QFrame* sep4 = new QFrame();
     sep4->setFrameShape(QFrame::VLine);
     sep4->setFrameShadow(QFrame::Plain);
-    //statusBarLayout->addWidget(sep);
+    QFrame* sep5 = new QFrame();
+    sep5->setFrameShape(QFrame::VLine);
+    sep5->setFrameShadow(QFrame::Plain);
+
+    trialWidgetLayoutSep = new QFrame();
+    trialWidgetLayoutSep->setFrameShape(QFrame::VLine);
+    trialWidgetLayoutSep->setFrameShadow(QFrame::Plain);
+    trialWidgetLayoutSep->setVisible(false);
+    messageWidgetLayoutSep = new QFrame();
+    messageWidgetLayoutSep->setFrameShape(QFrame::VLine);
+    messageWidgetLayoutSep->setFrameShadow(QFrame::Plain);
+    messageWidgetLayoutSep->setVisible(false);
+
+    statusBarLayout->addWidget(trialWidget);
+    statusBarLayout->addWidget(trialWidgetLayoutSep);
+    statusBarLayout->addWidget(messageWidget);
+    statusBarLayout->addWidget(messageWidgetLayoutSep);
 
     statusBarLayout->addWidget(remoteLabel);
     statusBarLayout->addWidget(remoteStatusIcon);
@@ -571,40 +609,10 @@ void MainWindow::createStatusBar() {
     statusBarLayout->addWidget(warmedUpLabel);
     statusBarLayout->addWidget(warmedUpStatusIcon);
 
-    trialWidget = new QWidget();
-    QHBoxLayout *trialWidgetLayout = new QHBoxLayout(trialWidget);
-    trialWidgetLayout->setContentsMargins(8,0,8,0);
-    QLabel *trialLabel = new QLabel("Trial: ");
-    currentTrialLabel = new QLabel();
-    trialWidgetLayout->addWidget(trialLabel);
-    trialWidgetLayout->addWidget(currentTrialLabel);
-    //QFrame* sep = new QFrame();
-    //sep->setFrameShape(QFrame::VLine);
-    //sep->setFrameShadow(QFrame::Sunken);
-    //statusBarLayout->addWidget(sep);
-    updateCurrentTrialLabel();
-    statusBar()->addPermanentWidget(trialWidget);
-    trialWidget->setVisible(false);
-
-    messageWidget = new QWidget();
-    QHBoxLayout *messageWidgetLayout = new QHBoxLayout(messageWidget);
-    messageWidgetLayout->setContentsMargins(8,0,8,0);
-    QLabel *messageLabel = new QLabel("Message: ");
-    currentMessageLabel = new QLabel();
-    messageWidgetLayout->addWidget(messageLabel);
-    messageWidgetLayout->addWidget(currentMessageLabel);
-    //QFrame* sep = new QFrame();
-    //sep->setFrameShape(QFrame::VLine);
-    //sep->setFrameShadow(QFrame::Sunken);
-    //statusBarLayout->addWidget(sep);
-    updateCurrentMessageLabel();
-    statusBar()->addPermanentWidget(messageWidget);
-    messageWidget->setVisible(false);
+    statusBarLayout->addWidget(sep5);
+    statusBarLayout->addWidget(versionLabel);
 
     statusBar()->addPermanentWidget(widget);
-
-    QLabel *versionLabel = new QLabel(QCoreApplication::applicationVersion());
-    statusBar()->addPermanentWidget(versionLabel);
 
     subjectConfigurationLabel = new QLabel("");
     statusBar()->addWidget(subjectConfigurationLabel);
@@ -2535,11 +2543,11 @@ void MainWindow::startCamera()
 
 void MainWindow::resetStatus(bool isConnect)
 {
-    bool imageRecordingEnabled = selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE;
+    bool realCameraSelected = (selectedCamera && (selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE));
 
     if (isConnect){
         cameraAct->setEnabled(false);
-        cameraSettingsAct->setEnabled( (selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE) );
+        cameraSettingsAct->setEnabled(realCameraSelected);
         cameraActDisconnectAct->setEnabled(true);
         calibrateAct->setEnabled(true);
         sharpnessAct->setEnabled(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA);
@@ -2552,15 +2560,17 @@ void MainWindow::resetStatus(bool isConnect)
         cameraViewAct->setEnabled(true); // In the View menu
         dataTableAct->setEnabled(true); // In the View menu
 
-        outputDirectoryAct->setEnabled(imageRecordingEnabled);
-        recordImagesAct->setEnabled(imageRecordingEnabled && !outputDirectory.isEmpty());
-        forceResetTrialAct->setEnabled(imageRecordingEnabled);
-        manualIncTrialAct->setEnabled(imageRecordingEnabled);
-        forceResetMessageAct->setEnabled(imageRecordingEnabled);
+        outputDirectoryAct->setEnabled(realCameraSelected);
+        recordImagesAct->setEnabled(realCameraSelected && !outputDirectory.isEmpty());
+        forceResetTrialAct->setEnabled(realCameraSelected);
+        manualIncTrialAct->setEnabled(realCameraSelected);
+        forceResetMessageAct->setEnabled(realCameraSelected);
 
 //        streamingSettingsAct->setEnabled(true);
-        trialWidget->setVisible( (selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE) );
-        messageWidget->setVisible( (selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE) );
+        trialWidget->setVisible(realCameraSelected);
+        trialWidgetLayoutSep->setVisible(realCameraSelected);
+        messageWidget->setVisible(realCameraSelected);
+        messageWidgetLayoutSep->setVisible(realCameraSelected);
     }
     else {
         cameraAct->setEnabled(true);

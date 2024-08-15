@@ -42,7 +42,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     connect(tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(onTableRowDoubleClick(QModelIndex)));
 
 //    tableModel = new QStandardItemModel(17, stereoMode ? 2 : 1, this);
-    //int numCols=1;
+    //int numGraphs=1;
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
             numCols=1;
@@ -124,18 +124,18 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(0)->setForeground(QColor("#04a0de")); // lighter blue
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(0)->setForeground(QColor("#04a0de")); // lighter blue
             tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(0)->setForeground(QColor("#04a0de")); // lighter blue
             tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
-            tableModel->horizontalHeaderItem(2)->setForeground(QColor(144, 55, 212, 255)); // purple
+            tableModel->horizontalHeaderItem(2)->setForeground(QColor("#9e0ff7")); // lighter purple
             tableModel->horizontalHeaderItem(3)->setForeground(QColor(214, 140, 49,255)); // orange
             break;
     }
@@ -143,7 +143,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     tableView->show();
 
     //resize(tableView->width(), tableView->height());
-//    resize(160 + numCols*80, 500);
+//    resize(160 + numGraphs*80, 500);
 }
 
 DataTable::~DataTable() {
@@ -153,7 +153,7 @@ DataTable::~DataTable() {
 QSize DataTable::sizeHint() const {
     return QSize(330, 500);
 
-//    return QSize(160 + numCols*80, 500);
+//    return QSize(160 + numGraphs*80, 500);
 }
 
 void DataTable::fitForTableSize() {
@@ -190,30 +190,50 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
 //    tableModel->item(0,0)->setText(QLocale::system().toString(date));
     tableModel->item((int)DataTypes::DataType::TIME,0)->setText(date.toString("hh:mm:ss"));
 
-    for(int i=0; i<Pupils.size(); i++)
-        if(Pupils[i].valid(-2))
-            setPupilData(Pupils[i], i);
-    // NOTE: this only works, because we defined the columns in the exact same order
-    // as in what pupil vector elements are, when they arrive
+    switch((ProcMode)procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_A], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_B], 1);
+            break;
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN], 0);
+            setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC], 1);
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN], 1);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC], 2);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC], 3);
+            break;
+    }
+
+//    for(int i=0; i<Pupils.size(); i++)
+//        if(Pupils[i].valid(-2))
+//            setPupilData(Pupils[i], i);
+//    // NOTE: this only works, because we defined the columns in the exact same order
+//    // as in what pupil vector elements are, when they arrive
 }
 
-// Updates the table column entries given pupil data and a column index (0, 1)
+// Updates the table columnID entries given pupil data and a columnID index (0, 1)
 // TODO: Figure out something cleaner using the key-value map we yet have
-void DataTable::setPupilData(const Pupil &pupil, int column) {
+void DataTable::setPupilData(const Pupil &pupil, int columnID) {
 
-    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_X, column)->setText(QString::number(pupil.center.x));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_Y, column)->setText(QString::number(pupil.center.y));
-    tableModel->item((int)DataTypes::DataType::PUPIL_MAJOR, column)->setText(QString::number(pupil.majorAxis()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_MINOR, column)->setText(QString::number(pupil.minorAxis()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_WIDTH, column)->setText(QString::number(pupil.width()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_HEIGHT, column)->setText(QString::number(pupil.height()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_DIAMETER, column)->setText(QString::number(pupil.diameter()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_UNDIST_DIAMETER, column)->setText(QString::number(pupil.undistortedDiameter));
-    tableModel->item((int)DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER, column)->setText(QString::number(pupil.physicalDiameter));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CONFIDENCE, column)->setText(QString::number(pupil.confidence));
-    tableModel->item((int)DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE, column)->setText(QString::number(pupil.outline_confidence));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CIRCUMFERENCE, column)->setText(QString::number(pupil.circumference()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_RATIO, column)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_X, columnID)->setText(QString::number(pupil.center.x));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_Y, columnID)->setText(QString::number(pupil.center.y));
+    tableModel->item((int)DataTypes::DataType::PUPIL_MAJOR, columnID)->setText(QString::number(pupil.majorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_MINOR, columnID)->setText(QString::number(pupil.minorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_WIDTH, columnID)->setText(QString::number(pupil.width()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_HEIGHT, columnID)->setText(QString::number(pupil.height()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_DIAMETER, columnID)->setText(QString::number(pupil.diameter()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_UNDIST_DIAMETER, columnID)->setText(QString::number(pupil.undistortedDiameter));
+    tableModel->item((int)DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER, columnID)->setText(QString::number(pupil.physicalDiameter));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CONFIDENCE, columnID)->setText(QString::number(pupil.confidence));
+    tableModel->item((int)DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE, columnID)->setText(QString::number(pupil.outline_confidence));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CIRCUMFERENCE, columnID)->setText(QString::number(pupil.circumference()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_RATIO, columnID)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
 
 }
 

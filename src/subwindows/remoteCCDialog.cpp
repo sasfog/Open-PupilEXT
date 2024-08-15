@@ -19,7 +19,7 @@ RemoteCCDialog::RemoteCCDialog(
     connPoolUDP(connPoolUDP),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(280, 330); 
+    this->setMinimumSize(310, 400);
     this->setWindowTitle("Remote Control Connection");
 
     //qDebug() << pupilDetection;
@@ -94,7 +94,7 @@ void RemoteCCDialog::createForm() {
     const QIcon refreshIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-refresh.svg"), applicationSettings);
     refreshButton = new QPushButton(""); // view-refresh.svg
     refreshButton->setIcon(refreshIcon);
-    refreshButton->setFixedWidth(22);
+    refreshButton->setMinimumWidth(42);
 
 
     QHBoxLayout *comRow1 = new QHBoxLayout;
@@ -122,12 +122,12 @@ void RemoteCCDialog::createForm() {
     parityBox = new QComboBox();
     stopBitsBox = new QComboBox();
 
-    serialPortInfoListBox->setFixedWidth(70);
-    baudRateBox->setFixedWidth(70);
-    dataBitsBox->setFixedWidth(70);
-    flowControlBox->setFixedWidth(70);
-    parityBox->setFixedWidth(70);
-    stopBitsBox->setFixedWidth(70);
+    serialPortInfoListBox->setMinimumWidth(150);
+    baudRateBox->setMinimumWidth(100);
+    dataBitsBox->setMinimumWidth(100);
+    flowControlBox->setMinimumWidth(100);
+    parityBox->setMinimumWidth(100);
+    stopBitsBox->setMinimumWidth(100);
 
     comLayout->addRow(baudRateLabel, baudRateBox);
     comLayout->addRow(dataBitsLabel, dataBitsBox);

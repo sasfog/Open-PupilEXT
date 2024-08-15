@@ -55,8 +55,8 @@ void SingleCameraSettingsDialog::createForm() {
     MCUConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
     MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
-    MCUConfigButton->setFixedWidth(250);
-    MCUConfigButton->setMinimumHeight(26); //
+    MCUConfigButton->setMinimumWidth(270);
+    MCUConfigButton->setMinimumHeight(30); //
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConnDisconnButton = new QPushButton(); // Will change to disconnect when connected
     MCUConnDisconnButton->setLayout(new QGridLayout);
@@ -66,7 +66,7 @@ void SingleCameraSettingsDialog::createForm() {
     MCUConnDisconnButton->layout()->addWidget(MCUConnDisconnButtonLabel);
     MCUConnDisconnButton->layout()->setContentsMargins(5, 5, 5, 5);
     MCUConnDisconnButton->setFixedWidth(150);
-    MCUConnDisconnButton->setMinimumHeight(26); //
+    MCUConnDisconnButton->setMinimumHeight(30); //
 
     QHBoxLayout *MCUConnRow1 = new QHBoxLayout;
     MCUConnRow1->addSpacerItem(sp10);
@@ -97,7 +97,7 @@ void SingleCameraSettingsDialog::createForm() {
     exposureInputBox->setFixedWidth(70);
 
     autoExposureOnceButton = new QPushButton("Auto Exposure (Once)");
-    autoExposureOnceButton->setFixedWidth(150);
+    autoExposureOnceButton->setMinimumWidth(190);
     exposureInputLayout->addWidget(exposureLabel);
     exposureInputLayout->addWidget(exposureInputBox);
     exposureInputLayout->addWidget(autoExposureOnceButton);
@@ -193,7 +193,7 @@ void SingleCameraSettingsDialog::createForm() {
     binningBox->addItem(QString("1 (no binning)"));
     binningBox->addItem(QString("2"));
     binningBox->addItem(QString("4"));
-    binningBox->setMinimumWidth(120);
+    binningBox->setMinimumWidth(140);
     imageROIlayoutRow5->addWidget(binningLabel);
     imageROIlayoutRow5->addWidget(binningBox);
     imageROIlayoutRow5->addStretch();

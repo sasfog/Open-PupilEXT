@@ -47,7 +47,7 @@ private:
     ProcMode procMode;
     int numCols = 1;
 
-    void setPupilData(const Pupil &pupil, int column=0);
+    void setPupilData(const Pupil &pupil, int columnID=0);
 
 public slots:
 

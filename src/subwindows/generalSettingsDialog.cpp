@@ -13,7 +13,7 @@
 GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         QDialog(parent),
         //playbackSpeed(30),
-        imageWriterFormat("png"),
+        imageWriterFormat("tiff"),
         imageWriterDataRule("ask"),
         dataWriterDelimiter(","),
         dataWriterDataRule("ask"),
@@ -50,7 +50,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
 
 // Reads the settings from the QT application setting, if the entries were found
 void GeneralSettingsDialog::readSettings() {
-    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat.chosenFormat", "png").toString();
+    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
     if (!m_imageWriterFormat.isEmpty()) {
         imageWriterFormat = m_imageWriterFormat;
     }
@@ -202,7 +202,7 @@ void GeneralSettingsDialog::createForm() {
 
     QLabel *formatLabel = new QLabel(tr("Image Format**"));
     imageWriterFormatBox = new QComboBox(this);
-    imageWriterFormatBox->addItem(QString("tiff [large files]"), QString("tiff"));
+    imageWriterFormatBox->addItem(QString("tiff [small files]"), QString("tiff"));
     imageWriterFormatBox->addItem(QString("png [configurable]"), QString("png"));
     imageWriterFormatBox->addItem(QString("bmp [large files]"), QString("bmp"));
     imageWriterFormatBox->addItem(QString("jpeg [configurable]"), QString("jpeg"));
@@ -212,7 +212,7 @@ void GeneralSettingsDialog::createForm() {
     imageWriterFormatBox->setCurrentIndex(imageWriterFormatBox->findData(imageWriterFormat));
     writerLayout->addRow(formatLabel, imageWriterFormatBox);
 
-    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!"));
+    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!\nAlso, jpeg and webp can be lossy, thus not recommended."));
     writerLayout->addRow(formatNoteLabel);
 
     formatPngCompressionWidget = new QWidget();

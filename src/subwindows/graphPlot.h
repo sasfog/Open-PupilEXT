@@ -31,6 +31,8 @@ public:
         AUTO_SCROLL_X_FIXED_SCALE_Y = 4,
     };
 
+    int numGraphs;
+
     static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
     uint64 lastTimestamp = 0;
 
@@ -81,6 +83,8 @@ private:
 
     uint64 incrementedTimestamp;
 
+    void setPupilData(const Pupil &pupil, int graphID, quint64 timestamp);
+
 //    bool interaction;
 //    bool yinteraction;
 
@@ -90,4 +94,5 @@ private:
 private slots:
     void setInteractionMode(InteractionMode m);
     void updateYaxisRange();
+    void clearClick();
 };

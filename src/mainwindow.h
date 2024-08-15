@@ -214,8 +214,10 @@ private:
 
     QWidget *trialWidget;
     QLabel *currentTrialLabel;
+    QFrame* trialWidgetLayoutSep;
     QWidget *messageWidget;
     QLabel *currentMessageLabel;
+    QFrame* messageWidgetLayoutSep;
     QLabel *remoteStatusIcon;
 
     DataStreamer *dataStreamer;

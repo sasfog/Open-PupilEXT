@@ -19,7 +19,7 @@ MCUSettingsDialog::MCUSettingsDialog(ConnPoolCOM *connPoolCOM, ConnPoolUDP *conn
     connPoolCOM(connPoolCOM),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(550, 550);
+    this->setMinimumSize(610, 610);
     this->setWindowTitle("Microcontroller Connection Settings");
 
     createForm();
@@ -234,7 +234,7 @@ void MCUSettingsDialog::createForm() {
     udpPortBox->setMaximum(9999);
     udpPortBox->setSingleStep(1);
     udpPortBox->setValue(udpPort);
-    udpPortBox->setFixedWidth(70);
+    udpPortBox->setMinimumWidth(70);
 
     UDPRow1Layout->addWidget(udpPortLabel);
     UDPRow1Layout->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Fixed));
@@ -264,16 +264,16 @@ void MCUSettingsDialog::createForm() {
     QHBoxLayout *serialPortInfoListLayout = new QHBoxLayout;
 
     serialPortInfoListBox = new QComboBox();
-    serialPortInfoListBox->setFixedWidth(70);
-
+    serialPortInfoListBox->setMinimumWidth(150);
     serialPortInfoListLayout->addWidget(serialPortInfoListBox);
 
     const QIcon refreshIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-refresh.svg"), applicationSettings);
     refreshButton = new QPushButton(""); // view-refresh.svg
     refreshButton->setIcon(refreshIcon);
-    refreshButton->setFixedWidth(32);
-
+    refreshButton->setMinimumWidth(42);
     serialPortInfoListLayout->addWidget(refreshButton);
+
+    serialPortInfoListLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
     serialInfoLayout->addLayout(serialPortInfoListLayout, 0, 0);
 
@@ -309,11 +309,11 @@ void MCUSettingsDialog::createForm() {
     parityBox = new QComboBox();
     stopBitsBox = new QComboBox();
 
-    baudRateBox->setFixedWidth(70);
-    dataBitsBox->setFixedWidth(70);
-    flowControlBox->setFixedWidth(70);
-    parityBox->setFixedWidth(70);
-    stopBitsBox->setFixedWidth(70);
+    baudRateBox->setMinimumWidth(100);
+    dataBitsBox->setMinimumWidth(100);
+    flowControlBox->setMinimumWidth(100);
+    parityBox->setMinimumWidth(100);
+    stopBitsBox->setMinimumWidth(100);
 
     paramLayout->addRow(baudRateLabel, baudRateBox);
     paramLayout->addRow(dataBitsLabel, dataBitsBox);
@@ -581,6 +581,8 @@ void MCUSettingsDialog::setLimitationsWhileConnected(bool state) {
 //    serialInfoFrame->setDisabled(state);
     COMGroup->setEnabled(!state && (currentConnectionMethod == ConnectionMethod::COM));
     UDPGroup->setEnabled(!state && (currentConnectionMethod == ConnectionMethod::UDP));
+    COMRadioButton->setEnabled(!state);
+    UDPRadioButton->setEnabled(!state);
 }
 
 void MCUSettingsDialog::onUDPRadioButtonChecked(bool state) {

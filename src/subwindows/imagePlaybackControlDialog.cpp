@@ -51,7 +51,10 @@ void ImagePlaybackControlDialog::createForm() {
     QFormLayout *infoLayout = new QFormLayout();
     infoGroup = new QGroupBox("Playback info");
 
+    QHBoxLayout *timestampRowLayout = new QHBoxLayout();
+    timestampRowLayout->setContentsMargins(0,0,0,0);
     QLabel *timestampLabel = new QLabel(tr("Timestamp [ms]:"));
+    timestampLabel->setFixedWidth(120);
     //timestampVal = new QLineEdit();
     timestampVal = new TimestampSpinBox(fileCamera);
     timestampVal->setReadOnly(false);
@@ -60,10 +63,14 @@ void ImagePlaybackControlDialog::createForm() {
     uint64_t timestampMax = fileCamera->getTimestampForFrameNumber(fileCamera->getNumImagesTotal()-1);
     timestampVal->setMaximum(timestampMax);
     timestampVal->setWrapping(true);
-    infoLayout->addRow(timestampLabel, timestampVal);
+    timestampRowLayout->addWidget(timestampLabel);
+    timestampRowLayout->addWidget(timestampVal);
+    timestampRowLayout->addSpacerItem(new QSpacerItem(10, 20, QSizePolicy::Expanding));
+    infoLayout->addRow(timestampRowLayout);
 
     QHBoxLayout *selectedFrameRowLayout = new QHBoxLayout();
     QLabel *frameLabel = new QLabel(tr("Frame:"));
+    frameLabel->setFixedWidth(120);
     selectedFrameBox = new QSpinBox();
     selectedFrameBox->setReadOnly(false);
     selectedFrameBox->setMaximumWidth(70);
@@ -124,7 +131,6 @@ void ImagePlaybackControlDialog::createForm() {
     slider->setOrientation(Qt::Horizontal);
     slider->setFocusPolicy(Qt::StrongFocus);
     slider->setTickPosition(QSlider::TicksAbove);
-    //slider->setFixedWidth(300); // 100 px width
     slider->setMinimumWidth(200);
     slider->setTickInterval(10); //max value is 100, and every 10th value gets a visual mark
     slider->setSingleStep(1);
