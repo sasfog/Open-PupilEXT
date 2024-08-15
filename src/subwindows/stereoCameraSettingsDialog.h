@@ -65,7 +65,6 @@ private:
 
     QComboBox *mainCameraBox;
     QComboBox *secondaryCameraBox;
-    QLabel *cameraOpenCloseButtonLabel;
 
     QLabel *frameRateValueLabel;
     QRadioButton *SWTradioButton;
@@ -78,8 +77,6 @@ private:
     QLabel *HWTlineSourceLabel;
     QLabel *HWTtimeSpanLabel;
     QComboBox *HWTlineSourceBox;
-//    QLabel *MCUConnDisconnButtonLabel;
-//    QLabel *HWTstartStopButtonLabel;
     bool HWTrunning = false;
     QRadioButton *HWTradioButton;
     QHBoxLayout *HWTframerateLayout;

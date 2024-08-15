@@ -24,7 +24,11 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
         settingsDirectory.mkdir(".");
     }
 
+#ifdef Q_OS_WIN // Q_OS_MACOS
     setMinimumSize(500, 610);
+#else
+    setMinimumSize(500, 720);
+#endif
 
     setWindowTitle(QString("[%1] Camera Settings").arg(camera->getFriendlyName()));
 
@@ -42,33 +46,30 @@ void SingleCameraSettingsDialog::createForm() {
 
     MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed only for Hardware-triggered image acquisition)");
     QFormLayout *MCUConnGroupLayout = new QFormLayout();
+    MCUConnGroupLayout->setMargin(10);
+    MCUConnGroupLayout->setContentsMargins(5,5,5,5);
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConfigButton = new QPushButton();
 //    MCUConfigButton->setText("Microcontroller Connection Settings");
     MCUConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
-//    MCUConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
-    MCUConfigButton->setStyleSheet("text-align:left;");
+    MCUConfigButton->setStyleSheet("QPushButton { text-align:left; border: 1px solid #757575; border-radius: 5px;}");
     MCUConfigButton->setLayout(new QGridLayout);
     QLabel* MCUConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
-    MCUConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    MCUConfigButtonLabel->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
     MCUConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
     MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
-    MCUConfigButton->setMinimumWidth(270);
-    MCUConfigButton->setMinimumHeight(30); //
+    MCUConfigButton->setMinimumWidth(260);
+    MCUConfigButton->setMinimumHeight(22); //
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    MCUConnDisconnButton = new QPushButton(); // Will change to disconnect when connected
-    MCUConnDisconnButton->setLayout(new QGridLayout);
-    MCUConnDisconnButtonLabel = new QLabel("Connect");
-    MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
-    MCUConnDisconnButtonLabel->setAlignment(Qt::AlignCenter);
-    MCUConnDisconnButton->layout()->addWidget(MCUConnDisconnButtonLabel);
-    MCUConnDisconnButton->layout()->setContentsMargins(5, 5, 5, 5);
+    MCUConnDisconnButton = new QPushButton("Connect"); // Will change to disconnect when connected
+    MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
     MCUConnDisconnButton->setFixedWidth(150);
-    MCUConnDisconnButton->setMinimumHeight(30); //
+    MCUConnDisconnButton->setMinimumHeight(22); //
 
     QHBoxLayout *MCUConnRow1 = new QHBoxLayout;
+    MCUConnRow1->setContentsMargins(0,0,0,0);
     MCUConnRow1->addSpacerItem(sp10);
     MCUConnRow1->addWidget(MCUConfigButton);
     MCUConnRow1->addSpacerItem(sp9);
@@ -87,8 +88,9 @@ void SingleCameraSettingsDialog::createForm() {
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
+    exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:"));
-    exposureLabel->setFixedWidth(80);
+    exposureLabel->setFixedWidth(90);
     exposureInputBox = new QSpinBox();
     exposureInputBox->setMinimum(camera->getExposureTimeMin());
     exposureInputBox->setMaximum(camera->getExposureTimeMax());
@@ -111,6 +113,7 @@ void SingleCameraSettingsDialog::createForm() {
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
+    imageROIlayoutRow1->setContentsMargins(0,0,0,0);
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
     imageROIwidthLabel->setMinimumWidth(120);
     imageROIwidthInputBox = new QSpinBox();
@@ -127,6 +130,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
+    imageROIlayoutRow2->setContentsMargins(0,0,0,0);
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
     imageROIheightLabel->setMinimumWidth(120);
     imageROIheightInputBox = new QSpinBox();
@@ -143,6 +147,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
+    imageROIlayoutRow3->setContentsMargins(0,0,0,0);
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
     imageROIoffsetXLabel->setMinimumWidth(120);
     imageROIoffsetXInputBox = new QSpinBox();
@@ -159,6 +164,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
+    imageROIlayoutRow4->setContentsMargins(0,0,0,0);
     //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
     imageROIoffsetYLabel->setMinimumWidth(120);
@@ -187,6 +193,7 @@ void SingleCameraSettingsDialog::createForm() {
     acquisitionLayout->addLayout(imageROIlayoutHBlock);
 
     QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
+    imageROIlayoutRow5->setContentsMargins(0,0,0,0);
     binningLabel = new QLabel(tr("Binning:"));
     binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
@@ -201,6 +208,7 @@ void SingleCameraSettingsDialog::createForm() {
 
     /////////////////////////////////////////////////
     QHBoxLayout *imageROIlayoutRow6 = new QHBoxLayout;
+    imageROIlayoutRow6->setMargin(0);
     QFrame *line2 = new QFrame();
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Raised);
@@ -223,6 +231,8 @@ void SingleCameraSettingsDialog::createForm() {
 
     triggerGroup = new QGroupBox("3. Image Acquisition Triggering and Framerate setting");
     QFormLayout *triggerGroupLayout = new QFormLayout();
+    triggerGroupLayout->setMargin(10);
+    triggerGroupLayout->setContentsMargins(5,5,5,5);
 
     SWTradioButton = new QRadioButton("Software triggering:", this);
     SWTradioButton->setFixedHeight(20);
@@ -236,6 +246,7 @@ void SingleCameraSettingsDialog::createForm() {
     SWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
     SWTframerateBox = new QSpinBox();
     SWTframerateLayout = new QHBoxLayout;
+    SWTframerateLayout->setContentsMargins(0,0,0,0);
     QSpacerItem *sp4 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     SWTframerateLayout->addSpacerItem(sp4);
     SWTframerateLayout->addWidget(SWTframerateEnabled);
@@ -275,13 +286,8 @@ void SingleCameraSettingsDialog::createForm() {
     HWTframerateBox->setFixedWidth(60);
     QSpacerItem *sp7 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    HWTstartStopButton = new QPushButton();
-    HWTstartStopButton->setLayout(new QGridLayout);
-    HWTstartStopButtonLabel = new QLabel("Start Image Acquisition");
-    HWTstartStopButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
-    HWTstartStopButtonLabel->setAlignment(Qt::AlignCenter);
-    HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
-    HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
+    HWTstartStopButton = new QPushButton("Start Image Acquisition");
+    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
     HWTstartStopButton->setFixedWidth(150);
     HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && MCUSettings->isConnected());
 
@@ -295,6 +301,7 @@ void SingleCameraSettingsDialog::createForm() {
     triggerGroupLayout->addRow(HWTradioButton, HWTframerateLayout);
 
     HWTgroupLayout = new QFormLayout();
+    HWTgroupLayout->setContentsMargins(0,0,0,0);
 
     QSpacerItem *sp6 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     HWTlineSourceLabel = new QLabel(tr("Source: "));
@@ -336,7 +343,9 @@ void SingleCameraSettingsDialog::createForm() {
 
     analogGroup = new QGroupBox("4. Image Analog Control");
     QFormLayout *analogLayout = new QFormLayout();
+    analogLayout->setContentsMargins(10,5,10,5);
     QHBoxLayout *gainLayout = new QHBoxLayout();
+    gainLayout->setContentsMargins(0,0,0,0);
 
     QLabel *gainLabel = new QLabel(tr("Gain [dB]:"));
     gainLabel->setMinimumWidth(80);
@@ -562,9 +571,8 @@ void SingleCameraSettingsDialog::startHardwareTrigger() {
     HWTframerateBox->setEnabled(false);
     HWTlineSourceBox->setEnabled(false);
     HWTtimeSpanBox->setEnabled(false);
-//    HWTstartStopButton->setText("Stop Image Acquisition");
-    HWTstartStopButtonLabel->setText("Stop Image Acquisition");
-    HWTstartStopButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
+    HWTstartStopButton->setText("Stop Image Acquisition");
+    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
 
 }
 
@@ -578,9 +586,8 @@ void SingleCameraSettingsDialog::stopHardwareTrigger() {
     HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
     HWTlineSourceBox->setEnabled(camera->isHardwareTriggerEnabled());
     HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
-//    HWTstartStopButton->setText("Start Image Acquisition");
-    HWTstartStopButtonLabel->setText("Start Image Acquisition");
-    HWTstartStopButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
+    HWTstartStopButton->setText("Start Image Acquisition");
+    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
 }
 
 void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
@@ -867,13 +874,13 @@ void SingleCameraSettingsDialog::MCUConnDisconnButtonClicked() {
         stopHardwareTrigger();
 
         MCUSettings->doDisconnect();
-        MCUConnDisconnButtonLabel->setText("Connect");
-        MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
+        MCUConnDisconnButton->setText("Connect");
+        MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
         HWTstartStopButton->setEnabled(false);
     } else {
         MCUSettings->doConnect();
-        MCUConnDisconnButtonLabel->setText("Disconnect");
-        MCUConnDisconnButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
+        MCUConnDisconnButton->setText("Disconnect");
+        MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
         HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled());
     }
 }

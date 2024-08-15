@@ -24,7 +24,7 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
 #ifdef Q_OS_WIN // Q_OS_MACOS
     setMinimumSize(500, 700);
 #else
-    setMinimumSize(500, 850);
+    setMinimumSize(500, 870);
 #endif
 
     setWindowTitle(QString("Stereo Camera Settings"));
@@ -45,13 +45,13 @@ void StereoCameraSettingsDialog::createForm() {
 
     MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed for Hardware-triggered image acquisition)");
     QFormLayout *MCUConnGroupLayout = new QFormLayout();
-    MCUConnGroupLayout->setContentsMargins(10,5,10,5);
+    MCUConnGroupLayout->setMargin(10);
+    MCUConnGroupLayout->setContentsMargins(5,5,5,5);
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConfigButton = new QPushButton();
 //    MCUConfigButton->setText("Microcontroller Connection Settings");
     MCUConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
-//    MCUConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
     MCUConfigButton->setStyleSheet("QPushButton { text-align:left; border: 1px solid #757575; border-radius: 5px;}");
     MCUConfigButton->setLayout(new QGridLayout);
     QLabel* MCUConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
@@ -85,7 +85,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     QGroupBox *cameraGroup = new QGroupBox("2. Camera Selection");
     QFormLayout *cameraLayout = new QFormLayout();
-    cameraLayout->setContentsMargins(10,5,10,5);
+    cameraLayout->setMargin(10);
+    cameraLayout->setContentsMargins(5,5,5,5);
 
     QLabel *mainCameraLabel = new QLabel(tr("Main:"));
     mainCameraBox = new QComboBox();
@@ -102,14 +103,18 @@ void StereoCameraSettingsDialog::createForm() {
     QHBoxLayout *cameraButtonLayout = new QHBoxLayout();
     cameraButtonLayout->setContentsMargins(0,0,0,0);
     updateDevicesButton = new QPushButton(tr("Refresh Devices"));
+    updateDevicesButton->setStyleSheet("QPushButton { border: 1px solid #757575; border-radius: 5px;}");
+    updateDevicesButton->setMinimumHeight(22);
     QSpacerItem *sp11 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    cameraOpenCloseButton = new QPushButton();
-    cameraOpenCloseButton->setLayout(new QGridLayout);
-    cameraOpenCloseButtonLabel = new QLabel("Open/Close");
-    cameraOpenCloseButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
-    cameraOpenCloseButtonLabel->setAlignment(Qt::AlignCenter);
-    cameraOpenCloseButton->layout()->addWidget(cameraOpenCloseButtonLabel);
-    cameraOpenCloseButton->layout()->setContentsMargins(5,5,5,5);
+    cameraOpenCloseButton = new QPushButton("Open Camera Devices");
+    cameraOpenCloseButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+    cameraOpenCloseButton->setMinimumHeight(22);
+//    cameraOpenCloseButton->setLayout(new QGridLayout);
+//    cameraOpenCloseButtonLabel = new QLabel("Open/Close");
+//    cameraOpenCloseButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
+//    cameraOpenCloseButtonLabel->setAlignment(Qt::AlignCenter);
+//    cameraOpenCloseButton->layout()->addWidget(cameraOpenCloseButtonLabel);
+//    cameraOpenCloseButton->layout()->setContentsMargins(5,5,5,5);
     cameraButtonLayout->addWidget(updateDevicesButton);
     cameraButtonLayout->addSpacerItem(sp11);
     cameraButtonLayout->addWidget(cameraOpenCloseButton);
@@ -125,12 +130,13 @@ void StereoCameraSettingsDialog::createForm() {
 
     acquisitionGroup = new QGroupBox("3. Image Acquisition Control");
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
-    acquisitionLayout->setContentsMargins(10,5,10,5);
+    acquisitionLayout->setMargin(10);
+    acquisitionLayout->setContentsMargins(5,5,5,5);
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:")); 
-    exposureLabel->setFixedWidth(80);
+    exposureLabel->setFixedWidth(90);
     exposureInputBox = new QSpinBox();
     exposureInputBox->setMinimum(0);
     exposureInputBox->setMaximum(std::numeric_limits<short>::max());
@@ -249,6 +255,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     /////////////////////////////////////////////////
     QHBoxLayout *imageROIlayoutRow6 = new QHBoxLayout;
+    imageROIlayoutRow6->setMargin(0);
     QFrame *line2 = new QFrame();
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Raised);
@@ -286,6 +293,7 @@ void StereoCameraSettingsDialog::createForm() {
     SWTframerateEnabled->setEnabled(false); //
     SWTframerateBox = new QSpinBox();
     SWTframerateLayout = new QHBoxLayout;
+    SWTframerateLayout->setContentsMargins(0,0,0,0);
     QSpacerItem *sp4 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     SWTframerateLayout->addSpacerItem(sp4);
     SWTframerateLayout->addWidget(SWTframerateEnabled);
@@ -328,14 +336,9 @@ void StereoCameraSettingsDialog::createForm() {
     QSpacerItem *sp7 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     HWTstartStopButton = new QPushButton("Start Image Acquisition");
-//    HWTstartStopButton->setLayout(new QGridLayout);
-//    HWTstartStopButtonLabel = new QLabel("Start Image Acquisition");
-//    HWTstartStopButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
-    static_cast<QPalette>(HWTstartStopButton->palette()).setColor(QPalette::Button, QColor("#f5ab87"));
-//    HWTstartStopButtonLabel->setAlignment(Qt::AlignCenter);
-//    HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
-//    HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
-    HWTstartStopButton->setFixedWidth(150);
+    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+    HWTstartStopButton->setMinimumWidth(190);
+    HWTstartStopButton->setMinimumHeight(22);
     HWTstartStopButton->setEnabled(MCUSettings->isConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
@@ -647,11 +650,8 @@ void StereoCameraSettingsDialog::startHardwareTrigger() {
     HWTframerateBox->setEnabled(false);
     HWTlineSourceBox->setEnabled(false);
     HWTtimeSpanBox->setEnabled(false);
-//    HWTstartStopButton->setText("Stop Image Acquisition");
-    static_cast<QPalette>(HWTstartStopButton->palette()).setColor(QPalette::Button, QColor("#c3f558"));
+    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
     HWTstartStopButton->setText("Stop Image Acquisition");
-//    HWTstartStopButtonLabel->setText("Stop Image Acquisition");
-//    HWTstartStopButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
 }
 
 // Stops the hardware trigger signal by sending a stop signal to the microcontroller
@@ -664,11 +664,8 @@ void StereoCameraSettingsDialog::stopHardwareTrigger() {
     HWTframerateBox->setEnabled(true);
     HWTlineSourceBox->setEnabled(true);
     HWTtimeSpanBox->setEnabled(true);
-//    HWTstartStopButton->setText("Start Image Acquisition");
-    static_cast<QPalette>(HWTstartStopButton->palette()).setColor(QPalette::Button, QColor("#f5ab87"));
+    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
     HWTstartStopButton->setText("Start Image Acquisition");
-//    HWTstartStopButtonLabel->setText("Start Image Acquisition");
-//    HWTstartStopButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
 }
 
 // This method is to be used for camera warmup connection upon program start (argument command), 
@@ -1046,11 +1043,11 @@ void StereoCameraSettingsDialog::setLimitationsWhileCameraNotOpen(bool state) {
     saveButton->setDisabled(state);
 
     if(state) {
-        cameraOpenCloseButtonLabel->setText("Open Camera Devices");
-        cameraOpenCloseButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
+        cameraOpenCloseButton->setText("Open Camera Devices");
+        cameraOpenCloseButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
     } else {
-        cameraOpenCloseButtonLabel->setText("Close Camera Devices");
-        cameraOpenCloseButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
+        cameraOpenCloseButton->setText("Close Camera Devices");
+        cameraOpenCloseButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
     }
 }
 
