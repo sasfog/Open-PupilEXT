@@ -1038,10 +1038,8 @@ void MainWindow::onTrackActClick() {
         trackAct->setIcon(trackOnIcon);
         trackingOn = true;
 
-        if(!pupilDetectionDataFile.isEmpty())
-            recordAct->setDisabled(false);
-        if(streamingSettingsDialog && streamingSettingsDialog->isAnyConnected())
-            streamAct->setEnabled(true);
+        recordAct->setEnabled(!pupilDetectionDataFile.isEmpty());
+        streamAct->setEnabled(streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
     }
 
     if(stereoCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE)) {
@@ -2424,7 +2422,7 @@ void MainWindow::onStreamingUDPConnect() {
         dataStreamer->startUDPStreamer(streamingSettingsDialog->getConnPoolUDPIndex(), streamingSettingsDialog->getDataContainerUDP());
         streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
     }
-    streamAct->setDisabled(false);  
+    streamAct->setEnabled(trackingOn);
 }
 
 void MainWindow::onStreamingUDPDisconnect() {
@@ -2433,12 +2431,11 @@ void MainWindow::onStreamingUDPDisconnect() {
         streamingSettingsDialog->setLimitationsWhileStreamingUDP(false);
         if(dataStreamer->getNumActiveStreamers() == 0) {
             onStreamClick(); // close streamer
-            streamAct->setDisabled(true); 
+            streamAct->setEnabled(false);
         }
     }
     
-    if(!streamingSettingsDialog->isAnyConnected())
-        streamAct->setDisabled(true); 
+    streamAct->setEnabled(streamingSettingsDialog->isAnyConnected());
 }
 
 void MainWindow::onStreamingCOMConnect() {
@@ -2446,7 +2443,7 @@ void MainWindow::onStreamingCOMConnect() {
         dataStreamer->startCOMStreamer(streamingSettingsDialog->getConnPoolCOMIndex(), streamingSettingsDialog->getDataContainerCOM());
         streamingSettingsDialog->setLimitationsWhileStreamingCOM(true);
     }
-    streamAct->setDisabled(false);  
+    streamAct->setEnabled(trackingOn);
 }
 
 void MainWindow::onStreamingCOMDisconnect() {
@@ -2455,12 +2452,11 @@ void MainWindow::onStreamingCOMDisconnect() {
         streamingSettingsDialog->setLimitationsWhileStreamingCOM(false);
         if(dataStreamer->getNumActiveStreamers() == 0) {
             onStreamClick(); // close streamer
-            streamAct->setDisabled(true); 
+            streamAct->setEnabled(false);
         }
     }
-    
-    if(!streamingSettingsDialog->isAnyConnected())
-        streamAct->setDisabled(true); 
+
+    streamAct->setEnabled(streamingSettingsDialog->isAnyConnected());
 }
 
 void MainWindow::onRemoteConnStateChanged() {

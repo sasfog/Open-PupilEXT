@@ -409,9 +409,17 @@ public:
 
     static QColor changeColors(QColor color, bool doLighten, bool isEnabled) {
 
+        if(color == Qt::darkRed) {
+            qDebug() << "valami";
+            qDebug() << color.valueF();
+        }
+
         // invert only the HSV "value"/intensity value (mirror it to 0.5 on a 0.0-1.0 range)
-        if(doLighten && color.valueF() <= 0.5f) {
-            color = QColor::fromHsvF(color.hsvHueF(), color.hsvSaturationF(), 1.0f-color.valueF());
+        if(doLighten && color.valueF() <= 0.52f) {
+            color = QColor::fromHsvF(color.hsvHueF(), color.hsvSaturationF(), 1.0f-(color.valueF()/2.0));
+        }
+
+        if(doLighten) {
             if(!isEnabled) {
                 color = QColor::fromHsvF(color.hsvHueF(), 0.8, 0.5);
             }

@@ -144,7 +144,7 @@ void StereoCameraSettingsDialog::createForm() {
     exposureInputLayout->setMargin(0);
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:")); 
-    exposureLabel->setFixedWidth(90);
+    exposureLabel->setFixedWidth(100);
     exposureInputBox = new QSpinBox();
     exposureInputBox->setMinimum(0);
     exposureInputBox->setMaximum(std::numeric_limits<short>::max());

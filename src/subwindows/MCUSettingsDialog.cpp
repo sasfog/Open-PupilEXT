@@ -19,7 +19,7 @@ MCUSettingsDialog::MCUSettingsDialog(ConnPoolCOM *connPoolCOM, ConnPoolUDP *conn
     connPoolCOM(connPoolCOM),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(610, 610);
+    this->setMinimumSize(670, 610);
     this->setWindowTitle("Microcontroller Connection Settings");
 
     createForm();

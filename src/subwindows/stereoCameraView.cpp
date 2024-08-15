@@ -103,7 +103,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilColorFillLayout->setContentsMargins(8,0,8,0); 
 
     QLabel *pupilColorFillLabel = new QLabel("Coloring:");
-    pupilColorFillLabel->setFixedWidth(80);
+    pupilColorFillLabel->setFixedWidth(90);
 
     QComboBox *pupilColorFillBox = new QComboBox();
     pupilColorFillBox->addItem(QString("No fill"), QString("NO_FILL"));
@@ -126,7 +126,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilColorFillThresholdLayout->setContentsMargins(8,0,8,0); 
 
     QLabel *pupilColorFillThresholdLabel = new QLabel("Low threshold:");
-    pupilColorFillThresholdLabel->setFixedWidth(80);
+    pupilColorFillThresholdLabel->setFixedWidth(90);
 
     QDoubleSpinBox *pupilColorFillThresholdBox = new QDoubleSpinBox();
     pupilColorFillThresholdBox->setMinimum(0.1);

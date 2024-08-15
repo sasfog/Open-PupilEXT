@@ -91,7 +91,7 @@ void SingleCameraSettingsDialog::createForm() {
     exposureInputLayout->setMargin(0);
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:"));
-    exposureLabel->setFixedWidth(90);
+    exposureLabel->setFixedWidth(100);
     exposureInputBox = new QSpinBox();
     exposureInputBox->setMinimum(camera->getExposureTimeMin());
     exposureInputBox->setMaximum(camera->getExposureTimeMax());
@@ -295,7 +295,7 @@ void SingleCameraSettingsDialog::createForm() {
     HWTstartStopButton = new QPushButton("Start Image Acquisition");
     HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
     HWTstartStopButton->setMinimumWidth(190);
-    HWTstartStopButton->setFixedWidth(150);
+    HWTstartStopButton->setMinimumHeight(22);
     HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && MCUSettings->isConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
