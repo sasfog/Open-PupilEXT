@@ -55,7 +55,7 @@ void StereoCameraSettingsDialog::createForm() {
     MCUConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
     MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
-    MCUConfigButton->setMinimumWidth(250);
+    MCUConfigButton->setMinimumWidth(260);
     MCUConfigButton->setMinimumHeight(22);
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConnDisconnButton = new QPushButton("Connect"); // Will change to disconnect when connected
@@ -149,6 +149,7 @@ void StereoCameraSettingsDialog::createForm() {
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
+    imageROIlayoutRow1->setContentsMargins(0,0,0,0);
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
     imageROIwidthLabel->setMinimumWidth(120);
     imageROIwidthInputBox = new QSpinBox();
@@ -165,6 +166,7 @@ void StereoCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
+    imageROIlayoutRow2->setContentsMargins(0,0,0,0);
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
     imageROIheightLabel->setMinimumWidth(120);
     imageROIheightInputBox = new QSpinBox();
@@ -181,6 +183,7 @@ void StereoCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
+    imageROIlayoutRow3->setContentsMargins(0,0,0,0);
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
     imageROIoffsetXLabel->setMinimumWidth(120);
     imageROIoffsetXInputBox = new QSpinBox();
@@ -197,6 +200,7 @@ void StereoCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
+    imageROIlayoutRow4->setContentsMargins(0,0,0,0);
     //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
     imageROIoffsetYLabel->setMinimumWidth(120);
@@ -263,7 +267,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     triggerGroup = new QGroupBox("4. Image Acquisition Triggering and Framerate setting");
     QFormLayout *triggerGroupLayout = new QFormLayout();
-    triggerGroupLayout->setContentsMargins(10,5,10,5);
+    triggerGroupLayout->setMargin(10);
+    triggerGroupLayout->setContentsMargins(5,5,5,5);
 
     SWTradioButton = new QRadioButton("Software triggering:", this);
     SWTradioButton->setFixedHeight(20);
@@ -339,6 +344,7 @@ void StereoCameraSettingsDialog::createForm() {
     triggerGroupLayout->addRow(HWTradioButton, HWTframerateLayout);
 
     QFormLayout *HWTgroupLayout = new QFormLayout();
+    HWTgroupLayout->setContentsMargins(0,0,0,0);
 
     QSpacerItem *sp6 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     HWTlineSourceLabel = new QLabel(tr("Source: "));
