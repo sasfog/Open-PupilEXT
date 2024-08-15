@@ -21,7 +21,11 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
         settingsDirectory.mkdir(".");
     }
 
+#ifdef Q_OS_WIN // Q_OS_MACOS
     setMinimumSize(500, 700);
+#else
+    setMinimumSize(500, 850);
+#endif
 
     setWindowTitle(QString("Stereo Camera Settings"));
 
