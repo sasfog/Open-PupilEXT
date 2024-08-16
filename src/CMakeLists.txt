@@ -21,7 +21,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/MCUSettingsDialog.cpp subwindows/MCUSettingsDialog.h
         dataWriter.cpp dataWriter.h
         signalPubSubHandler.h
-        subwindows/gettingsStartedWizard.cpp subwindows/gettingsStartedWizard.h
+        subwindows/gettingStartedWizard.cpp subwindows/gettingStartedWizard.h
         pupil-detection-methods/Pupil.h pupil-detection-methods/PupilDetectionMethod.h
         pupil-detection-methods/ElSe.cpp pupil-detection-methods/ElSe.h
         pupil-detection-methods/ExCuSe.cpp pupil-detection-methods/ExCuSe.h

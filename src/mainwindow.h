@@ -44,6 +44,7 @@
 #include "playbackSynchroniser.h"
 #include "dataTypes.h"
 #include "subwindows/sceneImageView.h"
+#include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
 
 
@@ -58,6 +59,8 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
+
+    static int const EXIT_CODE_REBOOT;
 
     MainWindow();
     ~MainWindow() override;
@@ -220,6 +223,10 @@ private:
     QFrame* messageWidgetLayoutSep;
     QLabel *remoteStatusIcon;
 
+    GettingStartedWizard* aboutWizard = nullptr;
+    GettingStartedWizard* aboutAndTutorialWizard = nullptr;
+    GettingStartedWizard* tutorialWizard = nullptr;
+
     DataStreamer *dataStreamer;
     QMutex *imageMutex;
     QWaitCondition *imagePublished;
@@ -302,6 +309,7 @@ private slots:
 //    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();
+    void tutorial();
     void openSourceDialog();
     void resetGeometry();
 //    void closeActiveSubWindow();
@@ -310,7 +318,10 @@ private slots:
     void onSubjectsSettingsChange(QString subject);
     void onSharpnessClick();
 
-    void onGettingsStartedWizardFinish();
+    void offerResetApplicationSettings();
+    void offerRestartApplication();
+
+//    void onGettingsStartedWizardFinish();
 
     void singleWebcamSelected(QAction *action);
     void onSingleWebcamSettingsClick();

@@ -93,6 +93,7 @@ void PupilDetectionSettingsDialog::createForm() {
     // from the svg resource and rendered to pixmap, then set for the labels pixmaps. This is better now)
     iLabelFakeButton = new QPushButton();
     iLabelFakeButton->setFlat(true);
+    iLabelFakeButton->setContentsMargins(0,0,0,0);
     iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
     iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
     iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");

@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-
 #include <QtWidgets>
 #include <QtWidgets/QWidget>
 #include "subwindows/graphPlot.h"
@@ -14,10 +13,9 @@
 #include "subwindows/singleFileCameraCalibrationView.h"
 #include "subwindows/RestorableQMdiSubWindow.h"
 #include "subwindows/singleCameraSharpnessView.h"
-#include "subwindows/gettingsStartedWizard.h"
-
 #include "supportFunctions.h"
 
+int const MainWindow::EXIT_CODE_REBOOT = 2000;
 
 // Upon construction, worker objects for processing are created pupil detection and its respective thread
 MainWindow::MainWindow():
@@ -91,6 +89,7 @@ MainWindow::MainWindow():
     subjectSelectionDialog->setWindowIcon(subjectsIcon);
 
     connect(generalSettingsDialog, SIGNAL (onSettingsChange()), this, SLOT (onGeneralSettingsChange()));
+    connect(generalSettingsDialog, SIGNAL (onSettingsChangeNeedingRestart()), this, SLOT (offerRestartApplication()));
     connect(subjectSelectionDialog, SIGNAL (onSubjectChange(QString)), this, SLOT (onSubjectsSettingsChange(QString)));
     connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), pupilDetectionSettingsDialog, SLOT (onSettingsChange()));
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), this, SLOT (onPupilDetectionProcModeChange(int)));
@@ -139,9 +138,12 @@ MainWindow::MainWindow():
 
     bool showGettingsStartedWizard = SupportFunctions::readBoolFromQSettings("ShowGettingsStartedWizard", true, applicationSettings);
     if(showGettingsStartedWizard) {
-        GettingsStartedWizard* wizard = new GettingsStartedWizard(this);
-        wizard->show();
-        connect(wizard->button(QWizard::FinishButton), SIGNAL(clicked()), this , SLOT(onGettingsStartedWizardFinish()));
+        aboutAndTutorialWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::ABOUT_AND_TUTORIAL, this);
+        aboutAndTutorialWizard->show();
+        connect(aboutAndTutorialWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
+                [this]() {applicationSettings->setValue("ShowGettingsStartedWizard", false); aboutAndTutorialWizard = nullptr;});
+        connect(aboutAndTutorialWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
+                [this]() {aboutAndTutorialWizard = nullptr;});
     }
 
     connect(remoteCCDialog, SIGNAL (onConnStateChanged()), this, SLOT (onRemoteConnStateChanged()));
@@ -174,10 +176,6 @@ MainWindow::MainWindow():
     setAcceptDrops(true);
 
     playbackSynchroniser = nullptr;
-}
-
-void MainWindow::onGettingsStartedWizardFinish() {
-    applicationSettings->setValue("ShowGettingsStartedWizard", false);
 }
 
 void MainWindow::loadIcons() {
@@ -251,12 +249,20 @@ void MainWindow::createActions() {
     menuBar()->addSeparator();
 
     QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
-    QAction *openSourceAct = helpMenu->addAction(tr("Open Source Licenses"), this, &MainWindow::openSourceDialog);
+    QAction *tutorialAct = helpMenu->addAction(tr("Open Tutorial"), this, &MainWindow::tutorial);
+    tutorialAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/22/question.svg",applicationSettings));
+    tutorialAct->setStatusTip(tr("Show a brief tutorial"));
+    helpMenu->addSeparator();
+    QAction *openSourceAct = helpMenu->addAction(tr("Show Open Source Licenses"), this, &MainWindow::openSourceDialog);
+    openSourceAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/license.svg",applicationSettings));
     openSourceAct->setStatusTip(tr("Show the application's open source usages."));
-
     QAction *aboutAct = helpMenu->addAction(tr("About"), this, &MainWindow::about);
+    aboutAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/help-about.svg",applicationSettings));
     aboutAct->setStatusTip(tr("Show the application's About box"));
-
+    helpMenu->addSeparator();
+    QAction *clearPersistenceAct = helpMenu->addAction(tr("Reset application settings"), this, &MainWindow::offerResetApplicationSettings);
+    clearPersistenceAct->setIcon(QIcon(":/icons/Breeze/actions/16/edit-clear-history.svg"));
+    clearPersistenceAct->setStatusTip(tr("Reset all application settings to factory defaults"));
 
     toolBar = new QToolBar(); // addToolBar(tr("Toolbar"));
     toolBar->setStyleSheet("QToolBar{spacing:10px;}");
@@ -688,23 +694,27 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 }
 
 void MainWindow::about() {
-    GettingsStartedWizard* wizard = new GettingsStartedWizard(this);
-    wizard->show();
-    connect(wizard->button(QWizard::FinishButton), SIGNAL(clicked()), this , SLOT(onGettingsStartedWizardFinish()));
+    if(!aboutAndTutorialWizard && !aboutWizard) {
+        aboutWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::ABOUT_ONLY, this);
+        connect(aboutWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
+                [this]() {aboutWizard = nullptr;});
+        connect(aboutWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
+                [this]() {aboutWizard = nullptr;});
+    }
+    if(aboutWizard)
+        aboutWizard->show();
+}
 
-//    QMessageBox::about(this, tr("About ") + QCoreApplication::applicationName(),
-//            tr("%1 is an open source application for pupillometry.<br><br>"
-//               "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (2021)."
-//               " PupilEXT: Flexible Open-Source Platform for High-Resolution Pupil Measurement in Vision Research. "
-//               "Frontiers in Neuroscience. doi:10.3389/fnins.2021.676220."
-//               "<br><br>"
-//               "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br>"
-//               "Developer-Team: Moritz Lode, Babak Zandi<br>Version: %2<br><br>"
-//               "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
-//               ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
-//               " Third-party libraries may be distributed under other open-source licenses (see GitHub repository).<br><br>"
-//               "Application settings: %3<br>"
-//    ).arg(QCoreApplication::applicationName(), QCoreApplication::applicationVersion(), applicationSettings->fileName()));
+void MainWindow::tutorial() {
+    if(!aboutAndTutorialWizard && !tutorialWizard) {
+        tutorialWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::TUTORIAL_ONLY, this);
+        connect(tutorialWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
+                [this]() {tutorialWizard = nullptr;});
+        connect(tutorialWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
+                [this]() {tutorialWizard = nullptr;});
+    }
+    if(tutorialWizard)
+        tutorialWizard->show();
 }
 
 void MainWindow::openSourceDialog() {
@@ -2782,5 +2792,46 @@ void MainWindow::destroyCamTempMonitor() {
 void MainWindow::setRecentPath(QString path) {
     recentPath = path;
     applicationSettings->setValue("RecentOutputPath", recentPath);
+}
+
+void MainWindow::offerResetApplicationSettings() {
+    QMessageBox *resetAppSettingsMsgBox = new QMessageBox(
+            QMessageBox::Question,
+            tr("Reset application settings"),
+            tr("Are you sure you want to reset application settings?\nThis will reset all settings, and restart the application."),
+            QMessageBox::Yes | QMessageBox::No,
+            this);
+    resetAppSettingsMsgBox->setMinimumSize(330,240);
+    resetAppSettingsMsgBox->setIcon(QMessageBox::Warning);
+    resetAppSettingsMsgBox->setButtonText(QMessageBox::Yes, tr("Yes"));
+    resetAppSettingsMsgBox->setButtonText(QMessageBox::No, tr("No"));
+//    resetAppSettingsMsgBox->setModal(false);
+//    resetAppSettingsMsgBox->show();
+    resetAppSettingsMsgBox->exec();
+    if(resetAppSettingsMsgBox->result() == QMessageBox::Yes) {
+        onCameraDisconnectClick();
+        applicationSettings->clear();
+        qApp->exit(EXIT_CODE_REBOOT);
+    }
+}
+
+void MainWindow::offerRestartApplication() {
+    QMessageBox *resetAppSettingsMsgBox = new QMessageBox(
+            QMessageBox::Question,
+            tr("Restart application"),
+            tr("Would you like to restart the application now?"),
+            QMessageBox::Yes | QMessageBox::No,
+            this);
+    resetAppSettingsMsgBox->setMinimumSize(330,240);
+//    resetAppSettingsMsgBox->setIcon(QMessageBox::Warning);
+    resetAppSettingsMsgBox->setButtonText(QMessageBox::Yes, tr("Yes"));
+    resetAppSettingsMsgBox->setButtonText(QMessageBox::No, tr("No"));
+//    resetAppSettingsMsgBox->setModal(false);
+//    resetAppSettingsMsgBox->show();
+    resetAppSettingsMsgBox->exec();
+    if(resetAppSettingsMsgBox->result() == QMessageBox::Yes) {
+        onCameraDisconnectClick();
+        qApp->exit(EXIT_CODE_REBOOT);
+    }
 }
 

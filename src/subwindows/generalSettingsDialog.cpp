@@ -286,7 +286,7 @@ void GeneralSettingsDialog::createForm() {
     QGroupBox *appearanceGroup = new QGroupBox("Appearance", this);
     QFormLayout *appearanceLayout = new QFormLayout(this);
 
-    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode:"), this);
+    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode (needs restart):"), this);
 
     darkAdaptBox = new QComboBox(this);
     darkAdaptBox->addItem(QString("Light"));
@@ -343,10 +343,20 @@ void GeneralSettingsDialog::onSettingsChangedElsewhere() {
 // On apply button click
 // Save the settings, send signal that settings have changed
 void GeneralSettingsDialog::apply() {
+
+    bool alwaysOnTopBeforeSave = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
+    int darkAdaptModeBeforeSave = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
+
     saveSettings();
     emit onSettingsChange();
     
     // this->parentWidget()->repaint(); // todo: maybe do this via receiving onSettingChange from mainwindow?
+
+    // If there is any settings change that may need application restart to take effect,
+    // tell MainWindow to offer the user a restart in a dialog
+    if((alwaysOnTopBeforeSave != alwaysOnTop) || (darkAdaptModeBeforeSave != darkAdaptMode)) {
+        emit onSettingsChangeNeedingRestart();
+    }
 
     close();
 }
