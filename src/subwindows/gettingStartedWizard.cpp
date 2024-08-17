@@ -28,6 +28,7 @@ GettingStartedWizard::GettingStartedWizard(WizardPurpose purpose, QWidget *paren
         this->setPage(Page_Tutorial_09, createTutorial09());
         this->setPage(Page_Tutorial_10, createTutorial10());
         this->setPage(Page_Tutorial_11, createTutorial11());
+        this->setPage(Page_Tutorial_12, createTutorial12());
 
         this->setPage(Page_Conclusion_01, createConclusion01());
     }
@@ -519,6 +520,46 @@ QWizardPage* GettingStartedWizard::createTutorial11() {
     "tested PupilEXT to be very accurate regarding trial increment trigger timestamps, though this accuracy is not "
     "ensured in case of real-time pupil detection use. If you are using PupilEXT for research-grade data acquisition, "
     "please yet use it this way, until a new release is out. ";
+
+    QLabel *label = new QLabel(labelText);
+    label->setWordWrap(true);
+
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(label);
+    page->setLayout(layout);
+
+    return page;
+}
+
+QWizardPage* GettingStartedWizard::createTutorial12() {
+    QWizardPage *page = new QWizardPage;
+    QString tutorialSubHeadline = "A note on reproducibility";
+    if(purpose == ABOUT_AND_TUTORIAL) {
+        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
+        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    } else {
+        page->setTitle(tutorialSubHeadline);
+    }
+
+    QString labelText =
+            "As any scientific measurement system, PupilEXT software is built with special attention paid to research "
+            "reproducibility needs. Also, as it is an open-source system, and can be used with varied hardware, it is "
+            "the responsibility of the researcher mostly to minimise any between-subjects differences in data acquisition "
+            "circumstances, while the software does its best to also minimise undesired within-subject variations, and "
+            "offers functionalities to help the researcher with the former. "
+            "<br><br>"
+            "The software currently automatically saves many of its settings in a structured format alongside with image "
+            "and \".csv.\" data recordings in an arbitrary, human-readable format: in an \".xml\" file, named with a \"_meta\" "
+            "postfix. Also, it supports storing and re-loading <i>ALL</i> the application settings for different subjects, "
+            "using the Subjects dialog, accessible with the Subjects icon in the icon bar: in an \".ini\" file, which upon loading,"
+            "would reset all settings, including remote control connection, streaming, etc. "
+            "<br>The purpose of the meta files is to provide a way to manually, visually "
+            "inspect any application setting related to image acquisition and pupil detection, when needed by the user "
+            "at a later point in time, while the purpose of subject configurations is to provide a way to set the application "
+            "to a previous state when lat time an image or data acquisition was carried out."
+            "<br>At the moment, these two functionalities are partly overlapping, and will be merged into one in a next "
+            "release of the PupilEXT software. ";
+
 
     QLabel *label = new QLabel(labelText);
     label->setWordWrap(true);

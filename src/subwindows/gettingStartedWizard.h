@@ -30,6 +30,7 @@ public:
     QWizardPage *createTutorial09();
     QWizardPage *createTutorial10();
     QWizardPage *createTutorial11();
+    QWizardPage *createTutorial12();
     QWizardPage *createConclusion01();
 
 private:
@@ -50,6 +51,7 @@ private:
         Page_Tutorial_09,
         Page_Tutorial_10,
         Page_Tutorial_11,
+        Page_Tutorial_12,
         Page_Conclusion_01, };
 
     WizardPurpose purpose;

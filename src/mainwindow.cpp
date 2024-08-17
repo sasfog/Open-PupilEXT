@@ -2557,7 +2557,8 @@ void MainWindow::resetStatus(bool isConnect)
         cameraActDisconnectAct->setEnabled(true);
         calibrateAct->setEnabled(true);
         sharpnessAct->setEnabled(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA);
-        subjectsAct->setEnabled(true);
+//        subjectsAct->setEnabled(true);
+        subjectsAct->setEnabled(false);
         trackAct->setEnabled(true);
         logFileAct->setEnabled(true);
         streamAct->setEnabled( streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() );
@@ -2584,7 +2585,13 @@ void MainWindow::resetStatus(bool isConnect)
         cameraActDisconnectAct->setEnabled(false);
         calibrateAct->setEnabled(false);
         sharpnessAct->setEnabled(false);
-        subjectsAct->setEnabled(false);
+//        subjectsAct->setEnabled(false);
+        // Currently it could mess up the application if QSettings is changed when there is any connection on, so make sure they are not
+        // TODO: reform the subjects selection system, and merge it with meta snapshot functionality
+        subjectsAct->setEnabled(
+                remoteCCDialog && !remoteCCDialog->isAnyConnected() &&
+                streamingSettingsDialog && !streamingSettingsDialog->isAnyConnected() &&
+                MCUSettingsDialogInst && !MCUSettingsDialogInst->isConnected());
         trackAct->setEnabled(false);
         logFileAct->setEnabled(false);
         streamAct->setEnabled(false);
