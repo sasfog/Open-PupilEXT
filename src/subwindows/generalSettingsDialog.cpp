@@ -174,6 +174,7 @@ void GeneralSettingsDialog::createForm() {
     dataWriterDataStyleBox->setCurrentText(dataWriterDataStyle);
     dataOutLayout->addRow(dataWriterDataStyleLabel, dataWriterDataStyleBox);
     QLabel *dataWriterDataStyleWarnLabel = new QLabel(tr("*Older version will not save trial numbering."), this);
+    SupportFunctions::setLabelFontSize(dataWriterDataStyleWarnLabel, 6);
     dataWriterDataStyleWarnLabel->setAlignment(Qt::AlignRight);
     dataOutLayout->addRow(dataWriterDataStyleWarnLabel);
 
@@ -213,6 +214,7 @@ void GeneralSettingsDialog::createForm() {
     writerLayout->addRow(formatLabel, imageWriterFormatBox);
 
     QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!\nAlso, jpeg and webp can be lossy, thus not recommended."));
+    SupportFunctions::setLabelFontSize(formatNoteLabel, 6);
     writerLayout->addRow(formatNoteLabel);
 
     formatPngCompressionWidget = new QWidget();

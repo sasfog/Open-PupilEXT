@@ -514,4 +514,10 @@ public:
         else
             return false;
     }
+
+    static void setLabelFontSize(QLabel *label, int pointSize) {
+        QFont actualFont = label->font();
+        actualFont.setPointSize(pointSize);
+        label->setFont(actualFont);
+    }
 };

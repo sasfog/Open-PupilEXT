@@ -7,6 +7,7 @@
 #include <QtWidgets/qmessagebox.h>
 #include <iostream>
 #include "../SVGIconColorAdjuster.h"
+#include "../supportFunctions.h"
 
 static const char* blankString = "N/A";
 
@@ -244,6 +245,7 @@ void MCUSettingsDialog::createForm() {
     UDPLayout->addRow(UDPRow1Layout);
 
     QLabel *udpNoteLabel = new QLabel(tr("The IP address specified here will be used for sending to, while incoming data is filtered for it.\nThe port is where commands are sent to, while it is also the same port used for listening to the MCU."));
+    SupportFunctions::setLabelFontSize(udpNoteLabel, 6);
     UDPLayout->addRow(udpNoteLabel);
 
     UDPGroup->setLayout(UDPLayout);

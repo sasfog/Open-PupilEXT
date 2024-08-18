@@ -3,6 +3,7 @@
 #include <pylon/TlFactory.h>
 #include <pylon/Container.h>
 #include "stereoCameraSettingsDialog.h"
+#include "../supportFunctions.h"
 
 // Creates a new stereo camera settings dialog
 // The dialog setups the stereo camera and starts fetching image frames through a hardware trigger
@@ -445,6 +446,7 @@ void StereoCameraSettingsDialog::createForm() {
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
     QLabel *imageROIWarningLabel = new QLabel(tr("Warning: If you are using Hardware-triggered image acquisition, please restart Image Acquisition\n    Triggering whenever Image Acquisition ROI is modified.\nWarning: if Image Acquisition ROI or Binning is altered, a new camera calibration is necessary\n    for proper undistortion."));
+    SupportFunctions::setLabelFontSize(imageROIWarningLabel, 6);
     mainLayout->addWidget(imageROIWarningLabel);
 
     mainLayout->addLayout(buttonsLayout);
