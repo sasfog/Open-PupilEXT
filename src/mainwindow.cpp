@@ -138,12 +138,12 @@ MainWindow::MainWindow():
 
     bool showGettingsStartedWizard = SupportFunctions::readBoolFromQSettings("ShowGettingsStartedWizard", true, applicationSettings);
     if(showGettingsStartedWizard) {
-        aboutAndTutorialWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::ABOUT_AND_TUTORIAL, this);
-        aboutAndTutorialWizard->show();
-        connect(aboutAndTutorialWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
-                [this]() {applicationSettings->setValue("ShowGettingsStartedWizard", false); aboutAndTutorialWizard = nullptr;});
-        connect(aboutAndTutorialWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
-                [this]() {aboutAndTutorialWizard = nullptr;});
+        aboutAndUserGuideWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::ABOUT_AND_USERGUIDE, this);
+        aboutAndUserGuideWizard->show();
+        connect(aboutAndUserGuideWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
+                [this]() {applicationSettings->setValue("ShowGettingsStartedWizard", false); aboutAndUserGuideWizard = nullptr;});
+        connect(aboutAndUserGuideWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
+                [this]() {aboutAndUserGuideWizard = nullptr;});
     }
 
     connect(remoteCCDialog, SIGNAL (onConnStateChanged()), this, SLOT (onRemoteConnStateChanged()));
@@ -249,9 +249,9 @@ void MainWindow::createActions() {
     menuBar()->addSeparator();
 
     QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
-    QAction *tutorialAct = helpMenu->addAction(tr("Open Tutorial"), this, &MainWindow::tutorial);
-    tutorialAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/22/question.svg",applicationSettings));
-    tutorialAct->setStatusTip(tr("Show a brief tutorial"));
+    QAction *userGuideAct = helpMenu->addAction(tr("Open User Guide"), this, &MainWindow::userGuide);
+    userGuideAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/22/question.svg",applicationSettings));
+    userGuideAct->setStatusTip(tr("Show a brief user guide"));
     helpMenu->addSeparator();
     QAction *openSourceAct = helpMenu->addAction(tr("Show Open Source Licenses"), this, &MainWindow::openSourceDialog);
     openSourceAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/license.svg",applicationSettings));
@@ -694,7 +694,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 }
 
 void MainWindow::about() {
-    if(!aboutAndTutorialWizard && !aboutWizard) {
+    if(!aboutAndUserGuideWizard && !aboutWizard) {
         aboutWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::ABOUT_ONLY, this);
         connect(aboutWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
                 [this]() {aboutWizard = nullptr;});
@@ -705,16 +705,16 @@ void MainWindow::about() {
         aboutWizard->show();
 }
 
-void MainWindow::tutorial() {
-    if(!aboutAndTutorialWizard && !tutorialWizard) {
-        tutorialWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::TUTORIAL_ONLY, this);
-        connect(tutorialWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
-                [this]() {tutorialWizard = nullptr;});
-        connect(tutorialWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
-                [this]() {tutorialWizard = nullptr;});
+void MainWindow::userGuide() {
+    if(!aboutAndUserGuideWizard && !userGuideWizard) {
+        userGuideWizard = new GettingStartedWizard(GettingStartedWizard::WizardPurpose::USERGUIDE_ONLY, this);
+        connect(userGuideWizard->button(QWizard::FinishButton), &QPushButton::clicked, this,
+                [this]() {userGuideWizard = nullptr;});
+        connect(userGuideWizard->button(QWizard::CancelButton), &QPushButton::clicked, this,
+                [this]() {userGuideWizard = nullptr;});
     }
-    if(tutorialWizard)
-        tutorialWizard->show();
+    if(userGuideWizard)
+        userGuideWizard->show();
 }
 
 void MainWindow::openSourceDialog() {

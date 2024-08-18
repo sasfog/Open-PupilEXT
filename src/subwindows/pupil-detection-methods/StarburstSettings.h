@@ -271,19 +271,19 @@ private:
         edgeThresholdBox = new QSpinBox();
         edgeThresholdBox->setMaximum(1000);
         edgeThresholdBox->setValue(edge_threshold);
-        edgeThresholdBox->setFixedWidth(50);
+        edgeThresholdBox->setFixedWidth(80);
         edgeLayout->addRow(edgeThresholdLabel, edgeThresholdBox);
 
         QLabel *numRaysLabel = new QLabel(tr("Number of Rays:"));
         numRaysBox = new QSpinBox();
         numRaysBox->setValue(rays);
-        numRaysBox->setFixedWidth(50);
+        numRaysBox->setFixedWidth(80);
         edgeLayout->addRow(numRaysLabel, numRaysBox);
 
         QLabel *minFeatureCandidatesLabel = new QLabel(tr("Min. Feature Candidates:"));
         minFeatureCandidatesBox = new QSpinBox();
         minFeatureCandidatesBox->setValue(min_feature_candidates);
-        minFeatureCandidatesBox->setFixedWidth(50);
+        minFeatureCandidatesBox->setFixedWidth(80);
         edgeLayout->addRow(minFeatureCandidatesLabel, minFeatureCandidatesBox);
 
         edgeGroup->setLayout(edgeLayout);
@@ -292,14 +292,14 @@ private:
         QLabel *crRatioLabel = new QLabel(tr("CR Ratio (to Image Height):"));
         crRatioBox = new QSpinBox();
         crRatioBox->setValue(corneal_reflection_ratio_to_image_size);
-        crRatioBox->setFixedWidth(50);
+        crRatioBox->setFixedWidth(80);
         crLayout->addRow(crRatioLabel, crRatioBox);
 
         QLabel *crWindowSizeLabel = new QLabel(tr("CR Window Size [px]:"));
         crWindowSizeBox = new QSpinBox();
         crWindowSizeBox->setMaximum(5000);
         crWindowSizeBox->setValue(crWindowSize);
-        crWindowSizeBox->setFixedWidth(50);
+        crWindowSizeBox->setFixedWidth(80);
         crLayout->addRow(crWindowSizeLabel, crWindowSizeBox);
 
         crGroup->setLayout(crLayout);

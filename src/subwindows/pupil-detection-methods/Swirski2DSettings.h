@@ -299,13 +299,13 @@ private:
         minRadiusBox = new QSpinBox();
         minRadiusBox->setMaximum(5000);
         minRadiusBox->setValue(Radius_Min);
-        minRadiusBox->setFixedWidth(50);
+        minRadiusBox->setFixedWidth(80);
 
         QLabel *maxRadiusLabel = new QLabel(tr("Max. Radius [px]:"));
         maxRadiusBox = new QSpinBox();
         maxRadiusBox->setMaximum(5000);
         maxRadiusBox->setValue(Radius_Max);
-        maxRadiusBox->setFixedWidth(50);
+        maxRadiusBox->setFixedWidth(80);
 
         QHBoxLayout *layoutRow1 = new QHBoxLayout;
         layoutRow1->addWidget(minRadiusBox);
@@ -320,18 +320,18 @@ private:
         QLabel *cannyBlurLabel = new QLabel(tr("Canny Blur:"));
         cannyBlurBox = new QDoubleSpinBox();
         cannyBlurBox->setValue(CannyBlur);
-        cannyBlurBox->setFixedWidth(50);
+        cannyBlurBox->setFixedWidth(80);
         ellipseLayout->addRow(cannyBlurLabel, cannyBlurBox);
 
         QLabel *cannyThreshold1Label = new QLabel(tr("Canny Threshold 1:"));
         cannyThreshold1Box = new QDoubleSpinBox();
         cannyThreshold1Box->setValue(CannyThreshold1);
-        cannyThreshold1Box->setFixedWidth(50);
+        cannyThreshold1Box->setFixedWidth(80);
 
         QLabel *cannyThreshold2Label = new QLabel(tr("Canny Threshold 2:"));
         cannyThreshold2Box = new QDoubleSpinBox();
         cannyThreshold2Box->setValue(CannyThreshold2);
-        cannyThreshold2Box->setFixedWidth(50);
+        cannyThreshold2Box->setFixedWidth(80);
 
         QHBoxLayout *layoutRow2 = new QHBoxLayout;
         layoutRow2->addWidget(cannyThreshold1Box);
@@ -346,18 +346,18 @@ private:
         QLabel *starburstPointsLabel = new QLabel(tr("Starburst Points:"));
         starburstPointsBox = new QSpinBox();
         starburstPointsBox->setValue(StarburstPoints);
-        starburstPointsBox->setFixedWidth(50);
+        starburstPointsBox->setFixedWidth(80);
         ellipseLayout->addRow(starburstPointsLabel, starburstPointsBox);
 
         QLabel *percInlierLabel = new QLabel(tr("Perc. Inliers:"));
         percInlierBox = new QSpinBox();
         percInlierBox->setValue(PercentageInliers);
-        percInlierBox->setFixedWidth(50);
+        percInlierBox->setFixedWidth(80);
 
         QLabel *iterInlierLabel = new QLabel(tr("Inlier Iterations:"));
         iterInlierBox = new QSpinBox();
         iterInlierBox->setValue(InlierIterations);
-        iterInlierBox->setFixedWidth(50);
+        iterInlierBox->setFixedWidth(80);
 
         QHBoxLayout *layoutRow3 = new QHBoxLayout;
         layoutRow3->addWidget(percInlierBox);
@@ -376,7 +376,7 @@ private:
         QLabel *termPercLabel = new QLabel(tr("Early Termination Perc.:"));
         termPercBox = new QSpinBox();
         termPercBox->setValue(EarlyTerminationPercentage);
-        termPercBox->setFixedWidth(50);
+        termPercBox->setFixedWidth(80);
         optionsLayout->addRow(termPercLabel, termPercBox);
 
         QLabel *imageAwareLabel = new QLabel(tr("Image Aware RANSAC:"));

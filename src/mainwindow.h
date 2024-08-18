@@ -224,8 +224,8 @@ private:
     QLabel *remoteStatusIcon;
 
     GettingStartedWizard* aboutWizard = nullptr;
-    GettingStartedWizard* aboutAndTutorialWizard = nullptr;
-    GettingStartedWizard* tutorialWizard = nullptr;
+    GettingStartedWizard* aboutAndUserGuideWizard = nullptr;
+    GettingStartedWizard* userGuideWizard = nullptr;
 
     DataStreamer *dataStreamer;
     QMutex *imageMutex;
@@ -309,7 +309,7 @@ private slots:
 //    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();
-    void tutorial();
+    void userGuide();
     void openSourceDialog();
     void resetGeometry();
 //    void closeActiveSubWindow();

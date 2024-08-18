@@ -230,7 +230,7 @@ private:
         minAreaBox->setSingleStep(0.001);
         minAreaBox->setMaximum(100);
         minAreaBox->setValue(minAreaRatio);
-        minAreaBox->setFixedWidth(60);
+        minAreaBox->setFixedWidth(80);
         sizeLayout->addRow(minAreaLabel, minAreaBox);
 
         QLabel *maxAreaLabel = new QLabel(tr("Max. Area [%]:"));
@@ -239,7 +239,7 @@ private:
         maxAreaBox->setSingleStep(0.001);
         maxAreaBox->setMaximum(100);
         maxAreaBox->setValue(maxAreaRatio);
-        maxAreaBox->setFixedWidth(60);
+        maxAreaBox->setFixedWidth(80);
         sizeLayout->addRow(maxAreaLabel, maxAreaBox);
 
         sizeGroup->setLayout(sizeLayout);

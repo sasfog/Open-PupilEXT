@@ -10,27 +10,28 @@ class GettingStartedWizard : public QWizard {
 public:
 
     enum WizardPurpose {
-        ABOUT_AND_TUTORIAL,
+        ABOUT_AND_USERGUIDE,
         ABOUT_ONLY,
-        TUTORIAL_ONLY
+        USERGUIDE_ONLY
     };
 
     explicit GettingStartedWizard(WizardPurpose purpose, QWidget *parent = nullptr);
 
     QWizardPage *createIntro01();
     QWizardPage *createIntro02();
-    QWizardPage *createTutorial01();
-    QWizardPage *createTutorial02();
-    QWizardPage *createTutorial03();
-    QWizardPage *createTutorial04();
-    QWizardPage *createTutorial05();
-    QWizardPage *createTutorial06();
-    QWizardPage *createTutorial07();
-    QWizardPage *createTutorial08();
-    QWizardPage *createTutorial09();
-    QWizardPage *createTutorial10();
-    QWizardPage *createTutorial11();
-    QWizardPage *createTutorial12();
+    QWizardPage *createPreUserGuide01();
+    QWizardPage *createPreUserGuide02();
+    QWizardPage *createUserGuide01();
+    QWizardPage *createUserGuide02();
+    QWizardPage *createUserGuide03();
+    QWizardPage *createUserGuide04();
+    QWizardPage *createUserGuide05();
+    QWizardPage *createUserGuide06();
+    QWizardPage *createUserGuide07();
+    QWizardPage *createUserGuide08();
+    QWizardPage *createUserGuide09();
+    QWizardPage *createUserGuide10();
+    QWizardPage *createUserGuide11();
     QWizardPage *createConclusion01();
 
 private:
@@ -40,22 +41,21 @@ private:
     enum {
         Page_Intro_01,
         Page_Intro_02,
-        Page_Tutorial_01,
-        Page_Tutorial_02,
-        Page_Tutorial_03,
-        Page_Tutorial_04,
-        Page_Tutorial_05,
-        Page_Tutorial_06,
-        Page_Tutorial_07,
-        Page_Tutorial_08,
-        Page_Tutorial_09,
-        Page_Tutorial_10,
-        Page_Tutorial_11,
-        Page_Tutorial_12,
+        Page_Pre_User_Guide_01,
+        Page_Pre_User_Guide_02,
+        Page_User_Guide_01,
+        Page_User_Guide_02,
+        Page_User_Guide_03,
+        Page_User_Guide_04,
+        Page_User_Guide_05,
+        Page_User_Guide_06,
+        Page_User_Guide_07,
+        Page_User_Guide_08,
+        Page_User_Guide_09,
+        Page_User_Guide_10,
+        Page_User_Guide_11,
         Page_Conclusion_01, };
 
     WizardPurpose purpose;
-    QString intro01Headline;
-    QString tutorialHeadline;
 
 };

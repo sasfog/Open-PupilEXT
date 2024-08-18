@@ -256,13 +256,13 @@ private:
         imageWidthBox = new QSpinBox();
         imageWidthBox->setMaximum(5000);
         imageWidthBox->setValue(baseWidth);
-        imageWidthBox->setFixedWidth(50);
+        imageWidthBox->setFixedWidth(80);
         
         QLabel *heightLabel = new QLabel(tr("Image height [px]:"));
         imageHeightBox = new QSpinBox();
         imageHeightBox->setMaximum(5000);
         imageHeightBox->setValue(baseHeight);
-        imageHeightBox->setFixedWidth(50);
+        imageHeightBox->setFixedWidth(80);
         
         QHBoxLayout *layoutRow1 = new QHBoxLayout;
         layoutRow1->addWidget(imageWidthBox);
@@ -280,18 +280,18 @@ private:
         QLabel *canthiDistanceLabel = new QLabel(tr("Mean Canthi Distance [mm]:"));
         canthiDistanceBox = new QDoubleSpinBox();
         canthiDistanceBox->setValue(meanCanthiDistanceMM);
-        canthiDistanceBox->setFixedWidth(50);
+        canthiDistanceBox->setFixedWidth(80);
         physLayout->addRow(canthiDistanceLabel, canthiDistanceBox);
 
         QLabel *maxPupilLabel = new QLabel(tr("Max. Pupil Size [mm]:"));
         maxPupilBox = new QDoubleSpinBox();
         maxPupilBox->setValue(maxPupilDiameterMM);
-        maxPupilBox->setFixedWidth(50);
+        maxPupilBox->setFixedWidth(80);
 
         QLabel *minPupilLabel = new QLabel(tr("Min. Pupil Size [mm]:"));
         minPupilBox = new QDoubleSpinBox();
         minPupilBox->setValue(minPupilDiameterMM);
-        minPupilBox->setFixedWidth(50);
+        minPupilBox->setFixedWidth(80);
 
         QHBoxLayout *layoutRow2 = new QHBoxLayout;
         layoutRow2->addWidget(maxPupilBox);

@@ -234,14 +234,14 @@ private:
         maxRadiBox = new QSpinBox();
         maxRadiBox->setMaximum(5000);
         maxRadiBox->setValue(max_ellipse_radi);
-        maxRadiBox->setFixedWidth(50);
+        maxRadiBox->setFixedWidth(80);
         sizeLayout->addRow(maxRadiLabel, maxRadiBox);
 
         QLabel *ellipseThresholdLabel = new QLabel(tr("Ellipse Goodness Threshold:"));
         ellipseThresholdBox = new QSpinBox();
         ellipseThresholdBox->setMaximum(100);
         ellipseThresholdBox->setValue(good_ellipse_threshold);
-        ellipseThresholdBox->setFixedWidth(50);
+        ellipseThresholdBox->setFixedWidth(80);
         sizeLayout->addRow(ellipseThresholdLabel, ellipseThresholdBox);
 
         sizeGroup->setLayout(sizeLayout);

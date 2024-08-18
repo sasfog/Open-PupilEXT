@@ -8,39 +8,37 @@ GettingStartedWizard::GettingStartedWizard(WizardPurpose purpose, QWidget *paren
         purpose(purpose),
         QWizard(parent), applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    if(purpose == ABOUT_AND_TUTORIAL || purpose == ABOUT_ONLY) {
+    if(purpose == ABOUT_AND_USERGUIDE || purpose == ABOUT_ONLY) {
         this->setPage(Page_Intro_01, createIntro01());
         this->setPage(Page_Intro_02, createIntro02());
     }
 
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        this->setPage(Page_Tutorial_01, createTutorial01());
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        this->setPage(Page_Pre_User_Guide_01, createPreUserGuide01());
+        this->setPage(Page_Pre_User_Guide_02, createPreUserGuide02());
     }
 
-    if(purpose == ABOUT_AND_TUTORIAL || purpose == TUTORIAL_ONLY) {
-        this->setPage(Page_Tutorial_02, createTutorial02());
-        this->setPage(Page_Tutorial_03, createTutorial03());
-        this->setPage(Page_Tutorial_04, createTutorial04());
-        this->setPage(Page_Tutorial_05, createTutorial05());
-        this->setPage(Page_Tutorial_06, createTutorial06());
-        this->setPage(Page_Tutorial_07, createTutorial07());
-        this->setPage(Page_Tutorial_08, createTutorial08());
-        this->setPage(Page_Tutorial_09, createTutorial09());
-        this->setPage(Page_Tutorial_10, createTutorial10());
-        this->setPage(Page_Tutorial_11, createTutorial11());
-        this->setPage(Page_Tutorial_12, createTutorial12());
+    if(purpose == ABOUT_AND_USERGUIDE || purpose == USERGUIDE_ONLY) {
+        this->setPage(Page_User_Guide_01, createUserGuide01());
+        this->setPage(Page_User_Guide_02, createUserGuide02());
+        this->setPage(Page_User_Guide_03, createUserGuide03());
+        this->setPage(Page_User_Guide_04, createUserGuide04());
+        this->setPage(Page_User_Guide_05, createUserGuide05());
+        this->setPage(Page_User_Guide_06, createUserGuide06());
+        this->setPage(Page_User_Guide_07, createUserGuide07());
+        this->setPage(Page_User_Guide_08, createUserGuide08());
+        this->setPage(Page_User_Guide_09, createUserGuide09());
+        this->setPage(Page_User_Guide_10, createUserGuide10());
+        this->setPage(Page_User_Guide_11, createUserGuide11());
 
         this->setPage(Page_Conclusion_01, createConclusion01());
     }
 
     if(purpose == ABOUT_ONLY) {
-        intro01Headline = "";
         this->setWindowTitle("About PupilEXT");
-    } else if(purpose == ABOUT_AND_TUTORIAL) {
-        intro01Headline = "Introduction";
-        tutorialHeadline = "First Steps";
+    } else if(purpose == ABOUT_AND_USERGUIDE) {
         this->setWindowTitle("Getting started with PupilEXT");
-    } else if(purpose == TUTORIAL_ONLY) {
+    } else if(purpose == USERGUIDE_ONLY) {
         this->setWindowTitle("Tutorial");
     }
 
@@ -53,7 +51,9 @@ GettingStartedWizard::GettingStartedWizard(WizardPurpose purpose, QWidget *paren
 
 QWizardPage* GettingStartedWizard::createIntro01() {
     QWizardPage *page = new QWizardPage;
-    page->setTitle(intro01Headline);
+//    if(purpose == ABOUT_AND_USERGUIDE) {
+//        page->setTitle("Introduction");
+//    }
 
     QPushButton *logoButton = new QPushButton;
     logoButton->setFlat(true);
@@ -69,12 +69,12 @@ QWizardPage* GettingStartedWizard::createIntro01() {
                                   "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (2021). "
                                   "PupilEXT: Flexible Open-Source Platform for High-Resolution Pupil Measurement in Vision Research.</br>"
                                   " Frontiers in Neuroscience. doi:10.3389/fnins.2021.676220."
-                                  "<br><br>Consider to cite our work, if you find this tool useful for your research."
+                                  "<br><br>Consider to cite our work, if you find this tool useful for your research. "
                                   "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br><br>"
                                   "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
                                   ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
                                   " Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses (see GitHub repository).<br><br>"
-                                  "This release was built from the Experimental Community Version branch source code, contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
+                                  "<b>This release was built from the Experimental Community Version branch source code</b>, contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
     ).arg(QCoreApplication::applicationName(),QCoreApplication::applicationVersion()));
 
     QHBoxLayout *appSettingsRow = new QHBoxLayout();
@@ -154,42 +154,93 @@ QWizardPage* GettingStartedWizard::createIntro02() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial01() {
+QWizardPage* GettingStartedWizard::createPreUserGuide01() {
     QWizardPage *page = new QWizardPage;
     page->setTitle("First Steps");
     page->setSubTitle("<b>The basic steps to take in order to use PupilEXT</b>");
 
-    QLabel *label = new QLabel("<ol>\n"
-                               "  <li>Open a physical camera (single, stereo) or an offline image recording.</li>\n"
-                               "  <li>Calibrate the physical camera or load an existing calibration file.</li>\n"
-                               "  <li>Select the pupil detection algorithm and set its parameters. You can also use Automatic Parametrization.</li>\n"
-                               "  <li>Activate pupil detection.</li>\n"
-                               "  <li>Select an output folder or file and start image or data recording.</li>\n"
-                               "\n"
-                               "</ol> ");
-    // TODO: ÁTDOLGOZNI 2 féle use casere (image rec, VS data rec/streaming)
+    QString labelText =
+            "With PupilEXT, you can:"
+            "<ul style=\"margin: 0px\">"
+            "<li>Make an image recording for later processing</li>"
+            "<li>Perform pupil detection"
+            "<ul>"
+            "<li>On live image feed, or image recording (latter is advised)</li>"
+            "<li>For writing to a \".csv\" data file, or stream data</li>"
+            "</ul>"
+            "</li>"
+            "</ul>"
+            "<br>"
+            "To make an image recording:"
+            "<ol style=\"margin: 0px\">"
+            "<li>Open a physical camera (single or stereo setup) and adjust camera settings</li>"
+            "<li>Calibrate the physical camera using the calibration pattern, and save it to a file</li>"
+            "<li>Specify image recording output directory and <b>Start image recording</b></li>"
+            "</ol>";
+
+    QLabel *label = new QLabel(labelText);
     label->setWordWrap(true);
 
-    QLabel *label2= new QLabel("For a brief guide, please see next pages...");
-    label2->setWordWrap(true);
-    label2->setOpenExternalLinks(true);
-
-    QGridLayout *layout = new QGridLayout;
+    QFormLayout *layout = new QFormLayout;
     layout->addWidget(label);
-    layout->addWidget(label2);
     page->setLayout(layout);
 
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial02() {
+QWizardPage* GettingStartedWizard::createPreUserGuide02() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Opening a single camera or stereo setup";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    page->setTitle("First Steps");
+    page->setSubTitle("<b>The basic steps to take in order to use PupilEXT</b>");
+
+    QString labelText =
+            "To perform pupil detection:"
+            "<ol style=\"margin: 0px\">"
+            "<li>Open a physical camera (single or stereo setup) and adjust camera settings<br>"
+            "&emsp;&nbsp;Or open a previously recorded image set (latter is advised)</li>"
+            "<li>Calibrate the physical camera using the calibration pattern<br>"
+            "&emsp;&nbsp;Or load an existing camera calibration file to perform an offline calibration</li>"
+            "<li>Adjust pupil detection settings using its settings dialog, and the camera view window</li>"
+            "<li>&emsp;A, Specify data recording output file name and <b>Start data recording</b><br>"
+            "&emsp;&nbsp;In case of an image recording playback, also Start the playback</li>"
+            "&emsp;B, Specify streaming target and <b>Start data streaming</b><br>"
+            "&emsp;&nbsp;In case of an image recording playback, also Start the playback</li>"
+            "</ol>";
+
+    QLabel *label = new QLabel(labelText);
+    label->setWordWrap(true);
+
+    QLabel *label2= new QLabel("If you wish to dismiss this dialog right now, just click the Finish Now button below."
+                               "<br><br>Alternatively, for a brief guide you can click Next to see the User Guide pages, though they can "
+                               "be viewed anytime later as well, by opening the User Guide window from the Help menu.");
+    label2->setWordWrap(true);
+    label2->setOpenExternalLinks(true);
+
+    QFormLayout *layout = new QFormLayout;
+    layout->addWidget(label);
+    layout->addWidget(label2);
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        QPushButton *finishNowButton = new QPushButton("Finish Now");
+        QHBoxLayout *row1 = new QHBoxLayout;
+        finishNowButton->setMinimumWidth(120);
+        row1->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+        row1->addWidget(finishNowButton);
+        layout->addRow(row1);
+        connect(finishNowButton, &QPushButton::clicked, this->button(QWizard::FinishButton), &QPushButton::clicked);
+    }
+    page->setLayout(layout);
+
+    return page;
+}
+
+QWizardPage* GettingStartedWizard::createUserGuide01() {
+    QWizardPage *page = new QWizardPage;
+    QString userGuideSubHeadline = "Opening a single camera or stereo setup";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -217,14 +268,14 @@ QWizardPage* GettingStartedWizard::createTutorial02() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial03() {
+QWizardPage* GettingStartedWizard::createUserGuide02() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Opening an existing image recording";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Opening an existing image recording";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -249,14 +300,14 @@ QWizardPage* GettingStartedWizard::createTutorial03() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial04() {
+QWizardPage* GettingStartedWizard::createUserGuide03() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "After opening a camera or image recording";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "After opening a camera or image recording";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -280,14 +331,14 @@ QWizardPage* GettingStartedWizard::createTutorial04() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial05() {
+QWizardPage* GettingStartedWizard::createUserGuide04() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Making an image recording";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Making an image recording";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -319,21 +370,22 @@ QWizardPage* GettingStartedWizard::createTutorial05() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial06() {
+QWizardPage* GettingStartedWizard::createUserGuide05() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Calibrating for camera image undistortion and px-mm mapping";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Calibrating for camera image undistortion and px-mm mapping";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
     "Calibration is an optional step that can be made to compensate for the camera lens distortion, and "
     "for proper pixel-to-millimeter mapping the measured pupil size. It is only needed when you are running PupilEXT "
     "to carry out pupil detection, writing data to e.g. a .csv file or streaming the data. "
-    "<br>For only image recording, calibration is not needed at all. "
+    "<br>For only image recording, calibration is not a must, though it should be made and saved in order to load it"
+    "as an offline calibration later, when the image recording is to be processed in a calibrated manner. "
     "<br><br>"
     "Note that if you alter Image Acquisition ROI or the binning value in the Camera Settings dialog, "
     "you have to make a new calibration. "
@@ -353,14 +405,14 @@ QWizardPage* GettingStartedWizard::createTutorial06() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial07() {
+QWizardPage* GettingStartedWizard::createUserGuide06() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "About pupil detection algorithms";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Setting up pupil detection";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -393,14 +445,14 @@ QWizardPage* GettingStartedWizard::createTutorial07() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial08() {
+QWizardPage* GettingStartedWizard::createUserGuide07() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Using pupil tracking";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Using pupil tracking";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -423,14 +475,14 @@ QWizardPage* GettingStartedWizard::createTutorial08() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial09() {
+QWizardPage* GettingStartedWizard::createUserGuide08() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Making data recordings";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Making data recordings";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -463,14 +515,14 @@ QWizardPage* GettingStartedWizard::createTutorial09() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial10() {
+QWizardPage* GettingStartedWizard::createUserGuide09() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Streaming pupil detection output";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Streaming data";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -496,14 +548,14 @@ QWizardPage* GettingStartedWizard::createTutorial10() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial11() {
+QWizardPage* GettingStartedWizard::createUserGuide10() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "Integrating PupilEXT into a pupillometry experiment";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "Integrating PupilEXT into a pupillometry experiment";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -531,14 +583,14 @@ QWizardPage* GettingStartedWizard::createTutorial11() {
     return page;
 }
 
-QWizardPage* GettingStartedWizard::createTutorial12() {
+QWizardPage* GettingStartedWizard::createUserGuide11() {
     QWizardPage *page = new QWizardPage;
-    QString tutorialSubHeadline = "A note on reproducibility";
-    if(purpose == ABOUT_AND_TUTORIAL) {
-        page->setTitle(QString::fromStdString(tutorialHeadline.toStdString())); // for deep copy
-        page->setSubTitle("<b>"+tutorialSubHeadline+"</b>");
+    QString userGuideSubHeadline = "A note on reproducibility";
+    if(purpose == ABOUT_AND_USERGUIDE) {
+        page->setTitle("First Steps");
+        page->setSubTitle("<b>"+userGuideSubHeadline+"</b>");
     } else {
-        page->setTitle(tutorialSubHeadline);
+        page->setTitle(userGuideSubHeadline);
     }
 
     QString labelText =
@@ -556,7 +608,7 @@ QWizardPage* GettingStartedWizard::createTutorial12() {
             "<br>The purpose of the meta files is to provide a way to manually, visually "
             "inspect any application setting related to image acquisition and pupil detection, when needed by the user "
             "at a later point in time, while the purpose of subject configurations is to provide a way to set the application "
-            "to a previous state when lat time an image or data acquisition was carried out."
+            "to a previous state when an image or data acquisition was carried out."
             "<br>At the moment, these two functionalities are partly overlapping, and will be merged into one in a next "
             "release of the PupilEXT software. ";
 
