@@ -93,10 +93,10 @@ GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool l
         color1 = QColor("#242424");
         color2 = QColor("#d9d9d9");
     } else {
-//        color1 = Qt::white;
-//        color2 = Qt::black;
-        color1 = QColor("#c7c7c7");
-        color2 = QColor("#1e1f1e");
+        color1 = Qt::white;
+        color2 = Qt::black;
+//        color1 = QColor("#c7c7c7");
+//        color2 = QColor("#1e1f1e");
     }
     outerFrame->setStyleSheet("QFrame {background: " + color1.name() + ";}");
     customPlot->setBackground(QBrush(color1));

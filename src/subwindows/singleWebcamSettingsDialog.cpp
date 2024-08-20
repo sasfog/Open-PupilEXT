@@ -6,7 +6,7 @@ SingleWebcamSettingsDialog::SingleWebcamSettingsDialog(SingleWebcam *singleWebca
         singleWebcam(singleWebcam),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    setMinimumSize(300, 290);
+    setMinimumSize(300, 330);
 
     setWindowTitle(QString("[%1] Camera Settings").arg(singleWebcam->getFriendlyName()));
 

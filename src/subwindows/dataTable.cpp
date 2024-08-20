@@ -110,13 +110,24 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
         cellColor2 = "#e6e6e6";
         gridColor = "#262626";
     }
+
+//    // This somehow does not work, though should
+//    QPalette p = tableView->palette();
+//    p.setColor(QPalette::Base, cellColor1);
+//    p.setColor(QPalette::AlternateBase, cellColor2);
+//    tableView->setPalette(p);
+
+//    // Somehow does not work either
+//    tableView->setStyleSheet("QTableView::item:alternate { background-color: "+ cellColor1 +"; } QTableView::item { background-color: "+ cellColor2 +"; }");
+
+    // Making the alternating row color in the workaround-way
     QString cellColor;
     for(int r = 0; r < tableModel->rowCount(); r++) {
         cellColor = (r % 2 != 0) ? cellColor1 : cellColor2;
         for (int c = 0; c < tableModel->columnCount(); c++) {
             tableModel->item(r, c)->setBackground(QBrush(QColor(cellColor)));
         }
-//        tableModel->verticalHeaderItem(r)->setBackground(QBrush(QColor(cellColor))); // It should, but somehow does not work
+//        tableModel->verticalHeaderItem(r)->setBackground(QBrush(QColor(cellColor))); // It also should, but somehow does not work
     }
     tableView->setStyleSheet("QTableView::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
     tableView->setStyleSheet("QHeaderView::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
@@ -162,8 +173,8 @@ void DataTable::fitForTableSize() {
 ////    int oneItemHeight2 = tableModel->item(0)->sizeHint().height(); // returns -1 for some reason
 //    int minimumHeight = tableHeight; // + 60;
 
-    int minimumWidth = 120 * (tableModel->columnCount() + 1) + 80;
-    int minimumHeight = 26 * (tableModel->rowCount() + 1) + 20;
+    int minimumWidth = 130 * (tableModel->columnCount() + 1) + 100;
+    int minimumHeight = 32 * (tableModel->rowCount() + 1) + 30;
 //    parent->setMinimumSize(minimumWidth, minimumHeight);
     dynamic_cast<RestorableQMdiSubWindow*>(parent())->resize(minimumWidth, minimumHeight);
 }

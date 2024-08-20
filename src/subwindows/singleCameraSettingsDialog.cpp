@@ -600,6 +600,18 @@ void SingleCameraSettingsDialog::stopHardwareTrigger() {
     HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
 }
 
+void SingleCameraSettingsDialog::connectMCU() {
+    if(MCUSettings->isConnected())
+        return;
+    MCUConnDisconnButtonClicked();
+}
+
+void SingleCameraSettingsDialog::startHWT() {
+    if(HWTrunning)
+        return;
+    HWTstartStopButtonClicked();
+}
+
 void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
 
     if(HWTrunning) {

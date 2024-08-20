@@ -1620,6 +1620,16 @@ void MainWindow::onWebcamSuccessfullyOpened() {
 
 void MainWindow::cameraViewClick() {
 
+    // TODO:
+    // This currently could not work with the lines commented out below.
+    // However, now it has to close and reopen the window to work, because the X button on the MDI subwindow
+    // seems not only to hide the window, but set its pointer to deleted, for which we cannot check...
+    // maybe some sort of smart pointers would help?
+//    if(cameraViewWindow && !cameraViewWindow->isVisible()) {
+//        cameraViewWindow->show();
+//        return;
+//    }
+
     if(cameraViewWindow && cameraViewWindow->isVisible()) {
         cameraViewWindow->close();
 

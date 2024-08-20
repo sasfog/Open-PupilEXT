@@ -158,6 +158,10 @@ private slots:
 
     void SWTframerateEnabledToggled(bool state);
 
+public slots:
+    void connectMCU();
+    void startHWT();
+
 signals:
     void onMCUConfig();
     void onHardwareTriggerStart(QString cmd);

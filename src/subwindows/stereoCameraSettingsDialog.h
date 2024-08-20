@@ -170,6 +170,8 @@ private slots:
 
 public slots:
     void openStereoCamera(const QString &camName1, const QString &camName2);
+    void connectMCU();
+    void startHWT();
 
 signals:
     void onMCUConfig();

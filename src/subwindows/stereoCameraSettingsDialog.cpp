@@ -709,6 +709,18 @@ void StereoCameraSettingsDialog::openStereoCamera(const QString &camName1, const
     openStereoCamera();
 }
 
+void StereoCameraSettingsDialog::connectMCU() {
+    if(MCUSettings->isConnected())
+        return;
+    MCUConnDisconnButtonClicked();
+}
+
+void StereoCameraSettingsDialog::startHWT() {
+    if(HWTrunning)
+        return;
+    HWTstartStopButtonClicked();
+}
+
 void StereoCameraSettingsDialog::cameraOpenCloseButtonClicked() {
     if(!camera->isOpen()) {
         openStereoCamera();

@@ -22,7 +22,7 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
  
 
     //this->setMinimumSize(500, 400); 
-    this->setMinimumSize(650, 240);
+    this->setMinimumSize(750, 280);
     this->setWindowTitle("Image Playback Control");
 
     readSettings();
