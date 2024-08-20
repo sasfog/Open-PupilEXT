@@ -22,7 +22,7 @@ PupilDetectionSettingsDialog::PupilDetectionSettingsDialog(PupilDetection *pupil
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(800, 500);
-    this->setMinimumSize(860, 560);
+    this->setMinimumSize(980, 600);
     this->setWindowTitle("Pupil Detection Settings");
 
     createForm();

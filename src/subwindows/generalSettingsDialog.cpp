@@ -20,7 +20,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(200, 330); 
-    this->setMinimumSize(310, 510);
+    this->setMinimumSize(380, 580);
     this->setWindowTitle("Settings");
 
     readSettings();
