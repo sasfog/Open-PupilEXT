@@ -162,7 +162,7 @@ void PupilDetectionSettingsDialog::createForm() {
     connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
 
 
-    QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) [<a href=\"http://mock.link\">?</a>]:"));
+    QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) (single camera only) [<a href=\"http://mock.link\">?</a>]:"));
     connect(imageUndistortionLabel, SIGNAL(linkActivated(QString)), this, SLOT(onShowHelpDialog()));
 
     imageUndistortionBox = new QCheckBox();
