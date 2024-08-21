@@ -52,8 +52,7 @@ MainWindow::MainWindow():
                           applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
     loadIcons();
-    bool alwaysOnTop = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
-    if (alwaysOnTop) {
+    if(SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings)) {
         this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
         //show();
     }
@@ -1163,8 +1162,7 @@ void MainWindow::onRecordClick() {
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
-        if( (applicationSettings->value("metaSnapshotsEnabled", "1") == "1" || 
-            applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
+        if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings))
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 pupilDetectionDir.filePath(metadataFileName),
                 selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
@@ -1193,8 +1191,7 @@ void MainWindow::onRecordImageClick() {
             imageWriter = nullptr;
         }
 
-        if( applicationSettings->value("saveOfflineEventLog", "1") == "1" || 
-            applicationSettings->value("saveOfflineEventLog", "1") == "true" ) {
+        if(SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings)) {
             recEventTracker->saveOfflineEventLog(
                 imageRecStartTimestamp,
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
@@ -1242,9 +1239,7 @@ void MainWindow::onRecordImageClick() {
         imageWriter = new ImageWriter(outputDirectory, stereo, this);
 
         // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response
-        if( applicationSettings->value("metaSnapshotsEnabled", "1") == "1" ||
-            applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ) {
-
+        if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings)) {
             MetaSnapshotOrganizer::writeMetaSnapshot(
                     outputDirectory + "/" + QString::fromStdString("imagerec_meta.xml"),
                     selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings);
@@ -1285,6 +1280,10 @@ void MainWindow::onCameraDisconnectClick() {
     if (cameraViewWindow) {
         cameraViewWindow->deleteLater();
         cameraViewWindow = nullptr;
+    }
+    if (sharpnessWindow) {
+        sharpnessWindow->deleteLater();
+        sharpnessWindow = nullptr;
     }
 
     if (singleCameraChildWidget) {
@@ -1642,6 +1641,7 @@ void MainWindow::cameraViewClick() {
         cameraViewWindow = nullptr;
     }
 
+    RestorableQMdiSubWindow *child;
     if(selectedCamera && (
         selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA || 
         selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE ||
@@ -1652,18 +1652,8 @@ void MainWindow::cameraViewClick() {
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
         connect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
-        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(singleCameraChildWidget, "SingleCameraView", this);
+        child = new RestorableQMdiSubWindow(singleCameraChildWidget, "SingleCameraView", this);
         //SingleCameraView *child = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
-        mdiArea->addSubWindow(child);
-        child->show();
-        child->restoreGeometry();
-        connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
-        cameraViewWindow = child;
-
-        if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM)
-            cameraViewWindow->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-web.svg"), applicationSettings));
-        else
-            cameraViewWindow->setWindowIcon(singleCameraIcon);
 
     } else if(selectedCamera && (
         selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || 
@@ -1673,15 +1663,51 @@ void MainWindow::cameraViewClick() {
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraChildWidget, SLOT (onSettingsChange()));
         connect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
-        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(stereoCameraChildWidget, "StereoCameraView", this);
-        mdiArea->addSubWindow(child);
-        child->show();
-        child->restoreGeometry();
-        connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
-        cameraViewWindow = child;
-        cameraViewWindow->setWindowIcon(stereoCameraIcon);
+        child = new RestorableQMdiSubWindow(stereoCameraChildWidget, "StereoCameraView", this);
     }
+
+    mdiArea->addSubWindow(child);
+    child->show();
+    child->restoreGeometry();
+    connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+    connect(child, &RestorableQMdiSubWindow::onCloseSubWindow, this, [this]() {
+        cameraViewWindow->deleteLater();
+        cameraViewWindow=nullptr;
+        if(selectedCamera && (
+                selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA ||
+                selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE ||
+                selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM
+        ) ) {
+            singleCameraChildWidget->deleteLater();
+            singleCameraChildWidget = nullptr;
+        } else if(selectedCamera && (
+                selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA ||
+                selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE
+        ) ) {
+            stereoCameraChildWidget->deleteLater();
+            stereoCameraChildWidget = nullptr;
+        }
+    });
+    cameraViewWindow = child;
+
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM)
+        cameraViewWindow->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-web.svg"), applicationSettings));
+    else
+        cameraViewWindow->setWindowIcon(singleCameraIcon);
+
     connectCameraPlaybackChangedSlots();
+
+    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
+        //cv::Mat temp1 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageSingle(0);
+        //singleCameraChildWidget->displayStillImage(temp1);
+//        singleCameraChildWidget->displayFileCameraFrame(0);
+        singleCameraChildWidget->displayFileCameraFrame(dynamic_cast<FileCamera*>(selectedCamera)->getLastCommissionedFrameNumber());
+    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
+        //std::vector<cv::Mat> temp2 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageStereo(0);
+        //stereoCameraChildWidget->displayStillImage(temp2);
+//        stereoCameraChildWidget->displayFileCameraFrame(0);
+        stereoCameraChildWidget->displayFileCameraFrame(dynamic_cast<FileCamera*>(selectedCamera)->getLastCommissionedFrameNumber());
+    }
 }
 
 void MainWindow::onCameraSettingsClick() {
@@ -2101,16 +2127,6 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
         connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), stereoCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
     }
 
-    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
-        //cv::Mat temp1 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageSingle(0);
-        //singleCameraChildWidget->displayStillImage(temp1);
-        singleCameraChildWidget->displayFileCameraFrame(0);
-    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
-        //std::vector<cv::Mat> temp2 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageStereo(0);
-        //stereoCameraChildWidget->displayStillImage(temp2);
-        stereoCameraChildWidget->displayFileCameraFrame(0);
-    }
-
     imagePlaybackControlDialog = new ImagePlaybackControlDialog(dynamic_cast<FileCamera*>(selectedCamera), pupilDetectionWorker, recEventTracker, this);
     RestorableQMdiSubWindow *imagePlaybackControlWindow = new RestorableQMdiSubWindow(imagePlaybackControlDialog, "ImagePlaybackControlDialog", this);
     imagePlaybackControlWindow->setWindowIcon(imagePlaybackControlIcon); // TODO: this somehow does not work
@@ -2131,16 +2147,6 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
 
     connectCameraPlaybackChangedSlots();
-
-    // I could have done this in a way that the camera child widgets only receive a cv::Mat to display..
-    // but we are actually not displaying anything else in the views, just fileCamera frames,
-    // so I dedicated separate functions for them, which only take the frameNumber,
-    // implemented for both single and stereo camera views. This is ok too
-    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
-        connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), singleCameraChildWidget, SLOT(displayFileCameraFrame(int)));
-    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
-        connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), stereoCameraChildWidget, SLOT(displayFileCameraFrame(int)));
-    }
 
     playbackSynchroniser = new PlaybackSynchroniser();
     playbackSynchroniser->setCamera(selectedCamera);
@@ -2515,6 +2521,7 @@ void MainWindow::loadCalibrationWindow(){
     child->show();
     child->restoreGeometry();
     connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+    connect(child, &RestorableQMdiSubWindow::onCloseSubWindow, this, [this]() { calibrationWindow->deleteLater(); calibrationWindow=nullptr; });
     calibrationWindow = child;
     calibrationWindow->setWindowIcon(calibrateIcon);
 }
@@ -2531,6 +2538,7 @@ void MainWindow::loadSharpnessWindow(){
         sharpnessWindow = child;
         sharpnessWindow->setWindowIcon(sharpnessIcon);
         connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+        connect(child, &RestorableQMdiSubWindow::onCloseSubWindow, this, [this]() { sharpnessWindow->deleteLater(); sharpnessWindow=nullptr; });
     }
 //    else if(selectedCamera && selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
 //        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(new SingleCameraSharpnessView(dynamic_cast<FileCamera*>(selectedCamera), this), "SingleCameraSharpnessView", this);
@@ -2705,6 +2713,16 @@ void MainWindow::connectCameraPlaybackChangedSlots()
         connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
     }
     connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+
+    // I could have done this in a way that the camera child widgets only receive a cv::Mat to display..
+    // but we are actually not displaying anything else in the views, just fileCamera frames,
+    // so I dedicated separate functions for them, which only take the frameNumber,
+    // implemented for both single and stereo camera views. This is ok too
+    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
+        connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), singleCameraChildWidget, SLOT(displayFileCameraFrame(int)));
+    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
+        connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), stereoCameraChildWidget, SLOT(displayFileCameraFrame(int)));
+    }
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* e)

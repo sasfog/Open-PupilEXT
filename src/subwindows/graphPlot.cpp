@@ -433,33 +433,38 @@ void GraphPlot::appendData(const int &framecount) {
 }
 
 void GraphPlot::setPupilData(const Pupil &pupil, int graphID, quint64 timestamp) {
+    double dataPointToAdd = -1.0;
     if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_X) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.center.x);
+        dataPointToAdd = pupil.center.x;
     } else if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_Y) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.center.y);
+        dataPointToAdd = pupil.center.y;
     } else if(plotDataKey == DataTypes::DataType::PUPIL_MAJOR) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.majorAxis());
+        dataPointToAdd = pupil.majorAxis();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_MINOR) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.minorAxis());
+        dataPointToAdd = pupil.minorAxis();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_WIDTH) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.width());
+        dataPointToAdd = pupil.width();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_HEIGHT) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.height());
+        dataPointToAdd = pupil.height();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_CONFIDENCE) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.confidence);
+        dataPointToAdd = pupil.confidence;
     } else if(plotDataKey == DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.outline_confidence);
+        dataPointToAdd = pupil.outline_confidence;
     } else if(plotDataKey == DataTypes::DataType::PUPIL_CIRCUMFERENCE) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.circumference());
+        dataPointToAdd = pupil.circumference();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_RATIO) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, (double)pupil.majorAxis() / pupil.minorAxis());
+        dataPointToAdd = (double)pupil.majorAxis() / pupil.minorAxis();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_DIAMETER) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.diameter());
+        dataPointToAdd = pupil.diameter();
     } else if(plotDataKey == DataTypes::DataType::PUPIL_UNDIST_DIAMETER) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.undistortedDiameter);
+        dataPointToAdd = pupil.undistortedDiameter;
     } else if(plotDataKey == DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER) {
-        customPlot->graph(graphID)->addData(timestamp/1000.0, pupil.physicalDiameter);
+        dataPointToAdd = pupil.physicalDiameter;
     }
+    if(dataPointToAdd == -1.0)
+        dataPointToAdd = std::numeric_limits<double>::quiet_NaN();
+
+    customPlot->graph(graphID)->addData(timestamp/1000.0, dataPointToAdd);
 }
 
 // Slot that is called upon receiving a new stereo pupil detection
