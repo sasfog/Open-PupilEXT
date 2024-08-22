@@ -951,7 +951,7 @@ void MainWindow::onTrackActClick() {
         trackingOn = false;
 
         if(recordOn)
-            onStreamClick();
+            onRecordClick();
         if(streamOn)
             onStreamClick();
 
@@ -1879,6 +1879,14 @@ void MainWindow::loadDataTableWindow() {
 
     // TODO: make data table window adapt to the change
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), childWidget, SLOT (close()));
+
+    if(imagePlaybackControlDialog) {
+        connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), childWidget, SLOT(scheduleReset()));
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackPositionChanged()), childWidget, SLOT(scheduleReset()));
+
+        // In case one stops tracking, but playback goes on, clear the table to not display the old stuck pupil detection output
+        connect(pupilDetectionWorker, SIGNAL(processingFinished()), childWidget, SLOT(scheduleReset()));
+    }
 
     mdiArea->addSubWindow(child);
     child->show();

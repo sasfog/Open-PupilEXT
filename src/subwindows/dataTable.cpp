@@ -72,8 +72,8 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A Main"));
-            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye A Sec."));
-            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye B Main"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B Main"));
+            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye A Sec."));
             tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye B Sec."));
             break;
     }
@@ -193,6 +193,9 @@ void DataTable::customMenuRequested(QPoint pos){
 void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
     // std::cout << "timestamp = " << QString::number(timestamp).toStdString() << "; filename = " << filename.toStdString() << std::endl;
 
+    if(resetScheduled)
+        reset();
+
     tableModel->item((int)DataTypes::DataType::TIME_RAW_TIMESTAMP,0)->setText(QString::number(timestamp));
 
     // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
@@ -250,16 +253,22 @@ void DataTable::setPupilData(const Pupil &pupil, int columnID) {
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFPS(double fps) {
+    if(resetScheduled)
+        reset();
     tableModel->item((int)DataTypes::DataType::CAMERA_FPS)->setText(QString::number(fps));
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFramecount(int framecount) {
+    if(resetScheduled)
+        reset();
     tableModel->item((int)DataTypes::DataType::FRAME_NUMBER)->setText(QString::number(framecount));
 }
 
 // Slot handler receiving processing FPS data from the pupil detection process
 void DataTable::onProcessingFPS(double fps) {
+    if(resetScheduled)
+        reset();
     tableModel->item((int)DataTypes::DataType::PUPIL_FPS)->setText(QString::number(fps));
 }
 
@@ -289,4 +298,20 @@ void DataTable::onTableRowDoubleClick(const QModelIndex &modelIndex) {
     emit createGraphPlot(value);
 }
 
+void DataTable::reset() {
+
+    for(int r = 0; r < tableModel->rowCount(); r++) {
+        for (int c = 0; c < tableModel->columnCount(); c++) {
+            tableModel->item(r, c)->setText(QString());
+            // clearData(); somehow resets cell background as well, so not using it
+        }
+    }
+    tableView->update();
+
+    resetScheduled = false;
+}
+
+void DataTable::scheduleReset() {
+    resetScheduled = true;
+}
 

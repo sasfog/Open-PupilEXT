@@ -202,8 +202,19 @@ PROBLEM:
 Build does not start because CMake or Ninja are missing, or spurious "cannot find" problems arise.
 
 SOLUTION:
-- Ensure that the necessary packages exist on your system, and download them if not.
+- Ensure that the necessary packages exist on your system, and download them if not (e.g. using: `brew install ninja nasm pkg-config cmake`)
 - Ensure that cmake path is correctly set in settings.json (to find out e.g. where CMake is located on your machine, just type "which cmake" in the terminal)
 - Note that there may be a Clang supplied with your XCode already, also one that is installed alongside Qt if you put a checkbox for that in the Qt downloader manager.
+
+---
+
+PROBLEM:
+
+Qt installer is stuck because it cannot fetch package data.
+
+SOLUTION:
+
+Add a new mirror and let it find there, e.g. using: `open -a qtinstall.app --args --mirror https://ftp.fau.de/qtproject/` 
+
 
 

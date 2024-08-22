@@ -53,7 +53,8 @@ GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool l
     QPen pen1 = QPen(QColor("#04a0de"), 0, Qt::SolidLine); // lighter blue
     QPen pen2 = QPen(Qt::green, 0, Qt::SolidLine);
     QPen pen3 = QPen(QColor("#9e0ff7"), 0, Qt::SolidLine); // lighter purple
-    QPen pen4 = QPen(Qt::yellow, 0, Qt::SolidLine);
+//    QPen pen4 = QPen(QColor("#d4c239"), 0, Qt::SolidLine); // yellow
+    QPen pen4 = QPen(QColor(214, 140, 49,255), 0, Qt::SolidLine); // orange
     numGraphs=1;
     switch(currentProcMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:

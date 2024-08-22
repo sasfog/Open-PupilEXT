@@ -203,7 +203,7 @@ void MCUSettingsDialog::sendCommandCOM(QString cmd) {
 
 void MCUSettingsDialog::createForm() {
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout();
 
     UDPRadioButton = new QRadioButton("Connect via UDP / Ethernet cable");
     //UDPRadioButton->setChecked();
@@ -258,7 +258,7 @@ void MCUSettingsDialog::createForm() {
     mainLayout->addWidget(COMRadioButton);
 
     COMGroup = new QGroupBox();
-    QGridLayout *serialLayout = new QGridLayout(this);
+    QGridLayout *serialLayout = new QGridLayout();
 
     serialInfoFrame = new QFrame();
     QGridLayout *serialInfoLayout = new QGridLayout;

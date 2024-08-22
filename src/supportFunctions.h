@@ -215,7 +215,7 @@ public:
             }
         }
 
-        if(imageWriterDataRule == "new") {
+        if(exists && hasContent && imageWriterDataRule == "new") {
             bool nameInvented = false;
             int nameIter = 1;
             QString tryBase = directory;
