@@ -1232,6 +1232,8 @@ void MainWindow::onRecordImageClick() {
         if(outputDirectory.isEmpty())
             return;
 
+        qDebug() << "outputDirectory before checking for eligibility: " << outputDirectory << "---";
+
         // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
         // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
         bool changedGiven = false; // unused yet
@@ -1248,6 +1250,8 @@ void MainWindow::onRecordImageClick() {
             recordImagesAct->setDisabled(true);
             return;
         }
+        // IMPORTANT NOTE: outputDirectory should not be changed from this point
+        qDebug() << "outputDirectory finally set to: " << outputDirectory << "---";
 
         imageRecStartTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // trial counter and message register are both reset with a first entry that corresponds to recording start
@@ -1265,9 +1269,6 @@ void MainWindow::onRecordImageClick() {
             generalSettingsDialog->setLimitationsWhileImageWriting(true);
 
         bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
-
-        // IMPORTANT NOTE: outputDirectory should not be changed from this point
-        qDebug() << "outputDirectory finally set to: " << outputDirectory << "---";
 
         imageWriter = new ImageWriter(outputDirectory, stereo, this);
 
