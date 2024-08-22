@@ -89,6 +89,7 @@ public:
         return str2;
     };
 
+    // IMPORTANT: This function is supposed to be only ever called for a PATH and never an exact file name
     static bool preparePath(const QString &target, bool &changedAnything, QString &changedPath, bool &newNodeCreated)
     {
         // TODO: is this always safe to solely rely on?
@@ -105,20 +106,17 @@ public:
         // Problem can be diagnosed if desiredPath variable contains the .exe path and the target path combined.
         // I think it is some kind of memory problem in the background
         // Qt 5.15.2, MSVC 2019 v86_amd64
-        QString desiredPath;
-//        if (target[target.length() - 1] == '/')
-        if (QFileInfo(target).completeSuffix().isEmpty())
-        { // if "target" is a path itself
-            // std::cout << "DESIRED PATH VAR = target "<< std::endl;
-            desiredPath = target;
-        }
-        else
-        { // if "target" is pointing to a file, not a folder/dir
-            // std::cout << "DESIRED PATH VAR = QFileInfo(target).absolutePath()"<< std::endl;
-            desiredPath = QFileInfo(target).absolutePath();
-//            int idx = target.lastIndexOf("/");
-//            desiredPath = target.mid(0, idx);
-        }
+//        QString desiredPath;
+////        if (target[target.length() - 1] == '/')
+//        if (QFileInfo(target).completeSuffix().isEmpty()) { // if "target" is a path itself
+//            desiredPath = target;
+//        }
+//        else { // if "target" is pointing to a file, not a folder/dir
+//            desiredPath = QFileInfo(target).absolutePath();
+////            int idx = target.lastIndexOf("/");
+////            desiredPath = target.mid(0, idx);
+//        }
+        QString desiredPath = target;
 
         changedPath = desiredPath;
         QString tempPath = simplifyPathName(desiredPath);
@@ -197,9 +195,8 @@ public:
             return QString();
         }
 
-        // dirty fix, because on some systems (or by user mistake) the path can end with no '/' character
-        if(directory[directory.length()-1] != '/') {
-            directory = directory + '/';
+        if(directory[directory.length()-1] == '/') {
+            directory.chop(1);
         }
 
         // bool changedGiven = false;
@@ -276,7 +273,7 @@ public:
         QString changedPath;
         bool newNodeCreated = false;
         // TODO: false case and exception handling
-        bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath, newNodeCreated);
+        bool pathWriteable = SupportFunctions::preparePath(QFileInfo(fileName).absolutePath(), changedGiven, changedPath, newNodeCreated);
         if(!pathWriteable) {
             // TODO: Throw exception?
             changedGiven = true;
