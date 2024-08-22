@@ -53,9 +53,12 @@ DataWriter::DataWriter(
         //std::cout << "Recording failure. Could not open: " << fileName.toStdString() << std::endl;
         delete dataFile;
         dataFile = nullptr;
+        /*
         QMessageBox MsgBox;
         MsgBox.setText(QString::fromStdString("Recording failure. Could not open: " + fileName.toStdString()));
         MsgBox.exec();
+        */
+        return;
     }
 
     textStream = new QTextStream(dataFile);

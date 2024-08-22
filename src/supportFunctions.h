@@ -72,7 +72,16 @@ public:
         // [^a-zA-Z\d\s:]
         // [^a-zA-Z0-9_:]
         // [-`~!@#$%^&*()—+=|:;<>«»,.?/{}'"\[\]\]
-        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
+//        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
+        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_ :]")), "_");
+        // NOTE: we leave whitespaces as well. this may be changed later,
+        // but if we would like to change whitespaces in path, that is probably a lot of work, as
+        // e.g. the user name on the computer can contain a whitespace, thus all the user wants to save will be
+        // created in a parallelly created folder structure, under a similar but whitespace-eliminated path similar
+        // to the one they wanted to use in the first place.
+        // TODO: The proper way would be to inform the user in GUI
+        // whenever a whitespace-containing path is encountered for writing or planned for writing later.
+
         str2 = str2.mid(0, qMin(str.size(), 240));
         if(str2!=str) {
             changed = true;
@@ -80,10 +89,10 @@ public:
         return str2;
     };
 
-    static bool preparePath(const QString &target, bool &changedAnything, QString &changedPath)
+    static bool preparePath(const QString &target, bool &changedAnything, QString &changedPath, bool &newNodeCreated)
     {
-
-        if (QFileInfo(target).absoluteDir().exists() == true)
+        // TODO: is this always safe to solely rely on?
+        if (QFileInfo(target).absoluteDir().exists() && QFileInfo(target).isWritable())
             return true;
 
         // std::cout << "Specified path does not point to an existing folder. Now we try to create the path iteratively: folder, sub-folder sub-sub-folder, ..." << std::endl;
@@ -109,11 +118,19 @@ public:
             int idx = target.lastIndexOf("/");
             desiredPath = target.mid(0, idx);
         }
+
+        changedPath = desiredPath;
+        QString tempPath = simplifyPathName(desiredPath);
+        if(tempPath != target) {
+            changedAnything = true;
+            desiredPath = tempPath;
+        }
+
         // std::cout << "desiredPath = " << desiredPath.toStdString() << std::endl;
         QStringList subStrings = desiredPath.split('/');
         bool candidateExists = false;
         bool changedExists = false;
-        bool newNodeCreated = false;
+//        bool newNodeCreated = false;
         bool changedNodeName = false;
 
         // std::cout << "subStrings 0-th elem = " << subStrings[0].toStdString() << std::endl;
@@ -148,10 +165,11 @@ public:
             }
         }
 
-        if(changedAnything)
+        if(changedAnything) {
             changedPath = cumulatedPath;
+        }
 
-        if (newNodeCreated)
+        if (QFileInfo(changedPath).absoluteDir().exists() && QFileInfo(changedPath).isWritable())
             return true;
         else
             return false;
@@ -174,9 +192,15 @@ public:
     static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
-        //bool changedGiven = false;
+        // bool changedGiven = false;
         QString changedPath;
-        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath);
+        bool newNodeCreated = false;
+        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath, newNodeCreated);
+        if(!pathWriteable) {
+            // TODO: Throw exception?
+            changedGiven = true;
+            return QString();
+        }
         if(changedGiven) {
             QMessageBox *msgBox = new QMessageBox(parent);
             msgBox->setWindowTitle("Path name changed");
@@ -198,6 +222,7 @@ public:
         } else if(hasContent && imageWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
             dialog->setModal(true);
+            // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
             {
                 auto resp = dialog->getResponse();
@@ -239,12 +264,18 @@ public:
 
         //bool changedGiven = false;
         QString changedPath;
+        bool newNodeCreated = false;
         // TODO: false case and exception handling
-        bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
+        bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath, newNodeCreated);
+        if(!pathWriteable) {
+            // TODO: Throw exception?
+            changedGiven = true;
+            return QString();
+        }
         if(changedGiven) {
         //    QMessageBox::warning(parent, "Path name changed",
         //                         "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
-            fileName = changedPath;
+            fileName = changedPath + QFileInfo(fileName).completeBaseName() + '.' + QFileInfo(fileName).completeSuffix();
         }
 
         QFileInfo dataFile(fileName);
@@ -254,6 +285,7 @@ public:
         if(exists && hasContent && dataWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Data recording output file already exists", parent);
             dialog->setModal(true);
+            // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
             {
                 auto resp = dialog->getResponse();

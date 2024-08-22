@@ -759,8 +759,11 @@ void MainWindow::setLogFile() {
 
     QString tempFile = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
 
-    if(tempFile.isEmpty())
+    if(tempFile.isEmpty()) {
+        pupilDetectionDataFile = "";
+        recordAct->setDisabled(true);
         return;
+    }
 
     if(!QFileInfo(tempFile).dir().exists())
         return;
@@ -786,8 +789,10 @@ void MainWindow::setOutputDirectory() {
 
     outputDirectory = QFileDialog::getExistingDirectory(this, tr("Output Directory"), recentPath);
 
-    if(outputDirectory.isEmpty()) 
+    if(outputDirectory.isEmpty()) {
+        recordImagesAct->setDisabled(true);
         return;
+    }
 
     setRecentPath(outputDirectory);
 //    std::cout << recentPath.toStdString() << std::endl;
@@ -1132,12 +1137,27 @@ void MainWindow::onRecordClick() {
     } else {
         // Activate recording
 
-        if(generalSettingsDialog)
-            generalSettingsDialog->setLimitationsWhileDataWriting(true);
+        if(pupilDetectionDataFile.isEmpty())
+            return;
 
         // TODO: this version is imperfect yet, as it permanently overwrites pupilDetectionDataFile name
         bool changedGiven = false; // unused yet
         pupilDetectionDataFile = SupportFunctions::prepareOutputFileForDataWriter(pupilDetectionDataFile, applicationSettings, changedGiven, this);
+        if(pupilDetectionDataFile.isEmpty()) {
+            QMessageBox *msgBox = new QMessageBox(this);
+            msgBox->setWindowTitle("The set output path and file name could not be opened for writing");
+            msgBox->setText("The set output path and file name could not be opened for writing. Please check that PupilEXT has the permissions to write there, and try again.");
+            msgBox->setMinimumSize(330,240);
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            recordAct->setDisabled(true);
+            return;
+        }
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileDataWriting(true);
 
         dataWriter = 
             new DataWriter(
@@ -1209,13 +1229,30 @@ void MainWindow::onRecordImageClick() {
     } else {
         // Activate recording
 
+        if(outputDirectory.isEmpty())
+            return;
+
+        // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
+        // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
+        bool changedGiven = false; // unused yet
+        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, changedGiven, this);
+        if(outputDirectory.isEmpty()) {
+            QMessageBox *msgBox = new QMessageBox(this);
+            msgBox->setWindowTitle("The set output path could not be opened for writing");
+            msgBox->setText("The set output path could not be opened for writing. Please check that PupilEXT has the permissions to write there, and try again.");
+            msgBox->setMinimumSize(330,240);
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            recordImagesAct->setDisabled(true);
+            return;
+        }
+
         imageRecStartTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // trial counter and message register are both reset with a first entry that corresponds to recording start
         safelyResetTrialCounter(imageRecStartTimestamp);
         safelyResetMessageRegister(imageRecStartTimestamp);
-
-        if(outputDirectory.isEmpty())
-            return;
         
         if(singleCameraSettingsDialog)
             singleCameraSettingsDialog->setLimitationsWhileTracking(true);
@@ -1229,10 +1266,8 @@ void MainWindow::onRecordImageClick() {
 
         bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
 
-        // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
-        // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
-        bool changedGiven = false; // unused yet
-        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, changedGiven, this);
+        // IMPORTANT NOTE: outputDirectory should not be changed from this point
+        qDebug() << "outputDirectory finally set to: " << outputDirectory << "---";
 
         imageWriter = new ImageWriter(outputDirectory, stereo, this);
 

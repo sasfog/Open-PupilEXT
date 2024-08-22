@@ -231,9 +231,10 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 
     std::cout << fileName.toStdString() << std::endl;
 
-    bool changedGiven = false;
-    QString changedPath;
-    bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
+//    bool changedGiven = false;
+//    QString changedPath;
+    // NOTE: fileName should not be changed here anymore. Its checks and changes should take place earlier
+//    bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
     //if(changedGiven)
     //    QMessageBox::warning(nullptr, "Path name changed", "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
 
