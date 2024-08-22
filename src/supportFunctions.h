@@ -149,7 +149,7 @@ public:
                 newNodeName = simplifyNewPathNodeName(subStrings[h], changedNodeName);
                 cumulatedPath = cumulatedPath + newNodeName + "/";
 
-                newNodeCreated = QDir().mkdir(QFileInfo(cumulatedPath).absolutePath());
+                newNodeCreated = QDir().mkpath(QFileInfo(cumulatedPath).absolutePath());
                 changedExists = QFileInfo(cumulatedPath).absoluteDir().exists();
                 if (!newNodeCreated && !changedExists)
                     break;
@@ -225,6 +225,7 @@ public:
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
         if(!exists) {
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //            outputDirectory.mkdir(".");
             QDir().mkpath(directory);
         } else if(hasContent && imageWriterDataRule == "ask") {
@@ -263,6 +264,7 @@ public:
                 if(nameIter >=65000)
                     directory = tryBase + "_TooManyRuns";
             }
+            // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //            outputDirectory.mkdir(".");
             QDir().mkpath(directory);
         }
@@ -332,6 +334,7 @@ public:
                 fileCandidate = QFileInfo(fileNameCandidate);
                 nameInvented = !fileCandidate.exists();
             }
+            // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
             //outputDirectory.mkdir(".");
             dataFile = fileCandidate;
         }

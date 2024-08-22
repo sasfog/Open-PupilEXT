@@ -71,7 +71,9 @@ MainWindow::MainWindow():
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     if(!settingsDirectory.exists()) {
-        settingsDirectory.mkdir(".");
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//        settingsDirectory.mkdir(".");
+        QDir().mkpath(settingsDirectory.absolutePath());
     }
 
     qDebug() << "Application settings location: " << applicationSettings->fileName() << Qt::endl;
@@ -757,18 +759,16 @@ void MainWindow::openSourceDialog() {
 
 void MainWindow::setLogFile() {
 
-    QString tempFile = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
-
-    if(tempFile.isEmpty()) {
-        pupilDetectionDataFile = "";
+    QString pupilDetectionDataFileCandidate = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
+    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(tempFile).dir().exists()) && !pupilDetectionDataFile.isEmpty()) {
+        return;
+    }
+    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(tempFile).dir().exists()) && pupilDetectionDataFile.isEmpty()) {
         recordAct->setDisabled(true);
         return;
     }
 
-    if(!QFileInfo(tempFile).dir().exists())
-        return;
-
-    pupilDetectionDataFile = tempFile;
+    pupilDetectionDataFile = pupilDetectionDataFileCandidate;
     QFileInfo fileInfo(pupilDetectionDataFile);
     setRecentPath(fileInfo.dir().path());
 
@@ -787,13 +787,17 @@ void MainWindow::setLogFile() {
 
 void MainWindow::setOutputDirectory() {
 
-    outputDirectory = QFileDialog::getExistingDirectory(this, tr("Output Directory"), recentPath);
+    QString outputDirectoryCandidate = QFileDialog::getExistingDirectory(this, tr("Output Directory"), recentPath);
 
-    if(outputDirectory.isEmpty()) {
+    if(outputDirectoryCandidate.isEmpty() && !outputDirectory.isEmpty()) {
+        return;
+    }
+    if(outputDirectoryCandidate.isEmpty() && outputDirectory.isEmpty()) {
         recordImagesAct->setDisabled(true);
         return;
     }
 
+    outputDirectory = outputDirectoryCandidate;
     setRecentPath(outputDirectory);
 //    std::cout << recentPath.toStdString() << std::endl;
     currentStatusMessageLabel->setText("Current directory: " + SupportFunctions::shortenStringForDisplay(outputDirectory, 100));
