@@ -106,7 +106,8 @@ public:
         // I think it is some kind of memory problem in the background
         // Qt 5.15.2, MSVC 2019 v86_amd64
         QString desiredPath;
-        if (target[target.length() - 1] == '/')
+//        if (target[target.length() - 1] == '/')
+        if (QFileInfo(target).completeSuffix().isEmpty())
         { // if "target" is a path itself
             // std::cout << "DESIRED PATH VAR = target "<< std::endl;
             desiredPath = target;
@@ -114,9 +115,9 @@ public:
         else
         { // if "target" is pointing to a file, not a folder/dir
             // std::cout << "DESIRED PATH VAR = QFileInfo(target).absolutePath()"<< std::endl;
-            // desiredPath = QFileInfo(target).absolutePath();
-            int idx = target.lastIndexOf("/");
-            desiredPath = target.mid(0, idx);
+            desiredPath = QFileInfo(target).absolutePath();
+//            int idx = target.lastIndexOf("/");
+//            desiredPath = target.mid(0, idx);
         }
 
         changedPath = desiredPath;
@@ -191,6 +192,15 @@ public:
 
     static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
+
+        if(directory.isEmpty()) {
+            return QString();
+        }
+
+        // dirty fix, because on some systems (or by user mistake) the path can end with no '/' character
+        if(directory[directory.length()-1] != '/') {
+            directory = directory + '/';
+        }
 
         // bool changedGiven = false;
         QString changedPath;
