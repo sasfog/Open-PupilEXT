@@ -258,7 +258,7 @@ void MainWindow::createActions() {
     aboutAct->setStatusTip(tr("Show the application's About box"));
     helpMenu->addSeparator();
     QAction *clearPersistenceAct = helpMenu->addAction(tr("Reset application settings"), this, &MainWindow::offerResetApplicationSettings);
-    clearPersistenceAct->setIcon(QIcon(":/icons/Breeze/actions/16/edit-clear-history.svg"));
+    clearPersistenceAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/edit-clear-history.svg",applicationSettings));
     clearPersistenceAct->setStatusTip(tr("Reset all application settings to factory defaults"));
 
     toolBar = new QToolBar(); // addToolBar(tr("Toolbar"));

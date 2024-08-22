@@ -446,7 +446,7 @@ void StereoCameraSettingsDialog::createForm() {
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
     QLabel *imageROIWarningLabel = new QLabel(tr("Warning: If you are using Hardware-triggered image acquisition, please restart Image Acquisition\n    Triggering whenever Image Acquisition ROI is modified.\nWarning: if Image Acquisition ROI or Binning is altered, a new camera calibration is necessary\n    for proper undistortion."));
-    SupportFunctions::setLabelFontSize(imageROIWarningLabel, 6);
+    SupportFunctions::setSmallerLabelFontSize(imageROIWarningLabel);
     mainLayout->addWidget(imageROIWarningLabel);
 
     mainLayout->addLayout(buttonsLayout);

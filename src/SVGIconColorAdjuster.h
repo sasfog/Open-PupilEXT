@@ -55,7 +55,7 @@ class SVGIconEngine : public QIconEngine {
 
             if(doLighten) {
                 if(mode == QIcon::Mode::Disabled) {
-                    actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.8, 0.5);
+                    actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.1, 0.5);
                 }
             } else {
                 if(mode == QIcon::Mode::Disabled) {

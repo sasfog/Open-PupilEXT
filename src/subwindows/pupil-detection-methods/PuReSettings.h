@@ -60,7 +60,7 @@ public:
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
-        SupportFunctions::setLabelFontSize(pLabel, 6);
+        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci, \"PuRe: Robust pupil detection for real-time pervasive eye tracking.\", 2018<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini");
         infoLayoutRow1->addWidget(pLabel);
 
@@ -71,13 +71,13 @@ public:
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
-        SupportFunctions::setLabelFontSize(confLabel, 6);
+        SupportFunctions::setSmallerLabelFontSize(confLabel);
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel);
 
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
-        SupportFunctions::setLabelFontSize(warnLabel, 6);
+        SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(warnLabel);
@@ -242,7 +242,7 @@ private:
 
         QHBoxLayout *configsNoteLayout = new QHBoxLayout();
         QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
-        SupportFunctions::setLabelFontSize(configsNoteLabel, 6);
+        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
         configsNoteLabel->setFixedHeight(60);
         configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         configsNoteLayout->addWidget(configsNoteLabel);

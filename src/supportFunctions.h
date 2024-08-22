@@ -515,9 +515,10 @@ public:
             return false;
     }
 
-    static void setLabelFontSize(QLabel *label, int pointSize) {
+    static void setSmallerLabelFontSize(QLabel *label) {
         QFont actualFont = label->font();
-        actualFont.setPointSize(pointSize);
+        int newFontSize = (int)(actualFont.pointSizeF()*0.85F);
+        actualFont.setPointSize(newFontSize);
         label->setFont(actualFont);
     }
 };

@@ -146,10 +146,17 @@ QWizardPage* GettingStartedWizard::createIntro02() {
     cvLabel->setWordWrap(true);
     cvLabel->setContentsMargins(20,0,0,0);
 
-    QFormLayout *layout = new QFormLayout;
-    layout->addRow(qtButton, qtLabel);
+    QHBoxLayout *row1 = new QHBoxLayout;
+    QHBoxLayout *row2 = new QHBoxLayout;
+    row1->addWidget(qtButton);
+    row1->addWidget(qtLabel);
+    row2->addWidget(cvButton);
+    row2->addWidget(cvLabel);
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addLayout(row1);
     layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Fixed));
-    layout->addRow(cvButton, cvLabel);
+    layout->addLayout(row2);
     page->setLayout(layout);
 
     return page;
