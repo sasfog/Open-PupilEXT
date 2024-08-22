@@ -176,9 +176,9 @@ public:
 
     static QString stripIfInventedName(QString fileBaseName) {
         QString workCopy = fileBaseName;
-        while(workCopy.length()>0 && workCopy[workCopy.length()-1].isDigit()) {
-            workCopy.chop(1);
-        }
+//        while(workCopy.length()>0 && workCopy[workCopy.length()-1].isDigit()) {
+//            workCopy.chop(1);
+//        }
         if(workCopy.length()==0) {
             return fileBaseName;
         }
@@ -219,13 +219,14 @@ public:
             directory = changedPath;
         }
 
-        QDir outputDirectory = QDir(directory);
-        bool exists = outputDirectory.exists();
-        bool hasContent = !outputDirectory.isEmpty();
+        // QDir outputDirectory = QDir(directory);
+        bool exists = QDir(directory).exists();
+        bool hasContent = !QDir(directory).isEmpty();
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
         if(!exists) {
-            outputDirectory.mkdir(".");
+//            outputDirectory.mkdir(".");
+            QDir().mkpath(directory);
         } else if(hasContent && imageWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
             dialog->setModal(true);
@@ -255,15 +256,19 @@ public:
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
-                outputDirectory = QDir(tryBase + "_Run" + QString::number(nameIter));
-                nameInvented = !outputDirectory.exists();
+//                outputDirectory = QDir(tryBase + "_Run" + QString::number(nameIter));
+                directory = tryBase + "_Run" + QString::number(nameIter);
+//                nameInvented = !outputDirectory.exists();
+                nameInvented = !QDir(directory).exists();
                 if(nameIter >=65000)
-                    outputDirectory = QDir(tryBase + "_TooManyRuns");
+                    directory = tryBase + "_TooManyRuns";
             }
-            outputDirectory.mkdir(".");
+//            outputDirectory.mkdir(".");
+            QDir().mkpath(directory);
         }
         //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
-        return outputDirectory.absolutePath();
+//        return outputDirectory.absolutePath();
+        return directory;
     };
 
     static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
