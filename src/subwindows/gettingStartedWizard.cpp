@@ -74,8 +74,8 @@ QWizardPage* GettingStartedWizard::createIntro01() {
                                   "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
                                   ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
                                   " Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses (see GitHub repository).<br><br>"
-                                  "<b>This release was built from the Experimental Community Version branch source code</b>,"
-                                  "<br>contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
+                                  "<b>This release was built from the Experimental Community Version branch source code</b>, "
+                                  "contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
     ).arg(QCoreApplication::applicationName(),QCoreApplication::applicationVersion()));
 
     QHBoxLayout *appSettingsRow = new QHBoxLayout();
@@ -224,7 +224,7 @@ QWizardPage* GettingStartedWizard::createPreUserGuide02() {
     label2->setWordWrap(true);
     label2->setOpenExternalLinks(true);
 
-    QFormLayout *layout = new QFormLayout;
+    QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(label);
     layout->addWidget(label2);
     if(purpose == ABOUT_AND_USERGUIDE) {
@@ -233,7 +233,8 @@ QWizardPage* GettingStartedWizard::createPreUserGuide02() {
         finishNowButton->setMinimumWidth(120);
         row1->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
         row1->addWidget(finishNowButton);
-        layout->addRow(row1);
+        layout->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Fixed));
+        layout->addLayout(row1);
         connect(finishNowButton, &QPushButton::clicked, this->button(QWizard::FinishButton), &QPushButton::clicked);
     }
     page->setLayout(layout);

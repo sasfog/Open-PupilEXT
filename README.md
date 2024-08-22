@@ -130,8 +130,8 @@ Please use our discussion forum to share your ideas, setup and experience with P
 https://github.com/openPupil/Open-PupilEXT/discussions
 
 ## 2. Getting started: The easy way
-### 2.1. Installation on MacOS (macOS 10.15 or later)
-The direct installation requires that you have macOS 10.15 or later installed on your machine. If this is not the case, you need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on macOS 10.15 or later.
+### 2.1. Installation on MacOS (MacOS 12.6.7 or later)
+The direct installation requires that you have MacOS 12.6.7 or later installed on your machine. If this is not the case, you likely need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on MacOS 12.6.7 or later. You can try on an earlier version of MacOS, but you are not quaranteed to succeed.
 
 **Step 1: Download and install the Pylon Camera Softwware**
 
@@ -139,19 +139,19 @@ Download the Pylon Camera Software Suite (*.dmg) from the Basler Website:
 
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
 
-We tested PupilEXT with **Pylon 6.2.0.** (on Windows only **Pylon 6.2.0.** works, see the Win instructions below). If the Pylon installation does not start because of a security warning from Apple: Open the system preferences from macOS, click on "security & privacy" and press "Open Anyway" under the "General" tab. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed if no camera is connected, as the Basler drivers are part of the software.
+We tested PupilEXT with **Pylon 6.2.0.** (on Windows only **Pylon 6.2.0.** works, see the Win instructions below). If the Pylon installation does not start because of a security warning from Apple: Open the system preferences from MacOS, click on "security & privacy" and press "Open Anyway" under the "General" tab. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed if no camera is connected, as the Basler drivers are part of the software.
 
 Please test your Baslers camera(s) with the installed Pylon Viewer from Basler (see [Basler-Documentation: Pylon Viewer](https://docs.baslerweb.com/overview-of-the-pylon-viewer)) before driving the camera(s) with PupilEXT.
 
 **Step 2: Download and run PupilEXT**
 
-We have built and deployed PupilEXT for macOS 10.15 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
+We have built and deployed PupilEXT for MacOS 12.7.6 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
 
-Download PupilEXT Version 0.1.2 Beta (MAC) from the release page of the project's GitHub repository:
+Download PupilEXT Version 0.1.2 Beta (MacOS) from the release page of the project's GitHub repository:
 
 https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.2-beta
 
-After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We tested the program on a Mac Mini with macOS Monterey (Version 12.7.6). If you run into issues, you need to build PupilEXT from source.
+After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We built and tested the program on a Mac Mini 2014 Late (Intel) with MacOS Monterey (Version 12.7.6). If you run into issues, you need to build PupilEXT from source.
 
 <p align="center">
   <img src="Misc/img/PupilEXT_Start_Mac.gif">
@@ -607,9 +607,9 @@ https://www.qt.io/download-open-source?hsCtaTracking=9f6a2170-a938-42df-a8e2-a9f
 
 **Step 3: Install the package manager homebrew**
 
-Homebrew is a package manager for macOS with which C++ libraries can be installed relatively easily via the terminal. Instructions on how to install Homebrew can be found here: https://brew.sh
+Homebrew is a package manager for MacOS with which C++ libraries can be installed relatively easily via the terminal. Instructions on how to install Homebrew can be found here: https://brew.sh
 
-To install homebrew , you can enter the following command in the macOS terminal.
+To install homebrew , you can enter the following command in the MacOS terminal.
 
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -740,7 +740,7 @@ Make sure that all folder paths in the ``CMakelist.txt`` are adapted to your sys
 
 ----
 
-The described changes to the Pylon library in this section can be skipped, as we included in the updated CMakelists.txt the following code for macOS:
+The described changes to the Pylon library in this section can be skipped, as we included in the updated CMakelists.txt the following code for MacOS:
 
 ```cmake
 set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers")
@@ -975,7 +975,7 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 ### List of Software Libraries
 
-<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
+<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, MacOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
 
