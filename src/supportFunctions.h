@@ -205,7 +205,7 @@ public:
 
                 if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
                     imageWriterDataRule = "append";
-                } else if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) {
+                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
                     imageWriterDataRule = "new";
                 }
 
@@ -261,7 +261,7 @@ public:
 
                 if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
                     dataWriterDataRule = "append";
-                } else if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) {
+                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
                     dataWriterDataRule = "new";
                 }
 
@@ -271,7 +271,7 @@ public:
             }
         }
 
-        if(dataWriterDataRule == "new") {
+        if(exists && hasContent && dataWriterDataRule == "new") {
             QFileInfo fileCandidate;
             QString fileNameCandidate;
             bool nameInvented = false;

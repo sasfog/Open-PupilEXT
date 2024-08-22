@@ -570,16 +570,6 @@ void SingleCameraView::onFitClick() {
     videoView->fitView();
 }
 
-// begin edit of kheki4 on 2022.10.24, NOTE: to properly re-fit view when image acquisition ROI is changed
-/*
-void SingleCameraView::onAcqImageROIchanged() {
-    videoView->resetInitialFit();
-    //videoView->fitView();
-    //videoView->drawBlank();
-}
-*/
-// end of edit by kheki4
-
 // Shows the camera view in the original resolution, no scaling
 void SingleCameraView::on100pClick() {
     videoView->showFullView();

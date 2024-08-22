@@ -74,7 +74,8 @@ QWizardPage* GettingStartedWizard::createIntro01() {
                                   "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
                                   ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
                                   " Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses (see GitHub repository).<br><br>"
-                                  "<b>This release was built from the Experimental Community Version branch source code</b>, contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
+                                  "<b>This release was built from the Experimental Community Version branch source code</b>,"
+                                  "<br>contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
     ).arg(QCoreApplication::applicationName(),QCoreApplication::applicationVersion()));
 
     QHBoxLayout *appSettingsRow = new QHBoxLayout();

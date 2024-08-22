@@ -522,7 +522,7 @@ void SingleCameraSettingsDialog::updateFrameRateValue() {
 
     std::cout << "resulting framerate " << camera->getResultingFrameRateValue() << std::endl;
 
-    // commented out by kheki4, reason:
+    // commented out, reason:
     // TODO: problematic, as resulting framerate is affected by framerate limit, which creates a "loop" of events,
     // setting the max on gui as the current fps
     //HWTframerateBox->setMaximum(static_cast<int>(floor(camera->getResultingFrameRateValue())));

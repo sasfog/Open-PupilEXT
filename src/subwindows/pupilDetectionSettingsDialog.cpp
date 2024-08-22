@@ -310,6 +310,8 @@ void PupilDetectionSettingsDialog::loadSettings() {
 
     pupilMethodSettings[algorithmBox->currentIndex()]->loadSettings();
 
+    lastKnownProcMode = pupilDetection->getCurrentProcMode();
+
     updateForm();
 }
 
@@ -374,8 +376,12 @@ void PupilDetectionSettingsDialog::onAlgorithmSelection(int idx) {
 
 // Apply the settings to the pupil detection process and save them to the application settings
 void PupilDetectionSettingsDialog::applyButtonClick() {
-    if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn()) {
-        // NOTE: so the combobox change itself does not change procMode, but we need to hit Apply too
+
+    bool procModeChanged = (lastKnownProcMode != procModeBox->currentIndex());
+
+    if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn() && procModeChanged) {
+        pupilDetection->setCurrentProcMode(procModeBox->currentIndex());
+        lastKnownProcMode = (ProcMode)procModeBox->currentIndex();
         emit pupilDetectionProcModeChanged(procModeBox->currentIndex());
     } else {
         procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());

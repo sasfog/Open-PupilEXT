@@ -329,9 +329,9 @@ private slots:
     void onStreamClick();
     void onStreamingSettingsClick();
 
-    void onPlaybackSafelyStarted();
-    void onPlaybackSafelyPaused();
-    void onPlaybackSafelyStopped();
+    void onPlaybackStartInitiated();
+    void onPlaybackPauseInitiated();
+    void onPlaybackStopInitiated();
 
     void onRemoteConnStateChanged();
     //void onStreamingConnStateChanged();
@@ -430,5 +430,9 @@ signals:
     void commitMessageRegisterReset(quint64 timestamp);
 
     void cameraPlaybackChanged();
+
+    void playbackStartApproved();
+    void playbackPauseApproved();
+    void playbackStopApproved();
 
 };

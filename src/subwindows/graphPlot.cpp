@@ -179,6 +179,7 @@ void GraphPlot::reset() {
             customPlot->graph(3)->data()->clear();
             break;
     }
+    resetScheduled = false;
     customPlot->update();
     // customPlot->replot(); // yet it is good to see the plot when playback just stopped, until we restart it
 }
@@ -372,6 +373,11 @@ void GraphPlot::appendData(const double &fps) {
     incrementedTimestamp += 1000;
     uint64 m_timestamp = incrementedTimestamp;
 
+    // If the looping playback has restarted in case of fileCamera
+    if((lastTimestamp != 0 && lastTimestamp > m_timestamp) || resetScheduled)
+        reset();
+    lastTimestamp = m_timestamp;
+
     // Note: we currently only plot it for the main camera main view, as all their FPS's are equal
     if(plotDataKey == DataTypes::DataType::CAMERA_FPS || plotDataKey == DataTypes::DataType::PUPIL_FPS) {
         customPlot->graph(0)->addData(m_timestamp/1000.0, fps);
@@ -405,6 +411,11 @@ void GraphPlot::appendData(const int &framecount) {
 
     incrementedTimestamp += 1000;
     uint64 m_timestamp = incrementedTimestamp;
+
+    // If the looping playback has restarted in case of fileCamera
+    if((lastTimestamp != 0 && lastTimestamp > m_timestamp) || resetScheduled)
+        reset();
+    lastTimestamp = m_timestamp;
 
     // add data
     if(plotDataKey == DataTypes::DataType::FRAME_NUMBER) {
@@ -485,9 +496,8 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
     uint64 m_timestamp = timestamp - sharedTimestamp;
 
     // If the looping playback has restarted in case of fileCamera
-    if(lastTimestamp != 0 && lastTimestamp > m_timestamp)
+    if((lastTimestamp != 0 && lastTimestamp > m_timestamp) || resetScheduled)
         reset();
-
     lastTimestamp = m_timestamp;
 
     switch((ProcMode)procMode) {
@@ -531,7 +541,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
             QCPRange possibleRange;
             for (int i = 0; i < numGraphs; i++) {
                 ok = false;
-                possibleRange = customPlot->graph(0)->data()->valueRange(ok);
+                possibleRange = customPlot->graph(i)->data()->valueRange(ok);
                 if (ok) {
                     possibleMinima.insert(possibleRange.lower);
                     possibleMaxima.insert(possibleRange.upper);
@@ -571,12 +581,9 @@ void GraphPlot::updateYaxisRange() {
     customPlot->yAxis->setRange(yAxisLimitLow,yAxisLimitHigh);
 }
 
-void GraphPlot::onPlaybackSafelyStopped() {
-    //reset(); //for manual zooming etc, it is better to keep data for a while still
-}
-
-void GraphPlot::onPlaybackSafelyStarted() {
-    reset();
+void GraphPlot::scheduleReset() {
+    resetScheduled = true;
+//    qDebug() << "GraphPlot reset called";
 }
 
 void GraphPlot::setKnownTimeZero(uint64_t timestamp) {

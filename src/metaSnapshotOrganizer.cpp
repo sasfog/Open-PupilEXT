@@ -3,9 +3,9 @@
 #include "metaSnapshotOrganizer.h"
 #include "supportFunctions.h"
 
-// Writes all details of the camera settings and pupil detection settings to a "meta file" in human-readable format
-// added by kheki4 on 2022.11.07.
-
+/*
+    Writes all details of the camera settings and pupil detection settings to a "meta file" in human-readable format
+*/
 
 void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
 

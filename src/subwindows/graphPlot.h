@@ -59,8 +59,9 @@ public slots:
     void appendData(const double &fps);
     void appendData(const int &framecount);
 
-    void onPlaybackSafelyStopped();
-    void onPlaybackSafelyStarted();
+//    void onPlaybackSafelyStopped();
+//    void onPlaybackSafelyStarted();
+    void scheduleReset();
 
     void setKnownTimeZero(uint64_t timestamp);
 
@@ -82,6 +83,8 @@ private:
     QCPGraph *graph;
 
     uint64 incrementedTimestamp;
+
+    bool resetScheduled = false;
 
     void setPupilData(const Pupil &pupil, int graphID, quint64 timestamp);
 

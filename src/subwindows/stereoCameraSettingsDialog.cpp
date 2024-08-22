@@ -604,7 +604,7 @@ void StereoCameraSettingsDialog::autoExposureOnce() {
 void StereoCameraSettingsDialog::updateFrameRateValue() {
     frameRateValueLabel->setText(QString::number(camera->getResultingFrameRateValue()));
 
-    // commented out by kheki4, reason:
+    // commented out, reason:
     // TODO: problematic, as resulting framerate is affected by framerate limit, which creates a "loop" of events,
     // setting the max on gui as the current fps
 //    //// if(HWTstartStopButton->isEnabled()) {

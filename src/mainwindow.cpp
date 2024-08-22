@@ -170,8 +170,6 @@ MainWindow::MainWindow():
     }
     */
 
-    connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), pupilDetectionWorker, SLOT (setCurrentProcMode(int)));
-
     setAcceptDrops(true);
 
     playbackSynchroniser = nullptr;
@@ -1270,9 +1268,12 @@ void MainWindow::onCameraDisconnectClick() {
     if(imagePlaybackControlDialog) {
 //        disconnect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
         //disconnect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
-        disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
-        disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
-        disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
+        disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackStartInitiated()), this, SLOT(onPlaybackStartInitiated()));
+        disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackPauseInitiated()), this, SLOT(onPlaybackPauseInitiated()));
+        disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackStopInitiated()), this, SLOT(onPlaybackStopInitiated()));
+        disconnect(this, SIGNAL(playbackStartApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStartApproved()));
+        disconnect(this, SIGNAL(playbackPauseApproved()), imagePlaybackControlDialog, SLOT(onPlaybackPauseApproved()));
+        disconnect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
         imagePlaybackControlDialog = nullptr;
     }
     destroyCamTempMonitor();
@@ -1648,7 +1649,7 @@ void MainWindow::cameraViewClick() {
         selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM
         ) ) {
         //SingleCameraView *childWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
-        singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this); // changed by kheki4 on 2022.10.24, NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
+        singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this);
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
         connect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
@@ -1876,6 +1877,9 @@ void MainWindow::loadDataTableWindow() {
     connect(pupilDetectionWorker, SIGNAL(fps(double)), childWidget, SLOT(onProcessingFPS(double)));
     connect(childWidget, SIGNAL(createGraphPlot(DataTypes::DataType)), this, SLOT(onCreateGraphPlot(DataTypes::DataType)));
 
+    // TODO: make data table window adapt to the change
+    connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), childWidget, SLOT (close()));
+
     mdiArea->addSubWindow(child);
     child->show();
     child->restoreGeometry();
@@ -1978,9 +1982,13 @@ void MainWindow::onCreateGraphPlot(const DataTypes::DataType &value) {
     child->restoreGeometry();
     connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
 
+    // In case of proc mode change, we need to close the current graph window
+    // TODO: make graph window adapt to the change
+    connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), childWidget, SLOT (close()));
+
     if(imagePlaybackControlDialog) {
-        connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), childWidget, SLOT(onPlaybackSafelyStopped()));
-        connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), childWidget, SLOT(onPlaybackSafelyStarted()));
+        connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), childWidget, SLOT(scheduleReset()));
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackPositionChanged()), childWidget, SLOT(scheduleReset()));
     }
 }
 
@@ -2142,9 +2150,12 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     //connect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
     // GB: right now, this only gets called when playbackLoop is false, and we need to finish playing (with possible overhead)
     //connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
-    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
-    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
-    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackStartInitiated()), this, SLOT(onPlaybackStartInitiated()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackPauseInitiated()), this, SLOT(onPlaybackPauseInitiated()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackStopInitiated()), this, SLOT(onPlaybackStopInitiated()));
+    connect(this, SIGNAL(playbackStartApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStartApproved()));
+    connect(this, SIGNAL(playbackPauseApproved()), imagePlaybackControlDialog, SLOT(onPlaybackPauseApproved()));
+    connect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
 
     connectCameraPlaybackChangedSlots();
 
@@ -2164,7 +2175,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
 
 }
 
-void MainWindow::onPlaybackSafelyStarted() {
+void MainWindow::onPlaybackStartInitiated() {
     bool syncRecordCsv = SupportFunctions::readBoolFromQSettings("syncRecordCsv", imagePlaybackControlDialog->getSyncRecordCsv(), applicationSettings);
     bool syncStream = SupportFunctions::readBoolFromQSettings("syncStream", imagePlaybackControlDialog->getSyncStream(), applicationSettings);
 
@@ -2175,25 +2186,34 @@ void MainWindow::onPlaybackSafelyStarted() {
     if(syncStream && trackingOn && !streamOn) {
         onStreamClick();
     }
+    emit playbackStartApproved();
 }
 
-void MainWindow::onPlaybackSafelyPaused() {
+void MainWindow::onPlaybackPauseInitiated() {
     bool syncRecordCsv = SupportFunctions::readBoolFromQSettings("syncRecordCsv", imagePlaybackControlDialog->getSyncRecordCsv(), applicationSettings);
     bool syncStream = SupportFunctions::readBoolFromQSettings("syncStream", imagePlaybackControlDialog->getSyncStream(), applicationSettings);
 
     if(syncRecordCsv && trackingOn && recordOn) {
         onRecordClick();
     }
-
     if(syncStream && trackingOn && streamOn) {
         onStreamClick();
     }
+    emit playbackPauseApproved();
 }
 
-void MainWindow::onPlaybackSafelyStopped() {
-    // yet this is the same as onPlaybackSafelyPaused() but this can change 
-    // if future features would behave differently, so I leave it here like this
-    onPlaybackSafelyPaused();
+// yet this is the same as onPlaybackPauseInitiated(), except the signal emitted
+void MainWindow::onPlaybackStopInitiated() {
+    bool syncRecordCsv = SupportFunctions::readBoolFromQSettings("syncRecordCsv", imagePlaybackControlDialog->getSyncRecordCsv(), applicationSettings);
+    bool syncStream = SupportFunctions::readBoolFromQSettings("syncStream", imagePlaybackControlDialog->getSyncStream(), applicationSettings);
+
+    if(syncRecordCsv && trackingOn && recordOn) {
+        onRecordClick();
+    }
+    if(syncStream && trackingOn && streamOn) {
+        onStreamClick();
+    }
+    emit playbackStopApproved();
 }
 
 // GB: onPlayImageDirectoryClick() and onStopImageDirectoryClick() and onPlayImageDirectoryFinished()
@@ -2552,7 +2572,10 @@ void MainWindow::loadSharpnessWindow(){
 void MainWindow::stopCamera()
 {
     if (selectedCamera){
-        selectedCamera->stopGrabbing();
+        // TODO: remove these completely. Playback is not anymore managed by mainwindow,
+        //  but playback control dialog. However, the usages of cameraPlaying bool should be
+        //  precisely removed/changed everywhere, so yet I left this here
+//        selectedCamera->stopGrabbing();
         cameraPlaying = false;
     }
 }
@@ -2560,7 +2583,10 @@ void MainWindow::stopCamera()
 void MainWindow::startCamera()
 {
     if (selectedCamera){
-        selectedCamera->startGrabbing();
+        // TODO: remove these completely. Playback is not anymore managed by mainwindow,
+        //  but playback control dialog. However, the usages of cameraPlaying bool should be
+        //  precisely removed/changed everywhere, so yet I left this here
+//        selectedCamera->startGrabbing();
         cameraPlaying = true;
     }
 }
