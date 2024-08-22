@@ -760,10 +760,10 @@ void MainWindow::openSourceDialog() {
 void MainWindow::setLogFile() {
 
     QString pupilDetectionDataFileCandidate = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
-    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(tempFile).dir().exists()) && !pupilDetectionDataFile.isEmpty()) {
+    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(pupilDetectionDataFileCandidate).dir().exists()) && !pupilDetectionDataFile.isEmpty()) {
         return;
     }
-    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(tempFile).dir().exists()) && pupilDetectionDataFile.isEmpty()) {
+    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(pupilDetectionDataFileCandidate).dir().exists()) && pupilDetectionDataFile.isEmpty()) {
         recordAct->setDisabled(true);
         return;
     }
