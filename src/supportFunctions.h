@@ -257,12 +257,12 @@ public:
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
-//                outputDirectory = QDir(tryBase + "_Run" + QString::number(nameIter));
-                directory = tryBase + "_Run" + QString::number(nameIter);
+//                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
+                directory = tryBase + "_RunI" + QString::number(nameIter);
 //                nameInvented = !outputDirectory.exists();
                 nameInvented = !QDir(directory).exists();
                 if(nameIter >=65000)
-                    directory = tryBase + "_TooManyRuns";
+                    directory = tryBase + "_TooManyRunsI";
             }
             // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //            outputDirectory.mkdir(".");
@@ -327,9 +327,9 @@ public:
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
-                fileNameCandidate = (tryBase + "_Run" + QString::number(nameIter) + '.' + dataFile.completeSuffix());
+                fileNameCandidate = (tryBase + "_RunD" + QString::number(nameIter) + '.' + dataFile.completeSuffix());
                 if(nameIter >=65000)
-                    fileNameCandidate = (tryBase + "_TooManyRuns" + '.' + dataFile.completeSuffix());
+                    fileNameCandidate = (tryBase + "_TooManyRunsD" + '.' + dataFile.completeSuffix());
                 //std::cout << fileNameCandidate.toStdString() << std::endl;
                 fileCandidate = QFileInfo(fileNameCandidate);
                 nameInvented = !fileCandidate.exists();

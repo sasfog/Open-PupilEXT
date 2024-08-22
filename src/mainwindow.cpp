@@ -172,6 +172,15 @@ MainWindow::MainWindow():
     }
     */
 
+#ifdef Q_OS_MACOS // Q_OS_WIN
+    subjectSelectionDialog->setWindowFlags(Qt::Tool);
+    MCUSettingsDialogInst->setWindowFlags(Qt::Tool);
+    remoteCCDialog->setWindowFlags(Qt::Tool);
+    streamingSettingsDialog->setWindowFlags(Qt::Tool);
+    pupilDetectionSettingsDialog->setWindowFlags(Qt::Tool);
+    generalSettingsDialog->setWindowFlags(Qt::Tool);
+#endif
+
     setAcceptDrops(true);
 
     playbackSynchroniser = nullptr;
@@ -1299,6 +1308,10 @@ void MainWindow::onCameraClick() {
 
 void MainWindow::onCameraDisconnectClick() {
 
+    // Clear previously set output paths
+    pupilDetectionDataFile = "";
+    outputDirectory = "";
+
     QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
     for(auto mdiSubWindow : windows) {
         mdiSubWindow->close();
@@ -1768,6 +1781,9 @@ void MainWindow::onCameraSettingsClick() {
 
 void MainWindow::onSingleCameraSettingsClick() {
     singleCameraSettingsDialog = new SingleCameraSettingsDialog(dynamic_cast<SingleCamera*>(selectedCamera), MCUSettingsDialogInst, this);
+#ifdef Q_OS_MACOS // Q_OS_WIN
+    singleCameraSettingsDialog->setWindowFlags(Qt::Tool);
+#endif
     singleCameraSettingsDialog->setWindowIcon(cameraSettingsIcon2);
     singleCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleCameraSettingsDialog", this);
@@ -1796,6 +1812,9 @@ void MainWindow::onSingleCameraSettingsClick() {
 
 void MainWindow::onSingleWebcamSettingsClick() {
     singleWebcamSettingsDialog = new SingleWebcamSettingsDialog(dynamic_cast<SingleWebcam*>(selectedCamera), this);
+#ifdef Q_OS_MACOS // Q_OS_WIN
+    singleWebcamSettingsDialog->setWindowFlags(Qt::Tool);
+#endif
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleWebcamSettingsDialog", this);
     singleWebcamSettingsDialog->show();
 
@@ -1804,6 +1823,9 @@ void MainWindow::onSingleWebcamSettingsClick() {
 
 void MainWindow::onStereoCameraSettingsClick() {
     stereoCameraSettingsDialog = new StereoCameraSettingsDialog(dynamic_cast<StereoCamera*>(selectedCamera), MCUSettingsDialogInst, this);
+#ifdef Q_OS_MACOS // Q_OS_WIN
+    stereoCameraSettingsDialog->setWindowFlags(Qt::Tool);
+#endif
     stereoCameraSettingsDialog->setWindowIcon(cameraSettingsIcon1);
     stereoCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "StereoCameraSettingsDialog", this);

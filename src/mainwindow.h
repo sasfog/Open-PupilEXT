@@ -81,14 +81,6 @@ private:
     QSettings *applicationSettings;
     QDir settingsDirectory;
 
-    MCUSettingsDialog *MCUSettingsDialogInst;
-    PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
-    GeneralSettingsDialog *generalSettingsDialog;
-    SubjectSelectionDialog *subjectSelectionDialog;
-
-    SingleCameraSettingsDialog *singleCameraSettingsDialog;
-    StereoCameraSettingsDialog *stereoCameraSettingsDialog;
-
     QString pupilDetectionDataFile;
     QString outputDirectory;
     QString imageDirectory;
@@ -186,15 +178,26 @@ private:
 
     bool streamOn = false;
 
+    // TODO: These are all dialogs that get opened DIRECTLY as a child of main window (not inside an MDI subwindow).
+    //  Currently, on MacOS, they can be erroneously occluded by the main window once they lose focus.
+    //  This is probably a Qt bug.
+    // TODO: Also, always only one of them can exist at once, so it could be good to rethink their
+    //  instantiation and memory management.
+    MCUSettingsDialog *MCUSettingsDialogInst;
+    PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
+    GeneralSettingsDialog *generalSettingsDialog;
+    SubjectSelectionDialog *subjectSelectionDialog;
+    SingleCameraSettingsDialog *singleCameraSettingsDialog;
+    StereoCameraSettingsDialog *stereoCameraSettingsDialog;
     RemoteCCDialog *remoteCCDialog;
     StreamingSettingsDialog *streamingSettingsDialog;
+    SingleWebcamSettingsDialog *singleWebcamSettingsDialog;
+
     ImagePlaybackControlDialog *imagePlaybackControlDialog;
 
     // made these two global to be able to pass singlecameraview instance pointer to ...CameraSettingsDialog constructors:
     SingleCameraView *singleCameraChildWidget; 
     StereoCameraView *stereoCameraChildWidget;
-    
-    SingleWebcamSettingsDialog *singleWebcamSettingsDialog;
 
     //QThread *tempMonitorThread;
     CamTempMonitor *camTempMonitor;
