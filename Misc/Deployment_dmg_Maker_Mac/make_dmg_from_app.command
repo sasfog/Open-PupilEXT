@@ -18,9 +18,9 @@ SIZE="25M" # size of the DMG file, to fit the app. Automatic size detection fail
 # you should not need to change these
 APP_EXE="${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
 
-VOL_NAME="${APP_NAME} ${VERSION}"   # volume name will be "SuperCoolApp 1.0.0"
+VOL_NAME="${APP_NAME} v${VERSION}"   # volume name will be "PupilEXT v0.1.2"
 DMG_TMP="${VOL_NAME}-temp.dmg"
-DMG_FINAL="${VOL_NAME}.dmg"         # final DMG name will be "SuperCoolApp 1.0.0.dmg"
+DMG_FINAL="${VOL_NAME}.dmg"
 STAGING_DIR="./Install"             # we copy all our stuff into this dir
 
 # Check the background image DPI and convert it if it isn't 72x72
