@@ -13,6 +13,7 @@ fi
 APP_NAME="PupilEXT"
 VERSION="0.1.2"
 DMG_BACKGROUND_IMG="PupilEXT_dmg_background.png"
+SIZE="25M" # size of the DMG file, to fit the app. Automatic size detection fails sometimes, this is better
 
 # you should not need to change these
 APP_EXE="${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
@@ -64,13 +65,13 @@ popd
 
 # figure out how big our DMG needs to be
 #  assumes our contents are at least 1M!
-SIZE=`du -sh "${STAGING_DIR}" | sed 's/\([0-9\.]*\)M\(.*\)/\1/'` 
-SIZE=`echo "${SIZE} + 1.0" | bc | awk '{print int($1+0.5)}'`
+#SIZE=`du -sh "${STAGING_DIR}" | sed 's/\([0-9\.]*\)M\(.*\)/\1/'` 
+#SIZE=`echo "${SIZE} + 1.0" | bc | awk '{print int($1+0.5)}'`
 
-if [ $? -ne 0 ]; then
-   echo "Error: Cannot compute size of staging dir"
-   exit
-fi
+#if [ $? -ne 0 ]; then
+#   echo "Error: Cannot compute size of staging dir"
+#   exit
+#fi
 
 # create the temp DMG file
 hdiutil create -srcfolder "${STAGING_DIR}" -volname "${VOL_NAME}" -fs HFS+ \
