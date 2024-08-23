@@ -10,9 +10,9 @@ if [ -d "$dir" ]; then
 fi
 
 # set up your app name, version number, and background image file name
-APP_NAME="SuperCoolApp"
-VERSION="1.0.0"
-DMG_BACKGROUND_IMG="Background.png"
+APP_NAME="PupilEXT"
+VERSION="0.1.2"
+DMG_BACKGROUND_IMG="PupilEXT_dmg_background.png"
 
 # you should not need to change these
 APP_EXE="${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
