@@ -107,8 +107,20 @@ Version 0.1.2. beta
 		- Fixed that previously several boolean vairables were not read out from QSettings /application preferences correctly. (Serialized as "true"/"false" strings, but always read as true as the parser seeked for "0"/"1" numeric content. Supposedly an inherent bug in Qt 5.15)
 		- DataTable does not create new cell item objects every time it receives data.
 		- Ensured several "!pointer" checks in mainwindow.cpp by default-setting (and re-setting) the pointer to nullptr, to prevent eventual crashes upon closing/opening certain MDI subwindows.
-		
+
 
 Version 0.1.1. beta
+
+	Fixed:
+        - The ROI position was not loaded correctly from the user preference file. The previously set ROI position will be reloaded now. (M.L.)
+        - Links in the startup wizard were not clickable. (B.Z.)
+
+    Changed:
+        - Added the license and copyright statement from GitHub into the "about" window of PupilEXT.
+        - Added the citation of the paper into the "about" window of PupilEXT.
+
+
+
+Version 0.1.0. beta
 
 	Initial release.
