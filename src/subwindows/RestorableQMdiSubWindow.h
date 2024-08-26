@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PUPILEXT_RESTORABLEQMDISUBWINDOW_H
+#define PUPILEXT_RESTORABLEQMDISUBWINDOW_H
 
 #include <QtWidgets>
 #include <QtWidgets/QMdiSubWindow>
@@ -24,8 +25,6 @@ public:
 
         setWidget(child);
         setAttribute(Qt::WA_DeleteOnClose);
-//        setWindowFlags(Qt::Drawer);
-        setWindowFlags(windowFlags() &(~Qt::WindowMaximizeButtonHint));
     }
 
     void restoreGeometry() {
@@ -67,3 +66,6 @@ signals:
     void onCloseSubWindow();
 
 };
+
+
+#endif //PUPILEXT_RESTORABLEQMDISUBWINDOW_H

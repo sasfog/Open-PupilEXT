@@ -1,17 +1,18 @@
-#pragma once
+
+#ifndef PUPILEXT_IMAGEREADER_H
+#define PUPILEXT_IMAGEREADER_H
 
 /**
-    @author Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Moritz Lode
 */
 
 #include <QtCore/QObject>
 #include <QtGui/QtGui>
 #include "devices/camera.h"
-#include <vector>
-#include <algorithm>
 
 
 enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
+
 
 /**
     Class to read images from disk
@@ -27,6 +28,9 @@ enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
 
     CAUTION:
     Depending on the disk read speed, high replay framerates may not be possible due to disk read speed and filesize
+
+    TODO Improvement: Speed could be improved by pre-loading images of the directory into memory, disk read speed is limiting the playback speed
+
 */
 class ImageReader : public QObject {
 Q_OBJECT
@@ -34,7 +38,7 @@ Q_OBJECT
 
 public:
 
-    explicit ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
+    explicit ImageReader(QString directory, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
 
     ~ImageReader() override;
 
@@ -68,73 +72,10 @@ public:
         playbackLoop = loop;
     }
 
-    cv::Mat getStillImageSingle(int frameNumber);
-    std::vector<cv::Mat> getStillImageStereo(int frameNumber);
-
-    QString getImageDirectoryName() {
-        return imageDirectory.absolutePath();
-    }
-    int getImageWidth() {
-        return foundImageWidth;
-    }
-    int getImageHeight() {
-        return foundImageHeight;
-    }
-    
-    int getFrameNumberForTimestamp(uint64_t &timestamp) {
-        // Global private var and indexing back from currentImageIndex, this is the fastest I guess.
-        // However, there is a conversion from uint64_t to quint64 every time the comparison happens..
-        // I could not get around this, as CameraImage employs uint64_t 
-        // (I guess because in case of real cameras, it gets the value from Pylon, which uses uint64_t)
-        for(imgNumSeekerIdx = acqTimestamps.size() - 1; imgNumSeekerIdx>=0; imgNumSeekerIdx--) {
-            if(acqTimestamps[imgNumSeekerIdx] == timestamp) 
-                return imgNumSeekerIdx;
-        }
-        return currentImageIndex; 
-    }
-    
-    uint64_t getTimestampForFrameNumber(int frameNumber) {
-        if(acqTimestamps.size() > frameNumber)
-            return acqTimestamps[frameNumber];
-        else
-            return 0;
-    }
-
-    /*uint64_t getLastCommissionedTimestamp() {
-        if(lastCommissionedFrameNumber>0)
-            return acqTimestamps[lastCommissionedFrameNumber];
-        else 
-            return 0;
-    }*/
-    int getLastCommissionedFrameNumber() {
-        if(lastCommissionedFrameNumber>0)
-            return lastCommissionedFrameNumber;
-        else 
-            return 0;
-    }
-
-    int getNumImagesTotal() {
-        return (int)acqTimestamps.size();
-    };
-
-    uint64_t getRecordingDuration() {
-        return acqTimestamps[acqTimestamps.size()-1] - acqTimestamps[0];
-    }
-    void seekToFrame(int frameNumber) {
-        if(frameNumber<0)
-            frameNumber=0;
-        currentImageIndex = frameNumber;
-    }
-
-    void setSynchronised(bool synchronised);
-
 private:
 
     QFuture<void> playbackProcess;
     QMutex mutex;
-    QMutex *imageMutex;
-    QWaitCondition *imagePublished;
-    QWaitCondition *imageProcessed;
 
     QDir imageDirectory;
 
@@ -151,23 +92,9 @@ private:
     bool stereoMode;
     bool noDelay;
     bool playbackLoop;
-    bool synchronised;
-
-    std::vector<quint64> acqTimestamps;
-    int imgNumSeekerIdx = 0;
-    int lastCommissionedFrameNumber = -1; 
-
-    int foundImageWidth = 0;
-    int foundImageHeight = 0;
-
-    void purgeFilenamesVector(std::vector<cv::String> &filenames);
 
     void run();
-    void runImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img);
     void runStereo();
-    void runStereoImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img, cv::Mat &imgSecondary);
-
-
 
 public slots:
 
@@ -175,18 +102,12 @@ public slots:
     void stop();
     void pause();
 
-    void step1frame(bool next);
-
 signals:
 
-    void onNewImage(CameraImage image);
+    void onNewImage(const CameraImage &image);
     void finished();
 
-    void paused();
-
-    // NOTE: we need this specific signal, to let imagePlaybackControlDialog know
-    // that the playback finished automatically. The dialog alonw only knows about 
-    // playback changes that were caused by GUI interactions. Without this signal, it would be clueless
-    void endReached();
-
 };
+
+
+#endif //PUPILEXT_IMAGEREADER_H

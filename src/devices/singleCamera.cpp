@@ -1,7 +1,7 @@
 
 #include <pylon/TlFactory.h>
-#include <QThread>
 #include "singleCamera.h"
+#include "hardwareTriggerConfiguration.h"
 
 SingleCamera::SingleCamera(const String_t &fullname, QObject* parent)
         : SingleCamera(CDeviceInfo().SetFullName(fullname), parent) {
@@ -10,6 +10,7 @@ SingleCamera::SingleCamera(const String_t &fullname, QObject* parent)
 
 SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
         : Camera(parent), camera(CTlFactory::GetInstance().CreateDevice(di)),
+        cameraImageEventHandler(new SingleCameraImageEventHandler(parent)),
         frameCounter(new CameraFrameRateCounter(parent)),
         cameraCalibration(new CameraCalibration()),
         calibrationThread(new QThread()),
@@ -19,15 +20,18 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     if(!settingsDirectory.exists()) {
-// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
-//        settingsDirectory.mkdir(".");
-        QDir().mkpath(settingsDirectory.absolutePath());
+        settingsDirectory.mkdir(".");
     }
 
     // calibration worker thread
     cameraCalibration->moveToThread(calibrationThread);
+    connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
+
+    // CTlFactory::GetInstance().CreateDevice( CDeviceInfo().SetFullName( fullname))
+    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
+    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
 
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
@@ -37,18 +41,7 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
     }
 
     try {
-        cameraConfigurationEventHandler = new CameraConfigurationEventHandler;
-        connect(cameraConfigurationEventHandler, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
-        camera.RegisterConfiguration(cameraConfigurationEventHandler, RegistrationMode_ReplaceAll, Cleanup_Delete);
-
-        softwareTriggerConfiguration = new CAcquireContinuousConfiguration;
-        camera.RegisterConfiguration(softwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
-
-        cameraImageEventHandler = new SingleCameraImageEventHandler(parent);
-        connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
-        connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
-        //
-        connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
+        camera.RegisterConfiguration(new CAcquireContinuousConfiguration, RegistrationMode_ReplaceAll, Cleanup_Delete);
 
         camera.RegisterImageEventHandler(cameraImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
 
@@ -65,10 +58,7 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
             loadCalibrationFile();
         }
 
-        CIntegerParameter heartbeat( camera.GetTLNodeMap(), "HeartbeatTimeout" );
-        heartbeat.TrySetValue( 1000, IntegerValueCorrection_Nearest );
-
-        if(camera.CanWaitForFrameTriggerReady()) {
+        if (camera.CanWaitForFrameTriggerReady()) {
 
             // Start the grabbing using the grab loop thread, by setting the grabLoopType parameter
             // to GrabLoop_ProvidedByInstantCamera. The grab results are delivered to the image event handlers.
@@ -83,28 +73,13 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
         }
     }
     catch (const GenericException &e) {
-        genericExceptionOccured(e);
+        std::cerr << "A Pylon exception occurred." << std::endl<< e.GetDescription() << std::endl;
     }
 }
 
 SingleCamera::~SingleCamera() {
-    if (cameraCalibration != nullptr)
-        cameraCalibration->deleteLater();
-    if (calibrationThread != nullptr) {
-        calibrationThread->quit();
-        calibrationThread->deleteLater();
-    }
-}
-
-void SingleCamera::genericExceptionOccured(const GenericException &e) {
-    //QThread::msleep(1000);
-    std::cerr << "A Pylon exception occurred." << std::endl<< e.GetDescription() << std::endl;
-    if (camera.IsCameraDeviceRemoved()) {
-        emit cameraDeviceRemoved();
-        camera.Close();
-        camera.DetachDevice();
-        camera.DestroyDevice();
-    }
+    calibrationThread->quit();
+    calibrationThread->wait();
 }
 
 bool SingleCamera::isOpen() {
@@ -116,16 +91,9 @@ void SingleCamera::close() {
     camera.StopGrabbing();
     camera.Close();
     camera.DeregisterImageEventHandler(cameraImageEventHandler);
-    camera.DeregisterConfiguration(cameraConfigurationEventHandler);
-    if(hardwareTriggerConfiguration) {
-        camera.DeregisterConfiguration(hardwareTriggerConfiguration);
-    }
-    if(softwareTriggerConfiguration) {
-        camera.DeregisterConfiguration(softwareTriggerConfiguration);
-    }
 }
 
-void SingleCamera::enableHardwareTrigger(bool state) {
+void SingleCamera::enableHardwareTrigger(bool enabled) {
     std::cout<< "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << std::endl;
 
     frameCounter->reset();
@@ -137,23 +105,11 @@ void SingleCamera::enableHardwareTrigger(bool state) {
             camera.Close();
         }
 
-
-        if(hardwareTriggerConfiguration) {
-            camera.DeregisterConfiguration(hardwareTriggerConfiguration);
-            hardwareTriggerConfiguration = nullptr;
-        }
-        if(softwareTriggerConfiguration) {
-            camera.DeregisterConfiguration(softwareTriggerConfiguration);
-            softwareTriggerConfiguration = nullptr;
-        }
-
-        if(state) {
-            hardwareTriggerConfiguration = new HardwareTriggerConfiguration(lineSource);
-            camera.RegisterConfiguration(hardwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
+        if(enabled) {
+            camera.RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
             hardwareTriggerEnabled = true;
         } else {
-            softwareTriggerConfiguration = new CAcquireContinuousConfiguration;
-            camera.RegisterConfiguration(softwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
+            camera.RegisterConfiguration(new CAcquireContinuousConfiguration, RegistrationMode_ReplaceAll, Cleanup_Delete);
             hardwareTriggerEnabled = false;
         }
 
@@ -175,8 +131,9 @@ void SingleCamera::enableHardwareTrigger(bool state) {
             std::cout << std::endl;
             std::cout << std::endl;
         }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    }
+    catch (const GenericException &e) {
+        std::cerr << "A Pylon exception occurred." << std::endl<< e.GetDescription() << std::endl;
     }
 }
 
@@ -285,13 +242,18 @@ void SingleCamera::autoGainOnce() {
         } else {
             std::cerr << "Only area scan cameras support auto functions." << std::endl;
         }
-    } catch (const TimeoutException &e) {
+    }
+    catch (const TimeoutException &e)
+    {
         // Auto functions did not finish in time.
         // Maybe the cap on the lens is still on or there is not enough light.
         std::cerr << "A timeout has occurred: " << std::endl << e.GetDescription() << std::endl;
         std::cerr << "Please make sure you remove the cap from the camera lens before running auto gain." << std::endl;
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    }
+    catch (const GenericException &e)
+    {
+        // Error handling.
+        std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
     }
 }
 
@@ -399,138 +361,87 @@ void SingleCamera::autoExposureOnce() {
         } else {
             std::cerr << "Only area scan cameras support auto functions." << std::endl;
         }
-    } catch (const TimeoutException &e) {
+    }
+    catch (const TimeoutException &e)
+    {
         // Auto functions did not finish in time.
         // Maybe the cap on the lens is still on or there is not enough light.
         std::cerr << "A timeout has occurred: " << e.GetDescription() << std::endl;
         std::cerr << "Please make sure you remove the cap from the camera lens before running this sample." << std::endl;
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    }
+    catch (const GenericException &e)
+    {
+        // Error handling.
+        std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
     }
 }
 
 QString SingleCamera::getFriendlyName() {
-    try {
-        return QString(camera.GetDeviceInfo().GetFriendlyName().c_str());
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return "";
+
+    return QString(camera.GetDeviceInfo().GetFriendlyName().c_str());
 }
 
 QString SingleCamera::getFullName() {
-    try {
-        return QString(camera.GetDeviceInfo().GetFullName().c_str());
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return "";
+
+    return QString(camera.GetDeviceInfo().GetFullName().c_str());
 }
 
 QString SingleCamera::getDeviceID() {
-    try {
-        return QString(camera.GetDeviceInfo().GetDeviceID().c_str());
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return "";
+
+    return QString(camera.GetDeviceInfo().GetDeviceID().c_str());
 }
 
 int SingleCamera::getExposureTimeValue() {
-    try {
-        if (camera.ExposureTime.IsReadable()) {
-            return static_cast<int>(camera.ExposureTime.GetValue());
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.ExposureTime.IsReadable()) {
+        return static_cast<int>(camera.ExposureTime.GetValue());
     }
     return 0;
 }
 
 int SingleCamera::getExposureTimeMin() {
-    try {
-        if (camera.ExposureTime.IsReadable()) {
-            return static_cast<int>(camera.ExposureTime.GetMin());
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.ExposureTime.IsReadable()) {
+        return static_cast<int>(camera.ExposureTime.GetMin());
     }
     return 0;
 }
 
 int SingleCamera::getExposureTimeMax() {
-    try {
-        if (camera.ExposureTime.IsReadable()) {
-            return static_cast<int>(camera.ExposureTime.GetMax());
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.ExposureTime.IsReadable()) {
+        return static_cast<int>(camera.ExposureTime.GetMax());
     }
     return 0;
 }
 
 double SingleCamera::getGainValue() {
-    try {
-        if (camera.Gain.IsReadable()) {
-            return camera.Gain.GetValue();
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.Gain.IsReadable()) {
+        return camera.Gain.GetValue();
     }
     return 0;
 }
 
 double SingleCamera::getGainMin() {
-    try {
-        if (camera.Gain.IsReadable()) {
-            return camera.Gain.GetMin();
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.Gain.IsReadable()) {
+        return camera.Gain.GetMin();
     }
     return 0;
 }
 
 double SingleCamera::getGainMax() {
-    try {
-        if (camera.Gain.IsReadable()) {
-            return camera.Gain.GetMax();
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.Gain.IsReadable()) {
+        return camera.Gain.GetMax();
     }
     return 0;
 }
 
 void SingleCamera::setGainValue(double value) {
-    try {
-        if (camera.Gain.IsReadable()) {
-            if (getGainMax() < value)
-                value = getGainMax();
-            else if (getGainMin() > value)
-                value = getGainMin();
-        }
-        if (camera.Gain.IsWritable()) {
-            camera.Gain.TrySetValue(value);
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.Gain.IsWritable()) {
+        camera.Gain.TrySetValue(value);
     }
 }
 
 void SingleCamera::setExposureTimeValue(int value) {
-    try {
-        if (camera.ExposureTime.IsReadable()) {
-            if (getExposureTimeMax() < value)
-                value = getExposureTimeMax();
-            else if (getExposureTimeMin() > value)
-                value = getExposureTimeMin();
-        }
-        if (camera.ExposureTime.IsWritable()) {
-            camera.ExposureTime.TrySetValue(value);
-        }
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.ExposureTime.IsWritable()) {
+        camera.ExposureTime.TrySetValue(value);
     }
 }
 
@@ -558,82 +469,48 @@ void SingleCamera::saveToFile(const String_t &filename) {
 }
 
 bool SingleCamera::isEnabledAcquisitionFrameRate() {
-    try {
-        if (camera.AcquisitionFrameRateEnable.IsReadable()) {
-            return camera.AcquisitionFrameRateEnable.GetValue();
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.AcquisitionFrameRateEnable.IsReadable()) {
+        return camera.AcquisitionFrameRateEnable.GetValue();
     }
     return false;
 }
 
-bool SingleCamera::isEmulated()
-{
-    QString device_name = QString(camera.GetDeviceInfo().GetModelName().c_str());
-    return (device_name.toLower().contains("emu"));
-}
-
 void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
-    try {
-        if (camera.AcquisitionFrameRateEnable.IsWritable()) {
-            camera.AcquisitionFrameRateEnable.TrySetValue(enabled);
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.AcquisitionFrameRateEnable.IsWritable()) {
+        camera.AcquisitionFrameRateEnable.TrySetValue(enabled);
     }
 }
 
 void SingleCamera::setAcquisitionFPSValue(int value) {
-    try {
-        if (camera.AcquisitionFrameRate.IsWritable()) {
-            camera.AcquisitionFrameRate.TrySetValue(value);
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.AcquisitionFrameRate.IsWritable()) {
+        camera.AcquisitionFrameRate.TrySetValue(value);
     }
 }
 
 int SingleCamera::getAcquisitionFPSValue() {
-    try {
-        if (camera.AcquisitionFrameRate.IsReadable()) {
-            return static_cast<int>(camera.AcquisitionFrameRate.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.AcquisitionFrameRate.IsReadable()) {
+        return static_cast<int>(camera.AcquisitionFrameRate.GetValue());
     }
     return 0;
 }
 
 int SingleCamera::getAcquisitionFPSMin() {
-    try {
-        if (camera.AcquisitionFrameRate.IsReadable()) {
-            return static_cast<int>(camera.AcquisitionFrameRate.GetMin());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.AcquisitionFrameRate.IsReadable()) {
+        return static_cast<int>(camera.AcquisitionFrameRate.GetMin());
     }
     return 0;
 }
 
 int SingleCamera::getAcquisitionFPSMax() {
-    try {
-        if (camera.AcquisitionFrameRate.IsReadable()) {
-            return static_cast<int>(camera.AcquisitionFrameRate.GetMax());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.AcquisitionFrameRate.IsReadable()) {
+        return static_cast<int>(camera.AcquisitionFrameRate.GetMax());
     }
     return 0;
 }
 
 double SingleCamera::getResultingFrameRateValue() {
-    try {
-        if (camera.ResultingFrameRate.IsReadable()) {
-            return camera.ResultingFrameRate.GetValue();
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
+    if (camera.ResultingFrameRate.IsReadable()) {
+        return camera.ResultingFrameRate.GetValue();
     }
     return 0;
 }
@@ -682,18 +559,6 @@ CameraImageType SingleCamera::getType() {
     return CameraImageType::LIVE_SINGLE_CAMERA;
 }
 
-void SingleCamera::startGrabbing()
-{
-    if (camera.IsOpen() && !camera.IsGrabbing())
-        camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-}
-
-void SingleCamera::stopGrabbing()
-{
-    if (camera.IsOpen() && camera.IsGrabbing())
-        camera.StopGrabbing();
-}
-
 QString SingleCamera::getCalibrationFilename() {
 
     return settingsDirectory.filePath(getFriendlyName() + "_calibration_" +
@@ -711,286 +576,3 @@ void SingleCamera::loadCalibrationFile() {
         cameraCalibration->loadFromFile(configFile.toStdString().c_str());
     }
 }
-
-
-int SingleCamera::getImageROIwidth() {
-    try {
-        if(camera.Width.IsReadable()) {
-            return static_cast<int>(camera.Width.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return 0;
-}
-
-int SingleCamera::getImageROIheight() {
-    try {
-        if (camera.Height.IsReadable()) {
-            return static_cast<int>(camera.Height.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return 0;
-}
-
-int SingleCamera::getImageROIoffsetX() {
-    try {
-        if(camera.OffsetX.IsReadable()) {
-            return static_cast<int>(camera.OffsetX.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return 0;
-}
-
-int SingleCamera::getImageROIoffsetY() {
-    try {
-        if (camera.OffsetY.IsReadable()) {
-            return static_cast<int>(camera.OffsetY.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return 0;
-}
-
-// NOTE: Binning affects this
-int SingleCamera::getImageROIwidthMax() {
-    // Classic/U/L GigE cameras
-  //  return (int)camera.Width.GetMax();
-    // other cameras
-    try {
-        if(camera.WidthMax.IsReadable()) {
-            return static_cast<int>(camera.WidthMax.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return 0;
-}
-
-// NOTE: Binning affects this
-int SingleCamera::getImageROIheightMax() {
-    // Classic/U/L GigE cameras
-  //  return (int)camera.Height.GetMax();
-    // other cameras
-    try {
-        if (camera.WidthMax.IsReadable()) {
-            return static_cast<int>(camera.HeightMax.GetValue());
-        }
-    } catch(const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-    return 0;
-}
-
-QRectF SingleCamera::getImageROI(){
-    return QRectF(getImageROIoffsetX(),getImageROIoffsetY(),getImageROIwidth(), getImageROIheight());
-}
-
-int SingleCamera::getBinningVal() {
-    //if(camera.BinningHorizontal.GetValue()!=camera.BinningVertical.GetValue())
-    //    return 0;
-    try {
-        return camera.BinningHorizontal.GetValue();
-    }
-    catch (const GenericException &e) {
-        return 1;
-    }
-}
-
-double SingleCamera::getTemperature() {
-    double d = 0.0;
-    try {
-        if(!camera.DeviceTemperature.IsReadable())
-            return d;
-
-        // DEV
-        //qDebug() << camera.GetValue(Basler_UniversalCameraParams::PLCamera::DeviceModelName);
-
-        // NOTE: this line is only needed in ace 2, boost, and dart IMX Cameras
-        // NOTE: sensor temp (and maybe others too) cannot be measured while grabbing, but coreboard anytime
-        camera.DeviceTemperatureSelector.TrySetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
-
-        d = camera.DeviceTemperature.GetValue();
-    } catch (const GenericException &e) {
-        genericExceptionOccured(e);
-    }
-
-    return d;
-}
-
-bool SingleCamera::isGrabbing()
-{
-    return camera.IsGrabbing();
-}
-
-// NOTE: grabbing "pause" is necessary for setting binning
-bool SingleCamera::setBinningVal(int value) {
-
-    bool success = false;
-
-    if(camera.IsGrabbing())
-        camera.StopGrabbing();
-
-    // in case of our Basler cameras here, only mode=1,2,4 are only valid values
-    if (camera.BinningVertical.IsWritable()) {
-        // "Enable sensor binning"
-        // "Note: Available on selected camera models only"
-       // camera.BinningSelector.SetValue(BinningSelector_Sensor); // NOTE: found in Basler docs, but no trace of it in Pylon::CBaslerUniversalInstantCamera:: when code tries to compile. What is this?
-
-        // Set "binning mode" of camera
-        camera.BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
-        //camera.BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
-        camera.BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
-        //camera.BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
-
-        if(value==2 || value==3) {
-            success = camera.BinningHorizontal.TrySetValue(2) &&
-                    camera.BinningVertical.TrySetValue(2);
-            std::cout << "Setting binning to 2 on both axes"<< std::endl;
-        } else if(value==4) {
-            success = camera.BinningHorizontal.TrySetValue(4) &&
-                    camera.BinningVertical.TrySetValue(4);
-            std::cout << "Setting binning to 4 on both axes"<< std::endl;
-        } else { //if(value==1) {
-            success = camera.BinningHorizontal.TrySetValue(1) &&
-                    camera.BinningVertical.TrySetValue(1);
-            std::cout << "Setting binning to 1 (no binning) on both axes"<< std::endl;
-        }
-    }
-    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    return success;
-}
-
-// NOTE: grabbing "pause" is necessary for setting image ROI
-bool SingleCamera::setImageROIwidth(int width) {
-    //std::cout << "Setting Image ROI width=" << std::to_string(width) << std::endl;
-    bool success = false;
-
-    if(camera.IsGrabbing())
-        camera.StopGrabbing();
-
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int maxWidth = getImageROIwidthMax();
-    int offsetX = getImageROIoffsetX();
-
-    if(width < 16)
-        width=16;
-
-    int modVal=width%16;
-    if(modVal != 0)
-        width -= modVal;
-
-    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
-//    if (offsetX >= maxWidth-16)
-//        width = maxWidth-offsetX;
-
-    if (camera.Width.IsWritable() ) {
-        success = camera.Width.TrySetValue(bestWidth);
-    }
-    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    return success;
-}
-
-// NOTE: grabbing "pause" is necessary for setting image ROI
-bool SingleCamera::setImageROIheight(int height) {
-    //std::cout << "Setting Image ROI height=" << std::to_string(height) << std::endl;
-    bool success = false;
-
-    if(camera.IsGrabbing())
-        camera.StopGrabbing();
-
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int maxHeight = getImageROIheightMax();
-    int offsetY = getImageROIoffsetY();
-
-    if(height < 16)
-        height=16;
-
-    int modVal=height%16;
-    if(modVal != 0)
-        height -= modVal;
-
-    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
-//    if (offsetY >= maxHeight-16)
-//        height = maxHeight-offsetY;
-
-    if (camera.Height.IsWritable() ) {
-        success = camera.Height.TrySetValue(bestHeight);
-    } 
-    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    return success;
-}
-
-// NOTE: grabbing "pause" is necessary for setting image ROI
-bool SingleCamera::setImageROIoffsetX(int offsetX) {
-    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
-    bool success = false;
-
-    if(camera.IsGrabbing())
-        camera.StopGrabbing();
-
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int maxWidth = getImageROIwidthMax();
-    int width = getImageROIwidth();
-
-    if(maxWidth - offsetX < 16)
-        offsetX = maxWidth - 16;
-    //if(width + offsetX > maxWidth)
-    //    return;
-    
-    int modVal=offsetX%16;
-    if(modVal != 0)
-        offsetX -= modVal;
-
-    if (width + offsetX <= maxWidth && camera.OffsetX.IsWritable() ) {
-        success = camera.OffsetX.TrySetValue(offsetX);
-    }
-    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    return success;
-}
-
-// NOTE: grabbing "pause" is necessary for setting image ROI
-bool SingleCamera::setImageROIoffsetY(int offsetY) {
-    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
-    bool success = false;
-
-    if(camera.IsGrabbing())
-        camera.StopGrabbing();
-
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int maxHeight = getImageROIheightMax();
-    int height = getImageROIheight();
-
-    if(maxHeight - offsetY < 16)
-        offsetY = maxHeight - 16;
-    //if(height + offsetY > maxHeight)
-    //    return;
-
-    int modVal=offsetY%16;
-    if(modVal != 0)
-        offsetY -= modVal;
-
-    if (height + offsetY <= maxHeight && camera.OffsetY.IsWritable() ) {
-        success = camera.OffsetY.TrySetValue(offsetY);
-    } 
-    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    return success;
-}
-

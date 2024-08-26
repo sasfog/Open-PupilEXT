@@ -1,4 +1,7 @@
-#pragma once
+
+#ifndef PUPILEXT_CAMERAFRAMERATECOUNTER_H
+#define PUPILEXT_CAMERAFRAMERATECOUNTER_H
+
 
 /**
     @author Moritz Lode
@@ -69,7 +72,7 @@ public slots:
             if(cumDiff==0 || secFrameCount==0) {
                 fps_ = 0.0;
             } else {
-                fps_ = 1000.0 / ((double) cumDiff / secFrameCount);
+                fps_ =  (double) 1000.0f / (cumDiff / secFrameCount);
             }            m_timer.restart();
             timeout_timer.start(4000);
             secFrameCount = 0;
@@ -127,3 +130,5 @@ signals:
     void framecount(int framecount);
 
 };
+
+#endif //PUPILEXT_CAMERAFRAMERATECOUNTER_H

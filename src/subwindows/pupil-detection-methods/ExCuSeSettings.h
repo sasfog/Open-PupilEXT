@@ -1,7 +1,9 @@
-#pragma once
+
+#ifndef PUPILEXT_EXCUSESETTINGS_H
+#define PUPILEXT_EXCUSESETTINGS_H
 
 /**
-    @authors Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Moritz Lode
 */
 
 #include "PupilMethodSetting.h"
@@ -9,7 +11,6 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QtWidgets>
 #include <QtWidgets/QLabel>
-#include "../../SVGIconColorAdjuster.h"
 
 #include "json.h"
 #include <fstream>
@@ -24,94 +25,85 @@ class ExCuSeSettings : public PupilMethodSetting {
 
 public:
 
-    explicit ExCuSeSettings(PupilDetection * pupilDetection, ExCuSe *m_excuse, QWidget *parent=0) : 
-        PupilMethodSetting("ExCuSeSettings.configParameters", "ExCuSeSettings.configIndex", parent), 
-        p_excuse(m_excuse), 
-        pupilDetection(pupilDetection) {
+    explicit ExCuSeSettings(ExCuSe *m_excuse, QWidget *parent=0) : PupilMethodSetting(parent), p_excuse(m_excuse), configParameters(defaultParameters)  {
+        configParameters = applicationSettings->value("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
 
-        PupilMethodSetting::setDefaultParameters(defaultParameters);
+        configIndex = applicationSettings->value("ExCuSeSettings.configIndex", "Default").toString();
+
         createForm();
-        configsBox->setCurrentText(settingsMap.key(configIndex));
 
-        if(isAutoParamEnabled()) {
-            maxRadiBox->setEnabled(false);
+        if(parameterConfigs->findText(configIndex) < 0) {
+            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
+            parameterConfigs->setCurrentText("Default");
         } else {
-            maxRadiBox->setEnabled(true);
+            parameterConfigs->setCurrentText(configIndex);
         }
 
-        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
-        QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
-        QPushButton *iLabelFakeButton = new QPushButton();
-        iLabelFakeButton->setFlat(true);
-        iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
-        iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
-        iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
-        iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
-        iLabelFakeButton->setFixedSize(QSize(32,32));
-        iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayoutRow1->addWidget(iLabelFakeButton);
+        QGridLayout *infoLayout = new QGridLayout(infoBox);
+
+        QIcon trackOnIcon = QIcon(":/icons/Breeze/status/22/dialog-information.svg");
+        QLabel *iLabel = new QLabel();
+        iLabel->setPixmap(trackOnIcon.pixmap(QSize(32, 32)));
+        infoLayout->addWidget(iLabel, 0, 0);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
-        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Wolfgang Fuhl, Thomas Kübler, Katrin Sippel, Wolfgang Rosenstiel, Enkelejda Kasneci, \"ExCuSe: Robust Pupil Detection in Real-World Scenarios.\", 2015<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini / University of Tübingen");
-        infoLayoutRow1->addWidget(pLabel);
-
-        infoLayout->addLayout(infoLayoutRow1);
+        infoLayout->addWidget(pLabel, 1, 0);
 
         QLabel *confLabel;
         if(p_excuse->hasConfidence())
-            confLabel = new QLabel("Info: This method does provide its own confidence.");
+            confLabel = new QLabel("Info:\nThis method does provide its own confidence.");
         else
-            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
-        SupportFunctions::setSmallerLabelFontSize(confLabel);
+            confLabel = new QLabel("Info:\nThis method does not provide its own confidence, use the outline confidence.");
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel);
+        infoLayout->addWidget(confLabel, 2, 0);
 
-        QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
-        SupportFunctions::setSmallerLabelFontSize(infoLabel);
+        QLabel *infoLabel = new QLabel("CAUTION:\nProcessing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(infoLabel);
+        infoLayout->addWidget(infoLabel, 3, 0);
 #if _DEBUG
-        QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
-        SupportFunctions::setSmallerLabelFontSize(warnLabel);
+        QLabel *warnLabel = new QLabel("CAUTION:\nDebug build may perform very slow.\nUse release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel);
+        infoLayout->addWidget(warnLabel, 4, 0);
 #endif
         infoBox->setLayout(infoLayout);
     }
 
     ~ExCuSeSettings() override = default;
 
-    void add2(ExCuSe *s_excuse) {
-        excuse2 = s_excuse;
+    void addSecondary(ExCuSe *s_excuse) {
+        secondaryExcuse = s_excuse;
     }
-    void add3(ExCuSe *s_excuse) {
-        excuse3 = s_excuse;
+
+    QMap<QString, QList<float>> getParameter() {
+        return configParameters;
     }
-    void add4(ExCuSe *s_excuse) {
-        excuse4 = s_excuse;
+
+    void setParameter(QMap<QString, QList<float>> params) {
+        if(defaultParameters.size() == params.size())
+            configParameters = params;
+    }
+
+    void reset() {
+        configParameters = defaultParameters;
     }
 
 public slots:
 
     void loadSettings() override {
-        PupilMethodSetting::loadSettings();
+        configParameters = applicationSettings->value("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
+        configIndex = applicationSettings->value("ExCuSeSettings.configIndex", "Default").toString();
 
-        if(isAutoParamEnabled()) {
-            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
-            pupilDetection->setAutoParamEnabled(true);
-            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
-            pupilDetection->setAutoParamScheduled(true);
-
-            maxRadiBox->setEnabled(false);
+        if(parameterConfigs->findText(configIndex) < 0) {
+            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
+            parameterConfigs->setCurrentText("Default");
         } else {
-            pupilDetection->setAutoParamEnabled(false);
-            maxRadiBox->setEnabled(true);
+            parameterConfigs->setCurrentText(configIndex);
         }
 
 //        QList<float> selectedParameter = configParameters.value(configIndex);
@@ -119,82 +111,48 @@ public slots:
 //        maxRadiBox->setValue(selectedParameter[0]);
 //        ellipseThresholdBox->setValue(selectedParameter[1]);
 
-        applySpecificSettings();
+        updateSettings();
     }
 
-    void applySpecificSettings() override {
-
-        // First come the parameters roughly independent from ROI size and relative pupil size 
+    void updateSettings() override {
+        int max_ellipse_radi = p_excuse->max_ellipse_radi;
         int good_ellipse_threshold = p_excuse->good_ellipse_threshold;
 
+        max_ellipse_radi = maxRadiBox->value();
         good_ellipse_threshold = ellipseThresholdBox->value();
 
+        p_excuse->max_ellipse_radi = max_ellipse_radi;
         p_excuse->good_ellipse_threshold = good_ellipse_threshold;
 
-        QList<float>& currentParameters = getCurrentParameters();
-        currentParameters[1] = good_ellipse_threshold;
+        configParameters[parameterConfigs->currentText()][0] = max_ellipse_radi;
+        configParameters[parameterConfigs->currentText()][1] = good_ellipse_threshold;
 
-        if(excuse2) {
-            excuse2->good_ellipse_threshold = good_ellipse_threshold;
-        }
-        if(excuse3) {
-            excuse3->good_ellipse_threshold = good_ellipse_threshold;
-        }
-        if(excuse4) {
-            excuse4->good_ellipse_threshold = good_ellipse_threshold;
+        if(secondaryExcuse) {
+            secondaryExcuse->max_ellipse_radi = max_ellipse_radi;
+            secondaryExcuse->good_ellipse_threshold = good_ellipse_threshold;
         }
 
-        // Then the specific ones that are set by autoParam
-        int procMode = pupilDetection->getCurrentProcMode();
-        if(isAutoParamEnabled()) {
-            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
-            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
-            pupilDetection->setAutoParamScheduled(true);
-            
-        } else {
-            int max_ellipse_radi = p_excuse->max_ellipse_radi;
-            
-            max_ellipse_radi = maxRadiBox->value();
-            
-            p_excuse->max_ellipse_radi = max_ellipse_radi;
+        emit onConfigChange(parameterConfigs->currentText());
 
-            currentParameters[0] = max_ellipse_radi;
-
-            if(excuse2) {
-                excuse2->max_ellipse_radi = max_ellipse_radi;
-            }
-            if(excuse3) {
-                excuse3->max_ellipse_radi = max_ellipse_radi;
-            }
-            if(excuse4) {
-                excuse4->max_ellipse_radi = max_ellipse_radi;
-            }
-            
-        }
-
-        emit onConfigChange(configsBox->currentText());
-    }
-
-    void applyAndSaveSpecificSettings() override {
-        applySpecificSettings();
-        PupilMethodSetting::saveSpecificSettings();
+        applicationSettings->setValue("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters));
+        applicationSettings->setValue("ExCuSeSettings.configIndex", parameterConfigs->currentText());
     }
 
 private:
 
     ExCuSe *p_excuse;
-    ExCuSe *excuse2 = nullptr;
-    ExCuSe *excuse3 = nullptr;
-    ExCuSe *excuse4 = nullptr;
-
-    PupilDetection *pupilDetection;
+    ExCuSe *secondaryExcuse = nullptr;
 
     QSpinBox *maxRadiBox;
     QSpinBox *ellipseThresholdBox;
 
+    QPushButton *resetButton;
+    QComboBox *parameterConfigs;
+    QPushButton *fileButton;
+
     void createForm() {
-        PupilMethodSetting::loadSettings();
-        QList<float>& selectedParameter = getCurrentParameters();
+
+        QList<float> selectedParameter = configParameters.value(configIndex);
 
 
         int max_ellipse_radi = selectedParameter[0];
@@ -204,33 +162,22 @@ private:
 
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
-        configsBox = new QComboBox();
-        QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
-        configsBox->setFixedWidth(250);
-        configsLayout->addWidget(parameterConfigsLabel);
-        configsLayout->addWidget(configsBox);
+        parameterConfigs = new QComboBox();
+        configsLayout->addWidget(parameterConfigs);
 
-                for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
-        {
-            configsBox->addItem(cit.key());
+        QMapIterator<QString, QList<float>> i(configParameters);
+        while (i.hasNext()) {
+            i.next();
+            parameterConfigs->addItem(i.key());
         }
 
-        connect(configsBox, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
+        connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
 
         mainLayout->addLayout(configsLayout);
-
-        QHBoxLayout *configsNoteLayout = new QHBoxLayout();
-        QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
-        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
-        configsNoteLabel->setFixedHeight(60);
-        configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-        configsNoteLayout->addWidget(configsNoteLabel);
-        mainLayout->addLayout(configsNoteLayout);
-
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
 
-        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Ellipse Fit");
+        QGroupBox *sizeGroup = new QGroupBox("Ellipse Fit");
 
         QFormLayout *sizeLayout = new QFormLayout();
 
@@ -238,14 +185,12 @@ private:
         maxRadiBox = new QSpinBox();
         maxRadiBox->setMaximum(5000);
         maxRadiBox->setValue(max_ellipse_radi);
-        maxRadiBox->setFixedWidth(80);
         sizeLayout->addRow(maxRadiLabel, maxRadiBox);
 
         QLabel *ellipseThresholdLabel = new QLabel(tr("Ellipse Goodness Threshold:"));
         ellipseThresholdBox = new QSpinBox();
         ellipseThresholdBox->setMaximum(100);
         ellipseThresholdBox->setValue(good_ellipse_threshold);
-        ellipseThresholdBox->setFixedWidth(80);
         sizeLayout->addRow(ellipseThresholdLabel, ellipseThresholdBox);
 
         sizeGroup->setLayout(sizeLayout);
@@ -254,8 +199,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset algorithm parameters");
-        fileButton = new QPushButton("Load config file");
+        resetButton = new QPushButton("Reset");
+        fileButton = new QPushButton("Load File");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -277,40 +222,64 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = PupilMethodSetting::defaultParameters[Settings::DEFAULT];
+        QList<float> customs = defaultParameters["Default"];
 
         customs[0] = j["Parameter Set"]["max_ellipse_radi"];
         customs[1] = j["Parameter Set"]["good_ellipse_threshold"];
 
-        insertCustomEntry(customs);
+        configParameters.insert("Custom", customs);
+
+        if(parameterConfigs->findText("Custom") < 0) {
+            parameterConfigs->addItem("Custom");
+        }
+        parameterConfigs->setCurrentText("Custom");
+
     }
 
-    QMap<Settings, QList<float>> defaultParameters = {
-            { Settings::DEFAULT, {50.0f, 15.0f} },
-            { Settings::ROI_0_3_OPTIMIZED, {146.0f, 7.0f} },
-            { Settings::ROI_0_6_OPTIMIZED, {216.0f, 34.0f} },
-            { Settings::FULL_IMAGE_OPTIMIZED, {39.0f, 0.0f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 15.0f} },
-            { Settings::CUSTOM, {-1.0f, 15.0f} }
+    QMap<QString, QList<float>> defaultParameters = {
+            { "Default", {50, 15} },
+            { "ROI 0.3 Optimized", {146, 7} },
+            { "ROI 0.6 Optimized", {216, 34} },
+            { "Full Image Optimized", {39, 0} }
     };
+
+
+    QMap<QString, QList<float>> configParameters;
+    QString configIndex;
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        setConfigIndex(configKey);
-        QList<float>& selectedParameter = getCurrentParameters();
+        QList<float> selectedParameter = configParameters.value(configKey);
 
+        maxRadiBox->setValue(selectedParameter[0]);
         ellipseThresholdBox->setValue(selectedParameter[1]);
 
-        if(isAutoParamEnabled()) {
-            maxRadiBox->setEnabled(false);
-            // TODO: hide value text too
-        } else {
-            maxRadiBox->setEnabled(true);
-            maxRadiBox->setValue(selectedParameter[0]);
-        }
+        //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
+    }
 
-        //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
+    void onResetClick() {
+        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
+        configParameters[configKey] = defaultParameters.value(configKey);
+        onParameterConfigSelection(configKey);
+    }
+
+    void onLoadFileClick() {
+        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
+
+        if(!filename.isEmpty()) {
+
+            try {
+                loadSettingsFromFile(filename);
+            } catch(...) {
+                QMessageBox msgBox;
+                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
+                msgBox.exec();
+            }
+        }
     }
 
 };
+
+
+#endif //PUPILEXT_EXCUSESETTINGS_H

@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef PUPILEXT_FRAMERATECOUNTER_H
+#define PUPILEXT_FRAMERATECOUNTER_H
 
 /**
     @author Moritz Lode
@@ -109,3 +111,5 @@ signals:
     void framecount(int framecount);
 
 };
+
+#endif //PUPILEXT_FRAMERATECOUNTER_H

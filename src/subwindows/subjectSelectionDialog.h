@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef PUPILEXT_SUBJECTSELECTIONDIALOG_H
+#define PUPILEXT_SUBJECTSELECTIONDIALOG_H
 
 /**
     @author Moritz Lode
@@ -71,3 +73,6 @@ signals:
     void onSubjectChange(QString subject);
 
 };
+
+
+#endif //PUPILEXT_SUBJECTSELECTIONDIALOG_H

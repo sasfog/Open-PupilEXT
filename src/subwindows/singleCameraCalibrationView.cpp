@@ -15,14 +15,12 @@ SingleCameraCalibrationView::SingleCameraCalibrationView(SingleCamera *camera, Q
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     if(!settingsDirectory.exists()) {
-// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
-//        settingsDirectory.mkdir(".");
-        QDir().mkpath(settingsDirectory.absolutePath());
+        settingsDirectory.mkdir(".");
     }
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    videoView = new VideoView(false);
+    videoView = new VideoView();
     layout->addWidget(videoView);
 
     QGroupBox *qualityGroup = new QGroupBox("Calibration Quality");
@@ -147,7 +145,7 @@ SingleCameraCalibrationView::SingleCameraCalibrationView(SingleCamera *camera, Q
 
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
     //connect(this, SIGNAL(onNewImage(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
-    connect(calibrationWorker, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(calibrationWorker, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(calibrationWorker, SIGNAL (finishedCalibration()), this, SLOT (onCalibrationFinished()));
 
     if(!calibrationWorker->isCalibrated()) {
@@ -161,7 +159,7 @@ SingleCameraCalibrationView::~SingleCameraCalibrationView() {
 }
 
 // Update the cameraview widget in the window
-// This slot is connected to the processedImageLowFPS signal which is send at a slowed down rate than the camera rate ie. 30fps
+// This slot is connected to the processedImage signal which is send at a slowed down rate than the camera rate ie. 30fps
 void SingleCameraCalibrationView::updateView(const CameraImage &cimg) {
 
     if(!cimg.img.empty()) {
@@ -248,7 +246,7 @@ void SingleCameraCalibrationView::closeEvent(QCloseEvent *event) {
 
     if(calibrationWorker->isCalibrated()) {
         QString configFile = camera->getCalibrationFilename();
-        //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
+        configFile.replace(" ", "");
         std::cout<<"Saving calibration file to settings directory: "<< configFile.toStdString() <<std::endl;
         calibrationWorker->saveToFile(configFile.toStdString().c_str());
         QWidget::closeEvent(event);
@@ -297,7 +295,7 @@ void SingleCameraCalibrationView::updateSettings() {
 // File is in the OpenCV XML filestorage fileformat
 void SingleCameraCalibrationView::loadConfigFile() {
     QString configFile = camera->getCalibrationFilename();
-    //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
+    configFile.replace(" ", "");
     if (QFile::exists(configFile)) {
         std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
                   << std::endl;
@@ -326,4 +324,5 @@ void SingleCameraCalibrationView::onVerifyFileChecked(bool value) {
         }
     }
 }
+
 

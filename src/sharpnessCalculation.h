@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PUPILEXT_SHARPNESSCALCULATION_H
+#define PUPILEXT_SHARPNESSCALCULATION_H
 
 /**
     @author Moritz Lode
@@ -20,7 +21,7 @@ slots:
     onNewImage(): on each new camera image, pattern detection and sharpness estimation is performed
 
 signals:
-    processedImageLowFPS(): Outputs camera images with drawn pattern and sharpness information
+    processedImage(): Outputs camera images with drawn pattern and sharpness information
 */
 class SharpnessCalculation : public QObject {
     Q_OBJECT
@@ -42,12 +43,20 @@ public:
         setBoardSize(cv::Size(cornersHorizontal, cornersVertical));
     }
 
+    int getUpdateFPS() {
+        return updateDelay*1000;
+    }
+
+    void setUpdateFPS(int fps) {
+        updateDelay = 1000/fps;
+    }
+
 private:
 
     cv::Size boardSize;
 
     QElapsedTimer timer;
-    int drawDelay;
+    int updateDelay;
     double scalingFactor;
 
 public slots:
@@ -56,6 +65,9 @@ public slots:
 
 signals:
 
-    void processedImageLowFPS(CameraImage image);
+    void processedImage(const CameraImage &image);
 
 };
+
+
+#endif //PUPILEXT_SHARPNESSCALCULATION_H
