@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PUPILEXT_CALIBRATIONHELPDIALOG_H
+#define PUPILEXT_CALIBRATIONHELPDIALOG_H
 
 /**
     @author Moritz Lode
@@ -35,3 +36,6 @@ private:
     void createForm();
 
 };
+
+
+#endif //PUPILEXT_CALIBRATIONHELPDIALOG_H

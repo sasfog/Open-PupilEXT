@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef PUPILEXT_HARDWARETRIGGERCONFIGURATION_H
+#define PUPILEXT_HARDWARETRIGGERCONFIGURATION_H
 
 //-----------------------------------------------------------------------------
 //  Basler pylon SDK
@@ -56,16 +58,8 @@ public:
             }
 
             // Set the line source as Input mode
-            CEnumParameter lineSelector(nodemap, "LineSelector");
-            CEnumParameter lineMode(nodemap, "LineMode");
-            if (!lineSelector.CanSetValue(lineSource))
-            {
-                throw RUNTIME_EXCEPTION("Could not select line.");
-            }
-            if (!lineMode.CanSetValue("Input"))
-            {
-                throw RUNTIME_EXCEPTION("Could not set LineMode.");
-            }
+            CEnumParameter(nodemap, "LineSelector").SetValue(lineSource);
+            CEnumParameter(nodemap, "LineMode").SetValue("Input");
 
             // Get all enumeration entries of trigger selector.
             StringList_t triggerSelectorEntries;
@@ -86,20 +80,10 @@ public:
                     //// The Basler pylon Viewer tool can be used to test the selected settings first.
 
                     //// The trigger source must be set to the trigger input, e.g. 'Line1'.
-                    
-                        CEnumParameter triggerSource(nodemap, "TriggerSource");
+                    CEnumParameter(nodemap, "TriggerSource").SetValue(lineSource);
 
                     ////The trigger activation must be set to e.g. 'RisingEdge'.
-                    CEnumParameter triggerActivation(nodemap, "TriggerActivation");
-
-                    if (!triggerSource.CanSetValue(lineSource))
-                    {
-                        throw RUNTIME_EXCEPTION("Could not select line.");
-                    }
-                    if (!triggerActivation.CanSetValue("RisingEdge"))
-                    {
-                        throw RUNTIME_EXCEPTION("Could not set LineMode.");
-                    }
+                    CEnumParameter(nodemap, "TriggerActivation").SetValue("RisingEdge");
                 }
                 else
                 {
@@ -112,7 +96,7 @@ public:
             triggerSelector.SetValue(triggerName);
         }
 
-        // Set acquisition mode to "continuous"
+        //Set acquisition mode to "continuous"
         CEnumParameter(nodemap, "AcquisitionMode").SetValue("Continuous");
     }
 
@@ -137,3 +121,5 @@ public:
         }
     }
 };
+
+#endif //PUPILEXT_HARDWARETRIGGERCONFIGURATION_H

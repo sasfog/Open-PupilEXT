@@ -1,7 +1,9 @@
-#pragma once
+
+#ifndef PUPILEXT_SINGLECAMERA_H
+#define PUPILEXT_SINGLECAMERA_H
 
 /**
-    @authors Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Moritz Lode
 */
 
 
@@ -9,18 +11,13 @@
 #include <pylon/PylonIncludes.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
 #include "singleCameraImageEventHandler.h"
-#include "cameraConfigurationEventHandler.h"
 #include "camera.h"
 #include "../frameRateCounter.h"
 #include "../cameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
-#include "hardwareTriggerConfiguration.h"
-
 
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
-
-
 
 
 /**
@@ -58,9 +55,6 @@ public:
     void close() override;
     CameraImageType getType() override;
 
-    void startGrabbing() override;
-    void stopGrabbing() override;
-
     void autoGainOnce();
     void autoExposureOnce();
 
@@ -69,7 +63,6 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
-    bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
     int getAcquisitionFPSValue();
@@ -89,17 +82,6 @@ public:
     void loadFromFile(const String_t &filename);
     void saveToFile(const String_t &filename);
 
-    int getImageROIwidth() override; 
-    int getImageROIheight() override; 
-    int getImageROIoffsetX() override; 
-    int getImageROIoffsetY() override; 
-    QRectF getImageROI() override;
-    int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
-    int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
-    int getBinningVal();
-    double getTemperature();
-    bool isGrabbing() override;
-
 private:
 
     QDir settingsDirectory;
@@ -113,16 +95,14 @@ private:
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
 
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler = nullptr;
-    HardwareTriggerConfiguration *hardwareTriggerConfiguration = nullptr;
-    CAcquireContinuousConfiguration *softwareTriggerConfiguration = nullptr;
     CameraFrameRateCounter *frameCounter;
+
     CameraCalibration *cameraCalibration;
     QThread *calibrationThread;
 
     void synchronizeTime();
+
     void loadCalibrationFile();
-    void genericExceptionOccured(const GenericException &e);
 
 public slots:
 
@@ -131,19 +111,14 @@ public slots:
     void setLineSource(String_t value);
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
-    void enableHardwareTrigger(bool state);
-
-    bool setBinningVal(int value);
-    bool setImageROIwidth(int width);
-    bool setImageROIheight(int height);
-    bool setImageROIoffsetX(int offsetX);
-    bool setImageROIoffsetY(int offsetY);
+    void enableHardwareTrigger(bool enabled);
 
 signals:
 
     void fps(double fps);
     void framecount(int framecount);
-    void cameraDeviceRemoved();
-    void imagesSkipped();
 
 };
+
+
+#endif //PUPILEXT_SINGLECAMERA_H

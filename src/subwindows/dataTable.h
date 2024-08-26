@@ -1,15 +1,15 @@
-#pragma once
+
+#ifndef PUPILEXT_DATATABLE_H
+#define PUPILEXT_DATATABLE_H
 
 /**
-    @author Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Moritz Lode
 */
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/qtableview.h>
 #include "../pupil-detection-methods/Pupil.h"
 #include "../devices/camera.h"
-#include "../pupilDetection.h"
-#include "../dataTypes.h"
 
 
 /**
@@ -29,33 +29,47 @@ class DataTable : public QWidget {
 
 public:
 
-    explicit DataTable(ProcMode procMode = ProcMode::SINGLE_IMAGE_ONE_PUPIL, QWidget *parent=0);
+    static const QString TIME;
+    static const QString FRAME_NUMBER;
+    static const QString CAMERA_FPS;
+    static const QString PUPIL_FPS;
+    static const QString PUPIL_CENTER_X;
+    static const QString PUPIL_CENTER_Y;
+    static const QString PUPIL_MAJOR;
+    static const QString PUPIL_MINOR;
+    static const QString PUPIL_WIDTH;
+    static const QString PUPIL_HEIGHT;
+    static const QString PUPIL_DIAMETER;
+    static const QString PUPIL_UNDIST_DIAMETER;
+    static const QString PUPIL_PHYSICAL_DIAMETER;
+    static const QString PUPIL_CONFIDENCE;
+    static const QString PUPIL_OUTLINE_CONFIDENCE;
+    static const QString PUPIL_CIRCUMFERENCE;
+    static const QString PUPIL_RATIO;
+
+    explicit DataTable(bool stereoMode=false, QWidget *parent=0);
     ~DataTable() override;
 
     QSize sizeHint() const override;
-    void fitForTableSize();
 
 private:
 
-    QSettings *applicationSettings;
+    bool stereoMode;
 
     QTableView *tableView;
     QStandardItemModel *tableModel;
 
+    QElapsedTimer timer;
+    int updateDelay;
+
     QMenu *tableContextMenu;
 
-    ProcMode procMode;
-    int numCols = 1;
-
-    bool resetScheduled = false;
-
-    void setPupilData(const Pupil &pupil, int columnID=0);
-
-    void reset();
+    void setPupilData(const Pupil &pupil, int column=0);
 
 public slots:
 
-    void onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename);
+    void onPupilData(quint64 timestamp, const Pupil &pupil, const QString &filename);
+    void onStereoPupilData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
 
     void onCameraFPS(double fps);
     void onCameraFramecount(int framecount);
@@ -64,12 +78,11 @@ public slots:
     void customMenuRequested(QPoint pos);
     void onContextMenuClick(QAction* action);
 
-    void onTableRowDoubleClick(const QModelIndex &modelIndex);
-
-    void scheduleReset();
-
 signals:
 
-    void createGraphPlot(DataTypes::DataType value);
+    void createGraphPlot(const QString &value);
 
 };
+
+
+#endif //PUPILEXT_DATATABLE_H

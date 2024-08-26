@@ -1,7 +1,9 @@
-#pragma once
+
+#ifndef PUPILEXT_CAMERA_H
+#define PUPILEXT_CAMERA_H
 
 /**
-    @authors Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Moritz Lode
 */
 
 
@@ -10,11 +12,8 @@
 
 /**
     Enum representing the different camera image types, also used for differentiating the respective camera type
-
-
-    GB: added LIVE_SINGLE_WEBCAM 
 */
-enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_FILE=2, STEREO_IMAGE_FILE=3, LIVE_SINGLE_WEBCAM = 4 };
+enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_FILE=2, STEREO_IMAGE_FILE=3 };
 
 /**
     Struct representing a camera image returned from a camera and its respective meta-data
@@ -25,10 +24,10 @@ enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_
 */
 struct CameraImage {
     int type;
-    mutable cv::Mat img;
-    mutable cv::Mat imgSecondary;
+    cv::Mat img;
+    cv::Mat imgSecondary;
     uint64_t timestamp;
-    uint64_t frameNumber; // holds the INDEX of image (not starting from 1)
+    uint64_t frameNumber;
     std::string filename;
 };
 
@@ -55,21 +54,11 @@ public:
     virtual void close() = 0;
     virtual CameraImageType getType() = 0;
 
-    virtual int getImageROIwidth() = 0;
-    virtual int getImageROIheight() = 0;
-    virtual int getImageROIwidthMax() = 0;
-    virtual int getImageROIheightMax() = 0;
-    virtual int getImageROIoffsetX() = 0; 
-    virtual int getImageROIoffsetY() = 0;  
-    virtual QRectF getImageROI() = 0;
-
-    virtual void stopGrabbing() = 0;
-    virtual void startGrabbing() = 0;
-
-    virtual bool isGrabbing() = 0;
-
 signals:
 
     void onNewGrabResult(CameraImage grabResult);
 
 };
+
+
+#endif //PUPILEXT_CAMERA_H

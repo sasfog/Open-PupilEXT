@@ -99,14 +99,9 @@ vcpkg_installed/
 external/
 external_linux/
 external_windows/
-cmake-build*
+cmake-build-debug/
+cmake-build-release/
 build-release/
 bin/
 .idea/
 build/
-
-.vs/
-.vscode/c_cpp_properties.json
-.vscode/launch.json
-.vscode/tasks.json
-.vscode/settings.json

@@ -1,7 +1,9 @@
-#pragma once
+
+#ifndef PUPILEXT_SINGLECAMERASHARPNESSVIEW_H
+#define PUPILEXT_SINGLECAMERASHARPNESSVIEW_H
 
 /**
-    @authors Moritz Lode, Attila Boncser
+    @author Moritz Lode
 */
 
 #include <QtCore/qobjectdefs.h>
@@ -38,7 +40,7 @@ private:
     CameraCalibration *cameraCalibration;
 
     SharpnessCalculation *sharpnessWorker;
-    QThread sharpnessThread;
+    QThread *sharpnessThread;
 
     CalibrationHelpDialog *calibrationHelpDialog;
 
@@ -68,3 +70,5 @@ private slots:
     void onShowHelpDialog();
 
 };
+
+#endif //PUPILEXT_SINGLECAMERASHARPNESSVIEW_H

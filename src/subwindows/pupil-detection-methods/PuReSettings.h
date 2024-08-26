@@ -1,7 +1,9 @@
-#pragma once
+
+#ifndef PUPILEXT_PURESETTINGS_H
+#define PUPILEXT_PURESETTINGS_H
 
 /**
-    @authors Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Moritz Lode
 */
 
 #include "PupilMethodSetting.h"
@@ -9,10 +11,8 @@
 #include <QtWidgets/QtWidgets>
 #include <QtWidgets/QLabel>
 #include "../../pupil-detection-methods/PuRe.h"
-#include "../../SVGIconColorAdjuster.h"
 
 #include "json.h"
-#include "../../supportFunctions.h"
 #include <fstream>
 // for convenience
 using json = nlohmann::json;
@@ -25,183 +25,134 @@ class PuReSettings : public PupilMethodSetting {
 
 public:
 
-    explicit PuReSettings(PupilDetection * pupilDetection, PuRe *pure, QWidget *parent=0) : 
-        PupilMethodSetting("PuReSettings.configParameters", "PuReSettings.configIndex", parent), 
-        pure(pure), 
-        pupilDetection(pupilDetection) {
+    explicit PuReSettings(PuRe *pure, QWidget *parent=0) : PupilMethodSetting(parent), pure(pure), configParameters(defaultParameters)  {
+        configParameters = applicationSettings->value("PuReSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
 
-        PupilMethodSetting::setDefaultParameters(defaultParameters);
+        configIndex = applicationSettings->value("PuReSettings.configIndex", "Default").toString();
+
         createForm();
-        configsBox->setCurrentText(settingsMap.key(configIndex));
 
-        if(isAutoParamEnabled()) {
-            canthiDistanceBox->setEnabled(false);
-            minPupilBox->setEnabled(false);
-            maxPupilBox->setEnabled(false);
+        if(parameterConfigs->findText(configIndex) < 0) {
+            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
+            parameterConfigs->setCurrentText("Default");
         } else {
-            canthiDistanceBox->setEnabled(true);
-            minPupilBox->setEnabled(true);
-            maxPupilBox->setEnabled(true);
+            parameterConfigs->setCurrentText(configIndex);
         }
 
-        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
-        QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
-        QPushButton *iLabelFakeButton = new QPushButton();
-        iLabelFakeButton->setFlat(true);
-        iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
-        iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
-        iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
-        iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
-        iLabelFakeButton->setFixedSize(QSize(32,32));
-        iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayoutRow1->addWidget(iLabelFakeButton);
+
+        QGridLayout *infoLayout = new QGridLayout(infoBox);
+
+        QIcon trackOnIcon = QIcon(":/icons/Breeze/status/22/dialog-information.svg");
+        QLabel *iLabel = new QLabel();
+        iLabel->setPixmap(trackOnIcon.pixmap(QSize(32, 32)));
+        infoLayout->addWidget(iLabel, 0, 0);
+
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
-        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci, \"PuRe: Robust pupil detection for real-time pervasive eye tracking.\", 2018<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini");
-        infoLayoutRow1->addWidget(pLabel);
-
-        infoLayout->addLayout(infoLayoutRow1);
+        infoLayout->addWidget(pLabel, 1, 0);
 
         QLabel *confLabel;
         if(pure->hasConfidence())
-            confLabel = new QLabel("Info: This method does provide its own confidence.");
+            confLabel = new QLabel("Info:\nThis method does provide its own confidence.");
         else
-            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
-        SupportFunctions::setSmallerLabelFontSize(confLabel);
+            confLabel = new QLabel("Info:\nThis method does not provide its own confidence, use the outline confidence.");
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel);
+        infoLayout->addWidget(confLabel, 2, 0);
 
 #if _DEBUG
-        QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
-        SupportFunctions::setSmallerLabelFontSize(warnLabel);
+        QLabel *warnLabel = new QLabel("CAUTION:\nDebug build may perform very slow.\nUse release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel);
+        infoLayout->addWidget(warnLabel, 3, 0);
 #endif
         infoBox->setLayout(infoLayout);
     }
 
     ~PuReSettings() override = default;
 
-    void add2(PuRe *s_pure) {
-        pure2 = s_pure;
+    void addSecondary(PuRe *s_pure) {
+        secondaryPure = s_pure;
     }
-    void add3(PuRe *s_pure) {
-        pure3 = s_pure;
+
+    QMap<QString, QList<float>> getParameter() {
+        return configParameters;
     }
-    void add4(PuRe *s_pure) {
-        pure4 = s_pure;
+
+    void setParameter(QMap<QString, QList<float>> params) {
+        if(defaultParameters.size() == params.size())
+            configParameters = params;
+    }
+
+    void reset() {
+        configParameters = defaultParameters;
     }
 
 public slots:
 
     void loadSettings() override {
 
-        if(isAutoParamEnabled()) {
-            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
-            pupilDetection->setAutoParamEnabled(true);
-            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
-            pupilDetection->setAutoParamScheduled(true);
+        configParameters = applicationSettings->value("PuReSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
+        configIndex = applicationSettings->value("PuReSettings.configIndex", "Default").toString();
 
-            canthiDistanceBox->setEnabled(false);
-            minPupilBox->setEnabled(false);
-            maxPupilBox->setEnabled(false);
+        if(parameterConfigs->findText(configIndex) < 0) {
+            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
+            parameterConfigs->setCurrentText("Default");
         } else {
-            pupilDetection->setAutoParamEnabled(false);
-            canthiDistanceBox->setEnabled(true);
-            minPupilBox->setEnabled(true);
-            maxPupilBox->setEnabled(true);
+            parameterConfigs->setCurrentText(configIndex);
         }
 
-        applySpecificSettings();
+        updateSettings();
     }
 
-    void applySpecificSettings() override {
+    void updateSettings() override {
+        float meanCanthiDistanceMM = pure->meanCanthiDistanceMM;
+        float maxPupilDiameterMM = pure->maxPupilDiameterMM;
+        float minPupilDiameterMM = pure->minPupilDiameterMM;
 
-        // First come the parameters roughly independent from ROI size and relative pupil size 
         int baseWidth = pure->baseSize.width;
         int baseHeight = pure->baseSize.height;
 
+        meanCanthiDistanceMM = canthiDistanceBox->value();
+        maxPupilDiameterMM = maxPupilBox->value();
+        minPupilDiameterMM = minPupilBox->value();
+
         baseWidth = imageWidthBox->value();
         baseHeight = imageHeightBox->value();
+
         pure->baseSize = cv::Size(baseWidth, baseHeight);
 
-        QList<float>& currentParameters = getCurrentParameters();
-        currentParameters[0] = baseWidth;
-        currentParameters[1] = baseHeight;
+        pure->meanCanthiDistanceMM = meanCanthiDistanceMM;
+        pure->maxPupilDiameterMM = maxPupilDiameterMM;
+        pure->minPupilDiameterMM = minPupilDiameterMM;
 
-        if(pure2) {
-            pure2->baseSize = cv::Size(baseWidth, baseHeight);
-        }
-        if(pure3) {
-            pure3->baseSize = cv::Size(baseWidth, baseHeight);
-        }
-        if(pure4) {
-            pure4->baseSize = cv::Size(baseWidth, baseHeight);
-        }
+        configParameters[parameterConfigs->currentText()][0] = baseWidth;
+        configParameters[parameterConfigs->currentText()][1] = baseHeight;
+        configParameters[parameterConfigs->currentText()][2] = meanCanthiDistanceMM;
+        configParameters[parameterConfigs->currentText()][3] = minPupilDiameterMM;
+        configParameters[parameterConfigs->currentText()][4] = maxPupilDiameterMM;
 
-        // Then the specific ones that are set by autoParam
-        int procMode = pupilDetection->getCurrentProcMode();
-        if(isAutoParamEnabled()) {
-            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
-            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
-            pupilDetection->setAutoParamScheduled(true);
+        if(secondaryPure) {
+            secondaryPure->baseSize = cv::Size(baseWidth, baseHeight);
 
-        } else {
-            float meanCanthiDistanceMM = pure->meanCanthiDistanceMM;
-            float maxPupilDiameterMM = pure->maxPupilDiameterMM;
-            float minPupilDiameterMM = pure->minPupilDiameterMM;
-
-            meanCanthiDistanceMM = canthiDistanceBox->value();
-            maxPupilDiameterMM = maxPupilBox->value();
-            minPupilDiameterMM = minPupilBox->value();
-
-            pure->meanCanthiDistanceMM = meanCanthiDistanceMM;
-            pure->maxPupilDiameterMM = maxPupilDiameterMM;
-            pure->minPupilDiameterMM = minPupilDiameterMM;
-
-            currentParameters[2] = meanCanthiDistanceMM;
-            currentParameters[3] = minPupilDiameterMM;
-            currentParameters[4] = maxPupilDiameterMM;
-
-            if(pure2) {
-                pure2->meanCanthiDistanceMM = meanCanthiDistanceMM;
-                pure2->maxPupilDiameterMM = maxPupilDiameterMM;
-                pure2->minPupilDiameterMM = minPupilDiameterMM;
-            }
-            if(pure3) {
-                pure3->meanCanthiDistanceMM = meanCanthiDistanceMM;
-                pure3->maxPupilDiameterMM = maxPupilDiameterMM;
-                pure3->minPupilDiameterMM = minPupilDiameterMM;
-            }
-            if(pure4) {
-                pure4->meanCanthiDistanceMM = meanCanthiDistanceMM;
-                pure4->maxPupilDiameterMM = maxPupilDiameterMM;
-                pure4->minPupilDiameterMM = minPupilDiameterMM;
-            }
-            
+            secondaryPure->meanCanthiDistanceMM = meanCanthiDistanceMM;
+            secondaryPure->maxPupilDiameterMM = maxPupilDiameterMM;
+            secondaryPure->minPupilDiameterMM = minPupilDiameterMM;
         }
 
-        emit onConfigChange(configsBox->currentText());
-    }
+        emit onConfigChange(parameterConfigs->currentText());
 
-    void applyAndSaveSpecificSettings() override {
-        applySpecificSettings();
-        PupilMethodSetting::saveSpecificSettings();
+        applicationSettings->setValue("PuReSettings.configParameters", QVariant::fromValue(configParameters));
+        applicationSettings->setValue("PuReSettings.configIndex", parameterConfigs->currentText());
     }
 
 private:
 
     PuRe *pure;
-    PuRe *pure2 = nullptr;
-    PuRe *pure3 = nullptr;
-    PuRe *pure4 = nullptr;
-
-    PupilDetection *pupilDetection;
+    PuRe *secondaryPure = nullptr;
 
     QSpinBox *imageWidthBox;
     QSpinBox *imageHeightBox;
@@ -210,9 +161,14 @@ private:
     QDoubleSpinBox *maxPupilBox;
     QDoubleSpinBox *minPupilBox;
 
+    QPushButton *resetButton;
+    QPushButton *fileButton;
+
+    QComboBox *parameterConfigs;
+
     void createForm() {
-        PupilMethodSetting::loadSettings();
-        QList<float>& selectedParameter = getCurrentParameters();
+
+        QList<float> selectedParameter = configParameters.value(configIndex);
 
         float meanCanthiDistanceMM = selectedParameter[2];
         float maxPupilDiameterMM = selectedParameter[4];
@@ -225,57 +181,37 @@ private:
 
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
-        configsBox = new QComboBox();
-        QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
-        configsBox->setFixedWidth(250);
-        configsLayout->addWidget(parameterConfigsLabel);
-        configsLayout->addWidget(configsBox);
+        parameterConfigs = new QComboBox();
+        configsLayout->addWidget(parameterConfigs);
 
-        for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
-        {
-            configsBox->addItem(cit.key());
+        QMapIterator<QString, QList<float>> i(configParameters);
+        while (i.hasNext()) {
+            i.next();
+            parameterConfigs->addItem(i.key());
         }
 
-        connect(configsBox, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
+        connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
 
         mainLayout->addLayout(configsLayout);
-
-        QHBoxLayout *configsNoteLayout = new QHBoxLayout();
-        QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
-        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
-        configsNoteLabel->setFixedHeight(60);
-        configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-        configsNoteLayout->addWidget(configsNoteLabel);
-        mainLayout->addLayout(configsNoteLayout);
-
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Image Size (Downscaling)");
-        QGroupBox *physGroup = new QGroupBox("Algorithm specific: Physical Parameter");
+        QGroupBox *sizeGroup = new QGroupBox("Image Size (Downscaling)");
+        QGroupBox *physGroup = new QGroupBox("Physical Parameter");
 
         QFormLayout *sizeLayout = new QFormLayout();
         QFormLayout *physLayout = new QFormLayout();
 
-        QLabel *widthLabel = new QLabel(tr("Image width [px]:"));
+        QLabel *widthLabel = new QLabel(tr("Image width:"));
         imageWidthBox = new QSpinBox();
         imageWidthBox->setMaximum(5000);
         imageWidthBox->setValue(baseWidth);
-        imageWidthBox->setFixedWidth(80);
-        
-        QLabel *heightLabel = new QLabel(tr("Image height [px]:"));
+        sizeLayout->addRow(widthLabel, imageWidthBox);
+
+        QLabel *heightLabel = new QLabel(tr("Image height:"));
         imageHeightBox = new QSpinBox();
         imageHeightBox->setMaximum(5000);
         imageHeightBox->setValue(baseHeight);
-        imageHeightBox->setFixedWidth(80);
-        
-        QHBoxLayout *layoutRow1 = new QHBoxLayout;
-        layoutRow1->addWidget(imageWidthBox);
-        QSpacerItem *sp1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
-        layoutRow1->addSpacerItem(sp1);
-        layoutRow1->addWidget(heightLabel);
-        layoutRow1->addWidget(imageHeightBox);
-        //layoutRow1->addSpacerItem(sp);
-        sizeLayout->addRow(widthLabel, layoutRow1);
+        sizeLayout->addRow(heightLabel, imageHeightBox);
 
         sizeGroup->setLayout(sizeLayout);
         mainLayout->addWidget(sizeGroup);
@@ -284,35 +220,25 @@ private:
         QLabel *canthiDistanceLabel = new QLabel(tr("Mean Canthi Distance [mm]:"));
         canthiDistanceBox = new QDoubleSpinBox();
         canthiDistanceBox->setValue(meanCanthiDistanceMM);
-        canthiDistanceBox->setFixedWidth(80);
         physLayout->addRow(canthiDistanceLabel, canthiDistanceBox);
 
         QLabel *maxPupilLabel = new QLabel(tr("Max. Pupil Size [mm]:"));
         maxPupilBox = new QDoubleSpinBox();
         maxPupilBox->setValue(maxPupilDiameterMM);
-        maxPupilBox->setFixedWidth(80);
+        physLayout->addRow(maxPupilLabel, maxPupilBox);
 
         QLabel *minPupilLabel = new QLabel(tr("Min. Pupil Size [mm]:"));
         minPupilBox = new QDoubleSpinBox();
         minPupilBox->setValue(minPupilDiameterMM);
-        minPupilBox->setFixedWidth(80);
-
-        QHBoxLayout *layoutRow2 = new QHBoxLayout;
-        layoutRow2->addWidget(maxPupilBox);
-        QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
-        layoutRow2->addSpacerItem(sp2);
-        layoutRow2->addWidget(minPupilLabel);
-        layoutRow2->addWidget(minPupilBox);
-        //layoutRow2->addSpacerItem(sp);
-        physLayout->addRow(maxPupilLabel, layoutRow2);
+        physLayout->addRow(minPupilLabel, minPupilBox);
 
         physGroup->setLayout(physLayout);
         mainLayout->addWidget(physGroup);
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset algorithm parameters");
-        fileButton = new QPushButton("Load config file");
+        resetButton = new QPushButton("Reset");
+        fileButton = new QPushButton("Load File");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -335,22 +261,26 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters[Settings::DEFAULT];
+        QList<float> customs = defaultParameters["Default"];
 
         customs[2] = j["Parameter Set"]["meanCanthiDistanceMM"];
         customs[3] = j["Parameter Set"]["minPupilDiameterMM"];
         customs[4] = j["Parameter Set"]["maxPupilDiameterMM"];
 
-        insertCustomEntry(customs);
+        configParameters.insert("Custom", customs);
+
+        if(parameterConfigs->findText("Custom") < 0) {
+            parameterConfigs->addItem("Custom");
+        }
+        parameterConfigs->setCurrentText("Custom");
+
     }
 
-    QMap<Settings, QList<float>> defaultParameters = {
-            { Settings::DEFAULT, {320, 240, 27.6f, 2.0f, 8.0f} },
-            { Settings::ROI_0_3_OPTIMIZED, {320, 240, 49.4f, 1.9f, 20.0f} },
-            { Settings::ROI_0_6_OPTIMIZED, {320, 240, 38.7f, 1.9f, 16.8f} },
-            { Settings::FULL_IMAGE_OPTIMIZED, {320, 240, 94.1f, 0.1f, 16.0f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {320, 240, -1.0f, -1.0f, -1.0f} },
-            { Settings::CUSTOM, {320, 240, -1.0f, -1.0f, -1.0f} }
+    QMap<QString, QList<float>> defaultParameters = {
+            { "Default", {320, 240, 27.6f, 2.0f, 8.0f} },
+            { "ROI 0.3 Optimized", {320, 240, 49.4f, 1.9f, 20.0f} },
+            { "ROI 0.6 Optimized", {320, 240, 38.7f, 1.9f, 16.8f} },
+            { "Full Image Optimized", {320, 240, 94.1f, 0.1f, 16.0f} }
     };
 
       // Parameters from second optimization run
@@ -361,36 +291,47 @@ private:
 //            { "Full Image Optimized", {320, 240, 76.1f, 2.4f, 5.6f} }
 //    };
 
+    QMap<QString, QList<float>> configParameters;
+    QString configIndex;
+
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        setConfigIndex(configKey);
-        QList<float>& selectedParameter = getCurrentParameters();
+        QList<float> selectedParameter = configParameters.value(configKey);
 
-        qDebug() << "configIndex = " << configIndex;
-
-        // First come the parameters roughly independent from ROI size and relative pupil size 
         imageWidthBox->setValue(selectedParameter[0]);
         imageHeightBox->setValue(selectedParameter[1]);
 
-        // Then the specific ones that are set by autoParam
-        if(isAutoParamEnabled()) {
-            canthiDistanceBox->setEnabled(false);
-            minPupilBox->setEnabled(false);
-            maxPupilBox->setEnabled(false);
-            // TODO: hide value text too
-        } else {
-            canthiDistanceBox->setEnabled(true);
-            minPupilBox->setEnabled(true);
-            maxPupilBox->setEnabled(true);
-            
-            canthiDistanceBox->setValue(selectedParameter[2]);
-            minPupilBox->setValue(selectedParameter[3]);
-            maxPupilBox->setValue(selectedParameter[4]);
-        }
+        canthiDistanceBox->setValue(selectedParameter[2]);
+        minPupilBox->setValue(selectedParameter[3]);
+        maxPupilBox->setValue(selectedParameter[4]);
 
-        //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
+        //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
+    }
+
+    void onResetClick() {
+        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
+        configParameters[configKey] = defaultParameters.value(configKey);
+        onParameterConfigSelection(configKey);
+    }
+
+    void onLoadFileClick() {
+        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
+
+        if(!filename.isEmpty()) {
+
+            try {
+                loadSettingsFromFile(filename);
+            } catch(...) {
+                QMessageBox msgBox;
+                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
+                msgBox.exec();
+            }
+        }
     }
 
 };
+
+
+#endif //PUPILEXT_PURESETTINGS_H
