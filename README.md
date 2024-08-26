@@ -248,7 +248,7 @@ void onTick() {
   LED_Green = !LED_Green;
   Trigger = !Trigger;
   LED_ticker++;
-  if (LED_ticker >= 2 * Threshold_Ticker) {
+  if (LED_ticker >= 2 * Threshold_Ticker && Threshold_Ticker!=0) { // This line was modified to check "&& Threshold_Ticker!=0" by Gabor Benyei
     myTick.detach();
     LED_Green = 0;
     Trigger = 0;
@@ -687,7 +687,7 @@ endif()
 set(PYLON_HOME "/Library/Frameworks/pylon.framework")
 set(PYLON_INCLUDE_DIR "/Library/Frameworks/pylon.framework/Headers")
 
-find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml REQUIRED)
 find_package(OpenCV REQUIRED PATHS "/usr/local/Cellar/opencv/4.5.1_3")
 find_package(Boost 1.72 REQUIRED)
 find_package(TBB REQUIRED PATHS "${PROJECT_SOURCE_DIR}/external/tbb")
@@ -712,6 +712,14 @@ else()
 endif()
 
 include_directories(${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Concurrent_INCLUDE_DIRS}
+        ${Qt5SerialPort_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
+        ${Qt5Svg_INCLUDE_DIRS}
+        ${Qt5PrintSupport_INCLUDE_DIRS}
+        ${Qt5Network_INCLUDE_DIRS}
+        ${Qt5Xml_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIR}
@@ -727,7 +735,15 @@ add_subdirectory (singleeyefitter)
 message(STATUS "")
 message(STATUS "spii_LIBRARIES:\"${spii_LIBRARIES}\"")
 message(STATUS "--- Include directories ---" )
-message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}" )
+message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
+message(STATUS " Qt5Concurrent_INCLUDES: ${Qt5Concurrent_INCLUDE_DIRS}")
+message(STATUS " Qt5SerialPort_INCLUDES: ${Qt5SerialPort_INCLUDE_DIRS}")
+message(STATUS " Qt5Charts_INCLUDES: ${Qt5Charts_INCLUDE_DIRS}")
+message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
+message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
+message(STATUS " Qt5Network_INCLUDES: ${Qt5Network_INCLUDE_DIRS}")
+message(STATUS " Qt5Xml_INCLUDES: ${Qt5Xml_INCLUDE_DIRS}")
+
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}" )
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}" )
 message(STATUS " TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}" )
@@ -841,7 +857,7 @@ set(TBB_INCLUDE_DIR "C:/vcpkg/installed/x64-windows/include/tbb")
 set(SPII_INSTALL_DIR "${PROJECT_SOURCE_DIR}/external/spii")
 set(spii_INCLUDE_DIRS ${SPII_INSTALL_DIR}/include)
 set(PYLON_HOME "C:/Program Files/Basler/pylon 6/Development/")
-find_package(Qt5 COMPONENTS Widgets SerialPort Charts Svg PrintSupport REQUIRED)
+find_package(Qt5 COMPONENTS Widgets SerialPort Charts Svg PrintSupport Network Xml REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost 1.72 REQUIRED)
 find_package(TBB REQUIRED PATHS "${PROJECT_SOURCE_DIR}/external/tbb")
@@ -864,6 +880,14 @@ else()
 endif()
 
 include_directories(${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Concurrent_INCLUDE_DIRS}
+        ${Qt5SerialPort_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
+        ${Qt5Svg_INCLUDE_DIRS}
+        ${Qt5PrintSupport_INCLUDE_DIRS}
+        ${Qt5Network_INCLUDE_DIRS}
+        ${Qt5Xml_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIR}
@@ -879,7 +903,15 @@ add_subdirectory (singleeyefitter)
 message(STATUS "")
 message(STATUS "spii_LIBRARIES:\"${spii_LIBRARIES}\"")
 message(STATUS "--- Include directories ---" )
-message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}" )
+message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
+message(STATUS " Qt5Concurrent_INCLUDES: ${Qt5Concurrent_INCLUDE_DIRS}")
+message(STATUS " Qt5SerialPort_INCLUDES: ${Qt5SerialPort_INCLUDE_DIRS}")
+message(STATUS " Qt5Charts_INCLUDES: ${Qt5Charts_INCLUDE_DIRS}")
+message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
+message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
+message(STATUS " Qt5Network_INCLUDES: ${Qt5Network_INCLUDE_DIRS}")
+message(STATUS " Qt5Xml_INCLUDES: ${Qt5Xml_INCLUDE_DIRS}")
+
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}" )
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}" )
 message(STATUS " TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}" )
@@ -939,6 +971,17 @@ YEAR={2021},
 URL={https://www.frontiersin.org/article/10.3389/fnins.2021.676220},
 DOI={10.3389/fnins.2021.676220},    
 ISSN={1662-453X}}
+```
+
+#### Additional citation for Release v0.1.2 beta:
+G. L. Bényei, A. B. Boncsér, P. Pajkossy, "Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform," ECEM Conference Poster, Aug. 2024, doi: 10.13140/RG.2.2.33761.93284.
+```bib
+@Misc{10.13140/RG.2.2.33761.93284,
+AUTHOR = {Gábor L., Bényei and Attila B., Boncsér and Péter, Pajkossy},
+TITLE = {Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform},    
+YEAR={2024}, 
+URL={https://www.doi.org/10.13140/RG.2.2.33761.93284},
+DOI={10.13140/RG.2.2.33761.93284}}
 ```
 
 ## 7. References
