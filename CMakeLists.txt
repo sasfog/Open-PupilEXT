@@ -112,7 +112,7 @@ find_package(TBB CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(glog CONFIG REQUIRED)
-find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml REQUIRED) # OpenGL
+find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
 
 #find_package(Boost CONFIG REQUIRED)
@@ -239,6 +239,7 @@ include_directories(${Qt5Core_INCLUDE_DIRS}
         ${Qt5PrintSupport_INCLUDE_DIRS}
         ${Qt5Network_INCLUDE_DIRS}
         ${Qt5Xml_INCLUDE_DIRS}
+        ${Qt5OpenGL_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
@@ -264,6 +265,7 @@ message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
 message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
 message(STATUS " Qt5Network_INCLUDES: ${Qt5Network_INCLUDE_DIRS}")
 message(STATUS " Qt5Xml_INCLUDES: ${Qt5Xml_INCLUDE_DIRS}")
+message(STATUS " Qt5OpenGL_INCLUDES: ${Qt5OpenGL_INCLUDE_DIRS}")
 
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")

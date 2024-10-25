@@ -85,6 +85,10 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/sceneImageView.h
         subwindows/sceneImageWidget.cpp
         subwindows/sceneImageWidget.h
+        subwindows/QtOpenGLViewer/QtOpenGLViewer.cpp
+        subwindows/QtOpenGLViewer/QtOpenGLViewer.h
+        subwindows/setupGeometryDialog.cpp
+        subwindows/setupGeometryDialog.h
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
@@ -95,7 +99,7 @@ if(SPII_BUILD_FOUND)
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
             "singleeyefitter"
-            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml #Qt5::OpenGL
+            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml Qt5::OpenGL
             ${Boost_LIBRARIES}
             TBB::tbb
             #Boost::boost
@@ -103,14 +107,14 @@ if(SPII_BUILD_FOUND)
             ${CERES_LIBRARIES}
             ${PYLON_LIBRARIES}
             ${OpenCV_LIBS}
-            #opengl32
+            opengl32
             )
 
 else()
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
         "singleeyefitter"
-        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml #Qt5::OpenGL
+        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml Qt5::OpenGL
         ${Boost_LIBRARIES}
         TBB::tbb
         #Boost::boost
@@ -119,7 +123,7 @@ else()
         ${CERES_LIBRARIES}
         ${PYLON_LIBRARIES}
         ${OpenCV_LIBS}
-        #opengl32
+        opengl32
     )
 
 endif()
@@ -157,7 +161,7 @@ install(PROGRAMS "$<TARGET_FILE:Qt5::Widgets>" DESTINATION "${PROJECT_SOURCE_DIR
 install(PROGRAMS "$<TARGET_FILE:Qt5::SerialPort>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Charts>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Svg>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-##install(PROGRAMS "$<TARGET_FILE:Qt5::OpenGL>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt5::OpenGL>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 
 install(PROGRAMS "$<TARGET_FILE:TBB::tbb>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 
@@ -182,7 +186,7 @@ install(PROGRAMS "$<TARGET_FILE:Qt5::Widgets>" DESTINATION "${CMAKE_CURRENT_BINA
 install(PROGRAMS "$<TARGET_FILE:Qt5::SerialPort>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Charts>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Svg>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-##install(PROGRAMS "$<TARGET_FILE:Qt5::OpenGL>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt5::OpenGL>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 install(PROGRAMS "$<TARGET_FILE:TBB::tbb>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 #install(PROGRAMS "$<TARGET_FILE:opencv_world>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

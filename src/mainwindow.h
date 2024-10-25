@@ -9,6 +9,7 @@
 #include "devices/singleCamera.h"
 #include "devices/stereoCamera.h"
 #include "subwindows/pupilDetectionSettingsDialog.h"
+#include "subwindows/setupGeometryDialog.h"
 #include "subwindows/singleCameraView.h"
 #include "dataWriter.h"
 #include "imageWriter.h"
@@ -98,6 +99,7 @@ private:
     QIcon fileOpenIcon;
     QIcon cameraSerialConnectionIcon;
     QIcon pupilDetectionSettingsIcon;
+    QIcon setupGeometryIcon;
     QIcon remoteCCIcon;
     QIcon generalSettingsIcon;
     QIcon singleCameraIcon;
@@ -185,6 +187,7 @@ private:
     //  instantiation and memory management.
     MCUSettingsDialog *MCUSettingsDialogInst;
     PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
+    SetupGeometryDialog *setupGeometryDialog;
     GeneralSettingsDialog *generalSettingsDialog;
     SubjectSelectionDialog *subjectSelectionDialog;
     SingleCameraSettingsDialog *singleCameraSettingsDialog;

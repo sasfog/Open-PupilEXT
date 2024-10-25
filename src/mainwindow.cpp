@@ -84,6 +84,9 @@ MainWindow::MainWindow():
     pupilDetectionSettingsDialog = new PupilDetectionSettingsDialog(pupilDetectionWorker, this);
     pupilDetectionSettingsDialog->setWindowIcon(pupilDetectionSettingsIcon);
 
+    setupGeometryDialog = new SetupGeometryDialog(this);
+    setupGeometryDialog->setWindowIcon(setupGeometryIcon);
+
     generalSettingsDialog = new GeneralSettingsDialog(this);
     generalSettingsDialog->setWindowIcon(generalSettingsIcon);
 
@@ -191,6 +194,7 @@ void MainWindow::loadIcons() {
 //    cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings);
     cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings);
     pupilDetectionSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/draw-circle.svg"), applicationSettings);
+    setupGeometryIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/setupGeometry.svg"), applicationSettings);
     remoteCCIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/computer-connection.svg"), applicationSettings);
     generalSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/mimetypes/16/application-x-sharedlib.svg"), applicationSettings);
     singleCameraIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/devices/22/camera-video.svg"), applicationSettings);
@@ -248,6 +252,7 @@ void MainWindow::createActions() {
     QMenu *settingsMenu = menuBar()->addMenu(tr("Settings"));
     settingsMenu->addAction(cameraSerialConnectionIcon, tr("Microcontroller Connection"), MCUSettingsDialogInst, &MCUSettingsDialog::show);
     settingsMenu->addAction(pupilDetectionSettingsIcon, tr("Pupil Detection"), pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
+    settingsMenu->addAction(setupGeometryIcon, tr("Setup Geometry"), setupGeometryDialog, &SetupGeometryDialog::show);
     settingsMenu->addAction(remoteCCIcon, tr("Remote Control Connection"), remoteCCDialog, &RemoteCCDialog::show);
     settingsMenu->addAction(generalSettingsIcon, tr("General Settings"), generalSettingsDialog, &GeneralSettingsDialog::show);
 
@@ -1448,6 +1453,9 @@ void MainWindow::onCameraDisconnectClick() {
     if(pupilDetectionSettingsDialog->isVisible()) {
         pupilDetectionSettingsDialog->close();
     }
+    if(setupGeometryDialog->isVisible()) {
+        setupGeometryDialog->close();
+    }
     if(subjectSelectionDialog->isVisible()) {
         subjectSelectionDialog->close();
     }
@@ -2339,6 +2347,9 @@ void MainWindow::onGeneralSettingsChange() {
 
     if(pupilDetectionSettingsDialog)
         pupilDetectionSettingsDialog->repaint();
+
+    //if(setupGeometryDialog)
+    //    setupGeometryDialog->repaint();
 
     if(singleCameraSettingsDialog)
         singleCameraSettingsDialog->repaint();
