@@ -6,6 +6,7 @@
 #include <QtWidgets/QtWidgets>
 #include "setupGeometryDialog.h"
 #include "../SVGIconColorAdjuster.h"
+#include "../remoteSetupModel.h"
 
 // Create the pupil detection settings dialog
 // Given a pupil detection object to communicate to the detection algorithm objects there
@@ -14,8 +15,13 @@ SetupGeometryDialog::SetupGeometryDialog(QWidget *parent) :
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(800, 500);
-    this->setMinimumSize(980, 600);
-    this->setWindowTitle("Pupil Detection Settings");
+    this->setMinimumSize(1100, 600);
+    this->resize(1300, 800);
+    this->setWindowTitle("Setup Geometry");
+
+    //helplensIcon1 = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/lens-help-1.svg"), applicationSettings);
+    helpLensIcon1 = QIcon(":/icons/help-lens-2.png");
+    helpHeadIcon1 = QIcon(":/icons/help-head-1.png");
 
     createForm();
 
@@ -93,15 +99,97 @@ void SetupGeometryDialog::createForm() {
     //connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
 
     qtOpenGlViewer = new QtOpenGLViewer();
-    qtOpenGlViewer->setFixedSize(700,300);
+    qtOpenGlViewer->setFixedSize(700,500);
+    qtOpenGlViewer->setBackgroundColor(QColor::fromRgb(20,31,33));
+    qtOpenGlViewer->setFocusPolicy(Qt::FocusPolicy::ClickFocus); // let it catch keypresses
     mainLayoutInnerCol1->addWidget(qtOpenGlViewer);
+
+
+    helpBoxLayout = new QVBoxLayout(this);
+    helpBoxLayout->setContentsMargins(0,0,0,0);
+
+    // NOTE: This hardcoded 20px is the width of the vertical scrollbar, as we need to count it in as well
+    int safeWidth = qtOpenGlViewer->size().width();
+    QSize safeSize = QSize(safeWidth, safeWidth/13*12);
+
+    helpContentImage->setFlat(true);
+    helpContentImage->setAttribute(Qt::WA_NoSystemBackground, true);
+    helpContentImage->setAttribute(Qt::WA_TranslucentBackground, true);
+    helpContentImage->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
+    //helpContentImage->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
+    //helpContentImage->setFixedSize(QSize(32,32));
+    helpContentImage->setFixedSize(safeSize);
+    //helpContentImage->setIconSize(QSize(32,32));
+    helpContentImage->setIconSize(safeSize);
+    helpBoxLayout->addWidget(helpContentImage);
+
+    helpContentText = new QLabel();
+    helpContentText->setContentsMargins(20,0,0,20);
+    helpBoxLayout->addWidget(helpContentText);
+
+    helpBox = new QWidget();
+
+    helpBoxSca = new QScrollArea();
+    helpBoxSca->setWidget(helpBox);
+    helpBoxSca->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    helpBoxSca->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    //helpBox->setContentsMargins(20,0,0,0);
+    helpBox->setStyleSheet("QWidget { color: white; background-color: rgb(20,31,33); border: 0px }");
+    helpBox->setLayout(helpBoxLayout);
+    helpBox->setFixedWidth(safeWidth);
+    helpBox->setMinimumHeight(safeSize.height());
+    helpBox->setMaximumHeight(1000);
+    //helpBoxSca->setFixedWidth(qtOpenGlViewer->size().width());
+    helpBoxSca->setFixedSize(qtOpenGlViewer->size());
+    mainLayoutInnerCol1->addWidget(helpBoxSca);
+    helpBoxSca->hide();
+
+
+    QPushButton *testHelpRotateButton = new QPushButton("Test help");
+    connect(testHelpRotateButton, SIGNAL(clicked()), this, SLOT(testHelpRotateButtonClicked()));
+    mainLayoutInnerCol1->addWidget(testHelpRotateButton);
+
 
     aGroup->setLayout(aLayout);
     mainLayoutInnerCol1->addWidget(aGroup);
 
-    // TODO: make code fit in 1/6th of the actual line count...
 
-    // For each algorithm, a special widget is implemented that contains all algorithm specific parameters
+
+    QFormLayout *componentsLayout = new QFormLayout();
+
+    QLabel *setupModelTreeLabel = new QLabel(tr("Setup model components tree"));
+    QTreeView *setupModelTree = new QTreeView();
+
+    //
+    RemoteSetupModel *setupModel = new RemoteSetupModel();
+
+    //SetupModelTreeModel setupModelTreeModel(QString::fromUtf8(file.readAll()));
+    //file.close();
+    SetupModelTreeModel setupModelTreeModel(setupModel);
+
+    setupModelTree->setModel(&setupModelTreeModel);
+    setupModelTree->setWindowTitle(SetupModelTreeModel::tr("Simple Tree Model"));
+    for (int c = 0; c < setupModelTreeModel.columnCount(); ++c)
+        setupModelTree->resizeColumnToContents(c);
+    setupModelTree->expandAll();
+    const auto screenSize = setupModelTree->screen()->availableSize();
+    setupModelTree->resize({screenSize.width() / 2, screenSize.height() * 2 / 3});
+    setupModelTree->show();
+    //
+
+    // WE NEED OUR TREE MODEL HERE that accesses the mSetup object
+    // ...
+
+    //a2Box->setChecked(pupilDetection->isOutlineConfidenceEnabled());
+    componentsLayout->addRow(setupModelTreeLabel);
+    componentsLayout->addRow(setupModelTree);
+
+    //connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
+
+    mainLayoutInnerCol2->addLayout(componentsLayout);
+
+
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
@@ -217,6 +305,52 @@ void SetupGeometryDialog::onSettingsChange() {
 }
 
 void SetupGeometryDialog::updateContents() {
+
+}
+
+void SetupGeometryDialog::testHelpRotateButtonClicked() {
+    testHelp++;
+    if(testHelp>4) {
+        testHelp = 0;
+    }
+
+    if(testHelp == 0) {
+        showSetupHelp(SetupHelp::SETUP_3D);
+    } else if(testHelp == 1) {
+        showSetupHelp(SetupHelp::COMPONENT_HELP_LENS);
+    } else if(testHelp == 2) {
+        showSetupHelp(SetupHelp::COMPONENT_HELP_CAMERA);
+    } else if(testHelp == 3) {
+        showSetupHelp(SetupHelp::COMPONENT_HELP_ILLUMINATOR);
+    } else if(testHelp == 4) {
+        showSetupHelp(SetupHelp::COMPONENT_HELP_HEAD);
+    }
+}
+
+void SetupGeometryDialog::showSetupHelp(SetupHelp setupHelp) {
+    if(setupHelp == SETUP_3D) {
+        helpBoxSca->hide();
+        qtOpenGlViewer->show();
+        qtOpenGlViewer->resize(100,100);
+        qtOpenGlViewer->repaint();
+        qtOpenGlViewer->update();
+        qtOpenGlViewer->updateGeometry();
+    } else {
+        qtOpenGlViewer->hide();
+        helpBoxSca->show();
+        if(setupHelp == COMPONENT_HELP_LENS) {
+            helpContentImage->setIcon(helpLensIcon1);
+            helpContentText->setText("Lens help");
+        } else if(setupHelp == COMPONENT_HELP_CAMERA) {
+            //helpContentImage->setIcon(helpLensIcon1);
+            helpContentText->setText("Camera help");
+        } else if(setupHelp == COMPONENT_HELP_ILLUMINATOR) {
+            helpContentText->setText("Illuminator help");
+        } else if(setupHelp == COMPONENT_HELP_HEAD) {
+            helpContentImage->setIcon(helpHeadIcon1);
+            helpContentText->setText("Head help");
+        }
+    }
 
 }
 

@@ -43,7 +43,7 @@ public:
             maxPupilBox->setEnabled(true);
         }
 
-        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox); // NOTE: why not "this" ?
         QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
         QPushButton *iLabelFakeButton = new QPushButton();
         iLabelFakeButton->setFlat(true);

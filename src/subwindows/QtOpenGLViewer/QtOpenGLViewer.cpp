@@ -163,6 +163,15 @@ void QtOpenGLViewer::renderText(float x, float y, const QString &text, const QCo
 
 void QtOpenGLViewer::drawScene()
 {
+
+    createCylinderAt(1,1,2, 1,4,2, 75,10,16);
+    //createCube();
+    //createCuboidAt();
+    createCuboidAt(2.5, 0.5, 0.5, 3,2,2, 45,30,20);
+    //createCylinder();
+    //createCone();
+    createConeAt(1.0, 1.0, 1.0, -1,-1,1, 15,20,10);
+
     drawAxes();
 }
 
@@ -184,6 +193,136 @@ void QtOpenGLViewer::drawHud(QPainter &painter)
     }
 }
 
+//
+/*
+// Used from Qt forum answer by user PthonDuncan: https://forum.qt.io/post/775714, Last accessed: 2024.10.26. 07:56 CET
+void QtOpenGLViewer::qt_save_gl_state()
+{
+    glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_TEXTURE);
+    glPushMatrix();
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    glShadeModel(GL_FLAT);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+// Used from Qt forum answer by user PthonDuncan: https://forum.qt.io/post/775714, Last accessed: 2024.10.26. 07:56 CET
+void QtOpenGLViewer::qt_restore_gl_state()
+{
+    glMatrixMode(GL_TEXTURE);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopAttrib();
+    glPopClientAttrib();
+}
+
+// Used from Qt forum answer by user PthonDuncan: https://forum.qt.io/post/775714, Last accessed: 2024.10.26. 07:56 CET
+void QtOpenGLViewer::renderText(double x, double y, const QString text)
+{
+    GLdouble textPosX = x, textPosY = y;
+    // Retrieve last OpenGL color to use as a font color
+    GLdouble glColor[4];
+    glGetDoublev(GL_CURRENT_COLOR, glColor);
+    QColor fontColor = QColor(glColor[0]*255, glColor[1]*255,
+                              glColor[2]*255, glColor[3]*255);
+    // Render text
+    QPainter painter(this);
+//    painter.translate(float(_shiftX),float(_shiftY)); //This is for my own mouse event (scaling)
+
+    painter.setPen(fontColor);
+    QFont f;
+    f.setPixelSize(10);
+    painter.setFont(f);
+    painter.drawText(textPosX, textPosY, text);
+    painter.end();
+}
+ */
+//
+
+//////////////////////////////////////////////////////////////////////////
+
+// From SO post by user jaba: https://stackoverflow.com/a/33674071/11414500, Last accessed: 2024.10.26. 08:12 CET
+inline GLint QtOpenGLViewer::project(GLdouble objx, GLdouble objy, GLdouble objz,
+                            const GLdouble model[16], const GLdouble proj[16],
+                            const GLint viewport[4],
+                            GLdouble * winx, GLdouble * winy, GLdouble * winz)
+{
+    GLdouble in[4], out[4];
+
+    in[0] = objx;
+    in[1] = objy;
+    in[2] = objz;
+    in[3] = 1.0;
+    transformPoint(out, model, in);
+    transformPoint(in, proj, out);
+
+    if (in[3] == 0.0)
+        return GL_FALSE;
+
+    in[0] /= in[3];
+    in[1] /= in[3];
+    in[2] /= in[3];
+
+    *winx = viewport[0] + (1 + in[0]) * viewport[2] / 2;
+    *winy = viewport[1] + (1 + in[1]) * viewport[3] / 2;
+
+    *winz = (1 + in[2]) / 2;
+    return GL_TRUE;
+}
+
+// From SO post by user jaba: https://stackoverflow.com/a/33674071/11414500, Last accessed: 2024.10.26. 08:12 CET
+void QtOpenGLViewer::renderText(GLdouble objx, GLdouble objy, GLdouble objz, QString text, QColor color)
+{
+    int width = this->width();
+    int height = this->height();
+
+    GLdouble model[4][4], proj[4][4];
+    GLint view[4];
+    glGetDoublev(GL_MODELVIEW_MATRIX, &model[0][0]);
+    glGetDoublev(GL_PROJECTION_MATRIX, &proj[0][0]);
+    glGetIntegerv(GL_VIEWPORT, &view[0]);
+    GLdouble textPosX = 0, textPosY = 0, textPosZ = 0;
+
+    project(objx, objy, objz,
+            &model[0][0], &proj[0][0], &view[0],
+            &textPosX, &textPosY, &textPosZ);
+
+    textPosY = height - textPosY; // y is inverted
+
+    QPainter painter(this);
+    painter.setPen(color);
+    painter.setFont(QFont("Helvetica", 8));
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    painter.drawText(textPosX, textPosY, text); // z = pointT4.z + distOverOp / 4
+    painter.end();
+}
+
+// From SO post by user jaba: https://stackoverflow.com/a/33674071/11414500, Last accessed: 2024.10.26. 08:12 CET
+inline void QtOpenGLViewer::transformPoint(GLdouble out[4], const GLdouble m[16], const GLdouble in[4])
+{
+#define M(row,col)  m[col*4+row]
+    out[0] = M(0, 0) * in[0] + M(0, 1) * in[1] + M(0, 2) * in[2] + M(0, 3) * in[3];
+    out[1] = M(1, 0) * in[0] + M(1, 1) * in[1] + M(1, 2) * in[2] + M(1, 3) * in[3];
+    out[2] = M(2, 0) * in[0] + M(2, 1) * in[1] + M(2, 2) * in[2] + M(2, 3) * in[3];
+    out[3] = M(3, 0) * in[0] + M(3, 1) * in[1] + M(3, 2) * in[2] + M(3, 3) * in[3];
+#undef M
+}
+///////////////////////////////////////////////////////////
+
 void QtOpenGLViewer::drawAxes()
 {
     glPushAttrib(GL_COLOR_BUFFER_BIT);
@@ -191,20 +330,47 @@ void QtOpenGLViewer::drawAxes()
     glLineWidth(4);
     glBegin(GL_LINES);
     // x
-    glColor3f(1, 0, 0);
+    //glColor3f(1, 0, 0);
+    glColor3f(252.0f/255, 80.0f/255, 0.0f/255);
     glVertex3f(0, 0, 0);
     glVertex3f(1, 0, 0);
     // y
-    glColor3f(0, 1, 0);
+    //glColor3f(0, 1, 0);
+    glColor3f(139.0f/255, 252.0f/255, 0.0f/255);
     glVertex3f(0, 0, 0);
     glVertex3f(0, 1, 0);
     // z
-    glColor3f(0, 0, 1);
+    //glColor3f(0, 0, 1);
+    glColor3f(0.0f/255, 160.0f/255, 255.0f/255);
     glVertex3f(0, 0, 0);
     glVertex3f(0, 0, 1);
     glEnd();
     glPopAttrib(); // GL_LINE_BIT
     glPopAttrib(); // GL_COLOR_BUFFER_BIT
+
+    // Also mark axes with letters for clarity
+    renderText(1.1, 0, 0, "X", QColor::fromRgb(252, 80, 0));
+    renderText(0, 1.1, 0, "Y", QColor::fromRgb(139, 252, 0));
+    renderText(0, 0, 1.1, "Z", QColor::fromRgb(0, 160, 255));
+
+    /////////////////////////////
+    // SIMA 2D SZÖVEGET ÍR A TERÜLETRE, AMI NEM MOZOG
+    /*
+    QPainter painter(this);
+    painter.setPen(Qt::white);
+    painter.setFont(QFont("Arial", 16));
+    painter.drawText(0, 0, width(), height(), Qt::AlignCenter, "Hello World!");
+    painter.end();
+    */
+
+    /////////////////////////////
+    /*
+    qt_save_gl_state();
+    renderText(20, 30, "Hahaha");
+    qt_restore_gl_state();
+     */
+
+    renderText(10, 10, 10, "Hahaha");
 }
 
 void QtOpenGLViewer::selectObject(const QPoint &mousePosition)
@@ -245,11 +411,34 @@ QVector3D QtOpenGLViewer::pickPointInPlane(const QPoint &mousePosition, const QV
     return pointOnPlane;
 }
 
-void QtOpenGLViewer::goToDefaultView()
+void QtOpenGLViewer::goToDefaultView(int viewNumber)
 {
-    camera.eye = QVector3D(0, 0, 10);
-    camera.center = QVector3D(0, 0, 0);
-    camera.up = QVector3D(0, 1, 0);
+    switch(viewNumber) {
+        case 1:
+            // XY plane
+            camera.eye = QVector3D(0, 0, 10);
+            camera.center = QVector3D(0, 0, 0);
+            camera.up = QVector3D(0, 1, 0);
+            break;
+        case 2:
+            // ZY plane
+            camera.eye = QVector3D(10, 0, 0);
+            camera.center = QVector3D(0, 0, 0);
+            camera.up = QVector3D(0, 1, 0);
+            break;
+        case 3:
+            // ZX plane
+            camera.eye = QVector3D(0, 10, 0);
+            camera.center = QVector3D(0, 0, 0);
+            camera.up = QVector3D(0, 0, -1);
+            break;
+        case 4:
+            // 3D from the inside
+            camera.eye = QVector3D(qSqrt(3)*10, qSqrt(3)*10, qSqrt(3)*10);
+            camera.center = QVector3D(0, 0, 0);
+            camera.up = QVector3D(0, 1, 0);
+            break;
+    }
     repaint();
 }
 
@@ -321,6 +510,8 @@ void QtOpenGLViewer::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glEnable(GL_DEPTH_CLAMP); // THIS REMOVES CLIPPING when camera is too close to the shapes
+
     // ortho projection (call here to handle zoom)
     // ortho box is sized relative to zoom distance
     float m_zoom = camera.view().length();
@@ -362,7 +553,7 @@ void QtOpenGLViewer::paintGL()
     drawScene();
     
     // hud
-    // QPainter changes one or more attributes so all relevent ones are pushed then popped on end of QPainter.
+    // QPainter changes one or more attributes so all relevant ones are pushed then popped on end of QPainter.
     // not sure if all of this is really needed?
     glPushAttrib(GL_ACCUM_BUFFER_BIT);
     glPushAttrib(GL_VIEWPORT_BIT);
@@ -392,23 +583,37 @@ void QtOpenGLViewer::paintGL()
     glPopAttrib();
 }
 
-void QtOpenGLViewer::keyPressEvent(QKeyEvent *event)
-{
+void QtOpenGLViewer::keyPressEvent(QKeyEvent *event) {
+
+    qDebug() << "keyPressEvent in QtOpenGLViewer";
+
     switch(event->key()) {
         case Qt::Key_Backspace:
         case Qt::Key_Delete:
+            qDebug() << "delete key";
             deleteSelectedObject();
             return;
             
-        case Qt::Key_A:
-            goToDefaultView();
+        case Qt::Key_1:
+            goToDefaultView(1);
+            return;
+        case Qt::Key_2:
+            goToDefaultView(2);
+            return;
+        case Qt::Key_3:
+            goToDefaultView(3);
+            return;
+        case Qt::Key_4:
+            goToDefaultView(4);
             return;
     }
     QOpenGLWidget::keyPressEvent(event);
 }
 
-void QtOpenGLViewer::mousePressEvent(QMouseEvent *event)
-{
+void QtOpenGLViewer::mousePressEvent(QMouseEvent *event) {
+
+    qDebug() << "mousePressEvent in QtOpenGLViewer";
+
     if(event->button() == Qt::LeftButton) {
         // object selection
         QObject *prevSelectedObject = _selectedObject;
@@ -530,4 +735,174 @@ void QtOpenGLViewer::mouseDoubleClickEvent(QMouseEvent *event)
         }
     }
     QOpenGLWidget::mouseDoubleClickEvent(event);
+}
+
+// Used code from SO post by user CodeSurgeon: https://stackoverflow.com/a/41917591/11414500, Last accessed: 2024.10.27. 18:51 CET
+void QtOpenGLViewer::createCylinder(float r, float h, float n) {
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glColor3ub(255,255,0); // bright yellow
+
+    std::vector<QPointF> circle_pts;
+    for(int i=0; i<n+1; i++) {
+        float angle = 2.0f * M_PI * ((float)i / n);
+        float x = r * qCos(angle);
+        float y = r * qSin(angle);
+        circle_pts.push_back(QPointF(x, y));
+    }
+
+    glBegin(GL_TRIANGLE_FAN); // drawing the back circle
+    //glColor3f(1, 0, 0);
+    glVertex3f(0, 0, h/2.0f);
+    for(int i=0; i<circle_pts.size(); i++) {
+        float z = h / 2.0f;
+        glVertex3f(circle_pts[i].x(), circle_pts[i].y(), z);
+    }
+    glEnd();
+
+    glBegin(GL_TRIANGLE_FAN); // drawing the front circle
+    //glColor3f(0, 0, 1);
+    glVertex3f(0, 0, -h/2.0f);
+    for(int i=0; i<circle_pts.size(); i++) {
+        float z = -h / 2.0f;
+        glVertex3f(circle_pts[i].x(), circle_pts[i].y(), z);
+    }
+    glEnd();
+
+    //glBegin(GL_TRIANGLE_STRIP); // draw the tube
+    glBegin(GL_QUADS); // draw the tube
+    //glColor3f(0, 1, 0);
+    for(int i=0; i<circle_pts.size(); i++) {
+        float z = h / 2.0f;
+        glVertex3f(circle_pts[i].x(), circle_pts[i].y(), z);
+        glVertex3f(circle_pts[i].x(), circle_pts[i].y(), -z);
+    }
+    glEnd();
+
+    glColor3ub(255,255,255);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+}
+
+// Used code from SO post by user CodeSurgeon: https://stackoverflow.com/a/41917591/11414500, Last accessed: 2024.10.27. 18:51 CET
+void QtOpenGLViewer::createCone(float r, float h, float n) {
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glColor3ub(255,255,0); // bright yellow
+
+    std::vector<QPointF> circle_pts;
+    for(int i=0; i<n+1; i++) {
+        float angle = 2.0f * M_PI * ((float)i / n);
+        float x = r * qCos(angle);
+        float y = r * qSin(angle);
+        circle_pts.push_back(QPointF(x, y));
+    }
+
+    //glBegin(GL_TRIANGLE_STRIP); // drawing the back circle
+    glBegin(GL_TRIANGLE_FAN); // drawing the back circle
+    //glColor3f(1, 0, 0);
+    glVertex3f(0, 0, h/2.0f);
+    for(int i=0; i<circle_pts.size(); i++) {
+        float z = h / 2.0f;
+        glVertex3f(circle_pts[i].x(), circle_pts[i].y(), z);
+    }
+    glEnd();
+
+    glBegin(GL_TRIANGLE_FAN); // drawing the sides
+    //glColor3f(0, 0, 1);
+    glVertex3f(0, 0, -h/2.0f);
+    for(int i=0; i<circle_pts.size(); i++) {
+        float z = h / 2.0f;
+        glVertex3f(circle_pts[i].x(), circle_pts[i].y(), z);
+    }
+    glEnd();
+
+    glColor3ub(255,255,255);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+}
+
+void QtOpenGLViewer::createCylinderAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createCylinder(1.0, 1.0, 25.0);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
+void QtOpenGLViewer::createConeAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createCone(1.0, 1.0, 25.0);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
+void QtOpenGLViewer::createCuboidAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createCube(1.0);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
+
+void QtOpenGLViewer::createCube(GLfloat a) {
+
+    //glLineWidth(2);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glColor3ub(255,255,0); // bright yellow
+
+    glBegin(GL_QUADS);
+    
+    glVertex3f(a,a,a);
+    glVertex3f(-a,a,a);
+    glVertex3f(-a,-a,a);
+    glVertex3f(a,-a,a);
+    
+    glVertex3f(a,a,-a);
+    glVertex3f(-a,a,-a);
+    glVertex3f(-a,-a,-a);
+    glVertex3f(a,-a,-a);
+    
+    glVertex3f(a,a,a);
+    glVertex3f(a,-a,a);
+    glVertex3f(a,-a,-a);
+    glVertex3f(a,a,-a);
+    
+    glVertex3f(-a,a,a);
+    glVertex3f(-a,-a,a);
+    glVertex3f(-a,-a,-a);
+    glVertex3f(-a,a,-a);
+    
+    glVertex3f(a,a,a);
+    glVertex3f(-a,a,a);
+    glVertex3f(-a,a,-a);
+    glVertex3f(a,a,-a);
+    
+    glVertex3f(a,-a,a);
+    glVertex3f(-a,-a,a);
+    glVertex3f(-a,-a,-a);
+    glVertex3f(a,-a,-a);
+    
+    glEnd();
+    glColor3ub(255,255,255);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+}
+
+// 1. a glScalef szoroz, tehát nincs abszolút imerete az előbbi állapotról. 1/3 szorosra kell állítani
+//      ha egy korábbi 3x-os szorzást vissza akarunk állítani (nem pedig ..scale(1,1,1) hívás kell)
+// 2. a glBegin előtt, és a glEnd után kell egy oda és vissza transzformálás. Oda hogy a rajzolás
+//      transzformálva történjen, és vissza, hogy a legközelebbi rajzolás ne oda transzformálva folytatódjon
+// 3. a sorrend a programkód sorrendjében történik a transzformációkor, tehát nem visszafelé halad a stacken
+//      viszont épp ezért a glEnd után fordított sorrendben van szükség a visszatranszformálás hívásaira
+void QtOpenGLViewer::startTransformed(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    glMatrixMode(GL_MODELVIEW);
+    glRotatef(rotX, 1.0f, 0.0f, 0.0f);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
+    glTranslatef(locX, locY, locZ);
+    glScalef(dimX, dimY, dimZ);
+    glMatrixMode(GL_PROJECTION);
+    //glGetError(); // not in qt gl
+}
+void QtOpenGLViewer::endTransformed(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    glMatrixMode(GL_MODELVIEW);
+    glScalef(1.0f/dimX, 1.0f/dimY, 1.0f/dimZ);
+    glTranslatef(-locX, -locY, -locZ);
+    glRotatef(rotZ, 0.0f, 0.0f, -1.0f);
+    glRotatef(rotY, 0.0f, -1.0f, 0.0f);
+    glRotatef(rotX, -1.0f, 0.0f, 0.0f);
+    glMatrixMode(GL_PROJECTION);
+    //glGetError(); // not in qt gl
 }

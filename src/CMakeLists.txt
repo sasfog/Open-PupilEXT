@@ -81,6 +81,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         devices/cameraConfigurationEventHandler.h
         dataTypes.cpp
         dataTypes.h
+        remoteSetupModel.h
         subwindows/sceneImageView.cpp
         subwindows/sceneImageView.h
         subwindows/sceneImageWidget.cpp
@@ -89,6 +90,10 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/QtOpenGLViewer/QtOpenGLViewer.h
         subwindows/setupGeometryDialog.cpp
         subwindows/setupGeometryDialog.h
+        subwindows/setupModelTreeView/setupModelTreeItem.cpp
+        subwindows/setupModelTreeView/setupModelTreeItem.h
+        subwindows/setupModelTreeView/setupModelTreeModel.cpp
+        subwindows/setupModelTreeView/setupModelTreeModel.h
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT

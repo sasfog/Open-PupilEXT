@@ -32,11 +32,41 @@ class QtOpenGLViewer : public QOpenGLWidget, protected QOpenGLFunctions
     Q_PROPERTY(bool SwapMouseWheelZoomDirection READ swapMouseWheelZoomDirection WRITE setSwapMouseWheelZoomDirection)
     Q_PROPERTY(QColor BackgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY optionsChanged)
     Q_PROPERTY(QFont HudFont READ hudFont WRITE setHudFont NOTIFY optionsChanged)
-    
+
+private:
+    static void startTransformed(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    static void endTransformed(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+
 public:
     QtOpenGLViewer(QWidget *parent = NULL) : QOpenGLWidget(parent) {}
     virtual ~QtOpenGLViewer() {}
-    
+
+    /*
+    enum PrimitiveType {
+        CYLINDER, CONE, CUBE, // CUBOID,
+    };
+
+    struct Primitive {
+        PrimitiveType primitiveType;
+        std::vector<float> params;
+    };
+
+    class CreatePrimitive {
+    public:
+        static void createCylinder(float r = 5.0, float h = 2.0, float n = 25.0);
+        static void createCone(float r = 5.0, float h = 2.0, float n = 25.0);
+        static void createCube(GLfloat a = 1.0);
+    };
+     */
+
+    static void createCylinderAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    static void createCylinder(float r = 5.0, float h = 2.0, float n = 25.0);
+    static void createCone(float r = 5.0, float h = 2.0, float n = 25.0);
+    static void createConeAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    static void createCube(GLfloat a = 1.0);
+    static void createCuboidAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+
+
     struct Camera {
         QVector3D eye = QVector3D(0, 0, 10);
         QVector3D center = QVector3D(0, 0, 0);
@@ -86,7 +116,7 @@ signals:
     void selectedObjectChanged(QObject*);
     
 public slots:
-    virtual void goToDefaultView();
+    virtual void goToDefaultView(int viewNumber = 1);
     virtual void deleteSelectedObject();
     virtual void editSelectedObject(const QPoint &mousePosition);
     
@@ -101,6 +131,18 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
     virtual void wheelEvent(QWheelEvent *event) Q_DECL_OVERRIDE;
     virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+
+    /*
+    void qt_save_gl_state();
+    void qt_restore_gl_state();
+    void renderText(double x, double y, const QString text);
+     */
+    inline GLint project(GLdouble objx, GLdouble objy, GLdouble objz,
+                                         const GLdouble model[16], const GLdouble proj[16],
+                                         const GLint viewport[4],
+                                         GLdouble * winx, GLdouble * winy, GLdouble * winz);
+    void renderText(GLdouble objx, GLdouble objy, GLdouble objz, QString text, QColor color = Qt::yellow);
+    inline void transformPoint(GLdouble out[4], const GLdouble m[16], const GLdouble in[4]);
     
 protected:
     bool _is3D = true;
@@ -110,6 +152,8 @@ protected:
     QFont _hudFont = QFont("Sans", 10, QFont::Normal);
     QPoint _mousePosition;
     QObject *_selectedObject = NULL;
+
+
 
     //QOpenGLFunctions *f;
 //    QOpenGLFunctions_4_5_Core *f;

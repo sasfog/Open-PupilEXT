@@ -78,6 +78,9 @@
         <file>icons/Breeze/actions/16/edit-clear-history.svg</file>
 
         <file>icons/setupGeometry.svg</file>
+        <file>icons/help-lens-1.png</file>
+        <file>icons/help-lens-2.png</file>
+        <file>icons/help-head-1.png</file>
 
     </qresource>
 </RCC>
