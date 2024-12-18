@@ -15,6 +15,10 @@
 #include <QPainter>
 #include <QVector3D>
 #include <QOpenGLFunctions_4_5_Core>
+#include "../../remoteSetupModel.h"
+
+// DEV
+#include <QOpenGLDebugLogger>
 
 #ifdef DEBUG
 #include <iostream>
@@ -24,6 +28,17 @@
 /* --------------------------------------------------------------------------------
  * Graph viewer UI.
  * -------------------------------------------------------------------------------- */
+
+
+// TODO: ne is ez legyen maga a class amiben a user interaction alapjai definiálva vannak,
+//      ÉS a primitív rajzolás, hanem legyen egy ebből leszármazott osztály, és az csinálja az utóbbiakat,
+//      pl setSetupModel és egyebek is abba mehetnének
+// TODO: az egérrel a görgővel kattintás ("pan" funkció) valahogy elrontja a modellt onnantól kezdve, darabosan,
+//      pattogva fog mozogni, még akkor is ha csak forgatjuk később, úgy marad. Valami kerekítési oka lehet, de nem
+//      találom hol. Amikor a z tengellyel szemben áll a kamera akkor minimális a pattoágs,
+//      és minél jobban el van forogva, annál nagyobb, ehhez lehet köze.
+//      DE érdekes módon a camera téglatestje nem csinálja ezt, csak minden más
+
 class QtOpenGLViewer : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
@@ -34,12 +49,27 @@ class QtOpenGLViewer : public QOpenGLWidget, protected QOpenGLFunctions
     Q_PROPERTY(QFont HudFont READ hudFont WRITE setHudFont NOTIFY optionsChanged)
 
 private:
+    RemoteSetupModel *setupModel = nullptr;
+    void drawComponentsRecursively(Component *component);
+
     static void startTransformed(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
     static void endTransformed(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
 
 public:
-    QtOpenGLViewer(QWidget *parent = NULL) : QOpenGLWidget(parent) {}
-    virtual ~QtOpenGLViewer() {}
+    QtOpenGLViewer(QWidget *parent = NULL) : QOpenGLWidget(parent) {
+        // TODO: in theory this is needed to let the qt gl debug logger initialize later.
+        //      BUT if this code is executed, drawing is lost
+        /*
+        QSurfaceFormat format = this->format();
+        format.setMajorVersion(4); // OpenGL version
+        format.setMinorVersion(5);
+        format.setProfile(QSurfaceFormat::CoreProfile);
+        format.setOption(QSurfaceFormat::DebugContext);
+        setFormat(format);
+        makeCurrent();
+        */
+    };
+    virtual ~QtOpenGLViewer() {};
 
     /*
     enum PrimitiveType {
@@ -59,13 +89,15 @@ public:
     };
      */
 
-    static void createCylinderAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
-    static void createCylinder(float r = 5.0, float h = 2.0, float n = 25.0);
-    static void createCone(float r = 5.0, float h = 2.0, float n = 25.0);
-    static void createConeAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
-    static void createCube(GLfloat a = 1.0);
-    static void createCuboidAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createCylinderAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createCylinder(float r = 0.5, float h = 1.0, float n = 25.0);
+    void createCone(float r = 0.5, float h = 1.0, float n = 25.0);
+    void createConeAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createCube(GLfloat a = 1.0);
+    void createCuboidAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
 
+    void createSphere(float r = 0.5, int nParal = 10, int nMerid = 10);
+    void createSpheroidAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
 
     struct Camera {
         QVector3D eye = QVector3D(0, 0, 10);
@@ -119,6 +151,8 @@ public slots:
     virtual void goToDefaultView(int viewNumber = 1);
     virtual void deleteSelectedObject();
     virtual void editSelectedObject(const QPoint &mousePosition);
+
+    void setSetupModel(RemoteSetupModel *_setupModel) {setupModel = _setupModel;};
     
 protected:
     void initializeGL() Q_DECL_OVERRIDE;
@@ -146,7 +180,7 @@ protected:
     
 protected:
     bool _is3D = true;
-    float _mouseWheelSensitivity = 0.2;
+    float _mouseWheelSensitivity = 0.2f;
     bool _swapMouseWheelZoomDirection = false;
     QColor _backgroundColor = QColor(200, 200, 200);
     QFont _hudFont = QFont("Sans", 10, QFont::Normal);

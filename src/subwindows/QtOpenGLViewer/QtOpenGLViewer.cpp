@@ -161,9 +161,42 @@ void QtOpenGLViewer::renderText(float x, float y, const QString &text, const QCo
     glPopAttrib();
 }
 
+void QtOpenGLViewer::drawComponentsRecursively(Component *component) {
+
+    if(component->getType() == CAMERA) {
+        auto c = dynamic_cast<CameraComponent*>(component);
+        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == SENSOR) {
+        auto c = dynamic_cast<SensorComponent*>(component);
+        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == LENS) {
+        auto c = dynamic_cast<LensComponent*>(component);
+        createCylinderAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == ILLUMINATOR) {
+        auto c = dynamic_cast<IlluminatorComponent*>(component);
+        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == FILTER) {
+        auto c = dynamic_cast<FilterComponent*>(component);
+        createCylinderAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == SCREEN) {
+        auto c = dynamic_cast<ScreenComponent*>(component);
+        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == CVTARGET) {
+        auto c = dynamic_cast<CvTargetComponent*>(component);
+        createCylinderAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    } else if(component->getType() == EYEBALL) {
+        auto c = dynamic_cast<EyeballComponent*>(component);
+        createSpheroidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+    }
+
+    for(int j = 0; j < component->components.size(); j++) {
+        drawComponentsRecursively(component->components[j]);
+    }
+};
+
 void QtOpenGLViewer::drawScene()
 {
-
+    /*
     createCylinderAt(1,1,2, 1,4,2, 75,10,16);
     //createCube();
     //createCuboidAt();
@@ -172,7 +205,37 @@ void QtOpenGLViewer::drawScene()
     //createCone();
     createConeAt(1.0, 1.0, 1.0, -1,-1,1, 15,20,10);
 
+    createSpheroidAt(1.0, 3.0, 3.0, -5,-2,1, 90,45,45);
+    */
+
     drawAxes();
+
+    if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid())
+        return;
+
+    for(int i = 0; i < setupModel->cameraUnits.size(); i++) {
+        for(int j = 0; j < setupModel->cameraUnits[i]->components.size(); j++) {
+            drawComponentsRecursively(setupModel->cameraUnits[i]->components[j]);
+        }
+    }
+    for(int i = 0; i < setupModel->illuminatorUnits.size(); i++) {
+        for(int j = 0; j < setupModel->illuminatorUnits[i]->components.size(); j++) {
+            drawComponentsRecursively(setupModel->illuminatorUnits[i]->components[j]);
+        }
+    }
+    for(int i = 0; i < setupModel->screenUnits.size(); i++) {
+        for(int j = 0; j < setupModel->screenUnits[i]->components.size(); j++) {
+            drawComponentsRecursively(setupModel->screenUnits[i]->components[j]);
+        }
+    }
+    for(int i = 0; i < setupModel->heads.size(); i++) {
+        for(int j = 0; j < setupModel->heads[i]->components.size(); j++) {
+            drawComponentsRecursively(setupModel->heads[i]->components[j]);
+        }
+    }
+
+    // There should rather be getters, e.g. getLeftEyeball
+    //      és ezekből előteremtve a locX, locY, locZ értékeket, vonalat lehetne húzni a szemből a képernyőre merőlegesen, stb
 }
 
 void QtOpenGLViewer::drawHud(QPainter &painter)
@@ -363,14 +426,7 @@ void QtOpenGLViewer::drawAxes()
     painter.end();
     */
 
-    /////////////////////////////
-    /*
-    qt_save_gl_state();
-    renderText(20, 30, "Hahaha");
-    qt_restore_gl_state();
-     */
-
-    renderText(10, 10, 10, "Hahaha");
+//    renderText(10, 10, 10, "Hahaha");
 }
 
 void QtOpenGLViewer::selectObject(const QPoint &mousePosition)
@@ -468,7 +524,32 @@ void QtOpenGLViewer::editSelectedObject(const QPoint &mousePosition)
 
 void QtOpenGLViewer::initializeGL()
 {
+    // ALAPBÓL ENNYI VOLT:
     initializeOpenGLFunctions();
+
+    /*
+    // A GL DEBUG MIATT ILYEN LETT:
+     // DE: nem jó, mert ez a format itt nem változtatható meg, hanem ennek a widgetnek a szülőjében lehet ha jól értem.
+     //     Akkor viszont semmi nem fog rendesen kirajzolódni a widgetben, bár nem írja ki a qt hogy nincs bekapcsolva a debug kimenet a gl-ben
+    QSurfaceFormat format;
+// asks for a OpenGL 3.2 debug context using the Core profile
+    format.setMajorVersion(4);
+    format.setMinorVersion(5);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    format.setOption(QSurfaceFormat::DebugContext);
+
+    setFormat(format);
+    create();
+    initializeOpenGLFunctions();
+    */
+/*
+    QOpenGLContext *ctx = QOpenGLContext::currentContext();
+    Q_ASSERT(ctx->hasExtension(QByteArrayLiteral("GL_KHR_debug")));
+    QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
+
+    logger->initialize(); // initializes in the current context, i.e. ctx
+*/
+
     //f = QOpenGLContext::currentContext()->functions();
 //    f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_5_Core>();
     glClearColor(_backgroundColor.redF(), _backgroundColor.greenF(), _backgroundColor.blueF(), _backgroundColor.alphaF());
@@ -670,17 +751,17 @@ void QtOpenGLViewer::mouseMoveEvent(QMouseEvent *event)
             float n = rotationAxis.length();
             if(n > 1e-5) {
                 rotationAxis.normalize();
-                float radians = n / width() * M_PI;
+                float radians = n / (float)width() * M_PI;
                 // Rotate eye about center around rotation axis.
-                float a = cos(radians / 2);
-                float s = -sin(radians / 2);
+                float a = cos(radians / 2.0f);
+                float s = -sin(radians / 2.0f);
                 float b = rotationAxis.x() * s;
                 float c = rotationAxis.y() * s;
                 float d = rotationAxis.z() * s;
                 float rotation[9] = {
-                    a*a+b*b-c*c-d*d,     2*(b*c-a*d),     2*(b*d+a*c),
-                    2*(b*c+a*d), a*a+c*c-b*b-d*d,     2*(c*d-a*b),
-                    2*(b*d-a*c),     2*(c*d+a*b), a*a+d*d-b*b-c*c
+                    a*a+b*b-c*c-d*d,    2.0f*(b*c-a*d),     2.0f*(b*d+a*c),
+                    2.0f*(b*c+a*d),     a*a+c*c-b*b-d*d,    2.0f*(c*d-a*b),
+                    2.0f*(b*d-a*c),     2.0f*(c*d+a*b),     a*a+d*d-b*b-c*c
                 };
                 camera.eye -= camera.center; // Shift center to origin so can rotate eye about axis through the origin.
                 // Rotate eye around rotation axis.
@@ -694,7 +775,7 @@ void QtOpenGLViewer::mouseMoveEvent(QMouseEvent *event)
             }
         } else if(pan) {
             float zoom = camera.view().length();
-            QVector3D translation = xhat * (dx / width() * zoom) + yhat * (dy / height() * zoom);
+            QVector3D translation = xhat * (dx / (float)width() * zoom) + yhat * (dy / (float)height() * zoom);
             camera.center -= translation;
             camera.eye -= translation;
             repaint();
@@ -818,26 +899,9 @@ void QtOpenGLViewer::createCone(float r, float h, float n) {
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 
-void QtOpenGLViewer::createCylinderAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
-    createCylinder(1.0, 1.0, 25.0);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
-}
-
-void QtOpenGLViewer::createConeAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
-    createCone(1.0, 1.0, 25.0);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
-}
-
-void QtOpenGLViewer::createCuboidAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
-    createCube(1.0);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
-}
-
-
 void QtOpenGLViewer::createCube(GLfloat a) {
+
+    a /= 2.0;
 
     //glLineWidth(2);
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
@@ -880,6 +944,62 @@ void QtOpenGLViewer::createCube(GLfloat a) {
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 
+// Used from SO post by user Max Collao: https://stackoverflow.com/a/30030112/11414500 Last accessed 2024.11.04. 09:10 CET
+void QtOpenGLViewer::createSphere(float r, int nParal, int nMerid){
+
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glColor3ub(255,255,0); // bright yellow
+
+    float x,y,z,i,j;
+    for (j=0;j<M_PI; j+=M_PI/(nParal+1)){
+        glBegin(GL_LINE_LOOP);
+        y=(float) (r*qCos(j));
+        for(i=0; i<2*M_PI; i+=M_PI/60){
+            x=(float) (r*qCos(i)*qSin(j));
+            z=(float) (r*qSin(i)*qSin(j));
+            glVertex3f(x,y,z);
+        }
+        glEnd();
+    }
+
+    for(j=0; j<M_PI; j+=M_PI/nMerid){
+        glBegin(GL_LINE_LOOP);
+        for(i=0; i<2*M_PI; i+=M_PI/60){
+            x=(float) (r*qSin(i)*qCos(j));
+            y=(float) (r*qCos(i));
+            z=(float) (r*qSin(j)*qSin(i));
+            glVertex3f(x,y,z);
+        }
+        glEnd();
+    }
+    glColor3ub(255,255,255);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+}
+
+void QtOpenGLViewer::createCylinderAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createCylinder(0.5, 1.0, 25.0);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
+void QtOpenGLViewer::createConeAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createCone(0.5, 1.0, 25.0);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
+void QtOpenGLViewer::createCuboidAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createCube(1.0);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
+void QtOpenGLViewer::createSpheroidAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    createSphere(0.5, 10, 10);
+    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+}
+
 // 1. a glScalef szoroz, tehát nincs abszolút imerete az előbbi állapotról. 1/3 szorosra kell állítani
 //      ha egy korábbi 3x-os szorzást vissza akarunk állítani (nem pedig ..scale(1,1,1) hívás kell)
 // 2. a glBegin előtt, és a glEnd után kell egy oda és vissza transzformálás. Oda hogy a rajzolás
@@ -906,3 +1026,25 @@ void QtOpenGLViewer::endTransformed(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GL
     glMatrixMode(GL_PROJECTION);
     //glGetError(); // not in qt gl
 }
+/*
+void QtOpenGLViewer::startTransformed(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    glMatrixMode(GL_MODELVIEW);
+    glRotatef(rotX, 1.0f, 0.0f, 0.0f);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
+    glTranslatef(locX, locY, locZ);
+    glScalef(dimX, dimY, dimZ);
+    glMatrixMode(GL_PROJECTION);
+    //glGetError(); // not in qt gl
+}
+void QtOpenGLViewer::endTransformed(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
+    glMatrixMode(GL_MODELVIEW);
+    glScalef(1.0f/dimX, 1.0f/dimY, 1.0f/dimZ);
+    glTranslatef(-locX, -locY, -locZ);
+    glRotatef(rotZ, 0.0f, 0.0f, -1.0f);
+    glRotatef(rotY, 0.0f, -1.0f, 0.0f);
+    glRotatef(rotX, -1.0f, 0.0f, 0.0f);
+    glMatrixMode(GL_PROJECTION);
+    //glGetError(); // not in qt gl
+}
+*/
