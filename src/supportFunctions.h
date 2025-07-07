@@ -73,7 +73,7 @@ public:
         // [^a-zA-Z0-9_:]
         // [-`~!@#$%^&*()—+=|:;<>«»,.?/{}'"\[\]\]
 //        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
-        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_ :]")), "_");
+        str2.replace(QRegularExpression(QString::fromUtf8("[^a-zA-Z0-9_ :]")), "_");
         // NOTE: we leave whitespaces as well. this may be changed later,
         // but if we would like to change whitespaces in path, that is probably a lot of work, as
         // e.g. the user name on the computer can contain a whitespace, thus all the user wants to save will be

@@ -120,23 +120,23 @@ public:
         return size.width > 0 && size.height > 0;
     }
 
-    int width() const {
-        return (int)size.width;
+    float width() const {
+        return size.width;
     }
 
-    int height() const {
-        return (int)size.height;
+    float height() const {
+        return size.height;
     }
 
-    int majorAxis() const {
-        return std::max<int>(size.width, size.height);
+    float majorAxis() const {
+        return std::max<float>(size.width, size.height);
     }
 
-    int minorAxis() const {
-        return std::min<int>(size.width, size.height);
+    float minorAxis() const {
+        return std::min<float>(size.width, size.height);
     }
 
-    int diameter() const {
+    float diameter() const {
         return majorAxis();
     }
 

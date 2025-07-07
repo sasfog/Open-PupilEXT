@@ -4,7 +4,7 @@ if (MSVC)
 endif()
 
 set(RESOURCE "${PROJECT_SOURCE_DIR}/PupilExt.qrc")
-qt5_add_resources(RESOURCE_ADDED ${RESOURCE})
+qt6_add_resources(RESOURCE_ADDED ${RESOURCE})
 
 
 set(APP_ICON_RESOURCE_WINDOWS "${PROJECT_SOURCE_DIR}/PupilExt.rc")
@@ -94,6 +94,9 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/setupModelTreeView/setupModelTreeItem.h
         subwindows/setupModelTreeView/setupModelTreeModel.cpp
         subwindows/setupModelTreeView/setupModelTreeModel.h
+        subwindows/QJsonModel/QJsonModel.cpp
+        subwindows/QJsonModel/QJsonModel.hpp
+        subwindows/QJsonModel/QUtf8.hpp
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
@@ -104,7 +107,7 @@ if(SPII_BUILD_FOUND)
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
             "singleeyefitter"
-            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml Qt5::OpenGL
+            Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
             ${Boost_LIBRARIES}
             TBB::tbb
             #Boost::boost
@@ -119,7 +122,7 @@ else()
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
         "singleeyefitter"
-        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml Qt5::OpenGL
+        Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
         ${Boost_LIBRARIES}
         TBB::tbb
         #Boost::boost
@@ -150,23 +153,24 @@ install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION "${PROJECT_SOURCE_DIR}/bin/rel
 install(PROGRAMS ${__location_release} DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 
 if(MSVC OR WIN32)
-    install(PROGRAMS "$<TARGET_FILE:Qt5::QWindowsIntegrationPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/platforms")
-    install(PROGRAMS "$<TARGET_FILE:Qt5::QWindowsVistaStylePlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/styles")
+    install(PROGRAMS "$<TARGET_FILE:Qt6::QWindowsIntegrationPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/platforms")
+    # install(PROGRAMS "$<TARGET_FILE:Qt6::QWindowsVistaStylePlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/styles") # Qt5
+    install(PROGRAMS "$<TARGET_FILE:Qt6::QModernWindowsStylePlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/styles") # Qt6
 endif()
 
-install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgIconPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/iconengines")
-install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/imageformats")
-install(PROGRAMS "$<TARGET_FILE:Qt5::PrintSupport>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/printsupport")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Network>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/network")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Xml>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/xml")
+install(PROGRAMS "$<TARGET_FILE:Qt6::QSvgIconPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/iconengines")
+install(PROGRAMS "$<TARGET_FILE:Qt6::QSvgPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/imageformats")
+install(PROGRAMS "$<TARGET_FILE:Qt6::PrintSupport>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/printsupport")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Network>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/network")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Xml>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/xml")
 
-install(PROGRAMS "$<TARGET_FILE:Qt5::Gui>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Core>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Widgets>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-install(PROGRAMS "$<TARGET_FILE:Qt5::SerialPort>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Charts>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Svg>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
-install(PROGRAMS "$<TARGET_FILE:Qt5::OpenGL>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Gui>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Core>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Widgets>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::SerialPort>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Charts>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Svg>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::OpenGL>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 
 install(PROGRAMS "$<TARGET_FILE:TBB::tbb>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 
@@ -175,23 +179,24 @@ if(MSVC OR WIN32)
 endif()
 
 if(MSVC OR WIN32)
-    install(PROGRAMS "$<TARGET_FILE:Qt5::QWindowsIntegrationPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/platforms")
-    install(PROGRAMS "$<TARGET_FILE:Qt5::QWindowsVistaStylePlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/styles")
+    install(PROGRAMS "$<TARGET_FILE:Qt6::QWindowsIntegrationPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/platforms")
+    # install(PROGRAMS "$<TARGET_FILE:Qt6::QWindowsVistaStylePlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/styles") # Qt5
+    install(PROGRAMS "$<TARGET_FILE:Qt6::QModernWindowsStylePlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/styles") # Qt6
 endif()
 
-install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgIconPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/iconengines")
-install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/imageformats")
-install(PROGRAMS "$<TARGET_FILE:Qt5::PrintSupport>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/printsupport")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Network>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/network")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Xml>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/xml")
+install(PROGRAMS "$<TARGET_FILE:Qt6::QSvgIconPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/iconengines")
+install(PROGRAMS "$<TARGET_FILE:Qt6::QSvgPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/imageformats")
+install(PROGRAMS "$<TARGET_FILE:Qt6::PrintSupport>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/printsupport")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Network>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/network")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Xml>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/xml")
 
-install(PROGRAMS "$<TARGET_FILE:Qt5::Gui>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Core>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Widgets>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-install(PROGRAMS "$<TARGET_FILE:Qt5::SerialPort>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Charts>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-install(PROGRAMS "$<TARGET_FILE:Qt5::Svg>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-install(PROGRAMS "$<TARGET_FILE:Qt5::OpenGL>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Gui>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Core>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Widgets>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::SerialPort>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Charts>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Svg>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::OpenGL>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 install(PROGRAMS "$<TARGET_FILE:TBB::tbb>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 #install(PROGRAMS "$<TARGET_FILE:opencv_world>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

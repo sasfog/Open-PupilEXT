@@ -130,8 +130,29 @@ public slots:
 
     void applySpecificSettings() override {
 
+
         // First come the parameters roughly independent from ROI size and relative pupil size 
-        // (NONE HERE)
+        int imgSize = p_else->imgSize;
+        cv::InterpolationFlags interMethod = p_else->interMethod;
+
+        imgSize = imgSizeBox->value();
+        interMethod = (cv::InterpolationFlags)interMethodBox->itemData(interMethodBox->currentIndex()).toInt();
+
+        p_else->imgSize = imgSize;
+        p_else->interMethod = interMethod;
+
+        if(else2) {
+            else2->imgSize = imgSize;
+            else2->interMethod = interMethod;
+        }
+        if(else3) {
+            else3->imgSize = imgSize;
+            else3->interMethod = interMethod;
+        }
+        if(else4) {
+            else4->imgSize = imgSize;
+            else4->interMethod = interMethod;
+        }
 
         // Then the specific ones that are set by autoParam
         int procMode = pupilDetection->getCurrentProcMode();
@@ -186,6 +207,9 @@ private:
 
     PupilDetection *pupilDetection;
 
+    QSpinBox *imgSizeBox;
+    QComboBox *interMethodBox;
+
     QDoubleSpinBox *minAreaBox;
     QDoubleSpinBox *maxAreaBox;
 
@@ -193,6 +217,8 @@ private:
         PupilMethodSetting::loadSettings();
         QList<float>& selectedParameter = getCurrentParameters();
 
+        int imgSize = selectedParameter[2];
+        cv::InterpolationFlags interMethod = (cv::InterpolationFlags)(int)selectedParameter[3];
         float minAreaRatio = selectedParameter[0];
         float maxAreaRatio = selectedParameter[1];
 
@@ -225,9 +251,36 @@ private:
 
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Pupil Area Proportion");
 
+        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Image Size (Downscaling)");
         QFormLayout *sizeLayout = new QFormLayout();
+
+        QLabel *imgSizeLabel = new QLabel(tr("Image size (square) [px]:"));
+        imgSizeBox = new QSpinBox();
+        imgSizeBox->setMaximum(800);
+        imgSizeBox->setValue(imgSize);
+        imgSizeBox->setFixedWidth(80);
+
+        sizeLayout->addRow(imgSizeLabel, imgSizeBox);
+
+        QLabel *interMethodLabel = new QLabel(tr("Interpolation method:"));
+        interMethodBox = new QComboBox();
+        interMethodBox->addItem(QString("Linear"), cv::InterpolationFlags::INTER_LINEAR);
+        interMethodBox->addItem(QString("Area"), cv::InterpolationFlags::INTER_AREA);
+        interMethodBox->addItem(QString("Cubic"), cv::InterpolationFlags::INTER_CUBIC);
+        interMethodBox->addItem(QString("Lanczos"), cv::InterpolationFlags::INTER_LANCZOS4);
+        interMethodBox->setCurrentIndex(interMethodBox->findData(interMethod));
+        interMethodBox->setFixedWidth(80);
+
+        sizeLayout->addRow(interMethodLabel, interMethodBox);
+
+        sizeGroup->setLayout(sizeLayout);
+        mainLayout->addWidget(sizeGroup);
+
+
+        QGroupBox *pupAreaGroup = new QGroupBox("Algorithm specific: Pupil Area Proportion");
+
+        QFormLayout *pupAreaLayout = new QFormLayout();
 
         QLabel *minAreaLabel = new QLabel(tr("Min. Area [%]:"));
         minAreaBox = new QDoubleSpinBox();
@@ -236,7 +289,7 @@ private:
         minAreaBox->setMaximum(100);
         minAreaBox->setValue(minAreaRatio);
         minAreaBox->setFixedWidth(80);
-        sizeLayout->addRow(minAreaLabel, minAreaBox);
+        pupAreaLayout->addRow(minAreaLabel, minAreaBox);
 
         QLabel *maxAreaLabel = new QLabel(tr("Max. Area [%]:"));
         maxAreaBox = new QDoubleSpinBox();
@@ -245,10 +298,10 @@ private:
         maxAreaBox->setMaximum(100);
         maxAreaBox->setValue(maxAreaRatio);
         maxAreaBox->setFixedWidth(80);
-        sizeLayout->addRow(maxAreaLabel, maxAreaBox);
+        pupAreaLayout->addRow(maxAreaLabel, maxAreaBox);
 
-        sizeGroup->setLayout(sizeLayout);
-        mainLayout->addWidget(sizeGroup);
+        pupAreaGroup->setLayout(pupAreaLayout);
+        mainLayout->addWidget(pupAreaGroup);
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
@@ -277,6 +330,10 @@ private:
 
         QList<float> customs = defaultParameters[Settings::DEFAULT];
 
+        // GB: I think it is meaningful to have these here, so I added
+        customs[2] = j["Parameter Set"]["imgSize"];
+        customs[3] = j["Parameter Set"]["interMethod"];
+
         customs[0] = j["Parameter Set"]["minAreaRatio"];
         customs[1] = j["Parameter Set"]["maxAreaRatio"];
 
@@ -285,12 +342,12 @@ private:
     }
 
     QMap<Settings, QList<float>> defaultParameters = {
-            { Settings::DEFAULT, {0.005f, 0.2f} },
-            { Settings::ROI_0_3_OPTIMIZED, {0.001f, 0.823f} },
-            { Settings::ROI_0_6_OPTIMIZED, {0.001f, 0.131f} },
-            { Settings::FULL_IMAGE_OPTIMIZED, {0.001f, 0.038f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f} },
-            { Settings::CUSTOM, {-1.0f, -1.0f} }
+            { Settings::DEFAULT, {0.005f, 0.2f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::ROI_0_3_OPTIMIZED, {0.001f, 0.823f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::ROI_0_6_OPTIMIZED, {0.001f, 0.131f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {0.001f, 0.038f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f, 680, cv::InterpolationFlags::INTER_AREA} },
+            { Settings::CUSTOM, {-1.0f, -1.0f, 680, cv::InterpolationFlags::INTER_AREA} }
     };
 
 
@@ -300,8 +357,9 @@ private slots:
         setConfigIndex(configKey);
         QList<float>& selectedParameter = getCurrentParameters();
 
-        // First come the parameters roughly independent from ROI size and relative pupil size 
-        // (NONE HERE)
+        // First come the parameters roughly independent from ROI size and relative pupil size
+        imgSizeBox->setValue(selectedParameter[2]);
+        interMethodBox->setCurrentIndex(interMethodBox->findData(selectedParameter[3]));
 
         // Then the specific ones that are set by autoParam
         if(isAutoParamEnabled()) {

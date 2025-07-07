@@ -32,6 +32,7 @@ MainWindow::MainWindow():
                           calibrationWindow(nullptr),
                           sharpnessWindow(nullptr),
                           dataWriter(nullptr),
+                          imageWriterThread(new QThread()),
                           imageWriter(nullptr),
                           
                           singleWebcamSettingsDialog(nullptr),
@@ -102,7 +103,16 @@ MainWindow::MainWindow():
     pupilDetectionWorker->moveToThread(pupilDetectionThread);
     connect(pupilDetectionThread, SIGNAL (finished()), pupilDetectionThread, SLOT (deleteLater()));
     pupilDetectionThread->start();
-    pupilDetectionThread->setPriority(QThread::HighPriority); // highest priority
+    pupilDetectionThread->setPriority(QThread::HighPriority); // TODO: highest priority
+
+    // Image writing is going to be on a separate thread, allowing for a lot better control
+    imageWriter = new ImageWriter(this);
+    imageWriter->moveToThread(imageWriterThread);
+    connect(imageWriterThread, SIGNAL (finished()), imageWriterThread, SLOT (deleteLater()));
+    imageWriterThread->start();
+    imageWriterThread->setPriority(QThread::NormalPriority);
+    //
+    connect(imageWriter, SIGNAL (writingFailed()), this, SLOT (onImageWriterFailed()));
 
     mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -1216,16 +1226,28 @@ void MainWindow::onRecordImageClick() {
     if(recordImagesOn) {
         // Deactivate recording
 
+        // TODO. might not be necessary
         disconnect(signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
+
+        /*
+        const QIcon recordAttemptedToStopIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/appointment-new.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
+        recordImagesAct->setIcon(recordAttemptedToStopIcon);
+        //recordImagesOn = false;
+        recordImagesAct->setDisabled(true);
+         */
+
 
         const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record-blue.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordImagesAct->setIcon(recordOffIcon);
         recordImagesOn = false;
 
+        /*
         if (imageWriter != nullptr){
             imageWriter->deleteLater();
             imageWriter = nullptr;
         }
+        */
+//        imageWriter->attemptToStop();
 
         if(SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings)) {
             recEventTracker->saveOfflineEventLog(
@@ -1288,7 +1310,8 @@ void MainWindow::onRecordImageClick() {
 
         bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
 
-        imageWriter = new ImageWriter(outputDirectory, stereo, this);
+        // TODO: only make record button clickable again, if the last recording has ended (signals in queue were dealt with)
+        imageWriter->prepareForWriting(outputDirectory, stereo);
 
         // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response
         if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings)) {
@@ -1298,6 +1321,7 @@ void MainWindow::onRecordImageClick() {
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
 
+        // TODO: might not be necessary here, once imageWriter will be in a separate thread itself
         connect(signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
 
         const QIcon recordOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kt-stop-all.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
@@ -1670,6 +1694,36 @@ void MainWindow::onWebcamCouldNotBeOpened() {
 
     onCameraDisconnectClick();
 }
+
+
+void MainWindow::onImageWriterFailed() {
+    if(imageWriterFailedMsgBox != nullptr) {
+        return;
+    }
+    imageWriterFailedMsgBox = new QMessageBox(this);
+    imageWriterFailedMsgBox->setWindowTitle("Image writing failure");
+    imageWriterFailedMsgBox->setText("At least one frame could not be written to disk.\nExecuting the imwrite() method of OpenCV returned false.\nPlease check if the disk is surely mounted and accessible, there is sufficient disk space for recording, and that PupilEXT is running with proper rights to write in the specified location.\nIf this problem persists, notify the developer team.");
+    imageWriterFailedMsgBox->setMinimumSize(330,240);
+    imageWriterFailedMsgBox->setIcon(QMessageBox::Warning);
+    imageWriterFailedMsgBox->setModal(false);
+    connect(imageWriterFailedMsgBox, SIGNAL(accepted()), this, SLOT(onImageWriterFailedMsgClose()));
+    imageWriterFailedMsgBox->show();
+}
+
+void MainWindow::onImageWriterFailedMsgClose() {
+    disconnect(imageWriterFailedMsgBox, SIGNAL(accepted()), this, SLOT(onImageWriterFailedMsgClose()));
+    imageWriterFailedMsgBox->deleteLater();
+    imageWriterFailedMsgBox = nullptr;
+}
+
+/*
+void MainWindow::onImageWriterStopDone() {
+    const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record-blue.svg"), applicationSettings);
+    recordImagesAct->setIcon(recordOffIcon);
+    recordImagesOn = false;
+    recordImagesAct->setDisabled(false);
+}
+*/
 
 void MainWindow::onWebcamSuccessfullyOpened() {
     currentStatusMessageLabel->setText("Webcam successfully opened.");

@@ -17,7 +17,7 @@
 
 # During build it is important to set the VCPKG_TARGET_TRIPLET env variable
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 project(PupilEXT)
 
 # On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
@@ -33,10 +33,10 @@ project(PupilEXT)
 # Please adjust with TRUE for automatic or FALSE for manually
 set(SPII_BUILD_MODE_VAR TRUE)
 
-# Provide the user name for your system, which is used to find the Qt5_DIR on Mac and Win
-set(QT_VERSION 5.15.2)
+# Provide the user name for your system, which is used to find the Qt6_DIR on Mac and Win
+set(QT_VERSION 6.8.3)
 
-# Provide the user name for your system, which is used to find the Qt5_DIR on mac
+# Provide the user name for your system, which is used to find the Qt6_DIR on mac
 # Windows users can ignore this line
 set(USER_NAME_MAC $ENV{USER})
 
@@ -50,7 +50,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-if(CMAKE_VERSION VERSION_LESS "3.15.0")
+if(CMAKE_VERSION VERSION_LESS "3.16.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
@@ -69,15 +69,16 @@ if(APPLE)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
 
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/5.15.2/clang_64")
-    set(Qt5_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt5")
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64")
+    set(Qt6_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt6")
 
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
-	set(PYLON_HOME "C:/basler-pylon-6/Development")
-    set(PYLON_INCLUDE_DIR "C:/basler-pylon-6/Development/include")
+	set(PYLON_HOME "C:/basler-pylon-8/Development")
+    set(PYLON_INCLUDE_DIR "C:/basler-pylon-8/Development/include")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2019_64")
+    # set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2019_64")
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2022_64")
 
     set(VCPKG_TARGET_TRIPLET x64-windows-static-md CACHE STRING "")
 else()
@@ -112,7 +113,7 @@ find_package(TBB CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(glog CONFIG REQUIRED)
-find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
+find_package(Qt6 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
 
 #find_package(Boost CONFIG REQUIRED)
@@ -154,7 +155,7 @@ else()
 message(STATUS "----- Boost packageconfig was not found ! -----")
 endif()
 
-if(${Qt5Core_FOUND})
+if(${Qt6Core_FOUND})
 message(STATUS "----- QTCore was found -----")
 else()
 message(STATUS "----- QTCore packageconfig was not found ! -----")
@@ -230,16 +231,16 @@ message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
 # ------------------------------------------------------------------------
 
-include_directories(${Qt5Core_INCLUDE_DIRS}
-        ${Qt5Widgets_INCLUDE_DIRS}
-        ${Qt5Concurrent_INCLUDE_DIRS}
-        ${Qt5SerialPort_INCLUDE_DIRS}
-        ${Qt5Charts_INCLUDE_DIRS}
-        ${Qt5Svg_INCLUDE_DIRS}
-        ${Qt5PrintSupport_INCLUDE_DIRS}
-        ${Qt5Network_INCLUDE_DIRS}
-        ${Qt5Xml_INCLUDE_DIRS}
-        ${Qt5OpenGL_INCLUDE_DIRS}
+include_directories(${Qt6Core_INCLUDE_DIRS}
+        ${Qt6Widgets_INCLUDE_DIRS}
+        ${Qt6Concurrent_INCLUDE_DIRS}
+        ${Qt6SerialPort_INCLUDE_DIRS}
+        ${Qt6Charts_INCLUDE_DIRS}
+        ${Qt6Svg_INCLUDE_DIRS}
+        ${Qt6PrintSupport_INCLUDE_DIRS}
+        ${Qt6Network_INCLUDE_DIRS}
+        ${Qt6Xml_INCLUDE_DIRS}
+        ${Qt6OpenGL_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
@@ -257,15 +258,15 @@ add_subdirectory(singleeyefitter)
 
 message(STATUS "")
 message(STATUS "--- Include directories ---" )
-message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
-message(STATUS " Qt5Concurrent_INCLUDES: ${Qt5Concurrent_INCLUDE_DIRS}")
-message(STATUS " Qt5SerialPort_INCLUDES: ${Qt5SerialPort_INCLUDE_DIRS}")
-message(STATUS " Qt5Charts_INCLUDES: ${Qt5Charts_INCLUDE_DIRS}")
-message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
-message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
-message(STATUS " Qt5Network_INCLUDES: ${Qt5Network_INCLUDE_DIRS}")
-message(STATUS " Qt5Xml_INCLUDES: ${Qt5Xml_INCLUDE_DIRS}")
-message(STATUS " Qt5OpenGL_INCLUDES: ${Qt5OpenGL_INCLUDE_DIRS}")
+message(STATUS " QT6Core_INCLUDE_DIRS: ${Qt6Core_INCLUDE_DIRS}")
+message(STATUS " Qt6Concurrent_INCLUDES: ${Qt6Concurrent_INCLUDE_DIRS}")
+message(STATUS " Qt6SerialPort_INCLUDES: ${Qt6SerialPort_INCLUDE_DIRS}")
+message(STATUS " Qt6Charts_INCLUDES: ${Qt6Charts_INCLUDE_DIRS}")
+message(STATUS " Qt6Svg_INCLUDES: ${Qt6Svg_INCLUDE_DIRS}")
+message(STATUS " Qt6PrintSupport_INCLUDES: ${Qt6PrintSupport_INCLUDE_DIRS}")
+message(STATUS " Qt6Network_INCLUDES: ${Qt6Network_INCLUDE_DIRS}")
+message(STATUS " Qt6Xml_INCLUDES: ${Qt6Xml_INCLUDE_DIRS}")
+message(STATUS " Qt6OpenGL_INCLUDES: ${Qt6OpenGL_INCLUDE_DIRS}")
 
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")

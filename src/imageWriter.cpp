@@ -8,11 +8,12 @@
 
 // Creates a new image writer that outputs images in the given directory
 // If stereo is true, a stereo directory structure is created in the given directory
-ImageWriter::ImageWriter(const QString& directory, bool stereo, QObject *parent) :
+ImageWriter::ImageWriter(QObject *parent) :
     QObject(parent),
-    stereoMode(stereo),
+    //stereoMode(stereo),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
+    // TODO: is this advised like this, if we are inside a thread ?
     imageWriterFormatString = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
 
     qDebug() << "-------------------------------------";
@@ -35,6 +36,7 @@ ImageWriter::ImageWriter(const QString& directory, bool stereo, QObject *parent)
         writeParams = std::vector<int>();
     }
 
+    /*
     outputDirectory = QDir(directory);
 
     if(stereoMode) {
@@ -49,9 +51,12 @@ ImageWriter::ImageWriter(const QString& directory, bool stereo, QObject *parent)
         }
         outputDirectorySecondary.cd("1");
     }
+    */
 }
 
-ImageWriter::~ImageWriter() = default;
+ImageWriter::~ImageWriter() {
+
+};
 
 // Slot callback which receives new camera images
 // Write the received image to disk using the specified image format
@@ -62,12 +67,45 @@ void ImageWriter::onNewImage(const CameraImage &img) {
 
     // Write every image over a thread pool managed by QT, this way nothing blocks and we can write images very fast (cpu heavy)
     QString filepath = outputDirectory.filePath(QString::number(img.timestamp) + "." + imageWriterFormatString);
-    QtConcurrent::run(cv::imwrite, filepath.toStdString(), img.img, writeParams);
+    //QtConcurrent::run(cv::imwrite, filepath.toStdString(), img.img, writeParams);
+    if(!cv::imwrite(filepath.toStdString(), img.img, writeParams)) {
+        emit writingFailed();
+    }
 
 //    if(stereoMode && (img.type == CameraImageType::STEREO_IMAGE_FILE || img.type == CameraImageType::LIVE_STEREO_CAMERA)) {
     if(stereoMode) {
         QString filepathSecondary = outputDirectorySecondary.filePath(QString::number(img.timestamp) + "." + imageWriterFormatString);
-        QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgSecondary, writeParams);
+        //QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgSecondary, writeParams);
+        if(!cv::imwrite(filepathSecondary.toStdString(), img.imgSecondary, writeParams)) {
+            emit writingFailed();
+        }
     }
 }
 
+void ImageWriter::prepareForWriting(const QString& directory, bool stereo) {
+    //if(!isWriting())
+
+    stereoMode = stereo;
+
+    if(stereoMode) {
+        outputDirectorySecondary = outputDirectory;
+        if(!outputDirectory.exists("0")) {
+            outputDirectory.mkdir("0");
+        }
+        outputDirectory.cd("0");
+
+        if(!outputDirectorySecondary.exists("1")) {
+            outputDirectorySecondary.mkdir("1");
+        }
+        outputDirectorySecondary.cd("1");
+    }
+
+    outputDirectory = QDir(directory);
+};
+
+/*
+bool ImageWriter::isWriting() {
+    // TODO: check if there is image writing ongoing
+    return false;
+}
+*/

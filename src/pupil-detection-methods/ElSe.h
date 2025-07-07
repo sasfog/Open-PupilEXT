@@ -20,10 +20,12 @@ public:
     static float minArea;
     static float maxArea;
 
-    ElSe() {
-        mDesc = "ElSe (Fuhl et al. 2016)";
-        mTitle = "ElSe";
-    }
+    int imgSize;// = 680;
+
+    cv::InterpolationFlags interMethod = cv::InterpolationFlags::INTER_LINEAR;
+
+    ElSe();
+    ~ElSe() override;
 
     Pupil run(const cv::Mat &frame) override;
     void run(const cv::Mat &frame, const cv::Rect &roi, Pupil &pupil, const float &minPupilDiameterPx, const float &maxPupilDiameterPx) override;

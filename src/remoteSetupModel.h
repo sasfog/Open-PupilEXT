@@ -4,6 +4,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
+#include <QVector3D>
 #include "pupil-detection-methods/Pupil.h"
 
 #include <QtMath>
@@ -52,22 +53,17 @@ public:
     explicit inline Component(QObject *parent = 0) : QObject(parent) {};
 
     virtual SetupModelComponentType getType() = 0;
+    int leafDepth = 1;
 
     // Component *parentComponent;
     // char id;
 
     // dimensions of the model box
-    float dimX = 1.0f; // mm
-    float dimY = 1.0f; // mm
-    float dimZ = 1.0f; // mm
+    QVector3D dim = {1.0f, 1.0f, 1.0f}; // mm
 
     // in world coordinates
-    float locX = 0.0f; // mm
-    float locY = 0.0f; // mm
-    float locZ = 0.0f; // mm
-    float rotX = 0.0f; // rad
-    float rotY = 0.0f; // rad
-    float rotZ = 0.0f; // rad
+    QVector3D loc = {0.0f, 0.0f, 0.0f}; // mm
+    QVector3D rot = {0.0f, 0.0f, 0.0f}; // rad
 
     // NOTE: if a component is disabled, it will not be taken into any calculations.
     // If it is a vital component, then the program will show that it cannot currently calculate geometries
@@ -117,6 +113,7 @@ public:
     explicit CameraComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return CAMERA; };
+    int leafDepth = 1; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -134,7 +131,7 @@ public:
     QString dataInterfaceType; // GigE / USB3 / CoaXPress
     float operatingCurrent; // A // This is a typical value. Maximum can be 10-15% larger
     float operatingVoltage; // V
-    QVector<CameraConnectorPin> cameraConnectorPins;
+    QList<CameraConnectorPin> cameraConnectorPins;
     QString cameraConnectorType; // e.g. M8 6-PIN female, A-coded, IEC 61076-2-104
     float defaultFramerate;
 
@@ -149,6 +146,7 @@ public:
     explicit LensComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return LENS; };
+    int leafDepth = 2; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -180,6 +178,7 @@ public:
     explicit SensorComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return SENSOR; };
+    int leafDepth = 2; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -221,6 +220,7 @@ public:
     explicit FilterComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return FILTER; };
+    int leafDepth = 2; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -250,6 +250,7 @@ public:
     explicit IlluminatorComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return ILLUMINATOR; };
+    int leafDepth = 1; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -301,6 +302,7 @@ public:
     explicit ScreenComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return SCREEN; };
+    int leafDepth = 1; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -337,6 +339,7 @@ public:
     explicit CvTargetComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return CVTARGET; };
+    int leafDepth = 2; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -355,6 +358,7 @@ public:
     explicit EyeballComponent(QObject *parent = 0) {};
 
     SetupModelComponentType getType() override { return EYEBALL; };
+    int leafDepth = 2; // default minimum here
 
     // Component *parentComponent;
     // char id;
@@ -420,7 +424,7 @@ public:
         if(eyes.size() < 2)
             return -1.0f;
 
-        return hypot(hypot(eyes[0]->locX-eyes[1]->locX,eyes[0]->locY-eyes[1]->locY),eyes[0]->locZ-eyes[1]->locZ);
+        return hypot(hypot(eyes[0]->loc.x()-eyes[1]->loc.x(),eyes[0]->loc.y()-eyes[1]->loc.y()),eyes[0]->loc.z()-eyes[1]->loc.z());
     };
 
     //struct QEPoint {short x = 0; float y = 0;};

@@ -37,6 +37,8 @@ void CamTempMonitor::run() {
         }
         emit camTempChecked(temps);
 
+        QThread::msleep(checkIntervalSec*1000); // TODO: this time should be configurable in general settings dialog, as well as the option to track camera temperature or not
+
         if(warmupDone)
             continue;
 
@@ -54,7 +56,6 @@ void CamTempMonitor::run() {
             emit cameraWarmedUp();
             warmupDone = true;
         }
-        QThread::msleep(checkIntervalSec*1000); // TODO: this time should be configurable in general settings dialog, as well as the option to track camera temperature or not
     } while(m_running); // must happen here, as it can happen that this thread is scheduled for deletion (set m_running to false) while it is asleep
 
 //    std::cerr << "camTempMonitor thread FINISHING" << std::endl;

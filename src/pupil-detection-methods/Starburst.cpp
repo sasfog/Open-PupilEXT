@@ -909,6 +909,7 @@ void Starburst::run(const cv::Mat &frame, Pupil &pupil) {
         this->lostFrameNum++;
     }
 
+    // TODO: GB: implement at least reliance on framerate, but hopefully also confidence !
     if (this->lostFrameNum > 5) {
         this->startPoint.x = eyeImg.size().width/2;
         this->startPoint.y = eyeImg.size().height/2;

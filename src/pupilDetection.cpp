@@ -434,11 +434,31 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
     try {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         if(useOutlineConfidence) {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB));
+
+            // calibrationSuccess = QtConcurrent::run([this]{ return CameraCalibration::calibrate(); }); // Qt6 compatible
+            // //calibrationSuccess = QtConcurrent::run(this, &CameraCalibration::calibrate); // GB NOTE: this line was the Qt5 compatible version
+
+            // Qt6
+            auto pdm1 = pupilDetectionMethods1[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm1, bwFrameA] { return pdm1->runWithConfidence(bwFrameA); }) );
+            auto pdm2 = pupilDetectionMethods2[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm2, bwFrameB] { return pdm2->runWithConfidence(bwFrameB); }) );
+
+            // Qt5
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA)); // GB NOTE: this line was the Qt5 compatible version
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB)); // GB NOTE: this line was the Qt5 compatible version
         } else {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB));
+
+            // Qt6
+            auto pdm1 = pupilDetectionMethods1[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm1, bwFrameA] { return pdm1->run(bwFrameA); }) );
+            auto pdm2 = pupilDetectionMethods2[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm2, bwFrameB] { return pdm2->run(bwFrameB); }) );
+
+            // Qt5
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA)); // GB NOTE: this line was the Qt5 compatible version
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB)); // GB NOTE: this line was the Qt5 compatible version
+
         }
         synchronizer.waitForFinished();
         // Unhandled exceptions in the QtConcurrent::run function are thrown at the result() call
@@ -594,11 +614,27 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     try {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         if(useOutlineConfidence) {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrame));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameSecondary));
+
+            // Qt6
+            auto pdm1 = pupilDetectionMethods1[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm1, bwFrame] { return pdm1->runWithConfidence(bwFrame); }) );
+            auto pdm2 = pupilDetectionMethods2[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm2, bwFrameSecondary] { return pdm2->runWithConfidence(bwFrameSecondary); }) );
+
+            // Qt5
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrame));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameSecondary));
         } else {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrame));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameSecondary));
+
+            // Qt6
+            auto pdm1 = pupilDetectionMethods1[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm1, bwFrame] { return pdm1->run(bwFrame); }) );
+            auto pdm2 = pupilDetectionMethods2[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm2, bwFrameSecondary] { return pdm2->run(bwFrameSecondary); }) );
+
+            // Qt5
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrame));
+            //.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameSecondary));
         }
         synchronizer.waitForFinished();
         // Unhandled exceptions in the QtConcurrent::run function are thrown at the result() call
@@ -794,15 +830,39 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     try {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         if(useOutlineConfidence) {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA1));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA2));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods3[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB1));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods4[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB2));
+
+            // Qt6
+            auto pdm1 = pupilDetectionMethods1[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm1, bwFrameA1] { return pdm1->runWithConfidence(bwFrameA1); }) );
+            auto pdm2 = pupilDetectionMethods2[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm2, bwFrameA2] { return pdm2->runWithConfidence(bwFrameA2); }) );
+            auto pdm3 = pupilDetectionMethods3[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm3, bwFrameB1] { return pdm3->runWithConfidence(bwFrameB1); }) );
+            auto pdm4 = pupilDetectionMethods4[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm4, bwFrameB2] { return pdm4->runWithConfidence(bwFrameB2); }) );
+
+            // Qt5
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA1));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA2));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods3[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB1));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods4[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB2));
         } else {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA1));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA2));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods3[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB1));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods4[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB2));
+
+            // Qt6
+            auto pdm1 = pupilDetectionMethods1[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm1, bwFrameA1] { return pdm1->run(bwFrameA1); }) );
+            auto pdm2 = pupilDetectionMethods2[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm2, bwFrameA2] { return pdm2->run(bwFrameA2); }) );
+            auto pdm3 = pupilDetectionMethods3[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm3, bwFrameB1] { return pdm3->run(bwFrameB1); }) );
+            auto pdm4 = pupilDetectionMethods4[pupilDetectionIndex];
+            synchronizer.addFuture( QtConcurrent::run([pdm4, bwFrameB2] { return pdm4->run(bwFrameB2); }) );
+
+            // Qt5
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA1));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA2));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods3[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB1));
+            //synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods4[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB2));
         }
         synchronizer.waitForFinished();
         // Unhandled exceptions in the QtConcurrent::run function are thrown at the result() call

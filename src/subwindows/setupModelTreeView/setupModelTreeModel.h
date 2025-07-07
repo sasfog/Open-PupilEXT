@@ -7,6 +7,8 @@
 #include <QModelIndex>
 #include <QVariant>
 
+#include<QDebug>
+
 #include "../../remoteSetupModel.h"
 //#include "setupModelTreeItem.h"
 
@@ -35,5 +37,7 @@ private:
     static void setupModelData(RemoteSetupModel *remoteSetupModel, SetupModelTreeItem *parent);
 
     std::unique_ptr<SetupModelTreeItem> rootItem;
+
+    static void recurseAddComponent(Component *component, SetupModelTreeItem *parent);
 };
 

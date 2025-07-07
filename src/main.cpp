@@ -69,10 +69,11 @@ int main(int argc, char *argv[])
             // Changing this may change the settings path thus not loading old application settings!
             QCoreApplication::setOrganizationName("FGLT");
             QCoreApplication::setApplicationName("PupilEXT");
-            QCoreApplication::setApplicationVersion("0.1.2 Beta");
+            QCoreApplication::setApplicationVersion("0.1.3 Beta");
 
-            qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
-            qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
+            // NOTE: these calls will not be needed in Qt6, only in Qt5
+            //qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
+            //qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
 
             Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
 

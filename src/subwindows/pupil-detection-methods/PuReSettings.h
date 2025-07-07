@@ -125,10 +125,14 @@ public slots:
         // First come the parameters roughly independent from ROI size and relative pupil size 
         int baseWidth = pure->baseSize.width;
         int baseHeight = pure->baseSize.height;
+        cv::InterpolationFlags interMethod = pure->interMethod;
 
         baseWidth = imageWidthBox->value();
         baseHeight = imageHeightBox->value();
+        interMethod = (cv::InterpolationFlags)interMethodBox->itemData(interMethodBox->currentIndex()).toInt();
+
         pure->baseSize = cv::Size(baseWidth, baseHeight);
+        pure->interMethod = interMethod;
 
         QList<float>& currentParameters = getCurrentParameters();
         currentParameters[0] = baseWidth;
@@ -136,12 +140,15 @@ public slots:
 
         if(pure2) {
             pure2->baseSize = cv::Size(baseWidth, baseHeight);
+            pure2->interMethod = interMethod;
         }
         if(pure3) {
             pure3->baseSize = cv::Size(baseWidth, baseHeight);
+            pure3->interMethod = interMethod;
         }
         if(pure4) {
             pure4->baseSize = cv::Size(baseWidth, baseHeight);
+            pure4->interMethod = interMethod;
         }
 
         // Then the specific ones that are set by autoParam
@@ -205,6 +212,7 @@ private:
 
     QSpinBox *imageWidthBox;
     QSpinBox *imageHeightBox;
+    QComboBox *interMethodBox;
 
     QDoubleSpinBox *canthiDistanceBox;
     QDoubleSpinBox *maxPupilBox;
@@ -220,6 +228,7 @@ private:
 
         int baseWidth = selectedParameter[0];
         int baseHeight = selectedParameter[1];
+        cv::InterpolationFlags interMethod = (cv::InterpolationFlags)(int)selectedParameter[5];
 
         QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
@@ -276,6 +285,20 @@ private:
         layoutRow1->addWidget(imageHeightBox);
         //layoutRow1->addSpacerItem(sp);
         sizeLayout->addRow(widthLabel, layoutRow1);
+
+        QLabel *interMethodLabel = new QLabel(tr("Interpolation method:"));
+        interMethodBox = new QComboBox();
+        interMethodBox->addItem(QString("Linear"), cv::InterpolationFlags::INTER_LINEAR);
+        interMethodBox->addItem(QString("Area"), cv::InterpolationFlags::INTER_AREA);
+        interMethodBox->addItem(QString("Cubic"), cv::InterpolationFlags::INTER_CUBIC);
+        interMethodBox->addItem(QString("Lanczos"), cv::InterpolationFlags::INTER_LANCZOS4);
+        interMethodBox->setCurrentIndex(interMethodBox->findData(interMethod));
+        interMethodBox->setFixedWidth(80);
+
+        sizeLayout->addRow(interMethodLabel, interMethodBox);
+
+        sizeGroup->setLayout(sizeLayout);
+        mainLayout->addWidget(sizeGroup);
 
         sizeGroup->setLayout(sizeLayout);
         mainLayout->addWidget(sizeGroup);
@@ -337,6 +360,11 @@ private:
 
         QList<float> customs = defaultParameters[Settings::DEFAULT];
 
+        // GB: I think it is meaningful to have these here, so I added
+        customs[0] = j["Parameter Set"]["baseWidth"];
+        customs[1] = j["Parameter Set"]["baseHeight"];
+        customs[5] = j["Parameter Set"]["interMethod"];
+
         customs[2] = j["Parameter Set"]["meanCanthiDistanceMM"];
         customs[3] = j["Parameter Set"]["minPupilDiameterMM"];
         customs[4] = j["Parameter Set"]["maxPupilDiameterMM"];
@@ -345,12 +373,12 @@ private:
     }
 
     QMap<Settings, QList<float>> defaultParameters = {
-            { Settings::DEFAULT, {320, 240, 27.6f, 2.0f, 8.0f} },
-            { Settings::ROI_0_3_OPTIMIZED, {320, 240, 49.4f, 1.9f, 20.0f} },
-            { Settings::ROI_0_6_OPTIMIZED, {320, 240, 38.7f, 1.9f, 16.8f} },
-            { Settings::FULL_IMAGE_OPTIMIZED, {320, 240, 94.1f, 0.1f, 16.0f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {320, 240, -1.0f, -1.0f, -1.0f} },
-            { Settings::CUSTOM, {320, 240, -1.0f, -1.0f, -1.0f} }
+            { Settings::DEFAULT, {320, 240, 27.6f, 2.0f, 8.0f, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::ROI_0_3_OPTIMIZED, {320, 240, 49.4f, 1.9f, 20.0f, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::ROI_0_6_OPTIMIZED, {320, 240, 38.7f, 1.9f, 16.8f, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {320, 240, 94.1f, 0.1f, 16.0f, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {320, 240, -1.0f, -1.0f, -1.0f, cv::InterpolationFlags::INTER_AREA} },
+            { Settings::CUSTOM, {320, 240, -1.0f, -1.0f, -1.0f, cv::InterpolationFlags::INTER_AREA} }
     };
 
       // Parameters from second optimization run
@@ -373,6 +401,7 @@ private slots:
         // First come the parameters roughly independent from ROI size and relative pupil size 
         imageWidthBox->setValue(selectedParameter[0]);
         imageHeightBox->setValue(selectedParameter[1]);
+        interMethodBox->setCurrentIndex(interMethodBox->findData(selectedParameter[5]));
 
         // Then the specific ones that are set by autoParam
         if(isAutoParamEnabled()) {

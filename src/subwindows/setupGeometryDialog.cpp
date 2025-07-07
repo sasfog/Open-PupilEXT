@@ -45,16 +45,16 @@ SetupGeometryDialog::~SetupGeometryDialog() {
 void SetupGeometryDialog::createForm() {
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setMargin(10);
+    //mainLayout->setMargin(10);
     mainLayout->setContentsMargins(10,10,10,10);
     QHBoxLayout *mainLayoutInner = new QHBoxLayout();
-    mainLayoutInner->setMargin(0);
+    //mainLayoutInner->setMargin(0);
     mainLayoutInner->setContentsMargins(0,0,0,0);
     QVBoxLayout *mainLayoutInnerCol1 = new QVBoxLayout();
-    mainLayoutInnerCol1->setMargin(0);
+    //mainLayoutInnerCol1->setMargin(0);
     mainLayoutInnerCol1->setContentsMargins(0,5,0,5);
     QVBoxLayout *mainLayoutInnerCol2 = new QVBoxLayout();
-    mainLayoutInnerCol2->setMargin(0);
+    //mainLayoutInnerCol2->setMargin(0);
     mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
     aGroup = new QGroupBox("Test group");
@@ -159,7 +159,14 @@ void SetupGeometryDialog::createForm() {
     QFormLayout *componentsLayout = new QFormLayout();
 
     QLabel *setupModelTreeLabel = new QLabel(tr("Setup model components tree"));
+    /*
     QTreeView *setupModelTree = new QTreeView();
+     */
+
+    QJsonModel * model1 = new QJsonModel;
+    QTreeView * setupModelTree = new QTreeView;
+    setupModelTree->setModel(model1);
+    model1->load("example.json");
 
 
     RemoteSetupModel *setupModel = new RemoteSetupModel();
@@ -175,6 +182,7 @@ void SetupGeometryDialog::createForm() {
     CameraComponent *cameraComponent = new CameraComponent(this);
     cameraComponent->componentVendor = "Basler";
     cameraComponent->componentType = "acA1300-200um";
+    //sensorComponent->leafDepth = 1;
     //
     SensorComponent *sensorComponent = new SensorComponent(this);
     sensorComponent->componentVendor = "Sony";
@@ -182,6 +190,7 @@ void SetupGeometryDialog::createForm() {
     sensorComponent->resolutionX = 1920; // px
     sensorComponent->resolutionY = 1200; // px
     sensorComponent->pixelSize = 3.4f; // um
+    sensorComponent->leafDepth = 2;
     cameraComponent->components.push_back(sensorComponent);
     //
     cameraUnit->components.push_back(cameraComponent);
@@ -198,6 +207,7 @@ void SetupGeometryDialog::createForm() {
     lensComponent->sholuderToFirstSurfaceDistance = 42; // mm
     lensComponent->outerDiameter = 36; // mm // when there are no adjustment screws attached
     lensComponent->frontFilterDiameter = 35; // mm
+    sensorComponent->leafDepth = 2;
     cameraUnit->components.push_back(lensComponent);
 
     FilterComponent *filterComponent = new FilterComponent(this);
@@ -207,6 +217,7 @@ void SetupGeometryDialog::createForm() {
     filterComponent->opticalBehaviour = "lowpass"; // lowpass, highpass, bandpass
     filterComponent->lowpassCuton = 720; // nm
     filterComponent->filterDiameter = 35; // mm
+    sensorComponent->leafDepth = 2;
     cameraUnit->components.push_back(filterComponent);
 
     setupModel->cameraUnits.push_back(cameraUnit);
@@ -245,95 +256,46 @@ void SetupGeometryDialog::createForm() {
     setupModel->heads.push_back(head);
 
     // TODO: some of these could be done under the hood in setupModel by setters (?)
-    cameraComponent->dimX = 29.0; // These are just the sizes for a random Basler camera model
-    cameraComponent->dimY = 29.0;
-    cameraComponent->dimZ = 48.0;
-    cameraComponent->locX = 15.0;
-    cameraComponent->locY = 5.0;
-    cameraComponent->locZ = 10.0;
-    cameraComponent->rotX = -15;
-    cameraComponent->rotY = 0;
-    cameraComponent->rotZ = 0;
+    // These are just the sizes for a random Basler camera model
+    cameraComponent->dim = { 29.0, 29.0, 48.0 };
+    cameraComponent->loc = { 15.0, 5.0, 10.0 };
+    cameraComponent->rot = { -15, 0, 0 };
     //
-    sensorComponent->dimX = sensorComponent->effectiveSizeX();
-    sensorComponent->dimY = sensorComponent->effectiveSizeY();
-    sensorComponent->dimZ = 1.0;
-    sensorComponent->locX = cameraComponent->locX;
-    sensorComponent->locY = cameraComponent->locY;
-    sensorComponent->locZ = cameraComponent->locZ + cameraComponent->dimZ/2.0f - cameraComponent->flangeDistance;
-    sensorComponent->rotX = cameraComponent->rotX;
-    sensorComponent->rotY = cameraComponent->rotY;
-    sensorComponent->rotZ = cameraComponent->rotZ;
+    sensorComponent->dim = { sensorComponent->effectiveSizeX(), sensorComponent->effectiveSizeY(), 1.0 };
+    sensorComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y(), cameraComponent->loc.z() + cameraComponent->dim.z()/2.0f - cameraComponent->flangeDistance };
+    sensorComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y(), cameraComponent->rot.z() };
     //
-    lensComponent->dimX = lensComponent->outerDiameter;
-    lensComponent->dimY = lensComponent->outerDiameter;
-    lensComponent->dimZ = lensComponent->sholuderToFirstSurfaceDistance;
-    lensComponent->locX = cameraComponent->locX;
-    lensComponent->locY = cameraComponent->locY;
-    lensComponent->locZ = cameraComponent->locZ + cameraComponent->dimZ/2.0f + lensComponent->sholuderToFirstSurfaceDistance /2.0f;
-    lensComponent->rotX = cameraComponent->rotX;
-    lensComponent->rotY = cameraComponent->rotY;
-    lensComponent->rotZ = cameraComponent->rotZ;
+    lensComponent->dim = { lensComponent->outerDiameter, lensComponent->outerDiameter, lensComponent->sholuderToFirstSurfaceDistance };
+    lensComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y(), cameraComponent->loc.z() + cameraComponent->dim.z()/2.0f + lensComponent->sholuderToFirstSurfaceDistance /2.0f };
+    lensComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y(), cameraComponent->rot.z() };
     //
-    filterComponent->dimX = lensComponent->outerDiameter;
-    filterComponent->dimY = lensComponent->outerDiameter;
-    filterComponent->dimZ = 2.0; // assuming that 1 mm is okay for the half of a display thickness
-    filterComponent->locX = cameraComponent->locX;
-    filterComponent->locY = cameraComponent->locY;
-    filterComponent->locZ = cameraComponent->locZ + cameraComponent->dimZ/2.0f + lensComponent->sholuderToFirstSurfaceDistance + filterComponent->dimZ/2.0f;
-    filterComponent->rotX = cameraComponent->rotX;
-    filterComponent->rotY = cameraComponent->rotY;
-    filterComponent->rotZ = cameraComponent->rotZ;
+    filterComponent->dim = { lensComponent->outerDiameter, lensComponent->outerDiameter, 2.0 }; // assuming that 1 mm is okay for the half of a display thickness
+    filterComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y(), cameraComponent->loc.z() + cameraComponent->dim.z()/2.0f + lensComponent->sholuderToFirstSurfaceDistance + filterComponent->dim.z()/2.0f };
+    filterComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y(), cameraComponent->rot.z() };
     //
-    illuminatorComponent->dimX = 40.0f;
-    illuminatorComponent->dimY = 40.0f;
-    illuminatorComponent->dimZ = 2.0;
-    illuminatorComponent->locX = cameraComponent->locX + 100.0f;
-    illuminatorComponent->locY = cameraComponent->locY;
-    illuminatorComponent->locZ = cameraComponent->locZ;
-    illuminatorComponent->rotX = cameraComponent->rotX;
-    illuminatorComponent->rotY = cameraComponent->rotY - 10.0;
-    illuminatorComponent->rotZ = cameraComponent->rotZ;
+    illuminatorComponent->dim = { 40.0f, 40.0f, 2.0 };
+    illuminatorComponent->loc = { cameraComponent->loc.x() + 100.0f, cameraComponent->loc.y(), cameraComponent->loc.z() };
+    illuminatorComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y() - 10.0f, cameraComponent->rot.z() };
     //
-    screenComponent->dimX = screenComponent->physicalSizeX;
-    screenComponent->dimY = screenComponent->physicalSizeY;
-    screenComponent->dimZ = 5.0f;
-    screenComponent->locX = cameraComponent->locX;
-    screenComponent->locY = cameraComponent->locY + cameraComponent->dimY + 20.0f + screenComponent->physicalSizeY/2.0f;
-    screenComponent->locZ = cameraComponent->locZ;
-    screenComponent->rotX = 0.0f;
-    screenComponent->rotY = 0.0f;
-    screenComponent->rotZ = 0.0f;
+    screenComponent->dim = { screenComponent->physicalSizeX, screenComponent->physicalSizeY, 5.0f };
+    screenComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y() + cameraComponent->dim.y() + 20.0f + screenComponent->physicalSizeY/2.0f, cameraComponent->loc.z() };
+    screenComponent->rot = { 0.0f, 0.0f, 0.0f };
     //
-    leftEyeball->dimX = leftEyeball->eyeballDiameter/2.0f;
-    leftEyeball->dimY = leftEyeball->eyeballDiameter/2.0f;
-    leftEyeball->dimZ = leftEyeball->eyeballDiameter/2.0f;
-    leftEyeball->locX = 0 - 60.0f/2.0f; // 60 mm is an average human intercanthal distance
-    leftEyeball->locY = screenComponent->locY + 10.0f;
-    leftEyeball->locZ = 580.0f;
+    // 60 mm is an average human intercanthal distance
+    leftEyeball->dim = { leftEyeball->eyeballDiameter/2.0f, leftEyeball->eyeballDiameter/2.0f, leftEyeball->eyeballDiameter/2.0f };
+    leftEyeball->loc = { 0 - 60.0f/2.0f, screenComponent->loc.y() + 10.0f, 580.0f };
     //leftEyeball->rotX = 90.0f; // to be looking at the screen now // TODO: valamiért úgy tűnik a forgatást a translate után teszi rá, ezért elkerül tök messze a szem
-    leftEyeball->rotY = 0.0f;
-    leftEyeball->rotZ = 0.0f;
+    leftEyeball->rot = { 0.0f, 0.0f, 0.0f };
     //
-    rightEyeball->dimX = rightEyeball->eyeballDiameter/2.0f;
-    rightEyeball->dimY = rightEyeball->eyeballDiameter/2.0f;
-    rightEyeball->dimZ = rightEyeball->eyeballDiameter/2.0f;
-    rightEyeball->locX = 0 + 60.0f/2.0f; // 60 mm is an average human intercanthal distance
-    rightEyeball->locY = screenComponent->locY + 10.0f;
-    rightEyeball->locZ = 580.0f;
+    // 60 mm is an average human intercanthal distance
+    rightEyeball->dim = { rightEyeball->eyeballDiameter/2.0f, rightEyeball->eyeballDiameter/2.0f, rightEyeball->eyeballDiameter/2.0f };
+    rightEyeball->loc = { 0 + 60.0f/2.0f, screenComponent->loc.y() + 10.0f, 580.0f };
     //rightEyeball->rotX = 90.0f; // to be looking at the screen now // TODO: valamiért úgy tűnik a forgatást a translate után teszi rá, ezért elkerül tök messze a szem
-    rightEyeball->rotY = 0.0f;
-    rightEyeball->rotZ = 0.0f;
+    rightEyeball->rot = { 0.0f, 0.0f, 0.0f };
     //
-    foreheadTarget->dimX = foreheadTarget->outerRingDiameter;
-    foreheadTarget->dimY = foreheadTarget->outerRingDiameter;
-    foreheadTarget->dimZ = 1.0;
-    foreheadTarget->locX = 0; // 60 mm is an average human intercanthal distance
-    foreheadTarget->locY = screenComponent->locY + 10.0f + 30.0f;
-    foreheadTarget->locZ = 575.0f;
-    foreheadTarget->rotX = 0.0f;
-    foreheadTarget->rotY = 0.0f;
-    foreheadTarget->rotZ = 0.0f;
+    foreheadTarget->dim = { foreheadTarget->outerRingDiameter, foreheadTarget->outerRingDiameter, 1.0 };
+    foreheadTarget->loc = { 0, screenComponent->loc.y() + 10.0f + 30.0f, 575.0f };
+    foreheadTarget->rot = { 0.0f, 0.0f, 0.0f };
 
     // TODO: rot and loc is the right order of mentioning everywhere, as the rotation is first only made with respect to
     //      the component's own axes, and then translated is the component somewhere else.
@@ -345,6 +307,7 @@ void SetupGeometryDialog::createForm() {
 
     //SetupModelTreeModel setupModelTreeModel(QString::fromUtf8(file.readAll()));
     //file.close();
+    /*
     SetupModelTreeModel setupModelTreeModel(setupModel);
 
     setupModelTree->setModel(&setupModelTreeModel);
@@ -355,9 +318,17 @@ void SetupGeometryDialog::createForm() {
     const auto screenSize = setupModelTree->screen()->availableSize();
     setupModelTree->resize({screenSize.width() / 2, screenSize.height() * 2 / 3});
     setupModelTree->show();
+     */
+
+    QJsonModel * model = new QJsonModel;
+    QTreeView * view = new QTreeView;
+    view->setModel(model);
+    model->load("example.json");
+
     //
     qtOpenGlViewer->setSetupModel(setupModel);
     qtOpenGlViewer->update();
+    qtOpenGlViewer->goToDefaultView(4);
 
     // WE NEED OUR TREE MODEL HERE that accesses the mSetup object
     // ...

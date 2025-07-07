@@ -190,7 +190,8 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
         emit processedImageLowFPS(mimg);
 
         //bool success = calibrate();
-        calibrationSuccess = QtConcurrent::run(this, &CameraCalibration::calibrate);
+        calibrationSuccess = QtConcurrent::run([this]{ return CameraCalibration::calibrate(); }); // Qt6 compatible
+        //calibrationSuccess = QtConcurrent::run(this, &CameraCalibration::calibrate); // GB NOTE: this line was the Qt5 compatible version
 
         mode = CALIBRATING;
     } else if(mode==CALIBRATING) {

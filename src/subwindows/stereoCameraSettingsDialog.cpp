@@ -48,8 +48,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed for Hardware-triggered image acquisition)");
     QFormLayout *MCUConnGroupLayout = new QFormLayout();
-    MCUConnGroupLayout->setMargin(10);
-    MCUConnGroupLayout->setContentsMargins(5,5,5,5);
+    //MCUConnGroupLayout->setMargin(10);
+    MCUConnGroupLayout->setContentsMargins(10,10,10,10);
 
     QSpacerItem *sp10 = new QSpacerItem(90, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConfigButton = new QPushButton();
@@ -88,8 +88,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     QGroupBox *cameraGroup = new QGroupBox("2. Camera Selection");
     QFormLayout *cameraLayout = new QFormLayout();
-    cameraLayout->setMargin(10);
-    cameraLayout->setContentsMargins(5,5,5,5);
+    //cameraLayout->setMargin(10);
+    cameraLayout->setContentsMargins(10,10,10,10);
 
     QLabel *mainCameraLabel = new QLabel(tr("Main:"));
     mainCameraLabel->setFixedWidth(90);
@@ -108,7 +108,7 @@ void StereoCameraSettingsDialog::createForm() {
 
     QWidget *tmp = new QWidget();
     QHBoxLayout *cameraButtonLayout = new QHBoxLayout();
-    cameraButtonLayout->setMargin(0);
+    //cameraButtonLayout->setMargin(0);
     cameraButtonLayout->setContentsMargins(0,0,0,0);
     updateDevicesButton = new QPushButton(tr("Refresh Devices"));
     updateDevicesButton->setStyleSheet("QPushButton { border: 1px solid #757575; border-radius: 5px;}");
@@ -140,11 +140,11 @@ void StereoCameraSettingsDialog::createForm() {
 
     acquisitionGroup = new QGroupBox("3. Image Acquisition Control");
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
-    acquisitionLayout->setMargin(10);
-    acquisitionLayout->setContentsMargins(5,5,5,5);
+    //acquisitionLayout->setMargin(10);
+    acquisitionLayout->setContentsMargins(10,10,10,10);
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
-    exposureInputLayout->setMargin(0);
+    //exposureInputLayout->setMargin(0);
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:")); 
     exposureLabel->setFixedWidth(100);
@@ -170,7 +170,7 @@ void StereoCameraSettingsDialog::createForm() {
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
-    imageROIlayoutRow1->setMargin(0);
+    //imageROIlayoutRow1->setMargin(0);
     imageROIlayoutRow1->setContentsMargins(0,0,0,0);
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
     imageROIwidthLabel->setMinimumWidth(120);
@@ -188,7 +188,7 @@ void StereoCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
-    imageROIlayoutRow2->setMargin(0);
+    //imageROIlayoutRow2->setMargin(0);
     imageROIlayoutRow2->setContentsMargins(0,0,0,0);
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
     imageROIheightLabel->setMinimumWidth(120);
@@ -206,7 +206,7 @@ void StereoCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
-    imageROIlayoutRow3->setMargin(0);
+    //imageROIlayoutRow3->setMargin(0);
     imageROIlayoutRow3->setContentsMargins(0,0,0,0);
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
     imageROIoffsetXLabel->setMinimumWidth(120);
@@ -224,7 +224,7 @@ void StereoCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
-    imageROIlayoutRow4->setMargin(0);
+    //imageROIlayoutRow4->setMargin(0);
     imageROIlayoutRow4->setContentsMargins(0,0,0,0);
     //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
@@ -244,7 +244,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     
     QVBoxLayout *imageROIlayoutNestedVBlock2 = new QVBoxLayout;
-    imageROIlayoutNestedVBlock2->setMargin(0);
+    //imageROIlayoutNestedVBlock2->setMargin(0);
+    imageROIlayoutNestedVBlock2->setContentsMargins(0,0,0,0);
 
     camImageRegionsWidget = new CamImageRegionsWidget(this);
     camImageRegionsWidget->setFixedHeight(90);
@@ -255,7 +256,7 @@ void StereoCameraSettingsDialog::createForm() {
     acquisitionLayout->addLayout(imageROIlayoutHBlock);
 
     QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
-    imageROIlayoutRow5->setMargin(0);
+    //imageROIlayoutRow5->setMargin(0);
     imageROIlayoutRow5->setContentsMargins(0,0,0,0);
     binningLabel = new QLabel(tr("Binning:"));
     binningLabel->setFixedWidth(70);
@@ -271,7 +272,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     /////////////////////////////////////////////////
     QHBoxLayout *imageROIlayoutRow6 = new QHBoxLayout;
-    imageROIlayoutRow6->setMargin(0);
+    //imageROIlayoutRow6->setMargin(0);
+    imageROIlayoutRow6->setContentsMargins(0,0,0,0);
     QFrame *line2 = new QFrame();
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Raised);
@@ -294,8 +296,8 @@ void StereoCameraSettingsDialog::createForm() {
 
     triggerGroup = new QGroupBox("4. Image Acquisition Triggering and Framerate setting");
     QFormLayout *triggerGroupLayout = new QFormLayout();
-    triggerGroupLayout->setMargin(10);
-    triggerGroupLayout->setContentsMargins(5,5,5,5);
+    //triggerGroupLayout->setMargin(10);
+    triggerGroupLayout->setContentsMargins(10,10,10,10);
 
     SWTradioButton = new QRadioButton("Software triggering:", this);
     SWTradioButton->setFixedHeight(20);
@@ -367,7 +369,7 @@ void StereoCameraSettingsDialog::createForm() {
     triggerGroupLayout->addRow(HWTradioButton, HWTframerateLayout);
 
     QFormLayout *HWTgroupLayout = new QFormLayout();
-    HWTgroupLayout->setMargin(0);
+    //HWTgroupLayout->setMargin(0);
     HWTgroupLayout->setContentsMargins(0,0,0,0);
 
     QSpacerItem *sp6 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);

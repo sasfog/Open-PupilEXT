@@ -49,8 +49,8 @@ void SingleCameraSettingsDialog::createForm() {
 
     MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed only for Hardware-triggered image acquisition)");
     QFormLayout *MCUConnGroupLayout = new QFormLayout();
-    MCUConnGroupLayout->setMargin(10);
-    MCUConnGroupLayout->setContentsMargins(5,5,5,5);
+    //MCUConnGroupLayout->setMargin(10);
+    MCUConnGroupLayout->setContentsMargins(10,10,10,10);
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConfigButton = new QPushButton();
@@ -91,7 +91,7 @@ void SingleCameraSettingsDialog::createForm() {
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
-    exposureInputLayout->setMargin(0);
+    //exposureInputLayout->setMargin(0);
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:"));
     exposureLabel->setFixedWidth(100);
@@ -117,7 +117,7 @@ void SingleCameraSettingsDialog::createForm() {
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
-    imageROIlayoutRow1->setMargin(0);
+    //imageROIlayoutRow1->setMargin(0);
     imageROIlayoutRow1->setContentsMargins(0,0,0,0);
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
     imageROIwidthLabel->setMinimumWidth(120);
@@ -135,7 +135,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
-    imageROIlayoutRow2->setMargin(0);
+    //imageROIlayoutRow2->setMargin(0);
     imageROIlayoutRow2->setContentsMargins(0,0,0,0);
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
     imageROIheightLabel->setMinimumWidth(120);
@@ -153,7 +153,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
-    imageROIlayoutRow3->setMargin(0);
+    //imageROIlayoutRow3->setMargin(0);
     imageROIlayoutRow3->setContentsMargins(0,0,0,0);
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
     imageROIoffsetXLabel->setMinimumWidth(120);
@@ -171,7 +171,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
-    imageROIlayoutRow4->setMargin(0);
+    //imageROIlayoutRow4->setMargin(0);
     imageROIlayoutRow4->setContentsMargins(0,0,0,0);
     //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
@@ -190,7 +190,8 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow4);
 
     QVBoxLayout *imageROIlayoutNestedVBlock2 = new QVBoxLayout;
-    imageROIlayoutNestedVBlock2->setMargin(0);
+    //imageROIlayoutNestedVBlock2->setMargin(0);
+    imageROIlayoutNestedVBlock2->setContentsMargins(0,0,0,0);
 
     camImageRegionsWidget = new CamImageRegionsWidget(this);
     camImageRegionsWidget->setFixedHeight(80);
@@ -201,7 +202,7 @@ void SingleCameraSettingsDialog::createForm() {
     acquisitionLayout->addLayout(imageROIlayoutHBlock);
 
     QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
-    imageROIlayoutRow5->setMargin(0);
+    //imageROIlayoutRow5->setMargin(0);
     imageROIlayoutRow5->setContentsMargins(0,0,0,0);
     binningLabel = new QLabel(tr("Binning:"));
     binningLabel->setFixedWidth(70);
@@ -217,7 +218,8 @@ void SingleCameraSettingsDialog::createForm() {
 
     /////////////////////////////////////////////////
     QHBoxLayout *imageROIlayoutRow6 = new QHBoxLayout;
-    imageROIlayoutRow6->setMargin(0);
+    //imageROIlayoutRow6->setMargin(0);
+    imageROIlayoutRow6->setContentsMargins(0,0,0,0);
     QFrame *line2 = new QFrame();
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Raised);
@@ -240,8 +242,8 @@ void SingleCameraSettingsDialog::createForm() {
 
     triggerGroup = new QGroupBox("3. Image Acquisition Triggering and Framerate setting");
     QFormLayout *triggerGroupLayout = new QFormLayout();
-    triggerGroupLayout->setMargin(10);
-    triggerGroupLayout->setContentsMargins(5,5,5,5);
+    //triggerGroupLayout->setMargin(10);
+    triggerGroupLayout->setContentsMargins(10,10,10,10);
 
     SWTradioButton = new QRadioButton("Software triggering:", this);
     SWTradioButton->setFixedHeight(20);
@@ -319,7 +321,7 @@ void SingleCameraSettingsDialog::createForm() {
     triggerGroupLayout->addRow(HWTradioButton, HWTframerateLayout);
 
     HWTgroupLayout = new QFormLayout();
-    HWTgroupLayout->setMargin(0);
+    //HWTgroupLayout->setMargin(0);
     HWTgroupLayout->setContentsMargins(0,0,0,0);
 
     QSpacerItem *sp6 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);

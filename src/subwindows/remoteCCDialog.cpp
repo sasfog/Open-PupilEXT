@@ -488,7 +488,7 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             w->PRGopenSingleCamera(str.mid(3, str.length()-3).toLower());
         } else if(str[1].toLower() == '2' && str.size()>=4) { // open stereo camera device
             QString twoNames = str.mid(3, str.length()-3).toLower();
-            QRegExp separator("[,|;]");
+            QRegularExpression separator("[,|;]");
             QStringList subStrings = twoNames.split(separator);
             if(subStrings.length() >= 2)
                 w->PRGopenStereoCamera(subStrings[0], subStrings[1]);

@@ -89,15 +89,15 @@ public:
     };
      */
 
-    void createCylinderAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createCylinderAt(QVector3D dim, QVector3D loc, QVector3D rot);
     void createCylinder(float r = 0.5, float h = 1.0, float n = 25.0);
     void createCone(float r = 0.5, float h = 1.0, float n = 25.0);
-    void createConeAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createConeAt(QVector3D dim, QVector3D loc, QVector3D rot);
     void createCube(GLfloat a = 1.0);
-    void createCuboidAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createCuboidAt(QVector3D dim, QVector3D loc, QVector3D rot);
 
     void createSphere(float r = 0.5, int nParal = 10, int nMerid = 10);
-    void createSpheroidAt(GLfloat dimX = 1.0, GLfloat dimY = 1.0, GLfloat dimZ = 1.0, GLfloat locX = 0.0, GLfloat locY = 0.0, GLfloat locZ = 0.0, GLfloat rotX = 0.0, GLfloat rotY = 0.0, GLfloat rotZ = 0.0);
+    void createSpheroidAt(QVector3D dim, QVector3D loc, QVector3D rot);
 
     struct Camera {
         QVector3D eye = QVector3D(0, 0, 10);
@@ -139,9 +139,9 @@ public:
     void drawAxes();
     
     // mouse selection
-    virtual void selectObject(const QPoint &mousePosition);
-    void getPickRay(const QPoint &mousePosition, QVector3D &origin, QVector3D &ray);
-    QVector3D pickPointInPlane(const QPoint &mousePosition, const QVector3D &pointOnPlane, bool snapToUnitGrid = false);
+    virtual void selectObject(const QPointF &mousePosition);
+    void getPickRay(const QPointF &mousePosition, QVector3D &origin, QVector3D &ray);
+    QVector3D pickPointInPlane(const QPointF &mousePosition, const QVector3D &pointOnPlane, bool snapToUnitGrid = false);
     
 signals:
     void optionsChanged();
@@ -171,9 +171,9 @@ protected:
     void qt_restore_gl_state();
     void renderText(double x, double y, const QString text);
      */
-    inline GLint project(GLdouble objx, GLdouble objy, GLdouble objz,
+    inline GLdouble project(GLdouble objx, GLdouble objy, GLdouble objz,
                                          const GLdouble model[16], const GLdouble proj[16],
-                                         const GLint viewport[4],
+                                         const GLdouble viewport[4],
                                          GLdouble * winx, GLdouble * winy, GLdouble * winz);
     void renderText(GLdouble objx, GLdouble objy, GLdouble objz, QString text, QColor color = Qt::yellow);
     inline void transformPoint(GLdouble out[4], const GLdouble m[16], const GLdouble in[4]);
@@ -184,8 +184,47 @@ protected:
     bool _swapMouseWheelZoomDirection = false;
     QColor _backgroundColor = QColor(200, 200, 200);
     QFont _hudFont = QFont("Sans", 10, QFont::Normal);
-    QPoint _mousePosition;
+    QPointF _mousePosition;
     QObject *_selectedObject = NULL;
+
+    // Get dim and loc
+    std::tuple<QVector3D, QVector3D> dummy_getScreenParams() {
+        if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid() || setupModel->screenUnits.empty() || setupModel->screenUnits[0]->components.empty() )
+            return std::tuple<QVector3D, QVector3D> { QVector3D(0,0,0), QVector3D(0,0,0) };
+
+        return std::tuple<QVector3D, QVector3D> {
+            setupModel->screenUnits[0]->components[0]->dim,
+            setupModel->screenUnits[0]->components[0]->loc
+        };
+    };
+
+    // Get loc
+    QVector3D dummy_getCamMidLoc() {
+        if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid() || setupModel->cameraUnits.empty() || setupModel->cameraUnits[0]->components.empty() )
+            return QVector3D(0,0,0);
+
+        QVector3D avgLoc = setupModel->cameraUnits[0]->components[0]->loc;
+        for( int i = 1; setupModel->cameraUnits.size() < 1; i++ ) {
+            avgLoc = (avgLoc + setupModel->cameraUnits[0]->components[0]->loc) / 2.0f;
+        }
+
+        return avgLoc;
+    };
+
+    float dummy_getHeadScreenDist() {
+        if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid() ||
+                setupModel->screenUnits.empty() || setupModel->screenUnits[0]->components.empty() ||
+                setupModel->heads.empty() || setupModel->heads[0]->components.empty()   )
+            return 0.0f;
+
+        QVector3D screenCenter =
+                ((setupModel->screenUnits[0]->components[0]->dim / 2.0f) +
+                setupModel->screenUnits[0]->components[0]->loc);
+        QVector3D firstRandomheadComponentCenter =
+                ((setupModel->heads[0]->components[0]->dim / 2.0f) +
+                setupModel->heads[0]->components[0]->loc);
+        return abs( screenCenter.distanceToPoint( firstRandomheadComponentCenter ) );
+    };
 
 
 

@@ -330,9 +330,11 @@ void ImageReader::start() {
     startTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
     if(stereoMode) {
-        playbackProcess = QtConcurrent::run(this, &ImageReader::runStereo);
+        playbackProcess = QtConcurrent::run([this]{ return ImageReader::runStereo(); }); // Qt6 compatible
+        // playbackProcess = QtConcurrent::run(this, &ImageReader::runStereo);
     } else {
-        playbackProcess = QtConcurrent::run(this, &ImageReader::run);
+        playbackProcess = QtConcurrent::run([this]{ return ImageReader::run(); }); // Qt6 compatible
+        // playbackProcess = QtConcurrent::run(this, &ImageReader::run);
     }
 }
 

@@ -39,8 +39,8 @@ IPCtrl::IPCtrl(QWidget *parent) : QFrame(parent)
         font.setFixedPitch( true );
         pEdit->setFont( font );
 
-        QRegExp rx ( "^(0|[1-9]|[1-9][0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$" );
-        QValidator *validator = new QRegExpValidator(rx, pEdit);
+        QRegularExpression rx ( "^(0|[1-9]|[1-9][0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$" );
+        QValidator *validator = new QRegularExpressionValidator(rx, pEdit);
         pEdit->setValidator( validator );
 
     }

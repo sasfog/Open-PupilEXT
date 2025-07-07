@@ -177,6 +177,7 @@ private:
 
     DataWriter *dataWriter;
     ImageWriter *imageWriter;
+    QThread *imageWriterThread;
 
     bool streamOn = false;
 
@@ -241,6 +242,7 @@ private:
     PlaybackSynchroniser *playbackSynchroniser;
 
     QMessageBox *imagesSkippedMsgBox = nullptr;
+    QMessageBox *imageWriterFailedMsgBox = nullptr;
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
@@ -419,6 +421,10 @@ public slots:
 
     void PRGsetExposure(int value);
     void PRGsetGain(double value);
+
+    void onImageWriterFailed();
+    void onImageWriterFailedMsgClose();
+    //void onImageWriterStopDone();
 
     void onCameraFreezePressed();
 

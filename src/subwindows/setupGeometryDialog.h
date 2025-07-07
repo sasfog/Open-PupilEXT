@@ -16,10 +16,18 @@
 #include <QTreeView>
 
 #include "setupModelTreeView/setupModelTreeModel.h"
+#include "QJsonModel/QJsonModel.hpp"
+
 
 /**
 
     under construction
+
+    Note:
+    There is a tree view here, which depicts the internals of the geometry setup model. It could be argued that the tree
+    model (necessary for the tree view itself to work) could be used as the geometry setup model at the same time.
+    However, in the long run, it would be better to separate GUI and underlying data. So this tree model used here is
+    "redundantly" kept and updated with the setup model back and forth.
 
 */
 class SetupGeometryDialog : public QDialog {

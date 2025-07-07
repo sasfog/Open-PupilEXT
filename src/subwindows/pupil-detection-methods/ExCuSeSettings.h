@@ -124,23 +124,39 @@ public slots:
 
     void applySpecificSettings() override {
 
-        // First come the parameters roughly independent from ROI size and relative pupil size 
+        // First come the parameters roughly independent from ROI size and relative pupil size
+        int imgSize = p_excuse->imgSize;
+        cv::InterpolationFlags interMethod = p_excuse->interMethod;
         int good_ellipse_threshold = p_excuse->good_ellipse_threshold;
 
+        imgSize = imgSizeBox->value();
+        interMethod = (cv::InterpolationFlags)interMethodBox->itemData(interMethodBox->currentIndex()).toInt();
         good_ellipse_threshold = ellipseThresholdBox->value();
 
+        p_excuse->imgSize = imgSize;
+        p_excuse->defSize = imgSize; // TODO: check?
+        p_excuse->interMethod = interMethod;
         p_excuse->good_ellipse_threshold = good_ellipse_threshold;
 
         QList<float>& currentParameters = getCurrentParameters();
         currentParameters[1] = good_ellipse_threshold;
 
         if(excuse2) {
+            excuse2->imgSize = imgSize;
+            excuse2->defSize = imgSize; // TODO: check?
+            excuse2->interMethod = interMethod;
             excuse2->good_ellipse_threshold = good_ellipse_threshold;
         }
         if(excuse3) {
+            excuse3->imgSize = imgSize;
+            excuse3->defSize = imgSize; // TODO: check?
+            excuse3->interMethod = interMethod;
             excuse3->good_ellipse_threshold = good_ellipse_threshold;
         }
         if(excuse4) {
+            excuse4->imgSize = imgSize;
+            excuse4->defSize = imgSize; // TODO: check?
+            excuse4->interMethod = interMethod;
             excuse4->good_ellipse_threshold = good_ellipse_threshold;
         }
 
@@ -189,6 +205,8 @@ private:
 
     PupilDetection *pupilDetection;
 
+    QSpinBox *imgSizeBox;
+    QComboBox *interMethodBox;
     QSpinBox *maxRadiBox;
     QSpinBox *ellipseThresholdBox;
 
@@ -196,7 +214,8 @@ private:
         PupilMethodSetting::loadSettings();
         QList<float>& selectedParameter = getCurrentParameters();
 
-
+        int imgSize = selectedParameter[2];
+        cv::InterpolationFlags interMethod = (cv::InterpolationFlags)(int)selectedParameter[3];
         int max_ellipse_radi = selectedParameter[0];
         int good_ellipse_threshold = selectedParameter[1];
 
@@ -229,27 +248,51 @@ private:
 
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-
-        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Ellipse Fit");
-
+        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Image Size (Downscaling)");
         QFormLayout *sizeLayout = new QFormLayout();
+
+        QLabel *imgSizeLabel = new QLabel(tr("Image size (square) [px]:"));
+        imgSizeBox = new QSpinBox();
+        imgSizeBox->setMaximum(800);
+        imgSizeBox->setValue(imgSize);
+        imgSizeBox->setFixedWidth(80);
+
+        sizeLayout->addRow(imgSizeLabel, imgSizeBox);
+
+        QLabel *interMethodLabel = new QLabel(tr("Interpolation method:"));
+        interMethodBox = new QComboBox();
+        interMethodBox->addItem(QString("Linear"), cv::InterpolationFlags::INTER_LINEAR);
+        interMethodBox->addItem(QString("Area"), cv::InterpolationFlags::INTER_AREA);
+        interMethodBox->addItem(QString("Cubic"), cv::InterpolationFlags::INTER_CUBIC);
+        interMethodBox->addItem(QString("Lanczos"), cv::InterpolationFlags::INTER_LANCZOS4);
+        interMethodBox->setCurrentIndex(interMethodBox->findData(interMethod));
+        interMethodBox->setFixedWidth(80);
+
+        sizeLayout->addRow(interMethodLabel, interMethodBox);
+
+        sizeGroup->setLayout(sizeLayout);
+        mainLayout->addWidget(sizeGroup);
+
+        QGroupBox *ellipseFitGroup = new QGroupBox("Algorithm specific: Ellipse Fit");
+
+        QFormLayout *ellipseFitLayout = new QFormLayout();
 
         QLabel *maxRadiLabel = new QLabel(tr("Max. Ellipse Radius [px]:"));
         maxRadiBox = new QSpinBox();
         maxRadiBox->setMaximum(5000);
         maxRadiBox->setValue(max_ellipse_radi);
         maxRadiBox->setFixedWidth(80);
-        sizeLayout->addRow(maxRadiLabel, maxRadiBox);
+        ellipseFitLayout->addRow(maxRadiLabel, maxRadiBox);
 
         QLabel *ellipseThresholdLabel = new QLabel(tr("Ellipse Goodness Threshold:"));
         ellipseThresholdBox = new QSpinBox();
         ellipseThresholdBox->setMaximum(100);
         ellipseThresholdBox->setValue(good_ellipse_threshold);
         ellipseThresholdBox->setFixedWidth(80);
-        sizeLayout->addRow(ellipseThresholdLabel, ellipseThresholdBox);
+        ellipseFitLayout->addRow(ellipseThresholdLabel, ellipseThresholdBox);
 
-        sizeGroup->setLayout(sizeLayout);
-        mainLayout->addWidget(sizeGroup);
+        ellipseFitGroup->setLayout(ellipseFitLayout);
+        mainLayout->addWidget(ellipseFitGroup);
 
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
@@ -279,6 +322,10 @@ private:
 
         QList<float> customs = PupilMethodSetting::defaultParameters[Settings::DEFAULT];
 
+        // GB: I think it is meaningful to have these here, so I added
+        customs[2] = j["Parameter Set"]["imgSize"];
+        customs[3] = j["Parameter Set"]["interMethod"];
+
         customs[0] = j["Parameter Set"]["max_ellipse_radi"];
         customs[1] = j["Parameter Set"]["good_ellipse_threshold"];
 
@@ -286,13 +333,18 @@ private:
     }
 
     QMap<Settings, QList<float>> defaultParameters = {
-            { Settings::DEFAULT, {50.0f, 15.0f} },
-            { Settings::ROI_0_3_OPTIMIZED, {146.0f, 7.0f} },
-            { Settings::ROI_0_6_OPTIMIZED, {216.0f, 34.0f} },
-            { Settings::FULL_IMAGE_OPTIMIZED, {39.0f, 0.0f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 15.0f} },
-            { Settings::CUSTOM, {-1.0f, 15.0f} }
+            { Settings::DEFAULT, {50.0f, 15.0f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::ROI_0_3_OPTIMIZED, {146.0f, 7.0f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::ROI_0_6_OPTIMIZED, {216.0f, 34.0f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {39.0f, 0.0f, 680, cv::InterpolationFlags::INTER_LINEAR} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 15.0f, 680, cv::InterpolationFlags::INTER_AREA} },
+            { Settings::CUSTOM, {-1.0f, 15.0f, 680, cv::InterpolationFlags::INTER_AREA} }
     };
+    // GB: TODO: possible slight discrepancy: the former hardcoded DEF_SIZE was by default 800 set by Moritz (?)
+    // but now we have it the same as imgSize.. e.g. 680
+    // but by default by the alg. authors, IMG_SIZE was 400 and DEF_SIZE was 800..
+    // so we need to make clear what defSize should be, to keep contingency with previous
+    // PupilEXT-version (0.1.1. or 0.1.2) hardcoded performance but also provide flexibility.
 
 private slots:
 
@@ -300,6 +352,8 @@ private slots:
         setConfigIndex(configKey);
         QList<float>& selectedParameter = getCurrentParameters();
 
+        imgSizeBox->setValue(selectedParameter[2]);
+        interMethodBox->setCurrentIndex(interMethodBox->findData(selectedParameter[3]));
         ellipseThresholdBox->setValue(selectedParameter[1]);
 
         if(isAutoParamEnabled()) {

@@ -241,7 +241,8 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
 
         emit processedImageLowFPS(mimg);
 
-        calibrationSuccess = QtConcurrent::run(this, &StereoCameraCalibration::calibrate);
+        calibrationSuccess = QtConcurrent::run([this]{ return StereoCameraCalibration::calibrate(); }); // Qt6 compatible
+        // calibrationSuccess = QtConcurrent::run(this, &StereoCameraCalibration::calibrate); // GB NOTE: this line was the Qt5 compatible version
         //calibrationSuccess.waitForFinished();
         mode = CALIBRATING;
     } else if(mode==CALIBRATING) {

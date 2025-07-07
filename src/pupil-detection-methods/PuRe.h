@@ -177,6 +177,8 @@ public:
     cv::Size workingSize;
     float scalingRatio;
 
+    cv::InterpolationFlags interMethod = cv::InterpolationFlags::INTER_LINEAR;
+
     PuRe();
     ~PuRe() override;
 

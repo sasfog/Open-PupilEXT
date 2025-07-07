@@ -8,7 +8,7 @@
 
 SetupModelTreeModel::SetupModelTreeModel(RemoteSetupModel *remoteSetupModel, QObject *parent)
         : QAbstractItemModel(parent)
-        , rootItem(std::make_unique<SetupModelTreeItem>(QVariantList{tr("Title"), tr("Summary")}))
+        , rootItem(std::make_unique<SetupModelTreeItem>(QVariantList{tr("Variable"), tr("Value")}))
         //, rootItem(std::make_unique<SetupModelTreeItem>())
         {
     setupModelData(remoteSetupModel, rootItem.get());
@@ -75,45 +75,187 @@ int SetupModelTreeModel::rowCount(const QModelIndex &parent) const {
     return parentItem->childCount();
 }
 
+
+void SetupModelTreeModel::recurseAddComponent(Component *component, SetupModelTreeItem *parent) {
+
+    QVariantList columnData;
+    if(component->getType() == CAMERA) {
+        auto componentA = dynamic_cast<CameraComponent*>(component);
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentProductFamily}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentSerialNumber}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->flangeDistance)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->lensMountType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->dataInterfaceType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingCurrent)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingVoltage)}), parent));
+        //columnData.append(QVariant(componentA->cameraConnectorPins)); // TODO
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->cameraConnectorType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->defaultFramerate)}), parent));
+
+    } else if(component->getType() == SENSOR) {
+        auto componentA = dynamic_cast<SensorComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->shutterType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->isMonochrome}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->sensorTechnology}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->resolutionX)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->resolutionY)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->resolution())}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->format}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->effectiveDiagonal())}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->pixelSize)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->effectiveSizeX())}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->effectiveSizeY())}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->aspectRatio())}), parent));
+
+    } else if(component->getType() == LENS) {
+        auto componentA = dynamic_cast<LensComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->suggestedSensorSizeRating}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->isVarifocal}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->focalDistanceMin)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->focalDistanceMax)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->focalDistanceActual)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->fValueMin)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->fValueMax)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->fValueActual)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->sholuderToFirstSurfaceDistance)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->outerDiameter)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->frontFilterDiameter)}), parent));
+
+    } else if(component->getType() == ILLUMINATOR) {
+        auto componentA = dynamic_cast<IlluminatorComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->atomicComponentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->atomicComponentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->numAtomicComponents)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingCurrentMin)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingCurrentMax)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingCurrentActual)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingVoltageMin)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingVoltageMax)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingVoltageActual)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingTemperatureMin)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingTemperatureMax)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->operatingTemperatureActual)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->radiationAngle)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->emissionCentroid)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->driverIsConstantCurrent}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->driverIsVariable}), parent));
+
+    } else if(component->getType() == SCREEN) {
+        auto componentA = dynamic_cast<ScreenComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->resolutionX)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->resolutionY)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->physicalSizeX)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->physicalSizeY)}), parent));
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->DPMM())}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->DPI())}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->inchSize())}), parent));
+
+    } else if(component->getType() == FILTER) {
+        auto componentA = dynamic_cast<FilterComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentVendor}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->componentType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->mountingType}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->opticalBehaviour}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({componentA->principle}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->lowpassCuton)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->highpassCutoff)}), parent));
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->filterDiameter)}), parent));
+
+    } else if(component->getType() == CVTARGET) {
+        auto componentA = dynamic_cast<CvTargetComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->outerRingDiameter)}), parent));
+
+    } else if(component->getType() == EYEBALL) {
+        auto componentA = dynamic_cast<EyeballComponent*>(component);
+
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({QString::number(componentA->eyeballDiameter)}), parent));
+
+    }
+
+    parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"Sub-components"}), parent));
+    auto branchPtr = parent->child(parent->childCount() - 1); // get last child
+    for( auto subComponent : component->components ) {
+        branchPtr->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"COMPONENT"}), branchPtr));
+        auto subComponentPtr = branchPtr->child(branchPtr->childCount() - 1); // get last child
+        recurseAddComponent(subComponent, subComponentPtr);
+
+        qDebug() << branchPtr << "_" << subComponentPtr;
+    }
+
+}
+
+
 void SetupModelTreeModel::setupModelData(RemoteSetupModel *remoteSetupModel, SetupModelTreeItem *parent) {
-    struct ParentIndentation
-    {
-        SetupModelTreeItem *parent;
-        qsizetype indentation;
-    };
 
-    /*
-    QList<ParentIndentation> state{{parent, 0}};
+    qDebug() << "HEHEHE";
 
-    for (const auto &line : lines) {
-        qsizetype position = 0;
-        for ( ; position < line.length() && line.at(position).isSpace(); ++position) {
-        }
+    qsizetype currDepth = 0;
 
-        const QStringView lineData = line.sliced(position).trimmed();
-        if (!lineData.isEmpty()) {
-            // Read the column data from the rest of the line.
-            const auto columnStrings = lineData.split(u'\t', Qt::SkipEmptyParts);
-            QVariantList columnData;
-            columnData.reserve(columnStrings.count());
-            for (const auto &columnString : columnStrings)
-                columnData << columnString.toString();
+    for( auto cameraUnit : remoteSetupModel->cameraUnits ) {
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"Camera units"}), parent));
+        auto branchPtr = parent->child(parent->childCount() - 1); // get last child
+        for( auto subComponent : cameraUnit->components ) {
+            branchPtr->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"COMPONENT"}), branchPtr));
+            auto subComponentPtr = branchPtr->child(branchPtr->childCount() - 1); // get last child
+            recurseAddComponent(subComponent, subComponentPtr);
 
-            if (position > state.constLast().indentation) {
-                // The last child of the current parent is now the new parent
-                // unless the current parent has no children.
-                auto *lastParent = state.constLast().parent;
-                if (lastParent->childCount() > 0)
-                    state.append({lastParent->child(lastParent->childCount() - 1), position});
-            } else {
-                while (position < state.constLast().indentation && !state.isEmpty())
-                    state.removeLast();
-            }
-
-            // Append a new item to the current parent's list of children.
-            auto *lastParent = state.constLast().parent;
-            lastParent->appendChild(std::make_unique<SetupModelTreeItem>(columnData, lastParent));
+            qDebug() << "cameraUnits_" << branchPtr << "_" << subComponentPtr;
         }
     }
-     */
+
+    for( auto illuminatorUnit : remoteSetupModel->illuminatorUnits ) {
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"Illuminator units"}), parent));
+        auto branchPtr = parent->child(parent->childCount() - 1); // get last child
+        for( auto subComponent : illuminatorUnit->components ) {
+            branchPtr->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"COMPONENT"}), branchPtr));
+            auto subComponentPtr = branchPtr->child(branchPtr->childCount() - 1); // get last child
+            recurseAddComponent(subComponent, subComponentPtr);
+
+            qDebug() << "illuminatorUnits_" << branchPtr << "_" << subComponentPtr;
+        }
+    }
+
+    for( auto screenUnit : remoteSetupModel->screenUnits ) {
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"Screen units"}), parent));
+        auto branchPtr = parent->child(parent->childCount() - 1); // get last child
+        for( auto subComponent : screenUnit->components ) {
+            branchPtr->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"COMPONENT"}), branchPtr));
+            auto subComponentPtr = branchPtr->child(branchPtr->childCount() - 1); // get last child
+            recurseAddComponent(subComponent, subComponentPtr);
+
+            qDebug() << "screenUnits_" << branchPtr << "_" << subComponentPtr;
+        }
+    }
+
+    for( auto head : remoteSetupModel->heads ) {
+        parent->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"Heads"}), parent));
+        auto branchPtr = parent->child(parent->childCount() - 1); // get last child
+        for( auto subComponent : head->components ) {
+            branchPtr->appendChild(std::make_unique<SetupModelTreeItem>(QVariantList({"COMPONENT"}), branchPtr));
+            auto subComponentPtr = branchPtr->child(branchPtr->childCount() - 1); // get last child
+            recurseAddComponent(subComponent, subComponentPtr);
+
+            qDebug() << "heads_" << branchPtr << "_" << subComponentPtr;
+        }
+    }
+
+    qDebug() << "HIHIHI";
+
 }

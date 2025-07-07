@@ -146,7 +146,7 @@ void QtOpenGLViewer::renderText(float x, float y, const QString &text, const QCo
     painter.setPen(color);
     painter.setFont(font);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    painter.drawText(x, y, text);
+    painter.drawText(QPointF(x, y), text);
     painter.end();
     glPopAttrib();
     glPopAttrib();
@@ -165,28 +165,28 @@ void QtOpenGLViewer::drawComponentsRecursively(Component *component) {
 
     if(component->getType() == CAMERA) {
         auto c = dynamic_cast<CameraComponent*>(component);
-        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCuboidAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == SENSOR) {
         auto c = dynamic_cast<SensorComponent*>(component);
-        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCuboidAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == LENS) {
         auto c = dynamic_cast<LensComponent*>(component);
-        createCylinderAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCylinderAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == ILLUMINATOR) {
         auto c = dynamic_cast<IlluminatorComponent*>(component);
-        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCuboidAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == FILTER) {
         auto c = dynamic_cast<FilterComponent*>(component);
-        createCylinderAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCylinderAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == SCREEN) {
         auto c = dynamic_cast<ScreenComponent*>(component);
-        createCuboidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCuboidAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == CVTARGET) {
         auto c = dynamic_cast<CvTargetComponent*>(component);
-        createCylinderAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createCylinderAt(c->dim, c->loc, c->rot);
     } else if(component->getType() == EYEBALL) {
         auto c = dynamic_cast<EyeballComponent*>(component);
-        createSpheroidAt(c->dimX, c->dimY, c->dimZ, c->locX, c->locY, c->locZ, c->rotX, c->rotY, c->rotZ);
+        createSpheroidAt(c->dim, c->loc, c->rot);
     }
 
     for(int j = 0; j < component->components.size(); j++) {
@@ -252,7 +252,7 @@ void QtOpenGLViewer::drawHud(QPainter &painter)
         QColor textColor = luminance(_backgroundColor) > 0.25 ? QColor(0, 0, 0) : QColor(255, 255, 255); // WC3 guidlines is L > ~0.179
         painter.setPen(textColor);
         painter.setFont(_hudFont);
-        painter.drawText(2 - x, 2 - y + h, text);
+        painter.drawText(QPointF(2.0f - x, 2.0f - y + h), text);
     }
 }
 
@@ -310,7 +310,7 @@ void QtOpenGLViewer::renderText(double x, double y, const QString text)
     QFont f;
     f.setPixelSize(10);
     painter.setFont(f);
-    painter.drawText(textPosX, textPosY, text);
+    painter.drawText(QPointF(textPosX, textPosY), text);
     painter.end();
 }
  */
@@ -319,9 +319,9 @@ void QtOpenGLViewer::renderText(double x, double y, const QString text)
 //////////////////////////////////////////////////////////////////////////
 
 // From SO post by user jaba: https://stackoverflow.com/a/33674071/11414500, Last accessed: 2024.10.26. 08:12 CET
-inline GLint QtOpenGLViewer::project(GLdouble objx, GLdouble objy, GLdouble objz,
+inline GLdouble QtOpenGLViewer::project(GLdouble objx, GLdouble objy, GLdouble objz,
                             const GLdouble model[16], const GLdouble proj[16],
-                            const GLint viewport[4],
+                            const GLdouble viewport[4],
                             GLdouble * winx, GLdouble * winy, GLdouble * winz)
 {
     GLdouble in[4], out[4];
@@ -329,35 +329,41 @@ inline GLint QtOpenGLViewer::project(GLdouble objx, GLdouble objy, GLdouble objz
     in[0] = objx;
     in[1] = objy;
     in[2] = objz;
-    in[3] = 1.0;
+    in[3] = 1.0f;
     transformPoint(out, model, in);
     transformPoint(in, proj, out);
 
-    if (in[3] == 0.0)
+    if (in[3] == 0.0f)
         return GL_FALSE;
 
     in[0] /= in[3];
     in[1] /= in[3];
     in[2] /= in[3];
 
-    *winx = viewport[0] + (1 + in[0]) * viewport[2] / 2;
-    *winy = viewport[1] + (1 + in[1]) * viewport[3] / 2;
-
-    *winz = (1 + in[2]) / 2;
+    // GB NOTE: I fixed this by trial and error, as honestly I do not know what is happening here.
+    // If you can explain why 2.5 works instead of 2.0, I will invite you for a sandwich
+    //*winx = viewport[0] + (1 + in[0]) * viewport[2] / 2.0f;
+    //*winy = viewport[1] + (1 + in[1]) * viewport[3] / 2.0f;
+    *winx = viewport[0] + (1 + in[0]) * viewport[2] /2.5f;
+    *winy = viewport[1] + (1 + in[1]) * viewport[3] /2.5f;
+    //*winz = (1 + in[2]) / 2.0f;
+    *winz = (1 + in[2]) / 2.5f;
     return GL_TRUE;
 }
 
 // From SO post by user jaba: https://stackoverflow.com/a/33674071/11414500, Last accessed: 2024.10.26. 08:12 CET
 void QtOpenGLViewer::renderText(GLdouble objx, GLdouble objy, GLdouble objz, QString text, QColor color)
 {
+    // TODO: THESE ARE NOT RIGHT, they return the size of the parent somehow, and text is shifted accordingly
     int width = this->width();
     int height = this->height();
 
-    GLdouble model[4][4], proj[4][4];
-    GLint view[4];
+    GLdouble model[4][4], proj[4][4], view[4];
+    //GLint view[4];
     glGetDoublev(GL_MODELVIEW_MATRIX, &model[0][0]);
     glGetDoublev(GL_PROJECTION_MATRIX, &proj[0][0]);
-    glGetIntegerv(GL_VIEWPORT, &view[0]);
+    //glGetIntegerv(GL_VIEWPORT, &view[0]);
+    glGetDoublev(GL_VIEWPORT, &view[0]);
     GLdouble textPosX = 0, textPosY = 0, textPosZ = 0;
 
     project(objx, objy, objz,
@@ -370,7 +376,7 @@ void QtOpenGLViewer::renderText(GLdouble objx, GLdouble objy, GLdouble objz, QSt
     painter.setPen(color);
     painter.setFont(QFont("Helvetica", 8));
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    painter.drawText(textPosX, textPosY, text); // z = pointT4.z + distOverOp / 4
+    painter.drawText(QPointF(textPosX, textPosY), text); // z = pointT4.z + distOverOp / 4
     painter.end();
 }
 
@@ -418,18 +424,18 @@ void QtOpenGLViewer::drawAxes()
 
     /////////////////////////////
     // SIMA 2D SZÖVEGET ÍR A TERÜLETRE, AMI NEM MOZOG
-    /*
+
     QPainter painter(this);
     painter.setPen(Qt::white);
     painter.setFont(QFont("Arial", 16));
-    painter.drawText(0, 0, width(), height(), Qt::AlignCenter, "Hello World!");
+    painter.drawText(QRectF(0, 0, width(), height()), Qt::AlignCenter, "Hello World!");
     painter.end();
-    */
 
-//    renderText(10, 10, 10, "Hahaha");
+    // 3D teszt
+    renderText(10, 10, 10, "Hahaha");
 }
 
-void QtOpenGLViewer::selectObject(const QPoint &mousePosition)
+void QtOpenGLViewer::selectObject(const QPointF &mousePosition)
 {
 //    QVector3D pickOrigin, pickRay;
 //    getPickRay(mousePosition, pickOrigin, pickRay);
@@ -437,7 +443,7 @@ void QtOpenGLViewer::selectObject(const QPoint &mousePosition)
     // find object with closest intersection to pick ray...
 }
 
-void QtOpenGLViewer::getPickRay(const QPoint &mousePosition, QVector3D &origin, QVector3D &ray)
+void QtOpenGLViewer::getPickRay(const QPointF &mousePosition, QVector3D &origin, QVector3D &ray)
 {
     makeCurrent();
     int viewport[4] = {0, 0, width(), height()};
@@ -445,11 +451,11 @@ void QtOpenGLViewer::getPickRay(const QPoint &mousePosition, QVector3D &origin, 
     float modelview[16];
     glGetFloatv(GL_PROJECTION_MATRIX, projection);
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
-    origin = screen2World(QVector3D(mousePosition.x(), mousePosition.y(), 0), viewport, projection, modelview);
-    ray = screen2World(QVector3D(mousePosition.x(), mousePosition.y(), 1), viewport, projection, modelview) - origin;
+    origin = screen2World(QVector3D(mousePosition.x(), mousePosition.y(), 0.0f), viewport, projection, modelview);
+    ray = screen2World(QVector3D(mousePosition.x(), mousePosition.y(), 1.0f), viewport, projection, modelview) - origin;
 }
 
-QVector3D QtOpenGLViewer::pickPointInPlane(const QPoint &mousePosition, const QVector3D &pointOnPlane, bool snapToUnitGrid)
+QVector3D QtOpenGLViewer::pickPointInPlane(const QPointF &mousePosition, const QVector3D &pointOnPlane, bool snapToUnitGrid)
 {
     QVector3D pickOrigin, pickRay;
     getPickRay(mousePosition, pickOrigin, pickRay);
@@ -469,29 +475,86 @@ QVector3D QtOpenGLViewer::pickPointInPlane(const QPoint &mousePosition, const QV
 
 void QtOpenGLViewer::goToDefaultView(int viewNumber)
 {
+    // Get dim and loc
+    std::tuple<QVector3D, QVector3D> screenParams = dummy_getScreenParams();
+
+    //QVector3D camMidLoc = dummy_getCamMidLoc();
+
+    float headScreenDist = dummy_getHeadScreenDist();
+
     switch(viewNumber) {
         case 1:
-            // XY plane
-            camera.eye = QVector3D(0, 0, 10);
-            camera.center = QVector3D(0, 0, 0);
-            camera.up = QVector3D(0, 1, 0);
+            // XY plane -- from front
+            // just arbitrary values of Z yet
+            camera.eye = QVector3D(
+                    std::get<1>(screenParams).x() /2.0f,
+                    std::get<1>(screenParams).y() /2.0f + 60.0f,
+                    headScreenDist // yet arbitrary -- "zoom" dist
+                    );
+            camera.center = QVector3D(
+                    camera.eye.x(),
+                    camera.eye.y(),
+                    0
+                    );
+            camera.up = QVector3D(0, 10, 0);
             break;
         case 2:
-            // ZY plane
-            camera.eye = QVector3D(10, 0, 0);
-            camera.center = QVector3D(0, 0, 0);
+            // ZY plane -- from side
+            camera.eye = QVector3D(
+                    headScreenDist, // yet arbitrary -- "zoom" dist
+                    std::get<1>(screenParams).y() /2.0f + 60.0f,
+                    headScreenDist /2.0f
+                    );
+            camera.center = QVector3D(
+                    0,
+                    camera.eye.y(),
+                    camera.eye.z()
+                    );
             camera.up = QVector3D(0, 1, 0);
             break;
         case 3:
-            // ZX plane
-            camera.eye = QVector3D(0, 10, 0);
-            camera.center = QVector3D(0, 0, 0);
+            // ZX plane -- from top
+            camera.eye = QVector3D(
+                    0,
+                    headScreenDist *1.1f, // yet arbitrary -- "zoom" dist
+                    headScreenDist /2.0f
+                    );
+            camera.center = QVector3D(
+                    camera.eye.x(),
+                    0,
+                    camera.eye.z()
+                    );
             camera.up = QVector3D(0, 0, -1);
             break;
         case 4:
-            // 3D from the inside
-            camera.eye = QVector3D(qSqrt(3)*10, qSqrt(3)*10, qSqrt(3)*10);
-            camera.center = QVector3D(0, 0, 0);
+            // 3D from the inside -- adjacent tips of an imaginary cube, hence sqrt(3)
+            /*camera.eye = QVector3D(
+                    qSqrt(3)* 10,
+                    qSqrt(3)* 10,
+                    qSqrt(3)* 10
+            );
+            camera.center = QVector3D(
+                    0,
+                    0,
+                    0
+            );*/
+
+            QVector3D imaginaryBorundaryBoxDims = {
+                    std::get<1>(screenParams).x(),
+                    std::get<1>(screenParams).y() *2.5f,
+                    headScreenDist *0.9f // yet arbitrary
+                    };
+
+            camera.eye = QVector3D(
+                    qSqrt(3)* (headScreenDist *0.4f) + imaginaryBorundaryBoxDims.x() /2.0f,
+                    qSqrt(3)* (headScreenDist *0.4f) + imaginaryBorundaryBoxDims.y() /2.0f,
+                    qSqrt(3)* (headScreenDist *0.4f) + imaginaryBorundaryBoxDims.z() /2.0f
+                    );
+            camera.center = QVector3D(
+                    0 + imaginaryBorundaryBoxDims.x() /2.0f,
+                    0 + imaginaryBorundaryBoxDims.y() /2.0f,
+                    0 + imaginaryBorundaryBoxDims.z() /2.0f
+                    );
             camera.up = QVector3D(0, 1, 0);
             break;
     }
@@ -602,7 +665,7 @@ void QtOpenGLViewer::paintGL()
     float m_top = m_zoom / 2;
     float m_near = m_zoom / 100;
     float m_far = m_zoom * 2;
-    float m_aspect = float(width()) / height();
+    float m_aspect = (float)width() / (float)height();
     if(m_aspect < 1) {
         m_bottom /= m_aspect;
         m_top /= m_aspect;
@@ -740,8 +803,8 @@ void QtOpenGLViewer::mouseMoveEvent(QMouseEvent *event)
     bool rotate = is3D() && (event->buttons() & Qt::RightButton);
     bool pan = event->buttons() & Qt::MiddleButton || (!is3D() && (event->buttons() & Qt::RightButton));
     if(rotate || pan) {
-        float dx = event->x() - _mousePosition.x();
-        float dy = -(event->y() - _mousePosition.y());
+        float dx = event->position().x() - _mousePosition.x();
+        float dy = -(event->position().y() - _mousePosition.y());
         _mousePosition = event->pos();
         QVector3D zhat = -camera.view().normalized();
         QVector3D xhat = QVector3D::crossProduct(camera.up, zhat).normalized();
@@ -788,11 +851,11 @@ void QtOpenGLViewer::mouseMoveEvent(QMouseEvent *event)
 void QtOpenGLViewer::wheelEvent(QWheelEvent *event)
 {
 #if QT_VERSION >= 0x050000
-    float degrees = event->angleDelta().y() / 8;
+    float degrees = event->angleDelta().y() / (float) 8;
 #else
     float degrees = event->delta() / 8;
 #endif
-    float steps = degrees / 15;  // Most mouse types work in steps of 15 degrees.
+    float steps = degrees / (float) 15;  // Most mouse types work in steps of 15 degrees.
     if(steps == 0) return;
     if(swapMouseWheelZoomDirection()) {
         steps = -steps;
@@ -976,28 +1039,28 @@ void QtOpenGLViewer::createSphere(float r, int nParal, int nMerid){
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 
-void QtOpenGLViewer::createCylinderAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+void QtOpenGLViewer::createCylinderAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+    startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
     createCylinder(0.5, 1.0, 25.0);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
-void QtOpenGLViewer::createConeAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+void QtOpenGLViewer::createConeAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+    startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
     createCone(0.5, 1.0, 25.0);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
-void QtOpenGLViewer::createCuboidAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+void QtOpenGLViewer::createCuboidAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+    startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
     createCube(1.0);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
-void QtOpenGLViewer::createSpheroidAt(GLfloat dimX, GLfloat dimY, GLfloat dimZ, GLfloat locX, GLfloat locY, GLfloat locZ, GLfloat rotX, GLfloat rotY, GLfloat rotZ) {
-    startTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+void QtOpenGLViewer::createSpheroidAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+    startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
     createSphere(0.5, 10, 10);
-    endTransformed(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ);
+    endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
 // 1. a glScalef szoroz, tehát nincs abszolút imerete az előbbi állapotról. 1/3 szorosra kell állítani

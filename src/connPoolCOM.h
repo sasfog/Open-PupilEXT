@@ -77,7 +77,7 @@ class ConnPoolCOMInstance : public QObject {
                 dataStr = dataStr.remove(dataStr.length()-1, 1);
 
             // Split by newline (CR or LF)
-            QRegExp separators("(\r|\n)");
+            QRegularExpression separators("(\r|\n)");
             QStringList msgList = dataStr.split(separators);
             for(int cc=0; cc<msgList.length(); cc++) {
                 if(!msgList[cc].isEmpty())

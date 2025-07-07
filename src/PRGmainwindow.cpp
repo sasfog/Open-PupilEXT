@@ -249,7 +249,7 @@ void MainWindow::PRGconnectRemoteUDP(QString conf) {
 
     conf.replace(" ", "");
     //QStringList subStrings = conf.split(',');
-    QRegExp separator("[,|;|*|&|#|:]");
+    QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
     if(subStrings.length() < 2)
         return;
@@ -279,7 +279,7 @@ void MainWindow::PRGconnectRemoteCOM(QString conf) {
 
     conf.replace(" ", "");
     //QStringList subStrings = conf.split(',');
-    QRegExp separator("[,|;|*|&|#|:]");
+    QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
     if(subStrings.length() < 6)
         return;
@@ -350,7 +350,7 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
 
     conf.replace(" ", "");
     //QStringList subStrings = conf.split(',');
-    QRegExp separator("[,|;|*|&|#|:]");
+    QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
     if(subStrings.length() < 3) // HERE WE HAVE 3, AS WE ALSO HAVE THE DATA CONTAINER SETTING
         return;
@@ -396,7 +396,7 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
 
     conf.replace(" ", "");
     //QStringList subStrings = conf.split(',');
-    QRegExp separator("[,|;|*|&|#|:]");
+    QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
     if(subStrings.length() < 7) // HERE WE HAVE 7, AS WE ALSO HAVE THE DATA CONTAINER SETTING
         return;
@@ -480,7 +480,7 @@ void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
 
     conf.replace(" ", "");
     //QStringList subStrings = conf.split(',');
-    QRegExp separator("[,|;|*|&|#|:]");
+    QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
     if(subStrings.length() < 2)
         return;
@@ -517,7 +517,7 @@ void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
 
     conf.replace(" ", "");
     //QStringList subStrings = conf.split(',');
-    QRegExp separator("[,|;|*|&|#|:]");
+    QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
     if(subStrings.length() < 7)
         return;

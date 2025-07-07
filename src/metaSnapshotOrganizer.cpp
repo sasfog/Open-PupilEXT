@@ -115,21 +115,21 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         cameraMap["friendlyName"] =  singleCamera->getFriendlyName();
         cameraMap["cameraCalibrationFileName"] = singleCamera->getCalibrationFilename();
         cameraMap["lineSource"] = singleCamera->getLineSource();
-        cameraMap["binning"] = singleCamera->getBinningVal();
+        cameraMap["binning"] = QString::number(singleCamera->getBinningVal());
         QMap<QString, QString> settingsMap;
         settingsMap["cameraImageType"] = cameraImageType;
-        settingsMap["width"] = singleCamera->getImageROIwidthMax();
-        settingsMap["height"] = singleCamera->getImageROIheightMax();
-        settingsMap["gain"] = singleCamera->getGainValue();
-        settingsMap["exposureTime"] = singleCamera->getExposureTimeValue();
+        settingsMap["width"] = QString::number(singleCamera->getImageROIwidthMax());
+        settingsMap["height"] = QString::number(singleCamera->getImageROIheightMax());
+        settingsMap["gain"] = QString::number(singleCamera->getGainValue());
+        settingsMap["exposureTime"] = QString::number(singleCamera->getExposureTimeValue());
          
         
 
         QMap<QString, QString> acqRoiMap;
-        acqRoiMap["x"] = singleCamera->getImageROIoffsetX();
-        acqRoiMap["y"] = singleCamera->getImageROIoffsetY(); 
-        acqRoiMap["width"] = singleCamera->getImageROIwidth(); 
-        acqRoiMap["height"] = singleCamera->getImageROIheight(); 
+        acqRoiMap["x"] = QString::number(singleCamera->getImageROIoffsetX());
+        acqRoiMap["y"] = QString::number(singleCamera->getImageROIoffsetY());
+        acqRoiMap["width"] = QString::number(singleCamera->getImageROIwidth());
+        acqRoiMap["height"] = QString::number(singleCamera->getImageROIheight());
         
 
 
@@ -252,16 +252,16 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjAMain.appendChild(id);
 
             
-            discreteMap["x"] = pupilDetection->getROIsingleImageOnePupil().x();
-            discreteMap["y"] = pupilDetection->getROIsingleImageOnePupil().y();
-            discreteMap["width"] = pupilDetection->getROIsingleImageOnePupil().width();
-            discreteMap["height"] = pupilDetection->getROIsingleImageOnePupil().height();
+            discreteMap["x"] = QString::number(pupilDetection->getROIsingleImageOnePupil().x());
+            discreteMap["y"] = QString::number(pupilDetection->getROIsingleImageOnePupil().y());
+            discreteMap["width"] = QString::number(pupilDetection->getROIsingleImageOnePupil().width());
+            discreteMap["height"] = QString::number(pupilDetection->getROIsingleImageOnePupil().height());
 
             
-            rationalMap["x"] = rationalROI.x();
-            rationalMap["y"] = rationalROI.y();
-            rationalMap["width"] = rationalROI.width();
-            rationalMap["height"] = rationalROI.height();
+            rationalMap["x"] = QString::number(rationalROI.x());
+            rationalMap["y"] = QString::number(rationalROI.y());
+            rationalMap["width"] = QString::number(rationalROI.width());
+            rationalMap["height"] = QString::number(rationalROI.height());
             
             
             addMapToNode(document, discreteMap, discreteROIObj);

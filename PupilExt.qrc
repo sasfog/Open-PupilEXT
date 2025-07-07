@@ -82,5 +82,7 @@
         <file>icons/help-lens-2.png</file>
         <file>icons/help-head-1.png</file>
 
+        <file>icons/Breeze/actions/22/appointment-new.svg</file>
+
     </qresource>
 </RCC>

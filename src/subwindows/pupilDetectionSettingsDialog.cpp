@@ -48,16 +48,16 @@ PupilDetectionSettingsDialog::~PupilDetectionSettingsDialog() {
 void PupilDetectionSettingsDialog::createForm() {
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setMargin(10);
+    //mainLayout->setMargin(10);
     mainLayout->setContentsMargins(10,10,10,10);
     QHBoxLayout *mainLayoutInner = new QHBoxLayout();
-    mainLayoutInner->setMargin(0);
+    //mainLayoutInner->setMargin(0);
     mainLayoutInner->setContentsMargins(0,0,0,0);
     QVBoxLayout *mainLayoutInnerCol1 = new QVBoxLayout();
-    mainLayoutInnerCol1->setMargin(0);
+    //mainLayoutInnerCol1->setMargin(0);
     mainLayoutInnerCol1->setContentsMargins(0,5,0,5);
     QVBoxLayout *mainLayoutInnerCol2 = new QVBoxLayout();
-    mainLayoutInnerCol2->setMargin(0);
+    //mainLayoutInnerCol2->setMargin(0);
     mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
     procModeGroup = new QGroupBox("Pupil detection via image processing");
