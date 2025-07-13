@@ -7,6 +7,10 @@
     "builtin-baseline": "3426db05b996481ca31e95fff3734cf23e0f51bc",
     "dependencies": [
         {
+            "name": "bzip2",
+            "version>=": "1.0.8"
+        },
+        {
             "name": "boost-math",
             "version>=": "1.75.0"
         },

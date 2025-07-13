@@ -6,7 +6,7 @@
 
 #include <QtWidgets>
 #include <QtWidgets/QDoubleSpinBox>
-#include "../devices/fileCamera.h"
+#include "../../devices/fileCamera.h"
 
 class TimestampSpinBox : public QDoubleSpinBox {
     Q_OBJECT

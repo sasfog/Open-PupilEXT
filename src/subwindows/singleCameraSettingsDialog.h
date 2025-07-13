@@ -17,7 +17,7 @@
 #include "MCUSettingsDialog.h"
 #include "../SVGIconColorAdjuster.h"
 #include "../devices/singleWebcam.h"
-#include "../camImageRegionsWidget.h"
+#include "custom-widgets/camImageRegionsWidget.h"
 
 using namespace Pylon;
 

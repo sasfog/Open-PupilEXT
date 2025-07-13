@@ -19,7 +19,7 @@
 #include <QSpinBox>
 #include "../connPoolCOM.h"
 #include "../connPoolUDP.h"
-#include "IPCtrl.h"
+#include "custom-widgets/IPCtrl.h"
 
 QT_BEGIN_NAMESPACE
 

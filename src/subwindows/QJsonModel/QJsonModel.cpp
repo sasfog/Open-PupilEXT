@@ -29,6 +29,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QFont>
+#include "../../supportFunctions.h"
 
 inline bool contains(const QStringList &list, const QString &value) {
   for (auto val : list)
@@ -59,7 +60,15 @@ int QJsonTreeItem::row() const {
 
 void QJsonTreeItem::setKey(const QString &key) { mKey = key; }
 
-void QJsonTreeItem::setValue(const QVariant &value) { mValue = value; }
+void QJsonTreeItem::setValue(const QVariant &value) {
+    mValue = value;
+
+    // GB: we do not emit a signal with the item pointer or its reference.
+    // It is not recommended as in a hypothetical case if the signal arrives a bit later,
+    // then the slot will receive it and look up for its key, and its value will be differnet already... etc.
+    // Although if we passed by reference, Qt would have a copy "in escrow" I think
+    emit valueChanged(value);
+}
 
 void QJsonTreeItem::setType(const QJsonValue::Type &type) { mType = type; }
 
@@ -77,20 +86,40 @@ QJsonTreeItem *QJsonTreeItem::load(const QJsonValue &value,
 
   if (value.isObject()) {
     // Get all QJsonValue childs
-    const QStringList keys =
+
+    // GB MODIFIED BEGIN
+    QStringList keys =
         value.toObject().keys(); // To prevent clazy-range warning
+
+        /*
+        // TODO: MOVE OUT OF HERE. MUST HAPPEN LATER, AFTER LOADED COMPLETELY
+    // NOTE: This is the only way we can easily insert this line of code.
+    // Cannot override, and complicated to circumvent otherwise. So here we have this tiny modification
+    // compared to the original QJsonModel. Please pay attention if you update it
+    for (int i = 1; i < keys.length(); i++){
+        qDebug() << keys[i];
+        keys[i] = SupportFunctions::camelCaseToFriendly(keys[i]);
+  //      qDebug() << keys[i];
+        qDebug() << "--";
+    }
+         */
+    // GB MODIFIED END
+
     for (const QString &key : keys) {
       if (contains(exceptions, key)) {
-        continue;
+          //qDebug() << "EXCEPTION at " << key << " in " << exceptions;
+          continue;
       }
       QJsonValue v = value.toObject().value(key);
       QJsonTreeItem *child = load(v, exceptions, rootItem);
       child->setKey(key);
+      //qDebug() << "NOW at " << key;
       child->setType(v.type());
       rootItem->appendChild(child);
     }
   } else if (value.isArray()) {
     // Get all QJsonValue childs
+      //qDebug() << "- NOW at ARRAY ";
     int index = 0;
     const QJsonArray array = value.toArray(); // To prevent clazy-range warning
     for (const QJsonValue &v : array) {
@@ -101,8 +130,18 @@ QJsonTreeItem *QJsonTreeItem::load(const QJsonValue &value,
       ++index;
     }
   } else {
-    rootItem->setValue(value.toVariant());
-    rootItem->setType(value.type());
+      //qDebug() << "- NOW at SOMETHING ELSE ";
+      // GB MODIFIED BEGIN: cases when the string encapsulates a QVector3D or QList, we unwrap it
+      bool success = false;
+      QVariant content;
+      content = SupportFunctions::toVariantFromWrapped(value.toString(), &success);
+      if(!success) {
+          content = value.toVariant();
+      }
+
+      rootItem->setValue(content);
+      // GB MODIFIED END
+      rootItem->setType(value.type());
   }
 
   return rootItem;
@@ -179,28 +218,28 @@ QByteArray escapedString(const QString &s) {
 
 QJsonModel::QJsonModel(QObject *parent)
     : QAbstractItemModel(parent), mRootItem{new QJsonTreeItem} {
-  mHeaders.append("key");
-  mHeaders.append("value");
+  mHeaders.append("Key"); // GB: cap
+  mHeaders.append("Value"); // GB: cap
 }
 
 QJsonModel::QJsonModel(const QString &fileName, QObject *parent)
     : QAbstractItemModel(parent), mRootItem{new QJsonTreeItem} {
-  mHeaders.append("key");
-  mHeaders.append("value");
+  mHeaders.append("Key"); // GB: cap
+  mHeaders.append("Value"); // GB: cap
   load(fileName);
 }
 
 QJsonModel::QJsonModel(QIODevice *device, QObject *parent)
     : QAbstractItemModel(parent), mRootItem{new QJsonTreeItem} {
-  mHeaders.append("key");
-  mHeaders.append("value");
+  mHeaders.append("Key"); // GB: cap
+  mHeaders.append("Value"); // GB: cap
   load(device);
 }
 
 QJsonModel::QJsonModel(const QByteArray &json, QObject *parent)
     : QAbstractItemModel(parent), mRootItem{new QJsonTreeItem} {
-  mHeaders.append("key");
-  mHeaders.append("value");
+  mHeaders.append("Key"); // GB: cap
+  mHeaders.append("Value"); // GB: cap
   loadJson(json);
 }
 
@@ -244,37 +283,56 @@ bool QJsonModel::loadJson(const QByteArray &json) {
 }
 
 QVariant QJsonModel::data(const QModelIndex &index, int role) const {
-  if (!index.isValid())
+    if (!index.isValid())
+      return {};
+
+    QJsonTreeItem *item = static_cast<QJsonTreeItem *>(index.internalPointer());
+
+    // GB BEGIN
+    if (role == Qt::BackgroundRole) {
+        auto color = QColor(255, 255, 255, 0);
+        if( item->isHighlightedInGUI() ||
+            (item->parent() && item->parent()->hasChildHighlighted() && item->parent()->key() != "Components") ||
+            /*(item->childCount() > 0 && item->parent()->key() == "Components" )*/
+            (item->parent()->parent() && item->parent()->isHighlightedInGUI() && item->parent()->parent()->key() == "Components")
+            ) {
+            color = QColor(0, 255, 0, 60);
+        }
+        return color;
+    }
+    // GB END
+
+    if (role == Qt::DisplayRole) {
+        if (index.column() == 0)
+            return QString("%1").arg(item->key());
+
+        if (index.column() == 1)
+            return item->value();
+    } else if (Qt::EditRole == role) {
+        if (index.column() == 1)
+            return item->value();
+    }
+
     return {};
-
-  QJsonTreeItem *item = static_cast<QJsonTreeItem *>(index.internalPointer());
-
-  if (role == Qt::DisplayRole) {
-    if (index.column() == 0)
-      return QString("%1").arg(item->key());
-
-    if (index.column() == 1)
-      return item->value();
-  } else if (Qt::EditRole == role) {
-    if (index.column() == 1)
-      return item->value();
-  }
-
-  return {};
 }
 
-bool QJsonModel::setData(const QModelIndex &index, const QVariant &value,
-                         int role) {
-  int col = index.column();
-  if (Qt::EditRole == role) {
-    if (col == 1) {
-      QJsonTreeItem *item =
-          static_cast<QJsonTreeItem *>(index.internalPointer());
-      item->setValue(value);
-      emit dataChanged(index, index, {Qt::EditRole});
-      return true;
+bool QJsonModel::setData(const QModelIndex &index, const QVariant &value, int role) {
+    int col = index.column();
+    if (Qt::EditRole == role) {
+        if (col == 1) {
+            QJsonTreeItem *item =
+                    static_cast<QJsonTreeItem *>(index.internalPointer());
+            item->setValue(value);
+            emit dataChanged(index, index, {Qt::EditRole});
+            return true;
+        }
+    } else if (Qt::BackgroundRole == role) {
+        QJsonTreeItem *item = static_cast<QJsonTreeItem *>(index.internalPointer());
+        item->setHighlightedInGUI(value.toBool());
+        //emit dataChanged(index, index, {Qt::BackgroundRole});
+        emit dataChanged(QModelIndex(), QModelIndex(), {Qt::BackgroundRole});
+        return true;
     }
-  }
 
   return false;
 }
@@ -341,17 +399,41 @@ int QJsonModel::columnCount(const QModelIndex &parent) const {
   return 2;
 }
 
+// GB reworked
 Qt::ItemFlags QJsonModel::flags(const QModelIndex &index) const {
-  int col = index.column();
-  auto item = static_cast<QJsonTreeItem *>(index.internalPointer());
+    int col = index.column();
+    auto item = static_cast<QJsonTreeItem *>(index.internalPointer());
 
-  auto isArray = QJsonValue::Array == item->type();
-  auto isObject = QJsonValue::Object == item->type();
+    // (Qt::ItemIsEditable && isEditable) | (Qt::ItemIsEnabled && isEnabled)
 
-  if ((col == 1) && !(isArray || isObject))
-    return Qt::ItemIsEditable | QAbstractItemModel::flags(index);
-  else
-    return QAbstractItemModel::flags(index);
+    auto s = QAbstractItemModel::flags(index);
+    //if(col == 0)
+    //    return s;
+
+
+    bool isArray = QJsonValue::Array == item->type();
+    bool isObject = QJsonValue::Object == item->type();
+
+    bool isEditable = item->isEditable() && ((col == 1) && !(isArray || isObject)); // GB
+    bool isEnabled = item->isEnabled(); // GB
+
+    if(isEditable) s |= Qt::ItemIsEditable; else s &= ~Qt::ItemIsEditable;
+    if(isEnabled) s |= Qt::ItemIsEnabled; else s &= ~Qt::ItemIsEnabled;
+
+    return s;
+
+    /*
+    if ((col == 1) && !(isArray || isObject) && isEditable) {
+       // if(isEnabled) {
+            return Qt::ItemIsEditable | QAbstractItemModel::flags(index); // GB
+       // } else {
+       //     return ~Qt::ItemIsEnabled | QAbstractItemModel::flags(index); // GB
+       // }
+
+    } else {
+        return QAbstractItemModel::flags(index);
+    }
+     */
 }
 
 QByteArray QJsonModel::json(bool compact) {
@@ -469,6 +551,8 @@ void QJsonModel::addException(const QStringList &exceptions) {
   mExceptions = exceptions;
 }
 
+// TODO: TREAT QList and QVector3D properly, and also __mm dimensions, etc.
+
 QJsonValue QJsonModel::genJson(QJsonTreeItem *item) const {
   auto type = item->type();
   int nchild = item->childCount();
@@ -477,7 +561,8 @@ QJsonValue QJsonModel::genJson(QJsonTreeItem *item) const {
     QJsonObject jo;
     for (int i = 0; i < nchild; ++i) {
       auto ch = item->child(i);
-      auto key = ch->key();
+      //auto key = ch->key();
+      auto key = ch->key().replace(" ", "");; // GB MODIFIED
       jo.insert(key, genJson(ch));
     }
     return jo;

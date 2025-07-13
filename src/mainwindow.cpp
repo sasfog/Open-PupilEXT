@@ -2126,56 +2126,95 @@ void MainWindow::onCreateGraphPlot(const DataTypes::DataType &value) {
 
 void MainWindow::onOpenImageDirectory() {
     //QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.jpeg *.bmp *.tiff *.tif *.webp)"));
-    QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm)"));
+    QFileDialog dialog(
+            this,
+            tr("Image Directory"),
+            recentPath,
+            tr("Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip);;Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm);;Zip Archive (*.zip)")
+            );
+
+    /*
+    QString selFilter = "Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip)";
+    QString fileName = QFileDialog::getOpenFileName(
+            this,
+            tr("Image Directory"),
+            recentPath,
+            tr("Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm);;Zip Archive (*.zip);;Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip)")
+    );
+     */
     dialog.setOptions(QFileDialog::DontResolveSymlinks); // BG: tried QFileDialog::DontUseNativeDialog flag too but it is slow. TODO: make own dialog
 
-    dialog.setOption(QFileDialog::ShowDirsOnly, true);
-    dialog.setFileMode(QFileDialog::Directory);
+//    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+//    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setOption(QFileDialog::ShowDirsOnly, false);
+    dialog.setFileMode(QFileDialog::ExistingFile);
 
     if(!dialog.exec())
         return;
-    QString tempDir = dialog.directory().absolutePath();
-    if(tempDir.isEmpty())
-        return;
 
-    QDir imageDir(tempDir);
-    if (imageDir.isEmpty())
-        return;
+    QString imageSource;
+    if(!dialog.selectedFiles().empty()) {
+        QString selectedFile = dialog.selectedFiles()[0];
+        if(selectedFile.endsWith("zip")) {
+            // TODO: check if file can be read? even here
+            imageSource = selectedFile;
+        }
+    } else {
+        // TODO: The below checks for the existence of images inside 0 and 1 folders, and the folders themselves,
+        //  only happens in case of a directory. But they could also be done quickly for a selected Zip file.
+        //  Implement that.
 
-//    QStringList nameFilter = QStringList() << "*.png" << "*.jpg" << "*.jpeg" << "*.bmp" << "*.tiff" << "*.tif" <<  "*.webp";
-    QStringList nameFilter = QStringList() << "*.tiff" << "*.tif" << "*.png" << "*.bmp" << "*.jpeg" << "*.jpg" <<  "*.jpe" <<  "*.jp3" <<  "*.webp" <<  "*.pgm";
-    QStringList fileNames = imageDir.entryList(nameFilter, QDir::Files);
-    QStringList folderNames = imageDir.entryList(QStringList() << "0" << "1", QDir::Dirs);
-    if (fileNames.isEmpty() && folderNames.size() < 2)
-        return;
-
-    if (folderNames.size() == 2){
-        QDir stereo0Dir(imageDir.filePath("0"));
-        if (stereo0Dir.isEmpty() || stereo0Dir.entryList(nameFilter, QDir::Files).isEmpty())
+        QString imageSource = dialog.directory().absolutePath();
+        if (imageSource.isEmpty())
             return;
-        QDir stereo1Dir(imageDir.filePath("1"));
-        if (stereo1Dir.isEmpty() || stereo1Dir.entryList(nameFilter, QDir::Files).isEmpty())
+
+        QDir imageDir(imageSource);
+        qDebug() << imageDir;
+        if (imageDir.isEmpty())
             return;
+
+        QStringList nameFilter = QStringList()
+                << "*.tiff" << "*.tif" << "*.png" << "*.bmp" << "*.jpeg" << "*.jpg" << "*.jpe" << "*.jp3"
+                << "*.webp" << "*.pgm";
+        QStringList fileNames = imageDir.entryList(nameFilter, QDir::Files);
+        QStringList folderNames = imageDir.entryList(QStringList() << "0" << "1", QDir::Dirs);
+        if (fileNames.isEmpty() && folderNames.size() < 2)
+            return;
+
+        qDebug() << fileNames;
+
+        if (folderNames.size() == 2) {
+            QDir stereo0Dir(imageDir.filePath("0"));
+            if (stereo0Dir.isEmpty() || stereo0Dir.entryList(nameFilter, QDir::Files).isEmpty())
+                return;
+            QDir stereo1Dir(imageDir.filePath("1"));
+            if (stereo1Dir.isEmpty() || stereo1Dir.entryList(nameFilter, QDir::Files).isEmpty())
+                return;
+        }
+        //qDebug() << tempDir;
     }
-    openImageDirectory(tempDir);
+
+    // NOTE: Yet we only pass this string, as the openImageFileSource function should be callable by
+    //  remote control commands or specified in CMD arguments, where before we have no other checks
+    openImageFileSource(imageSource, 0);
 }
 
-void MainWindow::openImageDirectory(QString imageDirectory) {
+/*
 
-    if(imageDirectory[imageDirectory.length()-1]=='/')
-        imageDirectory.chop(1);
+void MainWindow::openImageFileSource(QString imageSource) {
 
-    fileOpenAct->setEnabled(false);
-
-//    std::cout << recentPath.toStdString() << std::endl;
-    currentStatusMessageLabel->setText("Current directory: " + SupportFunctions::shortenStringForDisplay(imageDirectory, 100));
-    currentStatusMessageLabel->setToolTip(imageDirectory);
-
-    QStringList lst = imageDirectory.split('/');
-    if(lst.count() > 1) {
-        QString suggestedCSVLoc = imageDirectory.chopped(lst[lst.count()-1].length());
-        PRGsetCsvPathAndName(suggestedCSVLoc + '/' + lst[lst.count()-1] + ".csv");
+    if(imageSource[imageSource.length()-1]=='/') {
+        imageSource.chop(1);
     }
+    QStringList lst = imageSource.split('/');
+    if(lst.count() <= 1) {
+        return;
+    }
+
+    QString recordingName = lst[lst.count()-1];
+    QString recordingParentLocation = imageSource.chopped(recordingName.length());
+    QString suggestedCSVPathAndName = recordingParentLocation + '/' + recordingName + ".csv";
+    PRGsetCsvPathAndName(suggestedCSVPathAndName);
 
     if(selectedCamera) {
         selectedCamera->close();
@@ -2184,13 +2223,12 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     onCameraCalibrationDisabled();
     resetStatus(true);
 
-
     //const int playbackSpeed = applicationSettings->value("playbackSpeed", generalSettingsDialog->getPlaybackSpeed()).toInt();
     //const bool playbackLoop = (bool) applicationSettings->value("playbackLoop", (int) generalSettingsDialog->getPlaybackLoop()).toInt();
     const int playbackSpeed = applicationSettings->value("playbackSpeed", 30).toInt();
     bool playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", true, applicationSettings);
 
-    QString offlineEventLogFileName = imageDirectory + '/' + "offline_event_log.xml";
+    QString offlineEventLogFileName = recordingParentLocation + '/' + "offline_event_log.xml";
     std::cout << "expected offlineEventLogFileName = " << offlineEventLogFileName.toStdString() << std::endl;
     if(QFileInfo(offlineEventLogFileName).exists()) {
         recEventTracker = new RecEventTracker(offlineEventLogFileName);
@@ -2204,7 +2242,20 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     safelyResetTrialCounter();
     safelyResetMessageRegister();
 
-    selectedCamera = new FileCamera(imageDirectory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this);
+    // selectedCamera = new FileCamera(imageSource, 0, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)
+    // std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
+    while(
+            (selectedCamera = new FileCamera(imageSource, 0, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)) &&
+            !selectedCamera->isOpen()
+            ) {
+        if( dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_INDECISIVE ){
+
+        } if( dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ERROR ){
+
+        }
+        selectedCamera->close();
+        selectedCamera = nullptr;
+    }
     std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
@@ -2297,8 +2348,205 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), playbackSynchroniser, SLOT(onPlaybackStopped()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), playbackSynchroniser, SLOT(onPlaybackStopped()));
 
-    // if everything went fine, we also store the recent path in QSettings
-    setRecentPath(imageDirectory);
+
+    // If everything went fine
+
+    fileOpenAct->setEnabled(false);
+    currentStatusMessageLabel->setText("Image file source: " + SupportFunctions::shortenStringForDisplay(imageSource, 100));
+    currentStatusMessageLabel->setToolTip(imageSource);
+    // We also store the recent path in QSettings
+    setRecentPath(recordingParentLocation);
+
+}
+
+*/
+
+void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber = 0) {
+
+    if(imageSource[imageSource.length()-1]=='/') {
+        imageSource.chop(1);
+    }
+    QStringList lst = imageSource.split('/');
+    if(lst.count() <= 1) {
+        return;
+    }
+
+    QString recordingName = lst[lst.count()-1];
+    QString recordingParentLocation = imageSource.chopped(recordingName.length());
+    QString suggestedCSVPathAndName = recordingParentLocation + '/' + recordingName + ".csv";
+    PRGsetCsvPathAndName(suggestedCSVPathAndName);
+
+    if(selectedCamera) {
+        selectedCamera->close();
+        selectedCamera = nullptr;
+    }
+
+    //const int playbackSpeed = applicationSettings->value("playbackSpeed", generalSettingsDialog->getPlaybackSpeed()).toInt();
+    //const bool playbackLoop = (bool) applicationSettings->value("playbackLoop", (int) generalSettingsDialog->getPlaybackLoop()).toInt();
+    const int playbackSpeed = applicationSettings->value("playbackSpeed", 30).toInt();
+    bool playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", true, applicationSettings);
+
+    // selectedCamera = new FileCamera(imageSource, 0, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)
+    // std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
+    while(  (selectedCamera = new FileCamera(imageSource, subrecordingNumber, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)) &&
+            !selectedCamera->isOpen()   ) {
+        if( dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_INDECISIVE ){
+            qDebug() << "Could not open this FileCamera, due to ImageReader error.";
+            auto zipMultiInfo = dynamic_cast<FileCamera*>(selectedCamera)->getFoundZipMultiInfo();
+
+            OpenZipChoiceDialog *dialog = new OpenZipChoiceDialog("Zip file contains multiple recordings", zipMultiInfo, this);
+            dialog->setModal(true);
+            // dialog->raise();
+            if(dialog->exec() == QDialog::Accepted)
+            {
+                auto resp = dialog->getResponse();
+                int selectedRecNumber = dialog->getSelectedRecNumber();
+
+                if( resp == OpenZipChoiceDialog::OpenZipChoiceResponse::OPEN_SPECIFIC && abs(selectedRecNumber) <= zipMultiInfo.length() ) {
+                    selectedCamera->close();
+                    selectedCamera = nullptr;
+                    subrecordingNumber = selectedRecNumber;
+                    continue;
+                } else /*if(resp == OpenZipChoiceDialog::OpenZipChoiceResponse::CANCEL)*/ {
+                    selectedCamera->close();
+                    selectedCamera = nullptr;
+                    return;
+                }
+            }
+        } if( dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ERROR ){
+            qDebug() << "Could not open this FileCamera, due to ImageReader error.";
+            selectedCamera->close();
+            selectedCamera = nullptr;
+            return;
+        } else {
+            break;
+        }
+        selectedCamera->close();
+        selectedCamera = nullptr;
+        return;
+    }
+    bool aha = selectedCamera->isOpen();
+    std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
+
+    // NOTE: FROM THIS POINT we can safely say that the camera is opened!
+
+    onCameraCalibrationDisabled();
+    resetStatus(true);
+
+    QString offlineEventLogContent = dynamic_cast<FileCamera*>(selectedCamera)->getOfflineEventLogContent();
+
+    // Rec event tracker
+    if(!offlineEventLogContent.isEmpty()) {
+        recEventTracker = new RecEventTracker(offlineEventLogContent);
+        if(recEventTracker->isReady()) {
+            //connect( ...
+        } else {
+            recEventTracker->deleteLater();
+            recEventTracker = nullptr;
+        }
+    }
+    safelyResetTrialCounter();
+    safelyResetMessageRegister();
+
+    // Connects etc.
+    connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
+    connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
+    connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+
+    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
+        connect(dynamic_cast<FileCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (finishedCalibration()), this, SLOT (onCameraCalibrationEnabled()));
+        connect(dynamic_cast<FileCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
+
+        int pmSingle = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt();
+        if( pmSingle != ProcMode::SINGLE_IMAGE_ONE_PUPIL &&
+            pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL // &&
+            // pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL
+                )
+            pmSingle = ProcMode::SINGLE_IMAGE_ONE_PUPIL;
+        pupilDetectionWorker->setCurrentProcMode(pmSingle);
+        // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place
+        applicationSettings->setValue("PupilDetectionSettingsDialog.singleCam.procMode", pmSingle);
+
+    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
+        connect(dynamic_cast<FileCamera*>(selectedCamera)->getStereoCameraCalibration(), SIGNAL (finishedCalibration()), this, SLOT (onCameraCalibrationEnabled()));
+        connect(dynamic_cast<FileCamera*>(selectedCamera)->getStereoCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
+
+        int pmStereo = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt();
+        if( pmStereo != ProcMode::STEREO_IMAGE_ONE_PUPIL &&
+            pmStereo != ProcMode::STEREO_IMAGE_TWO_PUPIL )
+            pmStereo = ProcMode::STEREO_IMAGE_ONE_PUPIL;
+        pupilDetectionWorker->setCurrentProcMode(pmStereo);
+        // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place
+        applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", pmStereo);
+    }
+    this->cameraPlaying = false;
+
+    cameraViewClick(); // GB: moved here. Had to ensure that proc mode is correctly set before creating camera view (as not it relies on pupilDetection instance too)
+    onCalibrateClick();
+
+//    cameraSettingsAct->setEnabled(false);
+//    cameraViewAct->setEnabled(true);
+//    dataTableAct->setEnabled(true);
+
+    // Basically only that pupilDetectionSettingsDialog knows which type of camera is connected
+    pupilDetectionWorker->setCamera(selectedCamera);
+    // NOTE: this line below calls loadSettings too
+    // NOTE: importantly, this call must lead to calls in pupilDetectionSettingsDialog for
+    // updateProcModeEnabled() and updateProcModeCompatibility()
+    pupilDetectionSettingsDialog->onSettingsChange();
+
+    // NOTE:
+    // This must happen here, after cameraViewClick() call, because only then will a
+    // singleCameraChildWidget or stereoCameraChildWidget exist in memory
+    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
+        connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), singleCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
+    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
+        connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), stereoCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
+    }
+
+    imagePlaybackControlDialog = new ImagePlaybackControlDialog(dynamic_cast<FileCamera*>(selectedCamera), pupilDetectionWorker, recEventTracker, this);
+    RestorableQMdiSubWindow *imagePlaybackControlWindow = new RestorableQMdiSubWindow(imagePlaybackControlDialog, "ImagePlaybackControlDialog", this);
+    imagePlaybackControlWindow->setWindowIcon(imagePlaybackControlIcon); // TODO: this somehow does not work
+    mdiArea->addSubWindow(imagePlaybackControlWindow);
+    //imagePlaybackControlWindow->resize(650, 230); // Min. size will set automatically anyways
+    // No "X" button on this window
+    imagePlaybackControlWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinimizeButtonHint | Qt::WindowStaysOnTopHint);
+    //imagePlaybackControlWindow->setWindowFlags(imagePlaybackControlWindow->windowFlags() & ~Qt::WindowCloseButtonHint);
+    //imagePlaybackControlWindow->setWindowFlags( (Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint) & ~Qt::WindowCloseButtonHint );
+    imagePlaybackControlWindow->show();
+    //imagePlaybackControlWindow->restoreGeometry();
+
+    //connect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
+    // GB: right now, this only gets called when playbackLoop is false, and we need to finish playing (with possible overhead)
+    //connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackStartInitiated()), this, SLOT(onPlaybackStartInitiated()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackPauseInitiated()), this, SLOT(onPlaybackPauseInitiated()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackStopInitiated()), this, SLOT(onPlaybackStopInitiated()));
+    connect(this, SIGNAL(playbackStartApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStartApproved()));
+    connect(this, SIGNAL(playbackPauseApproved()), imagePlaybackControlDialog, SLOT(onPlaybackPauseApproved()));
+    connect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
+
+    connectCameraPlaybackChangedSlots();
+
+    playbackSynchroniser = new PlaybackSynchroniser();
+    playbackSynchroniser->setCamera(selectedCamera);
+    playbackSynchroniser->setPupilDetection(pupilDetectionWorker);
+
+
+    connect(pupilDetectionWorker, SIGNAL(processingStarted()), playbackSynchroniser, SLOT(onPupilDetectionStarted()));
+    connect(pupilDetectionWorker, SIGNAL(processingFinished()), playbackSynchroniser, SLOT(onPupilDetectionStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), playbackSynchroniser, SLOT(onPlaybackStarted()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), playbackSynchroniser, SLOT(onPlaybackStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), playbackSynchroniser, SLOT(onPlaybackStopped()));
+
+
+    // If everything went fine
+
+    fileOpenAct->setEnabled(false);
+    currentStatusMessageLabel->setText("Image file source: " + SupportFunctions::shortenStringForDisplay(imageSource, 100));
+    currentStatusMessageLabel->setToolTip(imageSource);
+    // We also store the recent path in QSettings
+    setRecentPath(recordingParentLocation);
 
 }
 
@@ -2910,7 +3158,7 @@ void MainWindow::dropEvent(QDropEvent* e)
             onCameraDisconnectClick();
         }
         qDebug() << "Attempting to open: " << fileInfo.filePath();
-        openImageDirectory(fileInfo.filePath());
+        openImageFileSource(fileInfo.filePath());
     } else if(fileInfo.isFile()) {
         // TODO: shorter, cleaner, better
         if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "tif" || fileInfo.completeSuffix() == "png"  ||
@@ -2924,7 +3172,7 @@ void MainWindow::dropEvent(QDropEvent* e)
                 onCameraDisconnectClick();
             }
             qDebug() << "Attempting to open: " << fileInfo.filePath().chopped(fileInfo.fileName().length());
-            openImageDirectory(fileInfo.filePath().chopped(fileInfo.fileName().length()));
+            openImageFileSource(fileInfo.filePath().chopped(fileInfo.fileName().length()));
         }
     }
 
@@ -2983,6 +3231,7 @@ void MainWindow::destroyCamTempMonitor() {
 }
 
 void MainWindow::setRecentPath(QString path) {
+    qDebug() << "Set recent path: " << path;
     recentPath = path;
     applicationSettings->setValue("RecentOutputPath", recentPath);
 }

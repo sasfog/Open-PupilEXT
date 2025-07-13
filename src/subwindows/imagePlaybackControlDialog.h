@@ -13,13 +13,13 @@
 #include <QtWidgets/QPushButton>
 #include <QtCore/QSettings>
 
-#include "playbackDial.h"
-#include "playbackSlider.h"
+#include "custom-widgets/playbackDial.h"
+#include "custom-widgets/playbackSlider.h"
 #include "../devices/fileCamera.h"
 #include "../pupilDetection.h"
 
 #include "../recEventTracker.h"
-#include "timestampSpinBox.h"
+#include "custom-widgets/timestampSpinBox.h"
 
 #include <QKeyEvent> // DEV
 
@@ -136,7 +136,6 @@ private slots:
     void onStopButtonClick();
     void onEndReached();
     void onFinished();
-
     
     void updateInfoInternal(int frameNumber);
 

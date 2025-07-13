@@ -54,6 +54,12 @@ public:
         quint64 timestamp = 0;
         std::vector<double> temperatures = {-1.0, -1.0};
     };
+    struct GazeTarget {
+        quint64 timestamp = 0;
+        uint id = 1;
+        uint x = 0;
+        uint y = 0;
+    };
     struct Message {
         quint64 timestamp = 0;
         QString messageString;
@@ -81,6 +87,7 @@ public:
     // for both modes
     TrialIncrement getTrialIncrement(quint64 timestamp);
     TemperatureCheck getTemperatureCheck(quint64 timestamp);
+    GazeTarget getGazeTarget(quint64 timestamp);
     Message getMessage(quint64 timestamp);
 
 public slots:
@@ -88,6 +95,8 @@ public slots:
     void addTrialIncrement(const quint64 &timestamp);
     void addTemperatureCheck(std::vector<double> d);
     //void updateGrabTimestamp(CameraImage cimg);
+
+    // BUG TODO: empty elems show up in the event log, if there was no event like that. just blank. They should not be there
 
     // For filling up vectors in STORAGE (= playback from disk) mode
     void addTrialIncrement(quint64 timestamp, uint trialNumber);
@@ -98,6 +107,7 @@ public slots:
     void resetBufferMessageRegister(const quint64 &timestamp);
 
     // for both modes
+    void addGazeTarget(quint64 timestamp, uint id, uint x, uint y);
     void addMessage(const quint64 &timestamp, const QString &str);
 
 private:
@@ -108,6 +118,7 @@ private:
     // both modes
     std::vector<TrialIncrement> trialIncrements;
     std::vector<TemperatureCheck> temperatureChecks;
+    std::vector<GazeTarget> gazeTargets;
     std::vector<Message> messages;
     QChar delim;
     QFile *dataFile = nullptr;

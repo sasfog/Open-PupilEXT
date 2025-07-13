@@ -29,7 +29,7 @@ class FileCamera : public Camera
     Q_OBJECT
 
 public:
-    explicit FileCamera(const QString &directory, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
+    explicit FileCamera(const QString &imageSource, const int &subrecordingNumber, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
 
     ~FileCamera() override;
 
@@ -71,9 +71,9 @@ public:
     bool isPlaying() {
         return imageReader->isPlaying();
     }
-    QString getImageDirectoryName() {
-        return imageReader->getImageDirectoryName();
-    }
+//    QString getImageDirectoryName() {
+//        return imageReader->getImageDirectoryName();
+//    }
     QString getImageWidth() {
         return QString::number(imageReader->getImageWidth());
     }
@@ -108,6 +108,18 @@ public:
     int getLastCommissionedFrameNumber() {
         return imageReader->getLastCommissionedFrameNumber();
     }
+    ImageReader::ImageReaderStatus getImageReaderStatus() {
+        return imageReader->getImageReaderStatus();
+    }
+    QVector<ImageReader::ZipMultiInfo> getFoundZipMultiInfo() {
+        return imageReader->getFoundZipMultiInfo();
+    }
+    QString getOfflineEventLogContent() {
+        return imageReader->getOfflineEventLogContent();
+    }
+    QString getMetaSnapshotContent() {
+        return imageReader->getMetaSnapshotContent();
+    }
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
@@ -126,7 +138,7 @@ private:
     FrameRateCounter *frameCounter;
     ImageReader *imageReader;
 
-    bool open;
+    bool open = false;
 
     CameraCalibration *cameraCalibration;
     StereoCameraCalibration *stereoCameraCalibration;

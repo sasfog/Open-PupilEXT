@@ -13,12 +13,12 @@
 #include <QMouseEvent>
 #include <QtWidgets/qrubberband.h>
 #include <QtWidgets/qsizegrip.h>
-#include "../devices/camera.h"
-#include "imageGraphicsItem.h"
+#include "../../devices/camera.h"
+#include "../imageGraphicsItem.h"
 #include "ResizableRectItem.h"
 #include <QtWidgets/QHBoxLayout>
 #include <QDebug>
-#include "../pupilDetection.h"
+#include "../../pupilDetection.h"
 
 enum ViewMode {FIT = 0, FULL = 1, ZOOM = 2};
 

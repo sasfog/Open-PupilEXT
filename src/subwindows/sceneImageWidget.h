@@ -15,7 +15,7 @@
 #include <QtWidgets/qsizegrip.h>
 #include "../devices/camera.h"
 #include "imageGraphicsItem.h"
-#include "ResizableRectItem.h"
+#include "custom-widgets/ResizableRectItem.h"
 #include <QtWidgets/QHBoxLayout>
 
 #include "../pupilDetection.h"

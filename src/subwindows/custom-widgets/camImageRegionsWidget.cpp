@@ -1,5 +1,5 @@
 #include "camImageRegionsWidget.h"
-#include "supportFunctions.h"
+#include "../../supportFunctions.h"
 
 CamImageRegionsWidget::CamImageRegionsWidget(QWidget *parent) : 
     QFrame(parent),

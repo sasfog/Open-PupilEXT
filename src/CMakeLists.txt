@@ -37,7 +37,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/singleCameraView.cpp subwindows/singleCameraView.h
         subwindows/stereoCameraView.cpp subwindows/stereoCameraView.h
         subwindows/singleCameraSettingsDialog.cpp subwindows/singleCameraSettingsDialog.h
-        subwindows/videoView.cpp subwindows/videoView.h
+        subwindows/custom-widgets/videoView.cpp subwindows/custom-widgets/videoView.h
         subwindows/imageGraphicsItem.h
         devices/camera.h
         devices/singleCamera.cpp devices/singleCamera.h
@@ -53,7 +53,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/pupil-detection-methods/PuReSettings.h subwindows/pupil-detection-methods/ElSeSettings.h
         subwindows/pupil-detection-methods/ExCuSeSettings.h subwindows/pupil-detection-methods/StarburstSettings.h subwindows/pupil-detection-methods/Swirski2DSettings.h
         subwindows/pupil-detection-methods/PuReSTSettings.h imageWriter.cpp imageWriter.h imageReader.cpp imageReader.h
-        devices/fileCamera.h devices/fileCamera.cpp subwindows/ResizableRectItem.cpp subwindows/ResizableRectItem.h
+        devices/fileCamera.h devices/fileCamera.cpp subwindows/custom-widgets/ResizableRectItem.cpp subwindows/custom-widgets/ResizableRectItem.h
         subwindows/stereoCameraSettingsDialog.cpp subwindows/stereoCameraSettingsDialog.h
         devices/stereoCameraImageEventHandler.cpp devices/stereoCameraImageEventHandler.h
         subwindows/stereoCameraCalibrationView.h subwindows/stereoCameraCalibrationView.cpp
@@ -65,15 +65,15 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         recEventTracker.h recEventTracker.cpp
         subwindows/streamingSettingsDialog.h subwindows/streamingSettingsDialog.cpp
         subwindows/singleWebcamCalibrationView.h subwindows/singleWebcamCalibrationView.cpp
-        subwindows/IPCtrl.h subwindows/IPCtrl.cpp
+        subwindows/custom-widgets/IPCtrl.h subwindows/custom-widgets/IPCtrl.cpp
         subwindows/remoteCCDialog.h subwindows/remoteCCDialog.cpp
-        subwindows/playbackDial.h subwindows/playbackSlider.h subwindows/imagePlaybackControlDialog.h subwindows/imagePlaybackControlDialog.cpp
+        subwindows/custom-widgets/playbackDial.h subwindows/custom-widgets/playbackSlider.h subwindows/imagePlaybackControlDialog.h subwindows/imagePlaybackControlDialog.cpp
         subwindows/singleFileCameraCalibrationView.h subwindows/singleFileCameraCalibrationView.cpp subwindows/RestorableQMdiSubWindow.h subwindows/subjectSelectionDialog.cpp subwindows/subjectSelectionDialog.h
         subwindows/singleCameraSharpnessView.h subwindows/singleCameraSharpnessView.cpp sharpnessCalculation.h sharpnessCalculation.cpp
         subwindows/calibrationHelpDialog.h subwindows/calibrationHelpDialog.cpp
-        subwindows/pupil-detection-methods/json.h subwindows/timestampSpinBox.h subwindows/timestampSpinBox.cpp
+        subwindows/pupil-detection-methods/json.h subwindows/custom-widgets/timestampSpinBox.h subwindows/custom-widgets/timestampSpinBox.cpp
         SVGIconColorAdjuster.h
-        camImageRegionsWidget.h camImageRegionsWidget.cpp
+        subwindows/custom-widgets/camImageRegionsWidget.h subwindows/custom-widgets/camImageRegionsWidget.cpp
         playbackSynchroniser.cpp
         playbackSynchroniser.h
         subwindows/outputDataRuleDialog.h
@@ -90,13 +90,11 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/QtOpenGLViewer/QtOpenGLViewer.h
         subwindows/setupGeometryDialog.cpp
         subwindows/setupGeometryDialog.h
-        subwindows/setupModelTreeView/setupModelTreeItem.cpp
-        subwindows/setupModelTreeView/setupModelTreeItem.h
-        subwindows/setupModelTreeView/setupModelTreeModel.cpp
-        subwindows/setupModelTreeView/setupModelTreeModel.h
         subwindows/QJsonModel/QJsonModel.cpp
         subwindows/QJsonModel/QJsonModel.hpp
         subwindows/QJsonModel/QUtf8.hpp
+        subwindows/openZipChoiceDialog.h
+        subwindows/openZipChoiceDialog.cpp
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
@@ -106,13 +104,15 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
 if(SPII_BUILD_FOUND)
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
+            QuaZip
             "singleeyefitter"
-            Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
+            Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
             ${Boost_LIBRARIES}
             TBB::tbb
             #Boost::boost
             ${spii_LIBRARIES}
             ${CERES_LIBRARIES}
+            ${BZip2_LIBRARIES} ########################################################
             ${PYLON_LIBRARIES}
             ${OpenCV_LIBS}
             opengl32
@@ -120,18 +120,19 @@ if(SPII_BUILD_FOUND)
 
 else()
 
-    target_link_libraries(${CMAKE_PROJECT_NAME}
-        "singleeyefitter"
-        Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
-        ${Boost_LIBRARIES}
-        TBB::tbb
-        #Boost::boost
-        spii
-        meschach
-        ${CERES_LIBRARIES}
-        ${PYLON_LIBRARIES}
-        ${OpenCV_LIBS}
-        opengl32
+    target_link_libraries(${CMAKE_PROJECT_NAME} QuaZip
+            "singleeyefitter"
+            Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
+            ${Boost_LIBRARIES}
+            TBB::tbb
+            #Boost::boost
+            spii
+            meschach
+            ${CERES_LIBRARIES}
+            ${BZip2_LIBRARIES} ########################################################
+            ${PYLON_LIBRARIES}
+            ${OpenCV_LIBS}
+            opengl32
     )
 
 endif()
@@ -165,6 +166,7 @@ install(PROGRAMS "$<TARGET_FILE:Qt6::Network>" DESTINATION "${PROJECT_SOURCE_DIR
 install(PROGRAMS "$<TARGET_FILE:Qt6::Xml>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/xml")
 
 install(PROGRAMS "$<TARGET_FILE:Qt6::Gui>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Core5Compat>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt6::Core>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt6::Widgets>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt6::SerialPort>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
@@ -191,6 +193,7 @@ install(PROGRAMS "$<TARGET_FILE:Qt6::Network>" DESTINATION "${CMAKE_CURRENT_BINA
 install(PROGRAMS "$<TARGET_FILE:Qt6::Xml>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/xml")
 
 install(PROGRAMS "$<TARGET_FILE:Qt6::Gui>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+install(PROGRAMS "$<TARGET_FILE:Qt6::Core5Compat>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt6::Core>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt6::Widgets>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt6::SerialPort>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

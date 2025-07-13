@@ -11,6 +11,7 @@
 #include <QtCore/qfileinfo.h>
 #include <cmath>
 #include <QRectF>
+#include <QVector3D>
 #include <QColor>
 #include "subwindows/outputDataRuleDialog.h"
 #include <opencv2/core/mat.hpp>
@@ -25,6 +26,74 @@ class SupportFunctions : public QObject
     Q_OBJECT
 
 public:
+
+    static QVariant toVariantFromWrapped(QString valueInStr, bool *ok) {
+        *ok = false;
+        valueInStr = valueInStr.replace(" ","");
+        //qDebug() << valueInStr;
+
+        if(valueInStr.startsWith("QVector3D")) {
+            valueInStr = valueInStr.remove(0, 10);
+            valueInStr = valueInStr.remove(valueInStr.length()-1, 1);
+
+            QStringList strings = valueInStr.split(",");
+
+            if(strings.length() == 3) {
+                *ok = true;
+                return (QVariant)QVector3D(strings[0].toFloat(ok), strings[1].toFloat(ok), strings[2].toFloat(ok));
+            }
+        } else if(valueInStr.startsWith("QList<CameraConnectorPin>")) {
+
+            // BUG TODO: this might read as this, but save as QList<int> or QList<QVariant>
+
+            valueInStr = valueInStr.remove(0, 25);
+            valueInStr = valueInStr.remove(valueInStr.length()-1, 1);
+
+            QStringList strings = valueInStr.split(",");
+            QList<int> result;
+            for(int h = 0; h < strings.length(); h++) {
+                result.append(strings[0].toInt(ok));
+            }
+
+            return QVariant::fromValue(result);
+        }
+        return QVariant();
+    }
+
+    static QString camelCaseToFriendly(const QString& s)
+    {
+        // //QRegularExpression regexp("[A-Z][a-z]*|\\d+[a-z]+|\\d+");
+        QRegularExpression regexp("[A-Z]{2,}(?=[A-Z][a-z])|[A-Z][a-z]+|\\d+[a-z]+|\\d+|[A-Z]");
+        // QRegularExpression regexp("[A-Z]{2,}(?=[A-Z][a-z])|[A-Z][a-z]+|\d+[a-z]+|\d+|[A-Z]");
+        QRegularExpressionMatchIterator match = regexp.globalMatch(s);
+        QStringList strings;
+
+        while(match.hasNext())
+            strings.append(match.next().capturedTexts());
+
+        QString result = strings.join(" ");
+
+        // NOTE: For some reason, the output does not correspond to what should be expected
+        // as e.g. seen on https://regex101.com/ for this expression. So here is a workaround
+        bool hooked = false;
+        int i = result.length()-4;
+        while(i > 0) {
+            if(result[i]==" " && result[i+1].isUpper() && (hooked || (result[i+2]==" " && result[i+3].isUpper())) ) {
+                result = result.remove(i,1);
+                i--;
+                hooked = true;
+            } else {
+                hooked = false;
+            }
+            i--;
+        }
+        if(result.toUpper() == result) {
+            result = result.replace(" ","");
+        }
+
+        return result;
+    }
+
     static QString simplifyReceivedMessage(QString str)
     {
         // remove CR, LF and other strange characters

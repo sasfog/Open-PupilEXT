@@ -13,7 +13,7 @@
 #include "../devices/camera.h"
 #include "../devices/stereoCamera.h"
 #include "MCUSettingsDialog.h"
-#include "../camImageRegionsWidget.h"
+#include "custom-widgets/camImageRegionsWidget.h"
 #include "../SVGIconColorAdjuster.h"
 #include "stereoCameraView.h"
 

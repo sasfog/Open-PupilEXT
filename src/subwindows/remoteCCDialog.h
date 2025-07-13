@@ -14,7 +14,7 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 
-#include "IPCtrl.h"
+#include "custom-widgets/IPCtrl.h"
 #include "../connPoolCOM.h"
 #include "../connPoolUDP.h"
 

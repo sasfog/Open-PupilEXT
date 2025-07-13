@@ -10,7 +10,7 @@
 #include <QtWidgets/qstatusbar.h>
 #include <QtWidgets/QLabel>
 
-#include "videoView.h"
+#include "custom-widgets/videoView.h"
 #include "../pupilDetection.h"
 #include "../devices/stereoCamera.h"
 

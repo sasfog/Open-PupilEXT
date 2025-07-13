@@ -6,7 +6,6 @@
 #include <QtWidgets/QtWidgets>
 #include "setupGeometryDialog.h"
 #include "../SVGIconColorAdjuster.h"
-#include "../remoteSetupModel.h"
 
 // Create the pupil detection settings dialog
 // Given a pupil detection object to communicate to the detection algorithm objects there
@@ -163,170 +162,96 @@ void SetupGeometryDialog::createForm() {
     QTreeView *setupModelTree = new QTreeView();
      */
 
-    QJsonModel * model1 = new QJsonModel;
-    QTreeView * setupModelTree = new QTreeView;
-    setupModelTree->setModel(model1);
-    model1->load("example.json");
+    setupModel = new RemoteSetupModel("H3DModel.json", qtOpenGlViewer);
 
-
-    RemoteSetupModel *setupModel = new RemoteSetupModel();
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    setupModel->resetModel();
-
-    // these could be in a loop that reads model components from a json file
-    Unit *cameraUnit = new Unit(this);
-    CameraComponent *cameraComponent = new CameraComponent(this);
-    cameraComponent->componentVendor = "Basler";
-    cameraComponent->componentType = "acA1300-200um";
-    //sensorComponent->leafDepth = 1;
-    //
-    SensorComponent *sensorComponent = new SensorComponent(this);
-    sensorComponent->componentVendor = "Sony";
-    sensorComponent->componentType = "IMX 392";
-    sensorComponent->resolutionX = 1920; // px
-    sensorComponent->resolutionY = 1200; // px
-    sensorComponent->pixelSize = 3.4f; // um
-    sensorComponent->leafDepth = 2;
-    cameraComponent->components.push_back(sensorComponent);
-    //
-    cameraUnit->components.push_back(cameraComponent);
-
-    LensComponent *lensComponent = new LensComponent(this);
-    lensComponent->componentVendor = "Ricoh";
-    lensComponent->componentType;
-    lensComponent->focalDistanceMin = 25.0; // mm
-    lensComponent->focalDistanceMax = 25.0; // mm
-    lensComponent->focalDistanceActual = 25.0; // mm
-    lensComponent->fValueMin = 16.0;
-    lensComponent->fValueMax = 1.4;
-    lensComponent->fValueActual = 1.4;
-    lensComponent->sholuderToFirstSurfaceDistance = 42; // mm
-    lensComponent->outerDiameter = 36; // mm // when there are no adjustment screws attached
-    lensComponent->frontFilterDiameter = 35; // mm
-    sensorComponent->leafDepth = 2;
-    cameraUnit->components.push_back(lensComponent);
-
-    FilterComponent *filterComponent = new FilterComponent(this);
-    filterComponent->componentVendor = "MidOpt";
-    filterComponent->componentType = "LP720";
-    filterComponent->mountingType = "screw-on"; // screw-on, screw-in, embedded
-    filterComponent->opticalBehaviour = "lowpass"; // lowpass, highpass, bandpass
-    filterComponent->lowpassCuton = 720; // nm
-    filterComponent->filterDiameter = 35; // mm
-    sensorComponent->leafDepth = 2;
-    cameraUnit->components.push_back(filterComponent);
-
-    setupModel->cameraUnits.push_back(cameraUnit);
-
-    Unit *illuminatorUnit = new Unit(this);
-    IlluminatorComponent *illuminatorComponent = new IlluminatorComponent(this);
-    illuminatorComponent->atomicComponentVendor = "ams Osram";
-    illuminatorComponent->atomicComponentType = "SFH 4717";
-    illuminatorComponent->numAtomicComponents = 4;
-    illuminatorComponent->radiationAngle = 50; // of the cone in which most light is emitted
-    illuminatorComponent->emissionCentroid = 850; // centroid wavelength, nm
-    illuminatorComponent->driverIsConstantCurrent = true; // constantCurrent, constantVoltage
-    illuminatorComponent->driverIsVariable = false;
-    illuminatorUnit->components.push_back(illuminatorComponent);
-    setupModel->illuminatorUnits.push_back(illuminatorUnit);
-
-    Unit *screenUnit = new Unit(this);
-    ScreenComponent *screenComponent = new ScreenComponent(this);
-    screenComponent->physicalSizeX = 400; // mm
-    screenComponent->physicalSizeY = 320; // mm
-    screenComponent->resolutionX = 1280;
-    screenComponent->resolutionY = 1024;
-    screenUnit->components.push_back(screenComponent);
-    setupModel->screenUnits.push_back(screenUnit);
-
-    Unit *head = new Unit(this);
-    CvTargetComponent *foreheadTarget = new CvTargetComponent(this);
-    EyeballComponent *leftEyeball = new EyeballComponent(this);
-    EyeballComponent *rightEyeball = new EyeballComponent(this);
-    leftEyeball->eyeballDiameter = 24.0f;
-    rightEyeball->eyeballDiameter = 24.0f;
-    foreheadTarget->outerRingDiameter = 10.0f;
-    head->components.push_back(foreheadTarget);
-    head->components.push_back(leftEyeball);
-    head->components.push_back(rightEyeball);
-    setupModel->heads.push_back(head);
-
-    // TODO: some of these could be done under the hood in setupModel by setters (?)
-    // These are just the sizes for a random Basler camera model
-    cameraComponent->dim = { 29.0, 29.0, 48.0 };
-    cameraComponent->loc = { 15.0, 5.0, 10.0 };
-    cameraComponent->rot = { -15, 0, 0 };
-    //
-    sensorComponent->dim = { sensorComponent->effectiveSizeX(), sensorComponent->effectiveSizeY(), 1.0 };
-    sensorComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y(), cameraComponent->loc.z() + cameraComponent->dim.z()/2.0f - cameraComponent->flangeDistance };
-    sensorComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y(), cameraComponent->rot.z() };
-    //
-    lensComponent->dim = { lensComponent->outerDiameter, lensComponent->outerDiameter, lensComponent->sholuderToFirstSurfaceDistance };
-    lensComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y(), cameraComponent->loc.z() + cameraComponent->dim.z()/2.0f + lensComponent->sholuderToFirstSurfaceDistance /2.0f };
-    lensComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y(), cameraComponent->rot.z() };
-    //
-    filterComponent->dim = { lensComponent->outerDiameter, lensComponent->outerDiameter, 2.0 }; // assuming that 1 mm is okay for the half of a display thickness
-    filterComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y(), cameraComponent->loc.z() + cameraComponent->dim.z()/2.0f + lensComponent->sholuderToFirstSurfaceDistance + filterComponent->dim.z()/2.0f };
-    filterComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y(), cameraComponent->rot.z() };
-    //
-    illuminatorComponent->dim = { 40.0f, 40.0f, 2.0 };
-    illuminatorComponent->loc = { cameraComponent->loc.x() + 100.0f, cameraComponent->loc.y(), cameraComponent->loc.z() };
-    illuminatorComponent->rot = { cameraComponent->rot.x(), cameraComponent->rot.y() - 10.0f, cameraComponent->rot.z() };
-    //
-    screenComponent->dim = { screenComponent->physicalSizeX, screenComponent->physicalSizeY, 5.0f };
-    screenComponent->loc = { cameraComponent->loc.x(), cameraComponent->loc.y() + cameraComponent->dim.y() + 20.0f + screenComponent->physicalSizeY/2.0f, cameraComponent->loc.z() };
-    screenComponent->rot = { 0.0f, 0.0f, 0.0f };
-    //
-    // 60 mm is an average human intercanthal distance
-    leftEyeball->dim = { leftEyeball->eyeballDiameter/2.0f, leftEyeball->eyeballDiameter/2.0f, leftEyeball->eyeballDiameter/2.0f };
-    leftEyeball->loc = { 0 - 60.0f/2.0f, screenComponent->loc.y() + 10.0f, 580.0f };
-    //leftEyeball->rotX = 90.0f; // to be looking at the screen now // TODO: valamiért úgy tűnik a forgatást a translate után teszi rá, ezért elkerül tök messze a szem
-    leftEyeball->rot = { 0.0f, 0.0f, 0.0f };
-    //
-    // 60 mm is an average human intercanthal distance
-    rightEyeball->dim = { rightEyeball->eyeballDiameter/2.0f, rightEyeball->eyeballDiameter/2.0f, rightEyeball->eyeballDiameter/2.0f };
-    rightEyeball->loc = { 0 + 60.0f/2.0f, screenComponent->loc.y() + 10.0f, 580.0f };
-    //rightEyeball->rotX = 90.0f; // to be looking at the screen now // TODO: valamiért úgy tűnik a forgatást a translate után teszi rá, ezért elkerül tök messze a szem
-    rightEyeball->rot = { 0.0f, 0.0f, 0.0f };
-    //
-    foreheadTarget->dim = { foreheadTarget->outerRingDiameter, foreheadTarget->outerRingDiameter, 1.0 };
-    foreheadTarget->loc = { 0, screenComponent->loc.y() + 10.0f + 30.0f, 575.0f };
-    foreheadTarget->rot = { 0.0f, 0.0f, 0.0f };
-
-    // TODO: rot and loc is the right order of mentioning everywhere, as the rotation is first only made with respect to
-    //      the component's own axes, and then translated is the component somewhere else.
-    //      Especially, head should have easy setters that will make eyeballs move and rotate when the head moves.
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //SetupModelTreeModel setupModelTreeModel(QString::fromUtf8(file.readAll()));
-    //file.close();
-    /*
-    SetupModelTreeModel setupModelTreeModel(setupModel);
-
-    setupModelTree->setModel(&setupModelTreeModel);
-    setupModelTree->setWindowTitle(SetupModelTreeModel::tr("Simple Tree Model"));
-    for (int c = 0; c < setupModelTreeModel.columnCount(); ++c)
-        setupModelTree->resizeColumnToContents(c);
+    //QJsonModel * model1 = new QJsonModel;
+    setupModelTree = new QTreeView;
+    setupModelTree->setModel(setupModel->rep);
+    setupModelTree->setSelectionMode(QAbstractItemView::SingleSelection);
+//    setupModelTree->setItemDelegateForRow()
+    //model1->load("example.json");
     setupModelTree->expandAll();
-    const auto screenSize = setupModelTree->screen()->availableSize();
-    setupModelTree->resize({screenSize.width() / 2, screenSize.height() * 2 / 3});
-    setupModelTree->show();
-     */
+    //setupModelTree->setFirstColumnSpanned()
+    // hide all rows that show dim, loc, rot
+    QList<QJsonTreeItem*> itemsToHide;
+    // TODO NOTE: MODELINDEX IS JUST THE QJSONTREEITEM POINTER, CAST DIFFERENTLY
+    itemsToHide.append(setupModel->findItemsByKey("Dim"));
+    itemsToHide.append(setupModel->findItemsByKey("Loc"));
+    itemsToHide.append(setupModel->findItemsByKey("Rot"));
+    for(int k = 0; k < itemsToHide.size(); k++) {
+        QJsonTreeItem* ith = itemsToHide[k];
+        QModelIndex ithmi = setupModel->rep->parentIndexByItem(ith);
+        setupModelTree->setRowHidden(ith->row(), ithmi, true);
+    }
 
-    QJsonModel * model = new QJsonModel;
-    QTreeView * view = new QTreeView;
-    view->setModel(model);
-    model->load("example.json");
 
+    QList<QJsonTreeItem*> aa;
+    aa = setupModel->findItemsByKeyAndParentKey("Resolution X", "Screen");
+    if(~aa.empty()) {
+        aa[0]->setEditable(true);
+        setupModel->subscribeOutbound(this, SLOT(screenResolutionXChanged(QVariant)),aa[0]);
+    }
+
+    aa = setupModel->findItemsByKeyAndParentKey("Resolution Y", "Screen");
+    if(~aa.empty()) {
+        aa[0]->setEditable(true);
+        setupModel->subscribeOutbound(this, SLOT(screenResolutionYChanged(QVariant)),aa[0]);
+    }
+
+    aa = setupModel->findItemsByKeyAndParentKey("Physical Size X", "Screen");
+    if(~aa.empty()) {
+        aa[0]->setEditable(true);
+        setupModel->subscribeOutbound(this, SLOT(screenPhysicalSizeXChanged(QVariant)),aa[0]);
+    }
+
+    aa = setupModel->findItemsByKeyAndParentKey("Physical Size Y", "Screen");
+    if(~aa.empty()) {
+        aa[0]->setEditable(true);
+        setupModel->subscribeOutbound(this, SLOT(screenPhysicalSizeXChanged(QVariant)),aa[0]);
+    }
+    // TODO: ne abc rendben legyenek a json nodeok, hanem mindig a components legyen legalul
     //
-    qtOpenGlViewer->setSetupModel(setupModel);
+    // TODO: JSOn beolvasó ne menjen tönkre ha véletlenül egy 2 objektumot elválasztó vessző hiányzik a fájlból, vagy véletlenül a legutolsó elem után még van egy vessző de nincs utsó elem
+    //
+    // TODO: link screen 1 Physical Size X and Y, and resolution X and Y to signals into eyetracking class for refresh
+    // TODO: and also physical setup-dependent size-change refresh function(s) that substitute grometrical constraints in our simplistic geometry model
+    // TODO: and also trigger GLView and treeview/model refresh.
+    // TODO: And also set these values editable, but all others (DPI, etc. non-editable. Those will be updated however in the tree view by out setup-dependent refresh function(s)
+    //
+    // TODO: do the same for illuminator component:
+    //     all values are read only
+    //     illuminator properties can be automatically filled and changed if we choose a different illuminator from a list (TBD later)
+    //      operating current and others can be updated by program only
+    //
+    // TODO: eyeball properties, and CVTarget properties are also read only
+    //
+    // TODO: sensor properties are all read only, filled out automatically by program, depending on camera selection
+    //
+    // TODO: lens properties are read only
+    //
+    // TODO: filter auto filled by program from selection, read only. TBD later for screw-on/screw-in
+    //
+    // TODO: camera all properties are filled by program yet
+    //
+    // TODO: the properties for camera, etc will either be auto filled by program, from another JSon... TBD later: custom item addition, and editing to those
+    setupModelTree->header()->setStretchLastSection(false);
+    setupModelTree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
+    setupModelTree->setMouseTracking(true);
+    setupModelTree->setColumnWidth(0, 100);
+    //setupModelTree->setColumnWidth(1, 100);
+    //setupModelTree->setColumnWidth(2, 100);
+
+//    setupModelTree->setB
+
+    //setupModel->rep->find
+    connect(setupModelTree->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)), this, SLOT(onGeomSelectionChanged(QItemSelection, QItemSelection)));
+    //connect(setupModelTree->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)), this, SLOT(onGeomSelectionChanged(QItemSelection, QItemSelection)));
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     qtOpenGlViewer->update();
     qtOpenGlViewer->goToDefaultView(4);
 
@@ -505,4 +430,35 @@ void SetupGeometryDialog::showSetupHelp(SetupHelp setupHelp) {
     }
 
 }
+
+void SetupGeometryDialog::onGeomSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected) {
+
+    dynamic_cast<QJsonModel *>(setupModelTree->model())->unhighlightAllSilently();
+
+    // Normally this should never happen, but still we need to check
+    if(selected.indexes().isEmpty()) {
+        return;
+    }
+
+    QJsonTreeItem *selectedItem = static_cast<QJsonTreeItem *>(selected.indexes()[0].internalPointer());
+    if(selectedItem->childCount() == 0) {
+        qtOpenGlViewer->highlightGeom(selectedItem->parent());
+        setupModelTree->model()->setData(selected.indexes()[0].parent(), true, Qt::BackgroundRole);
+    } else {
+        qtOpenGlViewer->highlightGeom(selectedItem);
+    }
+    qtOpenGlViewer->update();
+    setupModelTree->model()->setData(selected.indexes()[0], true, Qt::BackgroundRole);
+
+}
+
+
+
+
+
+
+
+
+
+
 

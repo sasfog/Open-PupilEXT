@@ -10,6 +10,10 @@
 #include <vector>
 #include <algorithm>
 
+#include "quazip/quazip.h"
+#include "quazip/quazipfile.h"
+
+
 
 enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
 
@@ -34,9 +38,34 @@ Q_OBJECT
 
 public:
 
-    explicit ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
+    explicit ImageReader(QString imageSource, int subrecordingNumber, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
 
     ~ImageReader() override;
+
+    enum ImageReaderStatus {
+        IMSTATUS_UNDETERMINED,
+        IMSTATUS_OK,
+        IMSTATUS_ERROR,
+        IMSTATUS_ZIP_INDECISIVE
+    };
+
+    enum ImageReaderSource {
+        IMSOURCE_UNDETERMINED,
+        IMSOURCE_DIRECTORY,
+        IMSOURCE_ZIP
+    };
+
+    struct ZipMultiInfo {
+        QString recordingName;
+        quint64 recordingLength;
+    };
+
+    ImageReaderStatus getImageReaderStatus() {
+        return imageReaderStatus;
+    }
+    ImageReaderSource getImageReaderSource() {
+        return imageReaderSource;
+    };
 
     bool isPlaying() {
         return PlaybackState::PLAYING == state;
@@ -71,9 +100,9 @@ public:
     cv::Mat getStillImageSingle(int frameNumber);
     std::vector<cv::Mat> getStillImageStereo(int frameNumber);
 
-    QString getImageDirectoryName() {
-        return imageDirectory.absolutePath();
-    }
+//    QString getImageDirectoryName() {
+//        return imageSourceDir.absolutePath();
+//    }
     int getImageWidth() {
         return foundImageWidth;
     }
@@ -125,6 +154,24 @@ public:
             frameNumber=0;
         currentImageIndex = frameNumber;
     }
+    QVector<ZipMultiInfo> getFoundZipMultiInfo() {
+        return foundZipMultiInfo;
+    }
+    QString getOfflineEventLogContent() {
+        return offlineEventLogContent;
+    }
+    QString getMetaSnapshotContent() {
+        return metaSnapshotContent;
+    }
+    uint64 getRecLenFromFileNamesList(const QStringList &fileNameCandidates) {
+        bool ok;
+        QString startTsStr = fileNameCandidates[0];
+        QString endTsStr = fileNameCandidates[fileNameCandidates.size()-1];
+        startTsStr = startTsStr.mid(startTsStr.lastIndexOf("/")+1, startTsStr.length()-(startTsStr.lastIndexOf("/")+2+zipSuffix.length()));
+        endTsStr = endTsStr.mid(endTsStr.lastIndexOf("/")+1, endTsStr.length()-(endTsStr.lastIndexOf("/")+2+zipSuffix.length()));
+        qDebug() << (endTsStr.toULongLong(&ok, 10) - startTsStr.toULongLong(&ok, 10));
+        return (endTsStr.toULongLong(&ok, 10) - startTsStr.toULongLong(&ok, 10));
+    }
 
     void setSynchronised(bool synchronised);
 
@@ -136,9 +183,20 @@ private:
     QWaitCondition *imagePublished;
     QWaitCondition *imageProcessed;
 
-    QDir imageDirectory;
+    ImageReaderStatus imageReaderStatus = IMSTATUS_UNDETERMINED;
+    ImageReaderSource imageReaderSource = IMSOURCE_UNDETERMINED;
 
-    std::vector<std::string> filenames, filenamesSecondary;
+    //QDir imageSourceDir;
+    QuaZip* imageSourceZip = nullptr;
+    QuaZipFile* imageSourceZipInnerFile = nullptr;
+    QuaZipFileInfo info;
+
+    bool initSuccessful = false;
+
+    QVector<QStringList> fileNames {QStringList(), QStringList()};
+
+    const QString zipSuffix = "zip";
+
 
     uint64 startTimestamp;
     int playbackSpeed;
@@ -160,7 +218,21 @@ private:
     int foundImageWidth = 0;
     int foundImageHeight = 0;
 
-    void purgeFilenamesVector(std::vector<cv::String> &filenames);
+
+    QVector<ZipMultiInfo> foundZipMultiInfo;
+    QVector<QString> zS_recordingNames;
+    QVector<int> zS_recordingLengths;
+
+    QString offlineEventLogContent;
+    QString metaSnapshotContent;
+
+    void exploreZip(const QString &imageSource, const int &subrecordingNumber);
+    QString findMostFrequentExtension(const QStringList &fileNameCandidates);
+    QStringList purgeFileNamesVector(QStringList fileNameCandidates);
+    std::vector<quint64> extractAcqTimestamps(const QStringList &fileNameCandidates);
+
+    bool quickReadImageSingle(cv::Mat &img, const int &imageIndex);
+    bool quickReadImageStereo(cv::Mat &img, cv::Mat &imgSecondary, const int &imageIndex);
 
     void run();
     void runImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img);
@@ -175,7 +247,7 @@ public slots:
     void stop();
     void pause();
 
-    void step1frame(bool next);
+    //void step1frame(bool next);
 
 signals:
 

@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
             QCoreApplication::setApplicationName("PupilEXT");
             QCoreApplication::setApplicationVersion("0.1.3 Beta");
 
+            // TODO 2025.07.09: something with QMap<QString,QList<float>> in LLDB
             // NOTE: these calls will not be needed in Qt6, only in Qt5
             //qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
             //qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");

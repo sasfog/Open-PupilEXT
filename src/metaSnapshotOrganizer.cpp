@@ -177,7 +177,8 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         FileCamera *fileCamera = dynamic_cast<FileCamera *>(camera);
         QDomElement cameraNode = document.createElement("camera");
         // only live camera devices have the calibration file name
-        cameraNode.setAttribute("ImageDirectory", fileCamera->getImageDirectoryName()); 
+//        cameraNode.setAttribute("ImageDirectory", fileCamera->getImageDirectoryName());
+        cameraNode.setAttribute("ImageDirectory", "__DEV__"); // TODO: use imageReader, once we make it a real thread-safe, singleton class (alongside with pupilDetection, imageWriter, and dataWriter)
 
         QDomElement imageSize = document.createElement("ImageSize");
         imageSize.setAttribute("width", fileCamera->getImageWidth()); 

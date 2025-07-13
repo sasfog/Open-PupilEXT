@@ -10,7 +10,7 @@ RecEventTracker::RecEventTracker(QObject *parent) : QObject(parent),
 }
 
 // storage mode (vectors filled and can be read anytime)
-RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QObject(parent),
+RecEventTracker::RecEventTracker(const QString &offlineEventLogContent, QObject *parent) : QObject(parent),
                                                                              applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
 {
 
@@ -18,7 +18,7 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
 
     // std::cout << "RecEventTracker(const QString& fileName, QObject *parent = 0)" << std::endl;
     // std::cout << "File name = " << fileName.toStdString() << std::endl;
-
+    /*
     dataFile = new QFile(fileName);
     int numLines = 0;
     // NOTE: not necessarily an error if this file does not exist
@@ -29,15 +29,16 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
         dataFile = nullptr;
         return;
     }
+    */
 
     int errLn;
     int errCol;
     QString errStr;
     QDomDocument domDocument;
-    if (!domDocument.setContent(dataFile, true, &errStr, &errLn,
+    if (!domDocument.setContent(offlineEventLogContent, true, &errStr, &errLn,
                                 &errCol))
     {
-        std::cout << tr("Could open offline event log XML file, but persing failed at: line %1, column %2\nError: %3")
+        std::cout << tr("Could open offline event log XML file, but parsing failed at: line %1, column %2\nError: %3")
                          .arg(errLn)
                          .arg(errCol)
                          .arg(errStr)
@@ -122,7 +123,7 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
         child = child.nextSiblingElement("Message");
     }
 
-    dataFile->close();
+    //dataFile->close();
     storageReady = true;
 }
 
@@ -441,6 +442,21 @@ RecEventTracker::TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 t
     return (emptyElem);
 }
 
+// TODO: when playback, store the last index, and start lookup only from that index, to spare calculation
+RecEventTracker::GazeTarget RecEventTracker::getGazeTarget(quint64 timestamp)
+{
+    GazeTarget emptyElem;
+    if (gazeTargets.size() < 1)
+        return emptyElem;
+
+    for(int i = (gazeTargets.size()-1); i >= 0; i--) {
+        if (gazeTargets[i].timestamp <= timestamp) {
+            return gazeTargets[i];
+        }
+    }
+    return (emptyElem);
+}
+
 /*
 Message RecEventTracker::getMessage(quint64 timestamp)
 {
@@ -489,6 +505,10 @@ void RecEventTracker::addTrialIncrement(quint64 timestamp, uint trialNumber)
 {
     trialIncrements.push_back(TrialIncrement{timestamp, trialNumber});
     // NOTE: there is no increment here, so properly monotonically increasing trial numbering should be cared for in the caller class
+}
+
+void RecEventTracker::addGazeTarget(quint64 timestamp, uint id, uint x, uint y) {
+    gazeTargets.push_back(GazeTarget{timestamp, id, x, y});
 }
 
 void RecEventTracker::addMessage(const quint64 &timestamp, const QString &str)

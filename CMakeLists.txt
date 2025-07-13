@@ -103,6 +103,7 @@ set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPL
 set(TBB_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
 set(Eigen3_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
 set(Ceres_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
+#set(BZip2_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
 set(glog_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glog")
 # TODO: It seems that boost has no config file in vcpkg. The dirs need to be set manually on mac
 # ------------------------------------------------------------------------------------------------
@@ -112,8 +113,9 @@ find_package(OpenCV CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
+find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
 find_package(glog CONFIG REQUIRED)
-find_package(Qt6 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
+find_package(Qt6 COMPONENTS Core5Compat Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
 
 #find_package(Boost CONFIG REQUIRED)
@@ -149,6 +151,12 @@ else()
 message(STATUS "----- Ceres packageconfig was not found ! -----")
 endif()
 
+if(bzip2_FOUND) # DOES NOT HAVE CONFIG.CMAKE
+    message(STATUS "----- BZip2 was found -----")
+else()
+    message(STATUS "----- BZip2 packageconfig was not found ! ----- -------------------------------------------------------------------------")
+endif()
+
 if(Boost_FOUND)
 message(STATUS "----- Boost was found -----")
 else()
@@ -166,6 +174,7 @@ set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGE
 set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(BZip2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###########################################################
 # -------------------------------------------------------
 
 # Adjustments for spii -------------------------------------------------------
@@ -224,6 +233,26 @@ message(STATUS "--------------------- SPII manual mode ---------------------")
 endif()
 # -------------------------------------------------------
 
+# Adjustments for QuaZip -------------------------------------------------------
+set(QUAZIP_USE_QT_ZLIB OFF) # Qt's zlib is for internal use, and might not be found easily when building on some platforms, let's not use it
+set(QuaZip_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/QuaZip/quazip/")
+set(QuaZip_LIB_DIR lib)
+set(QuaZip_INSTALL_DIR "3rdparty/QuaZip/build")
+set(QuaZip_LIB_NAME 3rdparty/QuaZip)
+
+# Autimatic build for QuaZip
+message(STATUS "--------------------- QuaZip automatic mode ---------------------")
+# Check install status of the library
+find_library(QuaZip_LIBRARY_RELEASE
+        QuaZip
+        PATHS ${CMAKE_BINARY_DIR}/lib/)
+
+message(STATUS "--------------------- QuaZip not found will be installed (automatic) ---------------------")
+add_subdirectory(${QuaZip_LIB_NAME})
+link_directories(${CMAKE_BINARY_DIR}/lib)
+set(QuaZip_LIBRARIES "")
+# -------------------------------------------------------
+
 # Output of initial values -----------------------------------------------
 message("----- Output of ENDING values -----")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
@@ -231,7 +260,9 @@ message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
 # ------------------------------------------------------------------------
 
-include_directories(${Qt6Core_INCLUDE_DIRS}
+include_directories(
+        ${Qt6Core5Compat_INCLUDE_DIRS}
+        ${Qt6Core_INCLUDE_DIRS}
         ${Qt6Widgets_INCLUDE_DIRS}
         ${Qt6Concurrent_INCLUDE_DIRS}
         ${Qt6SerialPort_INCLUDE_DIRS}
@@ -245,8 +276,10 @@ include_directories(${Qt6Core_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
         ${spii_INCLUDE_DIR}
+        ${QuaZip_INCLUDE_DIR}
         ${EIGEN_INCLUDE_DIR}
         ${CERES_INCLUDE_DIRS}
+        ${BZip2_INCLUDE_DIRS} ########################################################
         ${PYLON_INCLUDE_DIR}
         "singleeyefitter")
 
@@ -258,6 +291,7 @@ add_subdirectory(singleeyefitter)
 
 message(STATUS "")
 message(STATUS "--- Include directories ---" )
+message(STATUS " Qt6Core5Compat_INCLUDE_DIRS: ${Qt6Core5Compat_INCLUDE_DIRS}")
 message(STATUS " QT6Core_INCLUDE_DIRS: ${Qt6Core_INCLUDE_DIRS}")
 message(STATUS " Qt6Concurrent_INCLUDES: ${Qt6Concurrent_INCLUDE_DIRS}")
 message(STATUS " Qt6SerialPort_INCLUDES: ${Qt6SerialPort_INCLUDE_DIRS}")
@@ -272,8 +306,10 @@ message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
 message(STATUS " tbb_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}")
 message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIR}")
+message(STATUS " QuaZip_INCLUDE_DIRS: ${QuaZip_INCLUDE_DIR}")
 message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
 message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}")
+message(STATUS " BZip2_INCLUDE_DIRS: ${BZip2_INCLUDE_DIRS}") ########################################################
 message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}")
 message(STATUS "---------------------------" )
 message(STATUS "")

@@ -5,7 +5,7 @@
 #include <QtWidgets/QSpinBox>
 #include <iostream>
 #include "imagePlaybackControlDialog.h"
-#include "timestampSpinBox.h"
+#include "custom-widgets/timestampSpinBox.h"
 #include "../SVGIconColorAdjuster.h"
 
 

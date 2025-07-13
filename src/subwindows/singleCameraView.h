@@ -7,7 +7,7 @@
 #include <QtCore/qobjectdefs.h>
 #include <QtWidgets/QWidget>
 
-#include "videoView.h"
+#include "custom-widgets/videoView.h"
 #include "../devices/singleCamera.h"
 #include "../pupilDetection.h"
 

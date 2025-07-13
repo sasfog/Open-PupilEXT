@@ -6,10 +6,10 @@
 #include <QtCore/QTextStream>
 #include <QVector3D>
 #include "pupil-detection-methods/Pupil.h"
+#include "./subwindows/QJsonModel/QJsonModel.hpp"
+#include "subwindows/QtOpenGLViewer/QtOpenGLViewer.h"
 
 #include <QtMath>
-
-//#include "subwindows/QtOpenGlViewer/QtOpenGlViewer.h"
 
 #include <QSettings>
 #include <QCoreApplication>
@@ -36,6 +36,7 @@ struct ComponentDataCitation {
     QString lastAccessed;
 };
 
+/*
 enum SetupModelComponentType {
     CAMERA,
     SENSOR,
@@ -46,329 +47,7 @@ enum SetupModelComponentType {
     CVTARGET,
     EYEBALL
 };
-
-class Component : public QObject {
-Q_OBJECT
-public:
-    explicit inline Component(QObject *parent = 0) : QObject(parent) {};
-
-    virtual SetupModelComponentType getType() = 0;
-    int leafDepth = 1;
-
-    // Component *parentComponent;
-    // char id;
-
-    // dimensions of the model box
-    QVector3D dim = {1.0f, 1.0f, 1.0f}; // mm
-
-    // in world coordinates
-    QVector3D loc = {0.0f, 0.0f, 0.0f}; // mm
-    QVector3D rot = {0.0f, 0.0f, 0.0f}; // rad
-
-    // NOTE: if a component is disabled, it will not be taken into any calculations.
-    // If it is a vital component, then the program will show that it cannot currently calculate geometries
-    // until the user sets properties properly and enables the element again
-    // TODO?: this could be a method, which upon call, checks if all needed component parameters are set
-    bool enabled = true;
-
-    //virtual void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) = 0;
-
-    QVector<ComponentDataCitation> componentDataCitations;
-
-    QVector<Component*> components;
-
-    virtual void enable() {enabled = true;};
-    virtual void disable() {enabled = false;};
-};
-
-// A unit is made of components but it does not show in 3D space in the model view widget
-// TODO: should there be different derived classes for illuminatorUnit, cameraUnit, etc. with own get methods that do calculations?
-class Unit : public QObject {
-Q_OBJECT
-public:
-    explicit inline Unit(QObject *parent = 0) : QObject(parent) {};
-
-    // NOTE: if a component is disabled, it will not be taken into any calculations.
-    // If it is a vital component, then the program will show that it cannot currently calculate geometries
-    // until the user sets properties properly and enables the element again
-    // TODO?: this could be a method, which upon call, checks if all needed component parameters are set
-    bool enabled = true;
-
-    //QVector<ComponentDataCitation> componentDataCitations;
-
-    QVector<Component*> components;
-
-    virtual void enable() {enabled = true;};
-    virtual void disable() {enabled = false;};
-};
-
-// possible derived classes: CameraUnit, IlluminatorUnit, ScreenUnit, Head
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class CameraComponent : public Component {
-Q_OBJECT
-public:
-    explicit CameraComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return CAMERA; };
-    int leafDepth = 1; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCuboidAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //- cameraIdentity // string // Main or Secondary
-    QString componentVendor;
-    QString componentType;
-    QString componentProductFamily;
-    QString componentSerialNumber;
-    float flangeDistance; // i.e. sensor to lens mount distance. Actually this is a feature of mount type, e.g. C-mount is 17.526 mm, BUT s-mount has no fixed flange distance
-    QString lensMountType; // c-mount / cs-mount / s-mount (= M12)
-    QString dataInterfaceType; // GigE / USB3 / CoaXPress
-    float operatingCurrent; // A // This is a typical value. Maximum can be 10-15% larger
-    float operatingVoltage; // V
-    QList<CameraConnectorPin> cameraConnectorPins;
-    QString cameraConnectorType; // e.g. M8 6-PIN female, A-coded, IEC 61076-2-104
-    float defaultFramerate;
-
-    // - components
-    //						// sensor could be a component...
-    //						// mount could be a component
-};
-
-class LensComponent : public Component {
-Q_OBJECT
-public:
-    explicit LensComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return LENS; };
-    int leafDepth = 2; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCylinderAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    QString componentVendor;
-    QString componentType;
-    //QString componentProductFamily;
-    //QString componentSerialNumber;
-    QString suggestedSensorSizeRating; // E.g. 1/2"
-    bool isVarifocal = false;
-    float focalDistanceMin; // mm
-    float focalDistanceMax; // mm
-    float focalDistanceActual; // mm // --------------------------------
-    float fValueMin;
-    float fValueMax;
-    float fValueActual; // ---------------------------------
-    float sholuderToFirstSurfaceDistance; // mm
-    float outerDiameter; // mm // when there are no adjustment screws attached
-    float frontFilterDiameter; // mm
-};
-
-class SensorComponent : public Component {
-Q_OBJECT
-public:
-    explicit SensorComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return SENSOR; };
-    int leafDepth = 2; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCuboidAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    QString componentVendor;
-    QString componentType;
-    //QString componentProductFamily;
-    //QString componentSerialNumber;
-
-    QString shutterType; // Rolling or Global (but it should be Global anyway)
-    bool isMonochrome;
-    QString sensorTechnology;
-    unsigned short resolutionX; // px
-    unsigned short resolutionY; // px
-    float resolution() { return resolutionX*resolutionY/1000000.0f; }; // MP
-    QString format; // E.g. 1/2" (but can be calculated from sensorSizeX and sensorSizeY and sensorPixelSize) // TODO: compute on demand
-    float effectiveDiagonal() { return qSqrt(qPow(effectiveSizeX(),2)+qPow(effectiveSizeY(),2)); }; // mm
-    float pixelSize; // um
-    float effectiveSizeX() { return resolutionX*pixelSize/1000.0f; }; // mm
-    float effectiveSizeY() { return resolutionY*pixelSize/1000.0f; }; // mm
-    float aspectRatio() { return resolutionX/resolutionY; }; // E.g. 3/4 (but can be calculated from sensorSizeX and sensorSizeY)
-
-    //    float sensorDarkNoise; // E
-    //QEPoint sensorSensitivityCurve[]; // QEPoint {short, float} tömb
-    //    float sensorSensitivityCurve[70]; // 400 nm-1100 nm, one sample per 10 nm, = 70 elements
-    // quantum efficiency for each wavelength, can be used to calculate
-    // (knowing the expected reflectancy of the target, and the amount of
-    // controlled+external light, to determine the necessary expo and
-    // gain values)
-};
-
-class FilterComponent : public Component {
-Q_OBJECT
-public:
-    explicit FilterComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return FILTER; };
-    int leafDepth = 2; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCylinderAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    QString componentVendor;
-    QString componentType;
-    //QString componentProductFamily;
-    //QString componentSerialNumber;
-    QString mountingType; // screw-on, screw-in, embedded
-    QString opticalBehaviour; // lowpass, highpass, bandpass
-    QString principle; // absorption / interference
-    float lowpassCuton; // nm // optional
-    float highpassCutoff; // nm // optional
-//    float transmissionCurve[70]; // 400 nm-1100 nm, one sample per 10 nm, = 70 elements // attenuation can be calculated
-    // - attenuationBetween(lowEnd, highEnd)
-    float filterDiameter; // mm
-    // + thickness?
-};
-
-class IlluminatorComponent : public Component {
-Q_OBJECT
-public:
-    explicit IlluminatorComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return ILLUMINATOR; };
-    int leafDepth = 1; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCuboidAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    QString atomicComponentVendor;
-    QString atomicComponentType;
-    QString componentVendor;
-    QString componentType;
-    //QString componentProductFamily;
-    //QString componentSerialNumber;
-    char numAtomicComponents; // how many LEDs it consists of
-    // in theory we could calculate total current, etc using the propertied of an atomic illuminator
-    // element (one LED), but it is not really good to rely on that, because it is not sure if they
-    // are all in series, or on parallel blocks
-    float operatingCurrentMin; // A
-    float operatingCurrentMax; // A
-    float operatingCurrentActual; // A // ------------------------------
-    float operatingVoltageMin; // V
-    float operatingVoltageMax; // V
-    float operatingVoltageActual; // C // ------------------------------
-    float operatingTemperatureMin; // C
-    float operatingTemperatureMax; // C
-    float operatingTemperatureActual; // C // ------------------------------
-    char radiationAngle; // of the cone in which most light is emitted
-    unsigned short emissionCentroid; // centroid wavelength, nm
-//    float radiantFluxMin; // W // that can leave the component when warmed up, and used at the lowest "power" option (when driverIsVariable)
-//    float radiantFluxMax; // W // that can leave the component when warmed up, and used at the highest "power" option (when driverIsVariable)
-//    float radiantFluxActual; // W
-//    float relativeSpectralEmissionCurve[70]; // x=lambda,nm; y=Irel,% // 400 nm-1100 nm, one sample per 10 nm, = 70 elements
-    //float relativeRadiantFluxCurve[ccc]; // x=IF,A; y=rel flux
-    //float radiationCurve[36]; // x=phi,deg; y=Irel,% // 0-90 deg, one sample per 2.5 deg, = 36 elements
-
-    bool driverIsConstantCurrent; // constantCurrent, constantVoltage
-    //QString driverTechnology; // Discrete, Analog, PWM/SMPS, ...
-    bool driverIsVariable;
-
-    // - components
-    //						// atomic is lehetne ide egyenként
-    //						// driver lehetne ide
-};
-
-class ScreenComponent : public Component {
-Q_OBJECT
-public:
-    explicit ScreenComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return SCREEN; };
-    int leafDepth = 1; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCuboidAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    QString componentVendor;
-    QString componentType;
-    //QString componentProductFamily;
-    //float curvatureX; // mm // radius, if the screen is bent in the X axis
-    //float curvatureY; // mm // radius, if the screen is bent in the X axis
-    unsigned int resolutionX; // px
-    unsigned int resolutionY; // px
-    float physicalSizeX; // mm
-    float physicalSizeY; // mm
-
-    // 1 DPMM = 25.4 DPI
-    // 1 DPI = 1 PPI (?)
-
-    // given that X and Y are using equally sized pixel sizes
-    float DPMM() { return resolutionX/physicalSizeX; };
-    float DPI() { return DPMM()/25.4f; };
-    float inchSize() { return qSqrt(physicalSizeX*physicalSizeX + physicalSizeY*physicalSizeY)/25.4f; };
-    //float frameRate; // Hz
-    //float tiltAngle // deg // if the screen is not normal to the floor plane. Negative values mean tilted upwards /towards the screen facing the ceiling
-    //float rotationAngle // deg // 0 and 90 means landscape and portrait
-};
-
-class CvTargetComponent : public Component {
-Q_OBJECT
-public:
-    explicit CvTargetComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return CVTARGET; };
-    int leafDepth = 2; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createCylinderAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    // TODO
-    float outerRingDiameter; // mm
-};
-
-class EyeballComponent : public Component {
-Q_OBJECT
-public:
-    explicit EyeballComponent(QObject *parent = 0) {};
-
-    SetupModelComponentType getType() override { return EYEBALL; };
-    int leafDepth = 2; // default minimum here
-
-    // Component *parentComponent;
-    // char id;
-
-    //
-    //void drawInGLWidget(QtOpenGLViewer *qtOpenGlViewer) { qtOpenGlViewer->createSpheroidAt(dimX, dimY, dimZ, locX, locY, locZ, rotX, rotY, rotZ); };
-
-    //
-    float eyeballDiameter;
-};
+ */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -380,34 +59,212 @@ public:
 class RemoteSetupModel : public QObject {
 Q_OBJECT
 public:
-    explicit RemoteSetupModel(QObject *parent = 0) : QObject(parent){};
+    explicit RemoteSetupModel(QString jsonFile, QtOpenGLViewer* GLViewer, QObject *parent = 0) : QObject(parent){
+        bool success = rep->load(jsonFile);
+        if(!success) {
+            success = rep->load("default.json"); // TODO, in resources
+        }
+
+        if(!success)
+            throw new QException();
+        //linkDataRSM();
+
+        rep->makeKeysFriendly();
+        //rep->modelReset();
+
+        linkedGLViewer = GLViewer;
+
+        mapGUITreeTo3DView();
+    };
     ~RemoteSetupModel() override {};
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    QVector<Unit*> cameraUnits;
-    QVector<Unit*> illuminatorUnits;
-    QVector<Unit*> screenUnits;
-    QVector<Unit*> heads;
+    QJsonModel* rep = new QJsonModel;
+    //QList<QJsonTreeItem*> GLViewRepresentedItems = nullptr;
 
-    void resetModel() {
-        // TODO:
-        cameraUnits.clear();
-        illuminatorUnits.clear();
-        screenUnits.clear();
-        heads.clear();
+    QtOpenGLViewer* linkedGLViewer = nullptr;
+
+
+    // TODO: beautify this thing. Perhaps knowing "ProcMode procMode" would be needed
+    // Returns the first matching occurence
+    QJsonTreeItem* findTreeItem(const QString &scope, const QString &key) {
+
+        // Get all items that have at least one child, that has
+        // the key (starting with the QString in the key) we specified.
+        auto allPossible = rep->findItemsByChildKey(key);
+
+        // NOTE:
+        // This level of search cannot directly happen inside the QJsonModel, so it is here instead.
+        // The reason is that, in later to-be-added, more complicated hardware setups (more than one illuminator, etc)
+        // it would be necessary to decide on more than one high-level properties to choose the right item in search.
+
+        if(scope == "LEFT_EYE") {
+            for (int i = 0; i < allPossible.size(); i++) {
+                if (//allPossible[i]->key().startsWith(key) &&
+                    allPossible[i]->/*parent()->*/key().startsWith("Eyeball") &&
+                    allPossible[i]->/*parent()->*/hasChildWithKeyAndValue("AnatomicalPosition", "Left")) {
+                    return allPossible[i];
+                }
+            }
+        } else if(scope == "RIGHT_EYE") {
+            for (int i = 0; i < allPossible.size(); i++) {
+                if (//allPossible[i]->key().startsWith(key) &&
+                    allPossible[i]->/*parent()->*/key().startsWith("Eyeball") &&
+                    allPossible[i]->/*parent()->*/hasChildWithKeyAndValue("AnatomicalPosition", "Right")) {
+                    return allPossible[i];
+                }
+            }
+        } else if(scope == "CVTARGET") {
+            for (int i = 0; i < allPossible.size(); i++) {
+                if (//allPossible[i]->key().startsWith(key) &&
+                    allPossible[i]->/*parent()->*/key().startsWith("CV Target")) {
+                    return allPossible[i];
+                }
+            }
+        } else if(scope == "HEAD") {
+            for (int i = 0; i < allPossible.size(); i++) {
+                if (//allPossible[i]->key().startsWith(key) &&
+                    allPossible[i]->/*parent()->*/key().startsWith("Head")) {
+                    return allPossible[i];
+                }
+            }
+        } else if(scope == "CAMERA") {
+            for (int i = 0; i < allPossible.size(); i++) {
+                if (//allPossible[i]->key().startsWith(key) &&
+                    allPossible[i]->/*parent()->*/key().startsWith("Camera")) {
+                    return allPossible[i];
+                }
+            }
+        } else if(scope == "ILLUMINATOR") {
+            for (int i = 0; i < allPossible.size(); i++) {
+                if (//allPossible[i]->key().startsWith(key) &&
+                    allPossible[i]->/*parent()->*/key().startsWith("Illuminator")) {
+                    return allPossible[i];
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    bool subscribeInbound(QObject *sender, const char *method, QJsonTreeItem* item, Qt::ConnectionType type = Qt::AutoConnection) {
+        if(!item)
+            return false;
+        return connect(sender, method, item, SLOT(setValue(QVariant)), type);
+    };
+    bool subscribeOutbound(QObject *receiver, const char *method, QJsonTreeItem* item, Qt::ConnectionType type = Qt::AutoConnection) {
+        if(!item)
+            return false;
+        return connect(item, SIGNAL(valueChanged(QVariant)), receiver, method, type);
+    };
+    bool subscribeInbound(QObject *sender, const char *method, const QString &scope, const QString &key, Qt::ConnectionType type = Qt::AutoConnection) {
+        QJsonTreeItem* item = findTreeItem(scope, key);
+        if(!item)
+            return false;
+        return connect(sender, method, item, SLOT(setValue(QVariant)), type);
+    };
+    bool subscribeOutbound(QObject *receiver, const char *method, const QString &scope, const QString &key, Qt::ConnectionType type = Qt::AutoConnection) {
+        QJsonTreeItem* item = findTreeItem(scope, key);
+        if(!item)
+            return false;
+        return connect(item, SIGNAL(valueChanged(QVariant)), receiver, method, type);
+    };
+    //
+    bool unsubscribeInbound(QObject *sender, const char *method, QJsonTreeItem* item) {
+        if(!item)
+            return false;
+        return connect(sender, method, item, SLOT(setValue(QVariant)));
     };
 
-    bool isInitialized() {
+    bool unsubscribeOutbound(QObject *receiver, const char *method, QJsonTreeItem* item) {
+        if(!item)
+            return false;
+        return disconnect(item, SIGNAL(valueChanged(QVariant)), receiver, method);
+    };
+    bool unsubscribeInbound(QObject *sender, const char *method, const QString &scope, const QString &key) {
+        QJsonTreeItem* item = findTreeItem(scope, key);
+        if(!item)
+            return false;
+        return disconnect(sender, method, item, SLOT(setValue(QVariant)));
+    };
+    bool unsubscribeOutbound(QObject *receiver, const char *method, const QString &scope, const QString &key) {
+        QJsonTreeItem* item = findTreeItem(scope, key);
+        if(!item)
+            return false;
+        return disconnect(item, SIGNAL(valueChanged(QVariant)), receiver, method);
+    };
+    //bool subscribeBothWays ...
+
+    QList<QJsonTreeItem*> findItemsByChildKey(const QString &key) {
+        return rep->findItemsByChildKey(key);
+    }
+    QList<QJsonTreeItem*> findItemsByKey(const QString &key) {
+        return rep->findItemsByKey(key);
+    }
+    QList<QJsonTreeItem*> findItemsByKeyAndParentKey(const QString &key, const QString &parentKey) {
+        return rep->findItemsByKeyAndParentKey(key, parentKey);
+    }
+
+    void mapGUITreeTo3DView() {
+
+        // get everything which has a dimension, so needs to be shown in the 3D view
+        QList<QJsonTreeItem*> items3D = rep->findItemsByChildKey("Dim");
+        QJsonTreeItem* p;
+
+        for (int i = 0; i < items3D.size(); i++) {
+            p = items3D[i]->parent();
+
+            qDebug() << p->key();
+            qDebug() << p->childrenWithKey("Dim")[0]->value();
+            qDebug() << p->childrenWithKey("Loc")[0]->value();
+            qDebug() << p->childrenWithKey("Rot")[0]->value();
+            qDebug() << "------------";
+
+            if (p->key().startsWith("Eyeball")) {
+                linkedGLViewer->addToScene({SPHEROID, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+                //connect(p, SIGNAL(valueChanged(QJsonTreeItem)), receiver, method, type);
+                //connect(highlightGeom(QJsonTreeItem* p)
+            } else if (p->key().startsWith("CV Target")) {
+                linkedGLViewer->addToScene({CYLINDER, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            } else if (p->key().startsWith("Camera")) {
+                linkedGLViewer->addToScene({CUBOID, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            } else if (p->key().startsWith("Sensor")) {
+                linkedGLViewer->addToScene({CUBOID, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            } else if (p->key().startsWith("Lens")) {
+                linkedGLViewer->addToScene({CYLINDER, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            } else if (p->key().startsWith("Filter")) {
+                linkedGLViewer->addToScene({CYLINDER, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            } else if (p->key().startsWith("Illuminator")) {
+                linkedGLViewer->addToScene({CUBOID, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            } else if (p->key().startsWith("Screen")) {
+                linkedGLViewer->addToScene({CUBOID, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });
+            }
+        }
+
+        // TODO: LINK ALL DIM, LOC, ROT item value changes to trigger GLView refresh and treeview/model refresh
+        // connect(selectionModel, SIGNAL(selectionChanged(const QItemSelection&,const QItemSelection&)), this, SLOT(mySelectionChanged(const QItemSelection&,const QItemSelection&)));
+
+    }
+
+    /*
+    void resetModelRSM() {
+        // TODO
+    };
+
+    bool isInitializedRSM() {
         return (!cameraUnits.isEmpty() && !illuminatorUnits.isEmpty() && !screenUnits.isEmpty() && !heads.isEmpty());
     };
+     */
 
-    bool isValid() {
+    bool isValidRSM() {
         // TODO: iteratively check if the model is "valid" so no impossible values exist, and can be used to start gaze tracking with
         return true;
     };
 
+    // TODO: ASAP 2025.7.29.
+/*
+    // TODO: MOVE TO GEOMETRY
     // TODO: the IPD should be constant, so there is no actual need for a function like this,
     //      although could be used for checking, as we will sometimes update eye locations
     float getInterPupillaryDistance() {
@@ -426,6 +283,7 @@ public:
 
         return hypot(hypot(eyes[0]->loc.x()-eyes[1]->loc.x(),eyes[0]->loc.y()-eyes[1]->loc.y()),eyes[0]->loc.z()-eyes[1]->loc.z());
     };
+    */
 
     //struct QEPoint {short x = 0; float y = 0;};
 /*
@@ -435,5 +293,135 @@ signals:
     void staticGeometryChanged();
     // When e.g. the head position is changed
     void dynamicGeometryChanged();
+*/
+
+
+
+
+/*
+    // Get dim and loc
+    std::tuple<QVector3D, QVector3D> dummy_getScreenParams() {
+
+
+
+        return std::tuple<QVector3D, QVector3D> { QVector3D(0,0,0), QVector3D(0,0,0) };
+
+        return std::tuple<QVector3D, QVector3D> {
+                setupModel->screenUnits[0]->components[0]->dim,
+                setupModel->screenUnits[0]->components[0]->loc
+        };
+    };
+
+    // Get loc
+    QVector3D dummy_getCamMidLoc() {
+        if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid() || setupModel->cameraUnits.empty() || setupModel->cameraUnits[0]->components.empty() )
+            return QVector3D(0,0,0);
+
+        QVector3D avgLoc = setupModel->cameraUnits[0]->components[0]->loc;
+        for( int i = 1; setupModel->cameraUnits.size() < 1; i++ ) {
+            avgLoc = (avgLoc + setupModel->cameraUnits[0]->components[0]->loc) / 2.0f;
+        }
+
+        return avgLoc;
+    };
+
+    float dummy_getHeadScreenDist() {
+        if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid() ||
+           setupModel->screenUnits.empty() || setupModel->screenUnits[0]->components.empty() ||
+           setupModel->heads.empty() || setupModel->heads[0]->components.empty()   )
+            return 0.0f;
+
+        QVector3D screenCenter =
+                ((setupModel->screenUnits[0]->components[0]->dim / 2.0f) +
+                 setupModel->screenUnits[0]->components[0]->loc);
+        QVector3D firstRandomheadComponentCenter =
+                ((setupModel->heads[0]->components[0]->dim / 2.0f) +
+                 setupModel->heads[0]->components[0]->loc);
+        return abs( screenCenter.distanceToPoint( firstRandomheadComponentCenter ) );
+    };
+*/
+
+
+
+
+
+
+/*
+    void trivi_sensorChanged
+
+    void trivi_setDefaultViews() {
+
+        std::tuple<QVector3D, QVector3D> screenParams = dummy_getScreenParams();
+
+        QVector3D camMidLoc = dummy_getCamMidLoc();
+
+        float headScreenDist = dummy_getHeadScreenDist();
+
+        switch(viewNumber) {
+            case 1:
+                // XY plane -- from front
+                // just arbitrary values of Z yet
+                camera.eye = QVector3D(
+                        std::get<1>(screenParams).x() /2.0f,
+                        std::get<1>(screenParams).y() /2.0f + 60.0f,
+                        headScreenDist // yet arbitrary -- "zoom" dist
+                );
+                camera.center = QVector3D(
+                        camera.eye.x(),
+                        camera.eye.y(),
+                        0
+                );
+                camera.up = QVector3D(0, 10, 0);
+                break;
+            case 2:
+                // ZY plane -- from side
+                camera.eye = QVector3D(
+                        headScreenDist, // yet arbitrary -- "zoom" dist
+                        std::get<1>(screenParams).y() /2.0f + 60.0f,
+                        headScreenDist /2.0f
+                );
+                camera.center = QVector3D(
+                        0,
+                        camera.eye.y(),
+                        camera.eye.z()
+                );
+                camera.up = QVector3D(0, 1, 0);
+                break;
+            case 3:
+                // ZX plane -- from top
+                camera.eye = QVector3D(
+                        0,
+                        headScreenDist *1.1f, // yet arbitrary -- "zoom" dist
+                        headScreenDist /2.0f
+                );
+                camera.center = QVector3D(
+                        camera.eye.x(),
+                        0,
+                        camera.eye.z()
+                );
+                camera.up = QVector3D(0, 0, -1);
+                break;
+            case 4:
+
+                QVector3D imaginaryBorundaryBoxDims = {
+                        std::get<1>(screenParams).x(),
+                        std::get<1>(screenParams).y() *2.5f,
+                        headScreenDist *0.9f // yet arbitrary
+                };
+
+                camera.eye = QVector3D(
+                        qSqrt(3)* (headScreenDist *0.4f) + imaginaryBorundaryBoxDims.x() /2.0f,
+                        qSqrt(3)* (headScreenDist *0.4f) + imaginaryBorundaryBoxDims.y() /2.0f,
+                        qSqrt(3)* (headScreenDist *0.4f) + imaginaryBorundaryBoxDims.z() /2.0f
+                );
+                camera.center = QVector3D(
+                        0 + imaginaryBorundaryBoxDims.x() /2.0f,
+                        0 + imaginaryBorundaryBoxDims.y() /2.0f,
+                        0 + imaginaryBorundaryBoxDims.z() /2.0f
+                );
+                camera.up = QVector3D(0, 1, 0);
+                break;
+        }
+    };
 */
 };

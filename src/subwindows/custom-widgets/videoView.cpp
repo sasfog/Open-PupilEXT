@@ -4,7 +4,7 @@
 #include <ctime>
 #include <opencv2/imgproc.hpp>
 #include "videoView.h"
-#include "../supportFunctions.h"
+#include "../../supportFunctions.h"
 
 constexpr QRectF VideoView::defaultROImiddleR;
 constexpr QRectF VideoView::defaultROIleftHalfR;

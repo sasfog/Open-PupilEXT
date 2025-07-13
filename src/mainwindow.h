@@ -47,6 +47,7 @@
 #include "subwindows/sceneImageView.h"
 #include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
+#include "subwindows/openZipChoiceDialog.h"
 
 
 /**
@@ -84,7 +85,7 @@ private:
 
     QString pupilDetectionDataFile;
     QString outputDirectory;
-    QString imageDirectory;
+    //QString imageDirectory;
     QString recentPath; 
 
     QMdiArea *mdiArea;
@@ -254,7 +255,7 @@ private:
 
     void resetStatus(bool isConnect);
 
-    void openImageDirectory(QString imageDirectory);
+    void openImageFileSource(QString imageSource, int subrecordingNumber);
     void setRecentPath(QString path);
 
     void connectCameraPlaybackChangedSlots();

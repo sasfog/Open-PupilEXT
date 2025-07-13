@@ -161,39 +161,6 @@ void QtOpenGLViewer::renderText(float x, float y, const QString &text, const QCo
     glPopAttrib();
 }
 
-void QtOpenGLViewer::drawComponentsRecursively(Component *component) {
-
-    if(component->getType() == CAMERA) {
-        auto c = dynamic_cast<CameraComponent*>(component);
-        createCuboidAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == SENSOR) {
-        auto c = dynamic_cast<SensorComponent*>(component);
-        createCuboidAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == LENS) {
-        auto c = dynamic_cast<LensComponent*>(component);
-        createCylinderAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == ILLUMINATOR) {
-        auto c = dynamic_cast<IlluminatorComponent*>(component);
-        createCuboidAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == FILTER) {
-        auto c = dynamic_cast<FilterComponent*>(component);
-        createCylinderAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == SCREEN) {
-        auto c = dynamic_cast<ScreenComponent*>(component);
-        createCuboidAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == CVTARGET) {
-        auto c = dynamic_cast<CvTargetComponent*>(component);
-        createCylinderAt(c->dim, c->loc, c->rot);
-    } else if(component->getType() == EYEBALL) {
-        auto c = dynamic_cast<EyeballComponent*>(component);
-        createSpheroidAt(c->dim, c->loc, c->rot);
-    }
-
-    for(int j = 0; j < component->components.size(); j++) {
-        drawComponentsRecursively(component->components[j]);
-    }
-};
-
 void QtOpenGLViewer::drawScene()
 {
     /*
@@ -210,32 +177,24 @@ void QtOpenGLViewer::drawScene()
 
     drawAxes();
 
-    if(!setupModel || !setupModel->isInitialized() || !setupModel->isValid())
-        return;
-
-    for(int i = 0; i < setupModel->cameraUnits.size(); i++) {
-        for(int j = 0; j < setupModel->cameraUnits[i]->components.size(); j++) {
-            drawComponentsRecursively(setupModel->cameraUnits[i]->components[j]);
+    for(int i = 0; i < _GUIGeoms.size(); i++) {
+        auto dim = _GUIGeoms[i].dimItem->value().value<QVector3D>();
+        auto loc = _GUIGeoms[i].locItem->value().value<QVector3D>();
+        auto rot = _GUIGeoms[i].rotItem->value().value<QVector3D>();
+        auto color = _geomColorBasic;
+        if(_GUIGeoms[i].isHighlighted) {
+            color = _geomColorHighlighted;
+        }
+        if(_GUIGeoms[i].a == CYLINDER) {
+            createCylinderAt(dim, loc, rot, color);
+        } else if(_GUIGeoms[i].a == SPHEROID) {
+            createSpheroidAt(dim, loc, rot, color);
+        } else if(_GUIGeoms[i].a == CUBOID) {
+            createCuboidAt(dim, loc, rot, color);
+        } else if(_GUIGeoms[i].a == CONE) {
+            createConeAt(dim, loc, rot, color);
         }
     }
-    for(int i = 0; i < setupModel->illuminatorUnits.size(); i++) {
-        for(int j = 0; j < setupModel->illuminatorUnits[i]->components.size(); j++) {
-            drawComponentsRecursively(setupModel->illuminatorUnits[i]->components[j]);
-        }
-    }
-    for(int i = 0; i < setupModel->screenUnits.size(); i++) {
-        for(int j = 0; j < setupModel->screenUnits[i]->components.size(); j++) {
-            drawComponentsRecursively(setupModel->screenUnits[i]->components[j]);
-        }
-    }
-    for(int i = 0; i < setupModel->heads.size(); i++) {
-        for(int j = 0; j < setupModel->heads[i]->components.size(); j++) {
-            drawComponentsRecursively(setupModel->heads[i]->components[j]);
-        }
-    }
-
-    // There should rather be getters, e.g. getLeftEyeball
-    //      és ezekből előteremtve a locX, locY, locZ értékeket, vonalat lehetne húzni a szemből a képernyőre merőlegesen, stb
 }
 
 void QtOpenGLViewer::drawHud(QPainter &painter)
@@ -475,12 +434,16 @@ QVector3D QtOpenGLViewer::pickPointInPlane(const QPointF &mousePosition, const Q
 
 void QtOpenGLViewer::goToDefaultView(int viewNumber)
 {
+    // TODO: 2025.07.09
     // Get dim and loc
-    std::tuple<QVector3D, QVector3D> screenParams = dummy_getScreenParams();
+//    std::tuple<QVector3D, QVector3D> screenParams = dummy_getScreenParams();
+    std::tuple<QVector3D, QVector3D> screenParams = {{0,0,0},{0,0,0}};
 
     //QVector3D camMidLoc = dummy_getCamMidLoc();
 
-    float headScreenDist = dummy_getHeadScreenDist();
+    // TODO: 2025.07.09
+//    float headScreenDist = dummy_getHeadScreenDist();
+    float headScreenDist = 600.0f;
 
     switch(viewNumber) {
         case 1:
@@ -882,9 +845,9 @@ void QtOpenGLViewer::mouseDoubleClickEvent(QMouseEvent *event)
 }
 
 // Used code from SO post by user CodeSurgeon: https://stackoverflow.com/a/41917591/11414500, Last accessed: 2024.10.27. 18:51 CET
-void QtOpenGLViewer::createCylinder(float r, float h, float n) {
+void QtOpenGLViewer::createCylinder(float r, float h, float n, const QColor &color) {
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    glColor3ub(255,255,0); // bright yellow
+    glColor3ub(color.red(), color.green(), color.blue());
 
     std::vector<QPointF> circle_pts;
     for(int i=0; i<n+1; i++) {
@@ -927,9 +890,9 @@ void QtOpenGLViewer::createCylinder(float r, float h, float n) {
 }
 
 // Used code from SO post by user CodeSurgeon: https://stackoverflow.com/a/41917591/11414500, Last accessed: 2024.10.27. 18:51 CET
-void QtOpenGLViewer::createCone(float r, float h, float n) {
+void QtOpenGLViewer::createCone(float r, float h, float n, const QColor &color) {
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    glColor3ub(255,255,0); // bright yellow
+    glColor3ub(color.red(), color.green(), color.blue());
 
     std::vector<QPointF> circle_pts;
     for(int i=0; i<n+1; i++) {
@@ -962,13 +925,13 @@ void QtOpenGLViewer::createCone(float r, float h, float n) {
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 
-void QtOpenGLViewer::createCube(GLfloat a) {
+void QtOpenGLViewer::createCube(GLfloat a, const QColor &color) {
 
     a /= 2.0;
 
     //glLineWidth(2);
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    glColor3ub(255,255,0); // bright yellow
+    glColor3ub(color.red(), color.green(), color.blue());
 
     glBegin(GL_QUADS);
     
@@ -1008,10 +971,9 @@ void QtOpenGLViewer::createCube(GLfloat a) {
 }
 
 // Used from SO post by user Max Collao: https://stackoverflow.com/a/30030112/11414500 Last accessed 2024.11.04. 09:10 CET
-void QtOpenGLViewer::createSphere(float r, int nParal, int nMerid){
-
+void QtOpenGLViewer::createSphere(float r, int nParal, int nMerid, const QColor &color) {
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    glColor3ub(255,255,0); // bright yellow
+    glColor3ub(color.red(), color.green(), color.blue());
 
     float x,y,z,i,j;
     for (j=0;j<M_PI; j+=M_PI/(nParal+1)){
@@ -1039,27 +1001,27 @@ void QtOpenGLViewer::createSphere(float r, int nParal, int nMerid){
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 
-void QtOpenGLViewer::createCylinderAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+void QtOpenGLViewer::createCylinderAt(QVector3D dim, QVector3D loc, QVector3D rot, const QColor &color) {
     startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
-    createCylinder(0.5, 1.0, 25.0);
+    createCylinder(0.5, 1.0, 25.0, color);
     endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
-void QtOpenGLViewer::createConeAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+void QtOpenGLViewer::createConeAt(QVector3D dim, QVector3D loc, QVector3D rot, const QColor &color) {
     startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
-    createCone(0.5, 1.0, 25.0);
+    createCone(0.5, 1.0, 25.0, color);
     endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
-void QtOpenGLViewer::createCuboidAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+void QtOpenGLViewer::createCuboidAt(QVector3D dim, QVector3D loc, QVector3D rot, const QColor &color) {
     startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
-    createCube(1.0);
+    createCube(1.0, color);
     endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 
-void QtOpenGLViewer::createSpheroidAt(QVector3D dim, QVector3D loc, QVector3D rot) {
+void QtOpenGLViewer::createSpheroidAt(QVector3D dim, QVector3D loc, QVector3D rot, const QColor &color) {
     startTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
-    createSphere(0.5, 10, 10);
+    createSphere(0.5, 10, 10, color);
     endTransformed(dim.x(), dim.y(), dim.z(), loc.x(), loc.y(), loc.z(), rot.x(), rot.y(), rot.z());
 }
 

@@ -14,9 +14,7 @@
 #include <QtWidgets/QPushButton>
 #include "QtOpenGLViewer/QtOpenGLViewer.h"
 #include <QTreeView>
-
-#include "setupModelTreeView/setupModelTreeModel.h"
-#include "QJsonModel/QJsonModel.hpp"
+#include "../remoteSetupModel.h"
 
 
 /**
@@ -82,6 +80,9 @@ private:
     QLabel *aLabel;
     QComboBox *comboBox;
 
+    RemoteSetupModel *setupModel;
+    QTreeView * setupModelTree;
+
 
     void createForm();
     void updateForm();
@@ -100,8 +101,24 @@ private slots:
 
     void updateContents();
 
+    void onGeomSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+
 public slots:
 
     void onSettingsChange();
+
+    // DEV
+    void screenResolutionXChanged(const QVariant& val) {
+        qDebug() << "screenResolutionXChanged(QVariant)";
+    };
+    void screenResolutionYChanged(const QVariant& val) {
+        qDebug() << "screenResolutionYChanged(QVariant)";
+    };
+    void screenPhysicalSizeXChanged(const QVariant& val) {
+        qDebug() << "screenPhysicalSizeXChanged(QVariant)";
+    };
+    void screenPhysicalSizeYChanged(const QVariant& val) {
+        qDebug() << "screenPhysicalSizeYChanged(QVariant)";
+    };
 
 };

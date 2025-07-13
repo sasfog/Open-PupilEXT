@@ -7,7 +7,7 @@
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QPushButton>
-#include "videoView.h"
+#include "custom-widgets/videoView.h"
 #include "../cameraCalibration.h"
 #include "../devices/stereoCamera.h"
 #include "calibrationHelpDialog.h"

@@ -40,6 +40,23 @@ private:
     QString imageWriterFormat;
     QString imageWriterDataRule;
 
+    QGroupBox *gazeTrackingGroup;
+    // Determine ground truth by aggregating data before acceptance
+    //  within temporal window of (max 10 sec) = gtw
+    //  aggregated to centroid using
+    //      - Arithmetic mean by x and y
+    //      - Median by x and y
+    //      - Bounding box center (xmin + xmax)/2, (ymin + ymax)/2
+    //
+    // Calibration by
+    //  participant calibration (best)
+    //  experimenter calibration
+    //  automatic calibration
+    //      - acceptance radius
+    //      - time window average (has to be >=gtw)
+
+
+
     QWidget *formatPngCompressionWidget;
     QComboBox *formatPngCompressionBox;
     QWidget *formatJpegQualityWidget;
