@@ -520,7 +520,7 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
     
     if(str[0].toLower() == 'g' && str.size()>=4) { // changing general settings or basic runtime variables
         if(str[1].toLower() == 'p') { // set image output path, no toLower()
-            w->PRGsetOutPath(str.mid(3, str.length()-3));
+            w->PRGsetImageOutputTarget(str.mid(3, str.length()-3));
         } else if(str[1].toLower() == 'l') { // set logfile and path name, no toLower()
             w->PRGsetCsvPathAndName(str.mid(3, str.length()-3));
         } else if(str[1].toLower() == 'c') { // set global delimiter character, no toLower()

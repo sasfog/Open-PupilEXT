@@ -9,11 +9,8 @@
 #include "devices/camera.h"
 #include <vector>
 #include <algorithm>
-
 #include "quazip/quazip.h"
 #include "quazip/quazipfile.h"
-
-
 
 enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
 
@@ -46,7 +43,8 @@ public:
         IMSTATUS_UNDETERMINED,
         IMSTATUS_OK,
         IMSTATUS_ERROR,
-        IMSTATUS_ZIP_INDECISIVE
+        IMSTATUS_ZIP_INDECISIVE,
+        IMSTATUS_ZIP_UNOPENABLE
     };
 
     enum ImageReaderSource {
@@ -163,12 +161,12 @@ public:
     QString getMetaSnapshotContent() {
         return metaSnapshotContent;
     }
-    uint64 getRecLenFromFileNamesList(const QStringList &fileNameCandidates) {
+    uint64 getRecLenFromFileNamesList(const QStringList &fileNameCandidates, const QString &extensionString) {
         bool ok;
         QString startTsStr = fileNameCandidates[0];
         QString endTsStr = fileNameCandidates[fileNameCandidates.size()-1];
-        startTsStr = startTsStr.mid(startTsStr.lastIndexOf("/")+1, startTsStr.length()-(startTsStr.lastIndexOf("/")+2+zipSuffix.length()));
-        endTsStr = endTsStr.mid(endTsStr.lastIndexOf("/")+1, endTsStr.length()-(endTsStr.lastIndexOf("/")+2+zipSuffix.length()));
+        startTsStr = startTsStr.mid(startTsStr.lastIndexOf("/")+1, startTsStr.length()-(startTsStr.lastIndexOf("/")+2+extensionString.length()));
+        endTsStr = endTsStr.mid(endTsStr.lastIndexOf("/")+1, endTsStr.length()-(endTsStr.lastIndexOf("/")+2+extensionString.length()));
         qDebug() << (endTsStr.toULongLong(&ok, 10) - startTsStr.toULongLong(&ok, 10));
         return (endTsStr.toULongLong(&ok, 10) - startTsStr.toULongLong(&ok, 10));
     }
@@ -186,12 +184,9 @@ private:
     ImageReaderStatus imageReaderStatus = IMSTATUS_UNDETERMINED;
     ImageReaderSource imageReaderSource = IMSOURCE_UNDETERMINED;
 
-    //QDir imageSourceDir;
     QuaZip* imageSourceZip = nullptr;
     QuaZipFile* imageSourceZipInnerFile = nullptr;
     QuaZipFileInfo info;
-
-    bool initSuccessful = false;
 
     QVector<QStringList> fileNames {QStringList(), QStringList()};
 
@@ -239,15 +234,11 @@ private:
     void runStereo();
     void runStereoImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img, cv::Mat &imgSecondary);
 
-
-
 public slots:
 
     void start();
     void stop();
     void pause();
-
-    //void step1frame(bool next);
 
 signals:
 

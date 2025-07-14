@@ -62,21 +62,26 @@ void MainWindow::PRGcloseCamera() {
         onCameraDisconnectClick();
 }
 
-void MainWindow::PRGsetOutPath(const QString &str) {
-    //std::cout << "received path = " << fullPath.toStdString() << std::endl;
-    QString fullPath = SupportFunctions::simplifyPathName(str);
-    // NOTE: multiple "/" characters, like "//" are not changed, as probably files are saved using an URI
-    if(fullPath == "") 
-        return;
+void MainWindow::PRGsetImageOutputTarget(QString str) {
 
-    // if path does not end with a "/" character, put it to the end
-    if(fullPath[fullPath.length()-1] != '/')
-        fullPath = fullPath + '/';
+    if(str.endsWith(".zip")) {
+        // TODO
+    } else {
+        //std::cout << "received path = " << fullPath.toStdString() << std::endl;
+        str = SupportFunctions::simplifyPathName(str);
+        // NOTE: multiple "/" characters, like "//" are not changed, as probably files are saved using an URI
+        if (str == "")
+            return;
+
+        // if path does not end with a "/" character, put it to the end
+        if (str[str.length() - 1] != '/')
+            str.append('/');
+    }
 
     //std::cout << "reformed path = " << fullPath.toStdString() << std::endl;
 
-    outputDirectory.clear();
-    outputDirectory = fullPath;
+    dataRecordingOutputTarget.clear();
+    dataRecordingOutputTarget = str;
     //std::cout << "outputDirectory (image dir) after image dir setting = " << outputDirectory.toStdString() << std::endl;
 
     // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
@@ -90,17 +95,17 @@ void MainWindow::PRGsetCsvPathAndName(const QString &str) {
     QString fullPathAndName = SupportFunctions::simplifyPathName(str);
     if(fullPathAndName == "")
         return;
-        
-    pupilDetectionDataFile.clear();
-    pupilDetectionDataFile = fullPathAndName;
 
-    QFileInfo fileInfo(pupilDetectionDataFile);
+    dataRecordingOutputTarget.clear();
+    dataRecordingOutputTarget = fullPathAndName;
+
+    QFileInfo fileInfo(dataRecordingOutputTarget);
     // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
     // which could later crash the GUI or whatever
 
     // check if filename has extension
     if(fileInfo.suffix().isEmpty())
-        pupilDetectionDataFile = pupilDetectionDataFile + ".csv";
+        dataRecordingOutputTarget = dataRecordingOutputTarget + ".csv";
     //std::cout << "saved logfilename (and path) after name-csv setting = " << logFileName.toStdString() << std::endl;
 
     if(trackingOn)
@@ -127,7 +132,7 @@ void MainWindow::PRGtrackStop() {
 }
 
 void MainWindow::PRGstreamStart() {
-    if(!selectedCamera || pupilDetectionDataFile.isEmpty())
+    if(!selectedCamera /*|| dataRecordingOutputTarget.isEmpty()*/)
         return;
     if(!trackingOn) // we can start tracking if only that is needed
         onTrackActClick();
@@ -141,7 +146,7 @@ void MainWindow::PRGstreamStop() {
 }
 
 void MainWindow::PRGrecordStart() {
-    if(!selectedCamera || pupilDetectionDataFile.isEmpty())
+    if(!selectedCamera || dataRecordingOutputTarget.isEmpty())
         return;
     if(!trackingOn) // we can start tracking if only that is needed
         onTrackActClick();
@@ -155,7 +160,7 @@ void MainWindow::PRGrecordStop() {
 }
 
 void MainWindow::PRGrecordImageStart() {
-    if(selectedCamera && selectedCamera->getType() != SINGLE_IMAGE_FILE && selectedCamera->getType() != STEREO_IMAGE_FILE && !outputDirectory.isEmpty() && !recordImagesOn)
+    if(selectedCamera && selectedCamera->getType() != SINGLE_IMAGE_FILE && selectedCamera->getType() != STEREO_IMAGE_FILE && !imageRecordingOutputTarget.isEmpty() && !recordImagesOn)
         onRecordImageClick();
 }
 

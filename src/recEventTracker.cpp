@@ -219,6 +219,7 @@ RecEventTracker::~RecEventTracker()
 
 void RecEventTracker::close()
 {
+    /*
     if (dataFile)
     {
         dataFile->close();
@@ -226,9 +227,11 @@ void RecEventTracker::close()
     }
     delete dataFile;
     dataFile = nullptr;
+     */
 }
 
-void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName) {
+/*
+void RecEventTracker::writeOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName) {
 
     std::cout << fileName.toStdString() << std::endl;
 
@@ -239,13 +242,12 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     //if(changedGiven)
     //    QMessageBox::warning(nullptr, "Path name changed", "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
 
-
     QByteArray textContent;
 
     dataFile = new QFile(fileName);
-    bool exists = dataFile->exists();
+    bool existing = dataFile->exists();
 
-    if(exists) {
+    if(existing) {
         std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << "" << std::endl;
     }
 
@@ -259,25 +261,42 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         return;
     }
 
-    //bool readable = dataFile->isReadable();
-    //textContent = dataFile->readAll();
+    QString fileContent = generateOfflineEventLogContent(timestampFrom, timestampTo, foundEventLogContent);
+
+    QTextStream textStream(dataFile);
+    textStream.seek(0); // rewrite the file
+
+    // NOTE: the line below (XML processing instruction)  is not automatically added for some reason..
+    // BUT if we add it like this, it will cumulatively add to the next file write, and it causes problems.. so we do not add it
+    //*textStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    textStream << fileContent;
+    dataFile->close();
+}
+*/
+
+QString RecEventTracker::generateOfflineEventLogContent(uint64 timestampFrom, uint64 timestampTo, QString foundEventLogContent) {
+
+    bool existing = !foundEventLogContent.isEmpty();
+
+    QByteArray textContent;
 
     QDomDocument document;
     QDomElement root;
     bool existingRead = false;
-    if(exists) {
+    if(existing) {
         QString errorString;
         int errorLine;
         int errorColumn;
-        existingRead = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
-        if (!existingRead) {
+        //existing = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
+        existing = document.setContent(foundEventLogContent, false, &errorString, &errorLine, &errorColumn);
+        if (!existing) {
             qDebug() << errorLine;
             qDebug() << errorColumn;
             qDebug() << errorString;
         }
     }
 
-    if(exists && existingRead) {
+    if(existing) {
         root = document.firstChildElement();
         QString temp_str = root.attribute("Version", "");
         foundEventLogVersion = 1;
@@ -331,14 +350,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     // NOTE: search intervals are only inclusive on the left, but exclusive on the right. Consider this
     // TODO: clear file even if appended, as new XML is flushed into it
 
-    QTextStream textStream(dataFile);
-    textStream.seek(0); // rewrite the file
-
-    // NOTE: the line below (XML processing instruction)  is not automatically added for some reason..
-    // BUT if we add it like this, it will cumulatively add to the next file write, and it causes problems.. so we do not add it
-    //*textStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-    textStream << document.toString();
-    dataFile->close();
+    return document.toString();
 }
 
 uint RecEventTracker::getLastCommissionedTrialNumber()

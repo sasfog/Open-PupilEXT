@@ -257,11 +257,88 @@ public:
         return workCopy;
     };
 
+    static QString prepareOutputZipDirForImageWriter(QString filePathAndname, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
+        QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
+
+        if(filePathAndname.isEmpty()) {
+            return filePathAndname;
+        }
+
+        QString fileName = filePathAndname.mid(filePathAndname.lastIndexOf("/")+1, filePathAndname.length()-(filePathAndname.lastIndexOf("/")));
+        QString containingDirectory = filePathAndname.mid(0, filePathAndname.lastIndexOf("/"));
+
+        // bool changedGiven = false;
+        QString changedPath;
+        bool newNodeCreated = false;
+        bool pathWriteable = SupportFunctions::preparePath(containingDirectory, changedGiven, changedPath, newNodeCreated);
+        if(!pathWriteable) {
+            // TODO: Throw exception?
+            changedGiven = true;
+            return QString();
+        }
+        if(changedGiven) {
+            QMessageBox *msgBox = new QMessageBox(parent);
+            msgBox->setWindowTitle("Path name changed");
+            msgBox->setText("The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            filePathAndname = changedPath + "/" + fileName;
+        }
+
+        // QDir outputDirectory = QDir(directory);
+        bool exists = QFile(filePathAndname).exists();
+        bool hasContent = QFile(filePathAndname).size() > 0;
+
+        // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
+        if(exists && hasContent && imageWriterDataRule == "ask") {
+            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output archive already exists", parent);
+            dialog->setModal(true);
+            // dialog->raise();
+            if(dialog->exec() == QDialog::Accepted)
+            {
+                auto resp = dialog->getResponse();
+                bool rememberChoice = dialog->getRememberChoice();
+
+                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                    imageWriterDataRule = "append";
+                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
+                    imageWriterDataRule = "new";
+                }
+
+                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                    applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
+                }
+            }
+        }
+
+        if(exists && hasContent && imageWriterDataRule == "new") {
+            bool nameInvented = false;
+            int nameIter = 1;
+            QString tryBase = filePathAndname.chopped(4);
+            tryBase = SupportFunctions::stripIfInventedName(tryBase);
+            // TODO: proper exception handling
+            while(!nameInvented) {
+                nameIter++;
+//                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
+                filePathAndname = tryBase + "_RunI" + QString::number(nameIter) + ".zip";
+//                nameInvented = !outputDirectory.exists();
+                nameInvented = !QFile(filePathAndname).exists();
+                if(nameIter >=65000)
+                    filePathAndname = tryBase + "_TooManyRunsI";
+            }
+        }
+        //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
+//        return outputDirectory.absolutePath();
+        return filePathAndname;
+    };
+
     static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
         if(directory.isEmpty()) {
-            return QString();
+            return directory;
         }
 
         if(directory[directory.length()-1] == '/') {

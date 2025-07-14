@@ -137,7 +137,7 @@ void SubjectSelectionDialog::onCellDoubleClick(const QModelIndex &index) {
         if(!fileName.isEmpty()) {
             QFileInfo fileInfo(fileName);
 
-            recentPath = fileInfo.dir().path();
+            recentDataWritingDirectory = fileInfo.dir().path();
 
             // check if filename has extension
             if(fileInfo.suffix().isEmpty()) {
@@ -164,15 +164,15 @@ void SubjectSelectionDialog::addButtonClick() {
     QStandardItem* item = new QStandardItem(name);
     tableModel->setItem(subjectConfigs.size(), 0, item);
 
-    recentPath = applicationSettings->value("RecentOutputPath", "").toString();
+    recentDataWritingDirectory = applicationSettings->value("RcentDataWritingDirectory", "").toString();
 
     // file dialog
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Config File"), recentPath, tr("INI files (*.ini)"), nullptr, QFileDialog::DontConfirmOverwrite);
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Config File"), recentDataWritingDirectory, tr("INI files (*.ini)"), nullptr, QFileDialog::DontConfirmOverwrite);
 
     if(!fileName.isEmpty()) {
         QFileInfo fileInfo(fileName);
 
-        recentPath = fileInfo.dir().path();
+        recentDataWritingDirectory = fileInfo.dir().path();
 
         // check if filename has extension
         if(fileInfo.suffix().isEmpty()) {
@@ -188,10 +188,12 @@ void SubjectSelectionDialog::addButtonClick() {
     saveSettings();
 }
 
+// TODO: remove this
 // Saves the table entries into the application wide settings
 void SubjectSelectionDialog::saveSettings() {
     applicationSettings->setValue("SubjectSelectionDialog.subjectConfigs", QVariant::fromValue(subjectConfigs));
-    applicationSettings->setValue("RecentOutputPath", recentPath);
+
+    applicationSettings->setValue("RecentDataWritingDirectory", recentDataWritingDirectory);
 }
 
 // Loads a subject configuration to the application

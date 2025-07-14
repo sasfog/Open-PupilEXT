@@ -74,7 +74,8 @@ public:
     
     ~RecEventTracker();
     void close();
-    void saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName);
+    //void writeOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName);
+    QString generateOfflineEventLogContent(uint64 timestampFrom, uint64 timestampTo, QString foundEventLogContent);
 
     // BUFFER (= ongoing recording) mode only
     uint getLastCommissionedTrialNumber();
@@ -121,7 +122,7 @@ private:
     std::vector<GazeTarget> gazeTargets;
     std::vector<Message> messages;
     QChar delim;
-    QFile *dataFile = nullptr;
+    //QFile *dataFile = nullptr;
 
     quint16 foundEventLogVersion = 1;
     const quint16 currentEventLogVersion = 1;

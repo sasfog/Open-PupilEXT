@@ -5,24 +5,14 @@
 
 /*
     Writes all details of the camera settings and pupil detection settings to a "meta file" in human-readable format
+    To be used only in case od dataWriter. ImageWriter now has its own channeling of writing the file content.
 */
 
-void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
+void MetaSnapshotOrganizer::writeSnapshotFile(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
 
     qDebug() << fileName;
-    QDomDocument document;
-    QDomElement root = document.createElement("MetaSnapshot");
-    document.appendChild(root);
-
-    addInfoNode(document, root, imageWriter, dataWriter, purpose, fileName);
-
-    addCameraNode(document, root, camera);
-
-    if(pupilDetection && pupilDetection->isTrackingOn())
-        addPupilDetectionNode(document, root, pupilDetection, applicationSettings);
     
-    QString payload = document.toString();
-
+    QString payload = generateSnapshotFileContent(camera, imageWriter, pupilDetection, dataWriter, purpose, applicationSettings);
 
 //    bool changedGiven = false;
 //    QString changedPath;
@@ -59,7 +49,23 @@ void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, 
     
 }
 
-void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose, QString fileName) {
+QString MetaSnapshotOrganizer::generateSnapshotFileContent(Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
+
+    QDomDocument document;
+    QDomElement root = document.createElement("MetaSnapshot");
+    document.appendChild(root);
+
+    addInfoNode(document, root, imageWriter, dataWriter, purpose);
+
+    addCameraNode(document, root, camera);
+
+    if(pupilDetection && pupilDetection->isTrackingOn())
+        addPupilDetectionNode(document, root, pupilDetection, applicationSettings);
+
+    return document.toString();
+}
+
+void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose) {
     
     QMap<QString, QString> metaSnapshot;
     metaSnapshot["version"] = QString::number(version);
@@ -69,7 +75,7 @@ void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &roo
         metaSnapshot["purpose"] = "imagerec";
     }
     metaSnapshot["creationTime"] = QDateTime::currentDateTime().toString("yyyy. MMM dd. hh:mm:ss");
-    metaSnapshot["name"] = QString(fileName);
+    //metaSnapshot["name"] = QString(fileName);
     metaSnapshot["creationTimeUnix"] = QString::number(QDateTime::currentMSecsSinceEpoch());
     metaSnapshot["algorithm"] = "test";
     metaSnapshot["type"] = "test";

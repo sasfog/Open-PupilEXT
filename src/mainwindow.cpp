@@ -23,7 +23,7 @@ MainWindow::MainWindow():
                           signalPubSubHandler(new SignalPubSubHandler(this)),
                           
 
-                          subjectSelectionDialog(new SubjectSelectionDialog(this)),
+                          //subjectSelectionDialog(new SubjectSelectionDialog(this)),
                           singleCameraSettingsDialog(nullptr),
                           stereoCameraSettingsDialog(nullptr),
                           pupilDetectionThread(new QThread()),
@@ -91,12 +91,12 @@ MainWindow::MainWindow():
     generalSettingsDialog = new GeneralSettingsDialog(this);
     generalSettingsDialog->setWindowIcon(generalSettingsIcon);
 
-    subjectSelectionDialog->setWindowIcon(subjectsIcon);
+    //subjectSelectionDialog->setWindowIcon(subjectsIcon);
 
     connect(generalSettingsDialog, SIGNAL (onSettingsChange()), this, SLOT (onGeneralSettingsChange()));
     connect(generalSettingsDialog, SIGNAL (onSettingsChangeNeedingRestart()), this, SLOT (offerRestartApplication()));
-    connect(subjectSelectionDialog, SIGNAL (onSubjectChange(QString)), this, SLOT (onSubjectsSettingsChange(QString)));
-    connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), pupilDetectionSettingsDialog, SLOT (onSettingsChange()));
+    //connect(subjectSelectionDialog, SIGNAL (onSubjectChange(QString)), this, SLOT (onSubjectsSettingsChange(QString)));
+    //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), pupilDetectionSettingsDialog, SLOT (onSettingsChange()));
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), this, SLOT (onPupilDetectionProcModeChange(int)));
 
     // Pupil detection is conducted in another thread, move the created object to this thread and connect its finished signal for cleanup
@@ -186,7 +186,7 @@ MainWindow::MainWindow():
     */
 
 #ifdef Q_OS_MACOS // Q_OS_WIN
-    subjectSelectionDialog->setWindowFlags(Qt::Tool);
+    //subjectSelectionDialog->setWindowFlags(Qt::Tool);
     MCUSettingsDialogInst->setWindowFlags(Qt::Tool);
     remoteCCDialog->setWindowFlags(Qt::Tool);
     streamingSettingsDialog->setWindowFlags(Qt::Tool);
@@ -214,12 +214,13 @@ void MainWindow::loadIcons() {
 //    calibrateIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/crosshairs.svg"), applicationSettings);
     calibrateIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kdenlive-composite.svg"), applicationSettings);
     sharpnessIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/edit-select-all.svg"), applicationSettings);
-    subjectsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user.svg"), applicationSettings);
+    //subjectsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user.svg"), applicationSettings);
     outputDataFileIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/edit-text-frame-update.svg"), applicationSettings);
     streamingSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-presentation.svg"), applicationSettings);
     imagePlaybackControlIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/run-build.svg"), applicationSettings);
     dataTableIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/table.svg"), applicationSettings);
     sceneImageViewIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-preview.svg"), applicationSettings);
+    archiveIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/archive-extract.svg"), applicationSettings);
 }
 
 void MainWindow::createActions() {
@@ -227,7 +228,7 @@ void MainWindow::createActions() {
     QMenu *fileMenu = menuBar()->addMenu(tr("File"));
 
     // Note: made global to let is get disabled/enabled, whether there is already an opened directory or not
-    fileOpenAct = fileMenu->addAction(tr("Open Images Directory"), this, &MainWindow::onOpenImageDirectory);
+    fileOpenAct = fileMenu->addAction(tr("Open Image Recording"), this, &MainWindow::onOpenImageDirectory);
     fileOpenAct->setIcon(fileOpenIcon);
     fileOpenAct->setStatusTip(tr("Open Image Directory for Playback. Single and Stereo Mode supported."));
     fileMenu->addAction(fileOpenAct);
@@ -262,7 +263,9 @@ void MainWindow::createActions() {
     QMenu *settingsMenu = menuBar()->addMenu(tr("Settings"));
     settingsMenu->addAction(cameraSerialConnectionIcon, tr("Microcontroller Connection"), MCUSettingsDialogInst, &MCUSettingsDialog::show);
     settingsMenu->addAction(pupilDetectionSettingsIcon, tr("Pupil Detection"), pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
+#if _DEBUG
     settingsMenu->addAction(setupGeometryIcon, tr("Setup Geometry"), setupGeometryDialog, &SetupGeometryDialog::show);
+#endif
     settingsMenu->addAction(remoteCCIcon, tr("Remote Control Connection"), remoteCCDialog, &RemoteCCDialog::show);
     settingsMenu->addAction(generalSettingsIcon, tr("General Settings"), generalSettingsDialog, &GeneralSettingsDialog::show);
 
@@ -430,12 +433,14 @@ void MainWindow::createActions() {
     toolBar->addAction(sharpnessAct);
     sharpnessAct->setDisabled(true);
 
+    /*
     subjectsAct = new QAction(subjectsIcon, tr("Subjects"), this);
     subjectsAct->setStatusTip(tr("Load subject-specific pupil detection configurations."));
     connect(subjectsAct, &QAction::triggered, this, &MainWindow::onSubjectsClick);
     //fileMenu->addAction(newAct);
     toolBar->addAction(subjectsAct);
     subjectsAct->setDisabled(true);
+     */
 
     toolBar->addSeparator();
 
@@ -458,12 +463,42 @@ void MainWindow::createActions() {
 
     toolBar->addSeparator();
 
+    /*
     outputDirectoryAct = new QAction(fileOpenIcon, tr("Output Directory"), this);
     outputDirectoryAct->setStatusTip(tr("Set output directory."));
     connect(outputDirectoryAct, &QAction::triggered, this, &MainWindow::setOutputDirectory);
     //fileMenu->addAction(newAct);
     toolBar->addAction(outputDirectoryAct);
     outputDirectoryAct->setDisabled(true);
+    */
+    imageRecordingOutputAct = new QAction(fileOpenIcon, tr("Image Recording Output"), this);
+    imageRecordingOutputAct->setStatusTip(tr("Set where the images should be recorded."));
+    QMenu* imageRecordingOutputMenu = new QMenu(this);
+
+    imageRecordingOutputMenu->addAction(fileOpenIcon, tr("Directory"), this, &MainWindow::imageRecordingOutputDirectorySelected);
+    //imageRecordingOutputMenu->addSeparator();
+    imageRecordingOutputMenu->addAction(archiveIcon, tr("Zip archive"), this, &MainWindow::imageRecordingOutputZipSelected);
+
+    imageRecordingOutputAct->setMenu(imageRecordingOutputMenu);
+    connect(imageRecordingOutputAct, &QAction::triggered, this, &MainWindow::onImageRecordingOutputClick);
+    toolBar->addAction(imageRecordingOutputAct);
+    imageRecordingOutputAct->setDisabled(true);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     const QIcon recordImagesIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record-blue.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     recordImagesAct = new QAction(recordImagesIcon, tr("Record Images"), this);
@@ -643,8 +678,8 @@ void MainWindow::createStatusBar() {
 
     statusBar()->addPermanentWidget(widget);
 
-    subjectConfigurationLabel = new QLabel("");
-    statusBar()->addWidget(subjectConfigurationLabel);
+    //subjectConfigurationLabel = new QLabel("");
+    //statusBar()->addWidget(subjectConfigurationLabel);
 
     currentStatusMessageLabel = new QLabel("");
     statusBar()->addWidget(currentStatusMessageLabel);
@@ -783,22 +818,22 @@ void MainWindow::openSourceDialog() {
 
 void MainWindow::setLogFile() {
 
-    QString pupilDetectionDataFileCandidate = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
-    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(pupilDetectionDataFileCandidate).dir().exists()) && !pupilDetectionDataFile.isEmpty()) {
+    QString pupilDetectionDataFileCandidate = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentDataWritingDirectory, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
+    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(pupilDetectionDataFileCandidate).dir().exists()) && !dataRecordingOutputTarget.isEmpty()) {
         return;
     }
-    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(pupilDetectionDataFileCandidate).dir().exists()) && pupilDetectionDataFile.isEmpty()) {
+    if((pupilDetectionDataFileCandidate.isEmpty() || !QFileInfo(pupilDetectionDataFileCandidate).dir().exists()) && dataRecordingOutputTarget.isEmpty()) {
         recordAct->setDisabled(true);
         return;
     }
 
-    pupilDetectionDataFile = pupilDetectionDataFileCandidate;
-    QFileInfo fileInfo(pupilDetectionDataFile);
-    setRecentPath(fileInfo.dir().path());
+    dataRecordingOutputTarget = pupilDetectionDataFileCandidate;
+    QFileInfo fileInfo(dataRecordingOutputTarget);
+    setRecentDataWritingDirectory(fileInfo.dir().path());
 
     // check if filename has extension
     if(fileInfo.suffix().isEmpty()) {
-        pupilDetectionDataFile = pupilDetectionDataFile + ".csv";
+        dataRecordingOutputTarget = dataRecordingOutputTarget + ".csv";
     }
 
     //QFile file(pupilDetectionDataFile);
@@ -809,23 +844,65 @@ void MainWindow::setLogFile() {
         recordAct->setDisabled(false);
 }
 
-void MainWindow::setOutputDirectory() {
+void MainWindow::imageRecordingOutputDirectorySelected() {
 
-    QString outputDirectoryCandidate = QFileDialog::getExistingDirectory(this, tr("Output Directory"), recentPath);
+    QString outputDirectoryCandidate = QFileDialog::getExistingDirectory(this, tr("Output Directory"), recentImageWritingDirectory);
 
-    if(outputDirectoryCandidate.isEmpty() && !outputDirectory.isEmpty()) {
+    if(outputDirectoryCandidate.isEmpty() && !imageRecordingOutputTarget.isEmpty()) {
         return;
     }
-    if(outputDirectoryCandidate.isEmpty() && outputDirectory.isEmpty()) {
+    if(outputDirectoryCandidate.isEmpty() && imageRecordingOutputTarget.isEmpty()) {
         recordImagesAct->setDisabled(true);
         return;
     }
 
-    outputDirectory = outputDirectoryCandidate;
-    setRecentPath(outputDirectory);
+    imageRecordingOutputTarget = outputDirectoryCandidate;
+
+    setRecentImageWritingDirectory(imageRecordingOutputTarget);
 //    std::cout << recentPath.toStdString() << std::endl;
-    currentStatusMessageLabel->setText("Current directory: " + SupportFunctions::shortenStringForDisplay(outputDirectory, 100));
-    currentStatusMessageLabel->setToolTip(outputDirectory);
+    currentStatusMessageLabel->setText("Image rec. target directory: " + SupportFunctions::shortenStringForDisplay(imageRecordingOutputTarget, 100));
+    currentStatusMessageLabel->setToolTip(imageRecordingOutputTarget);
+
+    recordImagesAct->setDisabled(false);
+}
+
+void MainWindow::imageRecordingOutputZipSelected() {
+
+    QString filters("Zip archive (*.zip)");
+    //QString filters("Zip archive (*.zip);;Any file (*.*)");
+    //QString defaultFilter("Zip archive (*.zip)");
+
+    // NOTE: The file name will be considered the recording (or participant) name
+    // TODO: remember last/default path !!
+    QFileDialog dialog(0, "Save file", QDir::currentPath(), filters);
+    //dialog.selectNameFilter(defaultFilter);
+
+    dialog.setOptions(QFileDialog::DontResolveSymlinks);
+
+    // just in case it was erroneously left enabled from before
+    if(imageRecordingOutputTarget.isEmpty()) {
+        recordImagesAct->setDisabled(true);
+    }
+
+    if(!dialog.exec())
+        return;
+
+    if(dialog.selectedFiles().empty())
+        return;
+
+    QString selectedFilePathAndName = dialog.selectedFiles()[0];
+    if(!selectedFilePathAndName.endsWith(".zip"))
+        selectedFilePathAndName.append(".zip");
+    // TODO: Also pre-check if location can be written
+    // TODO: At this point we can beautify the given save file name. Change strange characters in it, etc.
+
+    imageRecordingOutputTarget = selectedFilePathAndName;
+
+    qDebug() << QFileInfo(imageRecordingOutputTarget).dir().path();
+    setRecentImageWritingDirectory(QFileInfo(imageRecordingOutputTarget).dir().path());
+//    std::cout << recentPath.toStdString() << std::endl;
+    currentStatusMessageLabel->setText("Image rec. target archive: " + SupportFunctions::shortenStringForDisplay(imageRecordingOutputTarget, 100));
+    currentStatusMessageLabel->setToolTip(imageRecordingOutputTarget);
 
     recordImagesAct->setDisabled(false);
 }
@@ -885,7 +962,9 @@ void MainWindow::readSettings() {
     }
     toggleFullscreenAct->setChecked(this->isMaximized());
 
-    recentPath = applicationSettings->value("RecentOutputPath", "").toString();
+    recentImageReadingDirectory = applicationSettings->value("RecentImageReadingDirectory", "").toString();
+    recentImageWritingDirectory = applicationSettings->value("RecentImageWritingDirectory", "").toString();
+    recentDataWritingDirectory = applicationSettings->value("RecentDataWritingDirectory", "").toString();
 
     Qt::ToolBarArea toolBarPosition = static_cast<Qt::ToolBarArea>(applicationSettings->value("MainWindow.ToolbarPosition", Qt::LeftToolBarArea).toUInt());
     addToolBar(toolBarPosition, toolBar); // As toolbar is already attached to the window, it is only moved to this position by addToolBar
@@ -893,7 +972,10 @@ void MainWindow::readSettings() {
 
 void MainWindow::writeSettings() {
     applicationSettings->setValue("MainWindow.geometry", saveGeometry());
-    applicationSettings->setValue("RecentOutputPath", recentPath);
+
+    applicationSettings->setValue("RecentImageReadingDirectory", recentImageReadingDirectory);
+    applicationSettings->setValue("RecentImageWritingDirectory", recentImageWritingDirectory);
+    applicationSettings->setValue("RecentDataWritingDirectory", recentDataWritingDirectory);
 
     applicationSettings->setValue("MainWindow.ToolbarPosition", static_cast<uint>(toolBarArea(toolBar)));
 }
@@ -1078,7 +1160,7 @@ void MainWindow::onTrackActClick() {
         trackAct->setIcon(trackOnIcon);
         trackingOn = true;
 
-        recordAct->setEnabled(!pupilDetectionDataFile.isEmpty());
+        recordAct->setEnabled(!dataRecordingOutputTarget.isEmpty());
         streamAct->setEnabled(streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
     }
 
@@ -1145,7 +1227,7 @@ void MainWindow::onStreamClick() {
 
 void MainWindow::onRecordClick() {
 
-    if(pupilDetectionDataFile.isEmpty())
+    if(dataRecordingOutputTarget.isEmpty())
         return;
 
     if(recordOn && dataWriter) {
@@ -1165,13 +1247,13 @@ void MainWindow::onRecordClick() {
     } else {
         // Activate recording
 
-        if(pupilDetectionDataFile.isEmpty())
+        if(dataRecordingOutputTarget.isEmpty())
             return;
 
         // TODO: this version is imperfect yet, as it permanently overwrites pupilDetectionDataFile name
         bool changedGiven = false; // unused yet
-        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForDataWriter(pupilDetectionDataFile, applicationSettings, changedGiven, this);
-        if(pupilDetectionDataFile.isEmpty()) {
+        dataRecordingOutputTarget = SupportFunctions::prepareOutputFileForDataWriter(dataRecordingOutputTarget, applicationSettings, changedGiven, this);
+        if(dataRecordingOutputTarget.isEmpty()) {
             QMessageBox *msgBox = new QMessageBox(this);
             msgBox->setWindowTitle("The set output path and file name could not be opened for writing");
             msgBox->setText("The set output path and file name could not be opened for writing. Please check that PupilEXT has the permissions to write there, and try again.");
@@ -1189,10 +1271,10 @@ void MainWindow::onRecordClick() {
 
         dataWriter = 
             new DataWriter(
-                pupilDetectionDataFile, 
-                (ProcMode)pupilDetectionWorker->getCurrentProcMode(),
-                recEventTracker,
-                this);
+                    dataRecordingOutputTarget,
+                    (ProcMode)pupilDetectionWorker->getCurrentProcMode(),
+                    recEventTracker,
+                    this);
         if(!dataWriter->isReady()) { // in case we failed to open csv file for writing
             dataWriter->deleteLater();
             dataWriter = nullptr;
@@ -1202,14 +1284,14 @@ void MainWindow::onRecordClick() {
         safelyResetTrialCounter();
         safelyResetMessageRegister();
         
-        QFileInfo fi(pupilDetectionDataFile);
+        QFileInfo fi(dataRecordingOutputTarget);
         QDir pupilDetectionDir = fi.dir();
         QString metadataFileName = fi.baseName() + QString::fromStdString("_datarec_meta.xml");
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
         if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings))
-            MetaSnapshotOrganizer::writeMetaSnapshot(
+            MetaSnapshotOrganizer::writeSnapshotFile(
                 pupilDetectionDir.filePath(metadataFileName),
                 selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
 
@@ -1249,13 +1331,16 @@ void MainWindow::onRecordImageClick() {
         */
 //        imageWriter->attemptToStop();
 
+        QString foundEventLogContent = imageWriter->getFoundOfflineEventLogContent();
         if(SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings)) {
-            recEventTracker->saveOfflineEventLog(
+            imageWriter->writeOfflineEventLog(recEventTracker->generateOfflineEventLogContent(
                 imageRecStartTimestamp,
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                outputDirectory + "/" + QString::fromStdString("offline_event_log.xml") );
-                //outputDirectory + "/" + QString::fromStdString("offline_event_log.csv") );
+                foundEventLogContent) );
         }
+
+        // in case it is a zip, it closes the file. In a multithread approach, this will have more to do of course
+        imageWriter->stopWriting();
         
         if(singleCameraSettingsDialog && !trackingOn)
             singleCameraSettingsDialog->setLimitationsWhileTracking(false);
@@ -1266,38 +1351,75 @@ void MainWindow::onRecordImageClick() {
 
         if(generalSettingsDialog)
             generalSettingsDialog->setLimitationsWhileImageWriting(false);
+
     } else {
         // Activate recording
 
-        if(outputDirectory.isEmpty())
+        if(imageRecordingOutputTarget.isEmpty())
             return;
 
-        qDebug() << "outputDirectory before checking for eligibility: " << outputDirectory << "---";
+        qDebug() << "imageRecordingOutputTarget before checking for eligibility: " << imageRecordingOutputTarget << "---";
+
+        bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
+
+        //---------------------------------
+        // TODO ASAP: HA ZIP, nézze meg, hogy nincs-e már ugyanilyen nevű fájl. Ha van, akkor szóljon, és készítsen megtoldott nevűt!!
+        // TODO: a metasnapshot és rec event log, képes legyen szintén zipbe íródni!
+        // -------------------------------------------------
 
         // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
         // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
         bool changedGiven = false; // unused yet
-        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, changedGiven, this);
-        if(outputDirectory.isEmpty()) {
-            QMessageBox *msgBox = new QMessageBox(this);
-            msgBox->setWindowTitle("The set output path could not be opened for writing");
-            msgBox->setText("The set output path could not be opened for writing. Please check that PupilEXT has the permissions to write there, and try again.");
-            msgBox->setMinimumSize(330,240);
-            msgBox->setIcon(QMessageBox::Warning);
-            msgBox->setModal(false);
-            msgBox->show();
+        while(  imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_UNDETERMINED ||
+                imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ZIP_UNOPENABLE) {
 
-            recordImagesAct->setDisabled(true);
-            return;
+            if (imageRecordingOutputTarget.endsWith(".zip")) {
+                imageRecordingOutputTarget = SupportFunctions::prepareOutputZipDirForImageWriter(
+                        imageRecordingOutputTarget, applicationSettings, changedGiven, this);
+            } else {
+                imageRecordingOutputTarget = SupportFunctions::prepareOutputDirForImageWriter(
+                        imageRecordingOutputTarget, applicationSettings, changedGiven, this);
+            }
+
+            if (imageRecordingOutputTarget.isEmpty()) {
+                QMessageBox *msgBox = new QMessageBox(this);
+                msgBox->setWindowTitle("The set output path could not be opened for writing");
+                msgBox->setText(
+                        "The set output path could not be opened for writing. Please check that PupilEXT has the permissions to write there, and try again.");
+                msgBox->setMinimumSize(330, 240);
+                msgBox->setIcon(QMessageBox::Warning);
+                msgBox->setModal(false);
+                msgBox->show();
+
+                recordImagesAct->setDisabled(true);
+                return;
+            }
+
+            // TODO: only make record button clickable again, if the last recording has ended (signals in queue were dealt with)
+            imageWriter->prepareForWriting(imageRecordingOutputTarget, stereo);
+            if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ZIP_UNOPENABLE) {
+
+                QMessageBox *msgBox = new QMessageBox(this);
+                msgBox->setWindowTitle("The set existing output zip archive could not be opened");
+                msgBox->setText(
+                        "The set existing output zip archive could not be opened for appending. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. Importantly, this does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+                msgBox->setMinimumSize(330, 260);
+                msgBox->setIcon(QMessageBox::Warning);
+                msgBox->setModal(true);
+                msgBox->exec();
+
+            } if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ERROR) {
+                imageWriter->stopWriting();
+                return;
+            }
         }
-        // IMPORTANT NOTE: outputDirectory should not be changed from this point
-        qDebug() << "outputDirectory finally set to: " << outputDirectory << "---";
+        qDebug() << "imageRecordingOutputTarget finally set to: " << imageRecordingOutputTarget;
 
         imageRecStartTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // trial counter and message register are both reset with a first entry that corresponds to recording start
         safelyResetTrialCounter(imageRecStartTimestamp);
         safelyResetMessageRegister(imageRecStartTimestamp);
-        
+
         if(singleCameraSettingsDialog)
             singleCameraSettingsDialog->setLimitationsWhileTracking(true);
         if(stereoCameraSettingsDialog)
@@ -1308,16 +1430,10 @@ void MainWindow::onRecordImageClick() {
         if(generalSettingsDialog)
             generalSettingsDialog->setLimitationsWhileImageWriting(true);
 
-        bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
-
-        // TODO: only make record button clickable again, if the last recording has ended (signals in queue were dealt with)
-        imageWriter->prepareForWriting(outputDirectory, stereo);
-
         // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response
         if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings)) {
-            MetaSnapshotOrganizer::writeMetaSnapshot(
-                    outputDirectory + "/" + QString::fromStdString("imagerec_meta.xml"),
-                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings);
+            imageWriter->writeMetaSnapshot(MetaSnapshotOrganizer::generateSnapshotFileContent(
+                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings));
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
 
@@ -1334,12 +1450,16 @@ void MainWindow::onCameraClick() {
     // fix to open submenu in the camera menu
     cameraAct->menu()->exec(QCursor::pos());
 }
+void MainWindow::onImageRecordingOutputClick() {
+    // fix to open submenu in the camera menu
+    imageRecordingOutputAct->menu()->exec(QCursor::pos());
+}
 
 void MainWindow::onCameraDisconnectClick() {
 
     // Clear previously set output paths
-    pupilDetectionDataFile = "";
-    outputDirectory = "";
+    dataRecordingOutputTarget = "";
+    //setRecentDataWritingDirectory("");
 
     QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
     for(auto mdiSubWindow : windows) {
@@ -1480,13 +1600,13 @@ void MainWindow::onCameraDisconnectClick() {
     if(setupGeometryDialog->isVisible()) {
         setupGeometryDialog->close();
     }
-    if(subjectSelectionDialog->isVisible()) {
-        subjectSelectionDialog->close();
-    }
+    //if(subjectSelectionDialog->isVisible()) {
+    //    subjectSelectionDialog->close();
+    //}
 
     onCameraCalibrationDisabled();
 
-    subjectConfigurationLabel->setText("");
+    //subjectConfigurationLabel->setText("");
     currentStatusMessageLabel->setText("");
     currentStatusMessageLabel->setToolTip("");
 
@@ -1765,7 +1885,7 @@ void MainWindow::cameraViewClick() {
         ) ) {
         //SingleCameraView *childWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
         singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this);
-        connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
+        //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
         connect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
         child = new RestorableQMdiSubWindow(singleCameraChildWidget, "SingleCameraView", this);
@@ -1776,7 +1896,7 @@ void MainWindow::cameraViewClick() {
         selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE
         ) ) {
         stereoCameraChildWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this);
-        connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraChildWidget, SLOT (onSettingsChange()));
+        //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraChildWidget, SLOT (onSettingsChange()));
         connect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
 
         child = new RestorableQMdiSubWindow(stereoCameraChildWidget, "StereoCameraView", this);
@@ -1852,7 +1972,7 @@ void MainWindow::onSingleCameraSettingsClick() {
     singleCameraSettingsDialog->show();
 
     connect(singleCameraSettingsDialog, &SingleCameraSettingsDialog::onMCUConfig, MCUSettingsDialogInst, &MCUSettingsDialog::show);
-    connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraSettingsDialog, SLOT (onSettingsChange()));
+    //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraSettingsDialog, SLOT (onSettingsChange()));
 
 //    connect(MCUSettingsDialogInst, SIGNAL (onConnect()), singleCameraSettingsDialog, SLOT (onSerialConnect()));
 //    connect(MCUSettingsDialogInst, SIGNAL (onDisconnect()), singleCameraSettingsDialog, SLOT (onSerialDisconnect()));
@@ -1880,7 +2000,7 @@ void MainWindow::onSingleWebcamSettingsClick() {
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleWebcamSettingsDialog", this);
     singleWebcamSettingsDialog->show();
 
-    connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleWebcamSettingsDialog, SLOT (onSettingsChange()));
+    //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleWebcamSettingsDialog, SLOT (onSettingsChange()));
 }
 
 void MainWindow::onStereoCameraSettingsClick() {
@@ -1894,7 +2014,7 @@ void MainWindow::onStereoCameraSettingsClick() {
     stereoCameraSettingsDialog->show();
 
     connect(stereoCameraSettingsDialog, &StereoCameraSettingsDialog::onMCUConfig, MCUSettingsDialogInst, &MCUSettingsDialog::show);
-    connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraSettingsDialog, SLOT (onSettingsChange()));
+    //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraSettingsDialog, SLOT (onSettingsChange()));
 
 //    connect(MCUSettingsDialogInst, SIGNAL (onConnect()), stereoCameraSettingsDialog, SLOT (onSerialConnect()));
 //    connect(MCUSettingsDialogInst, SIGNAL (onDisconnect()), stereoCameraSettingsDialog, SLOT (onSerialDisconnect()));
@@ -2128,8 +2248,8 @@ void MainWindow::onOpenImageDirectory() {
     //QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.jpeg *.bmp *.tiff *.tif *.webp)"));
     QFileDialog dialog(
             this,
-            tr("Image Directory"),
-            recentPath,
+            tr("Open Image Recording"),
+            recentImageReadingDirectory,
             tr("Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip);;Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm);;Zip Archive (*.zip)")
             );
 
@@ -2152,24 +2272,25 @@ void MainWindow::onOpenImageDirectory() {
     if(!dialog.exec())
         return;
 
-    QString imageSource;
-    if(!dialog.selectedFiles().empty()) {
-        QString selectedFile = dialog.selectedFiles()[0];
-        if(selectedFile.endsWith("zip")) {
-            // TODO: check if file can be read? even here
-            imageSource = selectedFile;
-        }
+    QString imageSource = "";
+    if(dialog.selectedFiles().empty())
+        return;
+
+    QString selectedFile = dialog.selectedFiles()[0];
+    if(selectedFile.endsWith("zip")) {
+        // TODO: check if file can be read? even here
+        imageSource = selectedFile;
     } else {
         // TODO: The below checks for the existence of images inside 0 and 1 folders, and the folders themselves,
         //  only happens in case of a directory. But they could also be done quickly for a selected Zip file.
         //  Implement that.
 
-        QString imageSource = dialog.directory().absolutePath();
+        imageSource = dialog.directory().absolutePath();
         if (imageSource.isEmpty())
             return;
 
         QDir imageDir(imageSource);
-        qDebug() << imageDir;
+        //qDebug() << imageDir;
         if (imageDir.isEmpty())
             return;
 
@@ -2181,7 +2302,7 @@ void MainWindow::onOpenImageDirectory() {
         if (fileNames.isEmpty() && folderNames.size() < 2)
             return;
 
-        qDebug() << fileNames;
+        //qDebug() << fileNames;
 
         if (folderNames.size() == 2) {
             QDir stereo0Dir(imageDir.filePath("0"));
@@ -2418,6 +2539,19 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
             selectedCamera->close();
             selectedCamera = nullptr;
             return;
+        } else if (dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_UNOPENABLE) {
+            QMessageBox *msgBox = new QMessageBox(this);
+            msgBox->setWindowTitle("Zip archive could not be opened");
+            msgBox->setText(
+                    "This zip archive could not be opened for reading. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+            msgBox->setMinimumSize(330, 260);
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            selectedCamera->close();
+            selectedCamera = nullptr;
+            return;
         } else {
             break;
         }
@@ -2447,6 +2581,12 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     }
     safelyResetTrialCounter();
     safelyResetMessageRegister();
+
+    // GB: (old comment) moved here. Had to ensure that proc mode is correctly set before creating camera view (as now it relies on pupilDetection instance too)
+    // TODO: this internally cascades to call connectCameraPlaybackChangedSlots();, which is not efficient, as that is also called later.
+    //  I think it is necessary to call it later (as well) because imagePlaybackControlDialog will get connected to the cameraView window as a result
+    cameraViewClick();
+    onCalibrateClick();
 
     // Connects etc.
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
@@ -2480,9 +2620,6 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
         applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", pmStereo);
     }
     this->cameraPlaying = false;
-
-    cameraViewClick(); // GB: moved here. Had to ensure that proc mode is correctly set before creating camera view (as not it relies on pupilDetection instance too)
-    onCalibrateClick();
 
 //    cameraSettingsAct->setEnabled(false);
 //    cameraViewAct->setEnabled(true);
@@ -2526,6 +2663,13 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     connect(this, SIGNAL(playbackPauseApproved()), imagePlaybackControlDialog, SLOT(onPlaybackPauseApproved()));
     connect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
 
+    /*
+    // GB: (old comment) moved here. Had to ensure that proc mode is correctly set before creating camera view (as now it relies on pupilDetection instance too)
+    // GB: (later comment) Had to move it more way down, here. As it internally calls connectCameraPlaybackChangedSlots(); already, hence
+    //  connecting signals of imagePlaybackController, which has to exist at this point
+    cameraViewClick();
+    onCalibrateClick();
+    */
     connectCameraPlaybackChangedSlots();
 
     playbackSynchroniser = new PlaybackSynchroniser();
@@ -2546,7 +2690,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     currentStatusMessageLabel->setText("Image file source: " + SupportFunctions::shortenStringForDisplay(imageSource, 100));
     currentStatusMessageLabel->setToolTip(imageSource);
     // We also store the recent path in QSettings
-    setRecentPath(recordingParentLocation);
+    setRecentImageReadingDirectory(recordingParentLocation);
 
 }
 
@@ -2554,7 +2698,7 @@ void MainWindow::onPlaybackStartInitiated() {
     bool syncRecordCsv = SupportFunctions::readBoolFromQSettings("syncRecordCsv", imagePlaybackControlDialog->getSyncRecordCsv(), applicationSettings);
     bool syncStream = SupportFunctions::readBoolFromQSettings("syncStream", imagePlaybackControlDialog->getSyncStream(), applicationSettings);
 
-    if(syncRecordCsv && trackingOn && !pupilDetectionDataFile.isEmpty() && !recordOn) {
+    if(syncRecordCsv && trackingOn && !dataRecordingOutputTarget.isEmpty() && !recordOn) {
         onRecordClick();
     }
 
@@ -2677,17 +2821,21 @@ void MainWindow::onPupilDetectionProcModeChange(int procMode) {
     }
 }
 
+/*
 void MainWindow::onSubjectsSettingsChange(QString subject) {
 
     subjectConfigurationLabel->setText("Current configuration: " + subject);
 }
+*/
 
+/*
 void MainWindow::onSubjectsClick() {
     const QIcon subjectsSelectedIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/im-user-online.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     //subjectsAct->setIcon(subjectsSelectedIcon);
 
     subjectSelectionDialog->show();
 }
+*/
 
 void MainWindow::resetGeometry() {
     this->showMaximized();
@@ -2979,8 +3127,8 @@ void MainWindow::resetStatus(bool isConnect)
         cameraActDisconnectAct->setEnabled(true);
         calibrateAct->setEnabled(true);
         sharpnessAct->setEnabled(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA);
-//        subjectsAct->setEnabled(true);
-        subjectsAct->setEnabled(false);
+// //       subjectsAct->setEnabled(true);
+//        subjectsAct->setEnabled(false);
         trackAct->setEnabled(true);
         logFileAct->setEnabled(true);
         streamAct->setEnabled( streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() );
@@ -2989,8 +3137,8 @@ void MainWindow::resetStatus(bool isConnect)
         cameraViewAct->setEnabled(true); // In the View menu
         dataTableAct->setEnabled(true); // In the View menu
 
-        outputDirectoryAct->setEnabled(realCameraSelected);
-        recordImagesAct->setEnabled(realCameraSelected && !outputDirectory.isEmpty());
+        imageRecordingOutputAct->setEnabled(realCameraSelected);
+        recordImagesAct->setEnabled(realCameraSelected && !imageRecordingOutputTarget.isEmpty());
         forceResetTrialAct->setEnabled(realCameraSelected);
         manualIncTrialAct->setEnabled(realCameraSelected);
         forceResetMessageAct->setEnabled(realCameraSelected);
@@ -3007,13 +3155,13 @@ void MainWindow::resetStatus(bool isConnect)
         cameraActDisconnectAct->setEnabled(false);
         calibrateAct->setEnabled(false);
         sharpnessAct->setEnabled(false);
-//        subjectsAct->setEnabled(false);
+// //        subjectsAct->setEnabled(false);
         // Currently it could mess up the application if QSettings is changed when there is any connection on, so make sure they are not
         // TODO: reform the subjects selection system, and merge it with meta snapshot functionality
-        subjectsAct->setEnabled(
-                remoteCCDialog && !remoteCCDialog->isAnyConnected() &&
-                streamingSettingsDialog && !streamingSettingsDialog->isAnyConnected() &&
-                MCUSettingsDialogInst && !MCUSettingsDialogInst->isConnected());
+//        subjectsAct->setEnabled(
+//                remoteCCDialog && !remoteCCDialog->isAnyConnected() &&
+//                streamingSettingsDialog && !streamingSettingsDialog->isAnyConnected() &&
+//                MCUSettingsDialogInst && !MCUSettingsDialogInst->isConnected());
         trackAct->setEnabled(false);
         logFileAct->setEnabled(false);
         streamAct->setEnabled(false);
@@ -3021,7 +3169,7 @@ void MainWindow::resetStatus(bool isConnect)
         cameraViewAct->setEnabled(false); // In the View menu
         dataTableAct->setEnabled(false); // In the View menu
 
-        outputDirectoryAct->setEnabled(false);
+        imageRecordingOutputAct->setEnabled(false);
         recordImagesAct->setEnabled(false);
         forceResetTrialAct->setEnabled(false);
         manualIncTrialAct->setEnabled(false);
@@ -3230,10 +3378,28 @@ void MainWindow::destroyCamTempMonitor() {
     onDeviceWarmedUpReset();
 }
 
+/*
 void MainWindow::setRecentPath(QString path) {
     qDebug() << "Set recent path: " << path;
     recentPath = path;
     applicationSettings->setValue("RecentOutputPath", recentPath);
+}
+ */
+
+void MainWindow::setRecentImageReadingDirectory(QString path) {
+    qDebug() << "Set recentImageReadingDirectory: " << path;
+    recentImageReadingDirectory = path;
+    applicationSettings->setValue("RecentImageReadingDirectory", recentImageReadingDirectory);
+}
+void MainWindow::setRecentImageWritingDirectory(QString path) {
+    qDebug() << "Set recentImageWritingDirectory: " << path;
+    recentImageWritingDirectory = path;
+    applicationSettings->setValue("RecentImageWritingDirectory", recentImageWritingDirectory);
+}
+void MainWindow::setRecentDataWritingDirectory(QString path) {
+    qDebug() << "Set recentDataWritingDirectory: " << path;
+    recentDataWritingDirectory = path;
+    applicationSettings->setValue("RecentDataWritingDirectory", recentDataWritingDirectory);
 }
 
 void MainWindow::offerResetApplicationSettings() {

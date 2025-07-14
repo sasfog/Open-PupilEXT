@@ -32,28 +32,29 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
 
     } else if( QDir(imageSource).exists() ) {
         QDir imageSourceDir = QDir(imageSource);
-
-        // qDebug() << imageSourceDir << Qt::endl;
-        // qDebug() << imageSourceDir.exists("0") << Qt::endl;
-        // qDebug() << imageSourceDir.exists("1") << Qt::endl;
+        QList<QFileInfo> fil;
 
         // Check if in imageSource, a stereo structure with directories 0 and 1 for main and secondary camera are present
         if (imageSourceDir.exists("0") && imageSourceDir.exists("1")) {
             stereoMode = true;
-
-            // Read imageSource files into list
-            // glob sorts the names alphabetically, so fileNames[0] without zeros like _19 come after _189
-            //        cv::glob(imageSourceDir.filePath("0").toStdString(), fileNames[0], false);
-            //        cv::glob(imageSourceDir.filePath("1").toStdString(), fileNames[1], false);
-            fileNames[0] = QDir(imageSourceDir.filePath("0")).entryList(QStringList() << "*.*", QDir::Files);
-            fileNames[1] = QDir(imageSourceDir.filePath("1")).entryList(QStringList() << "*.*", QDir::Files);
+            //fileNames[0] = QDir(imageSourceDir.filePath("0")).entryList(QStringList() << "*.*", QDir::Files);
+            //fileNames[1] = QDir(imageSourceDir.filePath("1")).entryList(QStringList() << "*.*", QDir::Files);
+            fil = QDir(imageSourceDir.filePath("0")).entryInfoList(QStringList() << "*.*", QDir::Files);
+            for (const QFileInfo &fileInfo : fil) {
+                fileNames[0] << fileInfo.absoluteFilePath();
+            }
+            fil = QDir(imageSourceDir.filePath("1")).entryInfoList(QStringList() << "*.*", QDir::Files);
+            for (const QFileInfo &fileInfo : fil) {
+                fileNames[1] << fileInfo.absoluteFilePath();
+            }
 
             assert(fileNames[0].size() == fileNames[1].size());
         } else {
-            // Read imageSource files into list
-            // glob sorts the names alphabetically, so fileNames without zeros like _19 come after _189
-            //    cv::glob(imageSourceDir.path().toStdString(), fileNames, false);
-            fileNames[0] = QDir(imageSourceDir.path()).entryList(QStringList() << "*.*", QDir::Files);
+            //fileNames[0] = QDir(imageSourceDir.path()).entryList(QStringList() << "*.*", QDir::Files);
+            fil = QDir(imageSourceDir.path()).entryInfoList(QStringList() << "*.*", QDir::Files);
+            for (const QFileInfo &fileInfo : fil) {
+                fileNames[0] << fileInfo.absoluteFilePath();
+            }
         }
 
         imageReaderSource = IMSOURCE_DIRECTORY;
@@ -68,9 +69,9 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
             QFile f(fPathAndName);
             if (!f.open(QIODevice::ReadOnly)) {
                 std::cout << "Could not open XML file. Check file availability or file access permission.";
-                return;
+            } else {
+                offlineEventLogContent = f.readAll();
             }
-            offlineEventLogContent = f.readAll();
         }
         fPathAndName = suggestedXmlsLocation + '/' + "imagerec_meta.xml";
         qDebug() << "Expected image rec meta snapshot fPathAndName = " << fPathAndName;
@@ -78,9 +79,9 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
             QFile f(fPathAndName);
             if (!f.open(QIODevice::ReadOnly)) {
                 std::cout << "Could not open XML file. Check file availability or file access permission.";
-                return;
+            } else {
+                metaSnapshotContent = f.readAll();
             }
-            metaSnapshotContent = f.readAll();
         }
 
         /*
@@ -105,11 +106,8 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
     }
 
     acqTimestamps = extractAcqTimestamps(fileNames[0]);
-
 //    qDebug()<<"ImageReader: found " << fileNames[0].size() << " images. Ready." ;
 
-
-    // TODO: ASAP WORK FOR ZIP
     cv::Mat checkImg = getStillImageSingle(0);
     foundImageWidth = checkImg.cols;
     foundImageHeight = checkImg.rows;
@@ -149,7 +147,7 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
     imageSourceZip = new QuaZip(imageSource);
     if (!imageSourceZip->open(QuaZip::mdUnzip)) {
         qWarning("QuaZip error during: open(): %d", imageSourceZip->getZipError());
-        initSuccessful = false;
+        imageReaderStatus = IMSTATUS_ZIP_UNOPENABLE;
         return;
     }
     // TODO: There are many supported QTextCodecs in Qt6. Should we detect and use them?
@@ -160,10 +158,7 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
     qDebug("Zip file contains %d entries", imageSourceZip->getEntriesCount());
     qDebug("Zip comment: %s", imageSourceZip->getComment().toLocal8Bit().constData());
 
-    //---
     imageSourceZipInnerFile = new QuaZipFile(imageSourceZip);
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     auto fileNameCandidates = QStringList::fromList(imageSourceZip->getFileNameList());
     //qDebug() << "fileNameCandidates = " << fileNameCandidates;
@@ -178,7 +173,7 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
     QString zS_recordingName = "";
     QVector<QStringList> zS_fileNames = {QStringList(), QStringList()};
     //QVector <QString> zS_filePaths = {"", ""};
-    QString zS_offilneEventLogPathAndName = "";
+    QString zS_offlineEventLogPathAndName = "";
     QString zS_metaSnapshotPathAndName = "";
 
     // what is the most frequent file (image) extension inside the zip file
@@ -264,7 +259,7 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
                     auto tfns = fileNameCandidates
                             .filter(rn + "/")
                             .filter(QRegularExpression(mostFrequentExtension + "$"));
-                    foundZipMultiInfo.append({rn, getRecLenFromFileNamesList(tfns)});
+                    foundZipMultiInfo.append({rn, getRecLenFromFileNamesList(tfns, mostFrequentExtension)});
                 }
             }
         } else {
@@ -277,7 +272,7 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
                 auto tfns = fileNameCandidates
                         .filter(rn + "/")
                         .filter(QRegularExpression(mostFrequentExtension + "$"));
-                foundZipMultiInfo.append({rn, getRecLenFromFileNamesList(tfns)});
+                foundZipMultiInfo.append({rn, getRecLenFromFileNamesList(tfns, mostFrequentExtension)});
             }
         }
 
@@ -293,7 +288,7 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
             auto tfns = fileNameCandidates
                     .filter(rn + "/")
                     .filter(QRegularExpression(mostFrequentExtension + "$"));
-            foundZipMultiInfo.append({rn, getRecLenFromFileNamesList(tfns)});
+            foundZipMultiInfo.append({rn, getRecLenFromFileNamesList(tfns, mostFrequentExtension)});
         }
     }
 
@@ -374,12 +369,12 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
     }
 
     // Step 4: retrieve rec event log and meta snapshot
-    auto offilneEventLogsFound = fileNameCandidates.filter(QRegularExpression("offline_event_log.xml$"));
-    if(!offilneEventLogsFound.empty()) {
-        zS_offilneEventLogPathAndName = offilneEventLogsFound[0];
-        qDebug() << "zS_offilneEventLogPathAndName = " << zS_offilneEventLogPathAndName;
+    auto offlineEventLogsFound = fileNameCandidates.filter(QRegularExpression("offline_event_log.xml$"));
+    if(!offlineEventLogsFound.empty()) {
+        zS_offlineEventLogPathAndName = offlineEventLogsFound[0];
+        qDebug() << "zS_offlineEventLogPathAndName = " << zS_offlineEventLogPathAndName;
     } else {
-        qDebug() << "zS_offilneEventLogPathAndName not found";
+        qDebug() << "zS_offlineEventLogPathAndName not found";
     }
     auto metaSnapshotsFound = fileNameCandidates.filter(QRegularExpression("imagerec_meta.xml$"));
     if(!metaSnapshotsFound.empty()) {
@@ -773,7 +768,7 @@ void ImageReader::pause() {
     if(state != PlaybackState::PLAYING)
         return;
 
-    qDebug()<<"-----------------------------------------------------------Image Reader: Pausing ImageReader thread.";
+    qDebug()<<"Image Reader: Pausing ImageReader thread.";
     state = PlaybackState::PAUSED;
 
     imageProcessed->wakeAll();
@@ -867,143 +862,25 @@ QStringList ImageReader::purgeFileNamesVector(QStringList fileNameCandidates) {
             iterIndex++;
         }
     }
-
     return fileNameCandidates;
 }
 
 cv::Mat ImageReader::getStillImageSingle(int frameNumber) {
     cv::Mat img;
-
     if(fileNames[0].size() > frameNumber) {
         //return cv::imread(fileNames[0][frameNumber].toStdString(), cv::IMREAD_GRAYSCALE);
         quickReadImageSingle(img, frameNumber);
     }
-
     return img;
 }
 
 std::vector<cv::Mat> ImageReader::getStillImageStereo(int frameNumber) {
-
     cv::Mat img, imgSecondary;
     if(fileNames[0].size() >= frameNumber && fileNames[1].size() > frameNumber) {
         quickReadImageStereo(img, imgSecondary, frameNumber);
     }
-
     return {img, imgSecondary};
-
-    //if(fileNames[0].size() >= frameNumber && fileNames[1].size() > frameNumber) {
-    //    std::vector<cv::Mat> vec = {cv::imread(fileNames[0][frameNumber].toStdString(), cv::IMREAD_GRAYSCALE), cv::imread(fileNames[1][frameNumber].toStdString(), cv::IMREAD_GRAYSCALE)};
-    //    return vec;
-    //} else
-    //    return std::vector<cv::Mat>{cv::Mat(), cv::Mat()};
 }
-
-/*
-// This is not computationally expensive, so currently run on the main thread
-void ImageReader::step1frame(bool next) {
-    if(state == PlaybackState::PLAYING)
-        return;
-
-    state = PlaybackState::PAUSED;
-
-    // NOTE: at this point, currentImageIndex is marking the NEXT (yet unplayed) frame for the run() method
-
-    if(next)
-        currentImageIndex+=1;
-    else
-        currentImageIndex-=1;
-
-    if(currentImageIndex < 0)
-        currentImageIndex+=(int)fileNames[0].size();
-    if(currentImageIndex > fileNames[0].size()-1)
-        currentImageIndex%=(int)fileNames[0].size();
-
-    //qDebug() << currentImageIndex;
-
-    if(stereoMode) {
-
-        cv::Mat img, imgSecondary;
-        if (imageReaderSource == IMSOURCE_DIRECTORY) {
-            // Read images from disk asynchronous to save time
-            QFutureSynchronizer<cv::Mat> synchronizer;
-            synchronizer.addFuture(
-                    QtConcurrent::run(cv::imread, fileNames[0][currentImageIndex].toStdString(), cv::IMREAD_GRAYSCALE));
-            synchronizer.addFuture(
-                    QtConcurrent::run(cv::imread, fileNames[1][currentImageIndex].toStdString(), cv::IMREAD_GRAYSCALE));
-            synchronizer.waitForFinished();
-            img = synchronizer.futures().at(0).result();
-            imgSecondary = synchronizer.futures().at(1).result();
-        } else { // if(imageReaderSource == IMSOURCE_ZIP) {
-            QByteArray a;
-
-            imageSourceZip->setCurrentFile(fileNames[0][currentImageIndex]);
-            imageSourceZipInnerFile->open(QIODevice::ReadOnly);
-            a = imageSourceZipInnerFile->readAll();
-            imageSourceZipInnerFile->close();
-            img = cv::imdecode(cv::InputArray( std::vector<uchar>(a.begin(), a.end()) ), cv::IMREAD_GRAYSCALE);
-
-            imageSourceZip->setCurrentFile(fileNames[1][currentImageIndex]);
-            imageSourceZipInnerFile->open(QIODevice::ReadOnly);
-            a = imageSourceZipInnerFile->readAll();
-            imageSourceZipInnerFile->close();
-            imgSecondary = cv::imdecode(cv::InputArray( std::vector<uchar>(a.begin(), a.end()) ), cv::IMREAD_GRAYSCALE);
-            // TODO ERROR HANDLING
-        }
-
-        //QFutureSynchronizer<cv::Mat> synchronizer;
-        //// Read images from disk asynchronous to save time
-        //synchronizer.addFuture(QtConcurrent::run(cv::imread, fileNames[0][currentImageIndex].toStdString(), cv::IMREAD_GRAYSCALE));
-        //synchronizer.addFuture(QtConcurrent::run(cv::imread, fileNames[1][currentImageIndex].toStdString(), cv::IMREAD_GRAYSCALE));
-        //synchronizer.waitForFinished();
-        //cv::Mat img = synchronizer.futures().at(0).result();
-        //cv::Mat imgSecondary = synchronizer.futures().at(1).result();
-
-        if(!img.data || !imgSecondary.data) {
-            qDebug() << "Image Reader: StereoImage could not be read, skipping: " << fileNames[0][currentImageIndex] << " and " << fileNames[1][currentImageIndex] ;
-        }
-
-        CameraImage cimg;
-        cimg.type = CameraImageType::STEREO_IMAGE_FILE;
-        cimg.img = img.clone();
-        cimg.imgSecondary = imgSecondary.clone();
-        //cimg.timestamp = startTimestamp;
-        cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
-        cimg.frameNumber = currentImageIndex;
-        cimg.filename = fileNames[0][currentImageIndex].toStdString();
-        img.release();
-        imgSecondary.release();
-
-        emit onNewImage(cimg);
-    } else {
-
-        cv::Mat img;
-        QByteArray a;
-        imageSourceZip->setCurrentFile(fileNames[0][currentImageIndex]);
-        imageSourceZipInnerFile->open(QIODevice::ReadOnly);
-        a = imageSourceZipInnerFile->readAll();
-        imageSourceZipInnerFile->close();
-        img = cv::imdecode(cv::InputArray( std::vector<uchar>(a.begin(), a.end()) ), cv::IMREAD_GRAYSCALE);
-        // TODO ERROR HANDLING
-
-        //cv::Mat img = cv::imread(fileNames[0][currentImageIndex].toStdString(), cv::IMREAD_GRAYSCALE);
-
-        if(!img.data) {
-            qDebug() << "Image Reader: Image could not be read, skipping: " << fileNames[0][currentImageIndex] ;
-        }
-
-        CameraImage cimg;
-        cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
-        cimg.img = img.clone();
-        //cimg.timestamp = startTimestamp;
-        cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
-        cimg.frameNumber = currentImageIndex;
-        cimg.filename = fileNames[0][currentImageIndex].toStdString();
-        img.release();
-
-        emit onNewImage(cimg);
-    }
-}
- */
 
 void ImageReader::setSynchronised(bool synchronised) {
     ImageReader::synchronised = synchronised;

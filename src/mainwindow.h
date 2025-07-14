@@ -83,10 +83,15 @@ private:
     QSettings *applicationSettings;
     QDir settingsDirectory;
 
-    QString pupilDetectionDataFile;
-    QString outputDirectory;
+    // Store separately these
+    QString recentImageReadingDirectory;
+    QString recentImageWritingDirectory;
+    QString recentDataWritingDirectory;
+
+    QString dataRecordingOutputTarget;
+    QString imageRecordingOutputTarget;
     //QString imageDirectory;
-    QString recentPath; 
+    //QString recentPath;
 
     QMdiArea *mdiArea;
     QToolBar *toolBar;
@@ -109,12 +114,13 @@ private:
     QIcon cameraSettingsIcon2;
     QIcon calibrateIcon;
     QIcon sharpnessIcon;
-    QIcon subjectsIcon;
+    //QIcon subjectsIcon;
     QIcon outputDataFileIcon;
     QIcon streamingSettingsIcon;
     QIcon imagePlaybackControlIcon;
     QIcon dataTableIcon;
     QIcon sceneImageViewIcon;
+    QIcon archiveIcon;
 
     QMenu *windowMenu;
     QMenu *baslerCamerasMenu;
@@ -131,7 +137,8 @@ private:
     QAction *recordAct;
     QAction *calibrateAct;
     QAction *logFileAct;
-    QAction *outputDirectoryAct;
+//    QAction *outputDirectoryAct;
+    QAction *imageRecordingOutputAct;
     QAction *recordImagesAct;
 
 //    QAction *closeAct;
@@ -143,14 +150,14 @@ private:
     QAction *nextAct;
     QAction *previousAct;
     QAction *windowMenuSeparatorAct;
-    QAction *subjectsAct;
+    //QAction *subjectsAct;
     QAction *sharpnessAct;
 
     QLabel *serialStatusIcon;
     QLabel *hwTriggerStatusIcon;
     QLabel *warmedUpStatusIcon;
     QLabel *calibrationStatusIcon;
-    QLabel *subjectConfigurationLabel;
+    //QLabel *subjectConfigurationLabel;
     QLabel *currentStatusMessageLabel;
     
     // TODO: Move trackingOn into class instance, and get rid of others, use nullptr check instead. better like that I think. Also
@@ -191,7 +198,7 @@ private:
     PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
     SetupGeometryDialog *setupGeometryDialog;
     GeneralSettingsDialog *generalSettingsDialog;
-    SubjectSelectionDialog *subjectSelectionDialog;
+    //SubjectSelectionDialog *subjectSelectionDialog;
     SingleCameraSettingsDialog *singleCameraSettingsDialog;
     StereoCameraSettingsDialog *stereoCameraSettingsDialog;
     RemoteCCDialog *remoteCCDialog;
@@ -256,7 +263,10 @@ private:
     void resetStatus(bool isConnect);
 
     void openImageFileSource(QString imageSource, int subrecordingNumber);
-    void setRecentPath(QString path);
+
+    void setRecentImageReadingDirectory(QString path);
+    void setRecentImageWritingDirectory(QString path);
+    void setRecentDataWritingDirectory(QString path);
 
     void connectCameraPlaybackChangedSlots();
 
@@ -282,13 +292,14 @@ private slots:
     void onOpenImageDirectory();
 
     void onCameraClick();
+    void onImageRecordingOutputClick();
     void onCameraDisconnectClick();
     void onCameraSettingsClick();
     void onSingleCameraSettingsClick();
     void onStereoCameraSettingsClick();
 
     void onCalibrateClick();
-    void onSubjectsClick();
+    //void onSubjectsClick();
 
     void onTrackActClick();
     void onRecordClick();
@@ -311,7 +322,8 @@ private slots:
     void toggleFullscreen();
 
     void setLogFile();
-    void setOutputDirectory();
+    void imageRecordingOutputDirectorySelected();
+    void imageRecordingOutputZipSelected();
 
     void updateMenus();
     void updateBaslerCamerasMenu();
@@ -324,7 +336,7 @@ private slots:
 //    void closeActiveSubWindow();
 //    void closeAllSubWindows();
 
-    void onSubjectsSettingsChange(QString subject);
+    //void onSubjectsSettingsChange(QString subject);
     void onSharpnessClick();
 
     void offerResetApplicationSettings();
@@ -391,7 +403,7 @@ public slots:
     void PRGincrementTrialCounter(const quint64 &timestamp);
     void PRGforceResetTrialCounter(const quint64 &timestamp);
     // NOTE: there is no programmatic implementation for resetting the message register. It can be done by sending a blank message
-    void PRGsetOutPath(const QString &str);
+    void PRGsetImageOutputTarget(QString str);
     void PRGsetCsvPathAndName(const QString &str);
     
     void PRGsetGlobalDelimiter(const QString &str);

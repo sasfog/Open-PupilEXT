@@ -141,7 +141,7 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGtrackStart();
         }
         if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_PATH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetOutPath(execArgs[i].argVals[0]);
+            w->PRGsetImageOutputTarget(execArgs[i].argVals[0]);
         }
         if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_FORMAT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetImageOutputFormat(execArgs[i].argVals[0].toLower());

@@ -16,16 +16,15 @@ FileCamera::FileCamera(const QString &imageSource, const int &subrecordingNumber
 
         if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ERROR) {
             // There was a problem, we cannot yet open the location for image reading
-
-            //...
             qDebug() << "ImageReader::IMSTATUS_ERROR";
             return;
         } else if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_INDECISIVE) {
             // In case of a zipped recording, there are multiple recordings in the zip file,
             //  (and the specified subrecording name or number does not match with any of those found in the zip)
-
-            //...
             qDebug() << "ImageReader::IMSTATUS_ZIP_INDECISIVE";
+            return;
+        } else if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_UNOPENABLE) {
+            qDebug() << "ImageReader::IMSTATUS_ZIP_UNOPENABLE";
             return;
         }
     } catch (const std::exception &e) {
