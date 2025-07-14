@@ -226,7 +226,7 @@ void ImageWriter::onNewImage(const CameraImage &img) {
         if (stereoMode) {
             fileName = outputZipInnerRootDirectory + "/0/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
             cv::imencode(('.'+imageWriterFormatString).toStdString(), img.img, imencodeBuffer, writeParams);
-            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName));
+            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName), nullptr, 0, 0);
             imageOutputTargetZipInnerFile->write(
                     reinterpret_cast<const char *>(imencodeBuffer.data()),
                     static_cast<int>(imencodeBuffer.size()));
@@ -236,7 +236,7 @@ void ImageWriter::onNewImage(const CameraImage &img) {
 
             fileName = outputZipInnerRootDirectory + "/1/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
             cv::imencode(('.'+imageWriterFormatString).toStdString(), img.imgSecondary, imencodeBuffer, writeParams);
-            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName));
+            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName), nullptr, 0, 0);
             imageOutputTargetZipInnerFile->write(
                     reinterpret_cast<const char *>(imencodeBuffer.data()),
                     static_cast<int>(imencodeBuffer.size()));
@@ -246,7 +246,7 @@ void ImageWriter::onNewImage(const CameraImage &img) {
         } else {
             fileName = outputZipInnerRootDirectory + "/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
             cv::imencode(('.'+imageWriterFormatString).toStdString(), img.img, imencodeBuffer, writeParams);
-            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName));
+            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName), nullptr, 0, 0);
             imageOutputTargetZipInnerFile->write(
                     reinterpret_cast<const char *>(imencodeBuffer.data()),
                     static_cast<int>(imencodeBuffer.size()));
@@ -293,7 +293,7 @@ bool ImageWriter::writeMetaSnapshot(const QString &content) {
         //if(foundZipAlreadyExist && foundFileNameList.contains(metaSnapshotFileName)) {
         //    ok &= imageOutputTargetZipInnerFile->open(QIODevice::Append, QuaZipNewInfo(metaSnapshotFileName));
         //} else {
-            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(metaSnapshotFileName));
+            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(metaSnapshotFileName), nullptr, 0, 0);
         //}
         auto bytesWritten = imageOutputTargetZipInnerFile->write(content.toUtf8());
         ok &= (imageOutputTargetZipInnerFile->getZipError() == UNZ_OK);
@@ -347,7 +347,7 @@ bool ImageWriter::writeOfflineEventLog(const QString &content) {
         //if(foundZipAlreadyExist && foundFileNameList.contains(offlineEventLogFileName)) {
         //    ok &= imageOutputTargetZipInnerFile->open(QIODevice::Append, QuaZipNewInfo(offlineEventLogFileName));
         //} else {
-            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(offlineEventLogFileName));
+            ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(offlineEventLogFileName), nullptr, 0, 0);
         //}
         imageOutputTargetZipInnerFile->write(content.toUtf8());
         ok &= (imageOutputTargetZipInnerFile->getZipError() == UNZ_OK);
