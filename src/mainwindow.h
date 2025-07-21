@@ -22,6 +22,8 @@
 #include <QMdiSubWindow>
 #include <QSettings>
 #include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
 
 #include "supportFunctions.h"
 #include "metaSnapshotOrganizer.h"
@@ -77,6 +79,9 @@ protected:
     void dropEvent(QDropEvent* e);
 
 private:
+
+    CTlFactory& TlFactory = CTlFactory::GetInstance();
+    IGigETransportLayer* pTl = dynamic_cast<IGigETransportLayer*>(TlFactory.CreateTl( Pylon::BaslerGigEDeviceClass ));
  
     SignalPubSubHandler *signalPubSubHandler;
 
@@ -176,7 +181,7 @@ private:
 
     QWidget* activeMdiChild() const;
 
-    static Pylon::DeviceInfoList_t enumerateCameraDevices();
+    Pylon::DeviceInfoList_t enumerateCameraDevices();
 
     Camera *selectedCamera;
 

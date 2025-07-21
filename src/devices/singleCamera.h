@@ -8,6 +8,9 @@
 #include <QtCore/QObject>
 #include <pylon/PylonIncludes.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
 #include "singleCameraImageEventHandler.h"
 #include "cameraConfigurationEventHandler.h"
 #include "camera.h"
@@ -45,8 +48,7 @@ Q_OBJECT
 
 public:
 
-    explicit SingleCamera(const String_t &fullname, QObject* parent=0);
-    explicit SingleCamera(const CDeviceInfo& di, QObject* parent=0);
+    explicit SingleCamera(const QString &friendlyName, IGigETransportLayer* _pTl = nullptr, QObject* parent=0);
 
     ~SingleCamera() override;
 
@@ -101,6 +103,14 @@ public:
     bool isGrabbing() override;
 
 private:
+
+//    explicit SingleCamera(const CDeviceInfo& di, IGigETransportLayer* _pTl = nullptr, QObject* parent=0);
+
+    // the TLFactory has this GetInstance method, but it has no getter to let us get the pointer to the
+    //  gigE transport layer that we have once created in mainwindow.. this is currently a workaround, to
+    //  always pass its pointer to the camera instance...
+    CTlFactory& TlFactory = CTlFactory::GetInstance();
+    IGigETransportLayer* pTl = nullptr;
 
     QDir settingsDirectory;
 

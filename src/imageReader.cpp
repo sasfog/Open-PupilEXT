@@ -478,8 +478,16 @@ bool ImageReader::quickReadImageStereo(cv::Mat &img, cv::Mat &imgSecondary, cons
         if (imageReaderSource == IMSOURCE_DIRECTORY) {
             // Read images from disk asynchronous to save time
             QFutureSynchronizer<cv::Mat> synchronizer;
-            synchronizer.addFuture(QtConcurrent::run(cv::imread, fileNames[0][imageIndex].toStdString(), cv::IMREAD_GRAYSCALE));
-            synchronizer.addFuture(QtConcurrent::run(cv::imread, fileNames[1][imageIndex].toStdString(), cv::IMREAD_GRAYSCALE));
+            //auto a = QtConcurrent::run(QThreadPool::globalInstance(), cv::imread, fileNames[0][imageIndex].toStdString(), cv::IMREAD_GRAYSCALE);
+            // IMPORTANT NOTE: this lambda encapsulation is necessary, because the QtConcurrent::run
+            //  template function cannot otherwise infer the arguments correctly, since cv::imread was
+            //  changed in the new (4.11.0) version of opencv
+            synchronizer.addFuture(QtConcurrent::run([=]() {
+                return cv::imread(fileNames[0][imageIndex].toStdString(), cv::IMREAD_GRAYSCALE);
+            }));
+            synchronizer.addFuture(QtConcurrent::run([=]() {
+                return cv::imread(fileNames[1][imageIndex].toStdString(), cv::IMREAD_GRAYSCALE);
+            }));
             synchronizer.waitForFinished();
             img = synchronizer.futures().at(0).result();
             imgSecondary = synchronizer.futures().at(1).result();

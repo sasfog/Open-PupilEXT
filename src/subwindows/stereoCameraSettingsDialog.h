@@ -17,6 +17,10 @@
 #include "../SVGIconColorAdjuster.h"
 #include "stereoCameraView.h"
 
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
+
 /**
     Custom widget for configuring a stereo camera setup, main and secondary camera are selected and opened, hardware trigger established and camera settings configured.
 
@@ -29,7 +33,7 @@ class StereoCameraSettingsDialog : public QDialog {
 
 public:
 
-    explicit StereoCameraSettingsDialog(StereoCamera *cameraPtr, MCUSettingsDialog *MCUSettings, QWidget *parent = nullptr);
+    explicit StereoCameraSettingsDialog(StereoCamera *cameraPtr, MCUSettingsDialog *MCUSettings, IGigETransportLayer* _pTl = nullptr, QWidget *parent = nullptr);
 
     ~StereoCameraSettingsDialog() override;
 
@@ -42,9 +46,14 @@ protected:
 
 private:
 
+    // We only let Pylon type input from within the class. Calls from outside are only to use friendly names with serial number
+    //  This is a preparatory step to later enable easier implementation of a general genicam camera wrapper
+    CTlFactory& TlFactory = CTlFactory::GetInstance();
+    IGigETransportLayer* pTl = nullptr;
+
     StereoCamera *camera;
 
-    Pylon::DeviceInfoList_t lstDevices;
+    Pylon::DeviceInfoList_t allDevices;
 
     QDir settingsDirectory;
     QSettings *applicationSettings;

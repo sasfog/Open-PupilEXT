@@ -103,12 +103,14 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
 
 if(SPII_BUILD_FOUND)
 
-    target_link_libraries(${CMAKE_PROJECT_NAME}
+    target_link_libraries(
+            ${CMAKE_PROJECT_NAME}
+            PRIVATE
+            TBB::tbb #TBB::tbbmalloc TBB::tbbbind_2_5 TBB::tbbmalloc_proxy ##tbb12
             QuaZip
             "singleeyefitter"
             Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
             ${Boost_LIBRARIES}
-            TBB::tbb
             #Boost::boost
             ${spii_LIBRARIES}
             ${CERES_LIBRARIES}
@@ -120,11 +122,14 @@ if(SPII_BUILD_FOUND)
 
 else()
 
-    target_link_libraries(${CMAKE_PROJECT_NAME} QuaZip
+    target_link_libraries(
+            ${CMAKE_PROJECT_NAME}
+            PRIVATE
+            TBB::tbb #TBB::tbbmalloc TBB::tbbmalloc_proxy ##tbb12
+            QuaZip
             "singleeyefitter"
             Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
             ${Boost_LIBRARIES}
-            TBB::tbb
             #Boost::boost
             spii
             meschach
@@ -136,6 +141,14 @@ else()
     )
 
 endif()
+
+
+
+##################### target_link_directories(PupilEXT PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)
+
+
+
+
 
 # add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 

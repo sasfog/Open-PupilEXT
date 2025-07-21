@@ -7,12 +7,14 @@
 // The stereo camera is implemented using Pylon's CBaslerUniversalInstantCameraArray
 // A stereo camera consists of two cameras configured to receive hardware trigger signals
 // Stereo camera images handled using a StereoCameraImageEventHandler
-StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
+StereoCamera::StereoCamera(IGigETransportLayer* _pTl, QObject* parent) : Camera(parent),
             cameras(2),
             frameCounter(new CameraFrameRateCounter(parent)),
             cameraCalibration(new StereoCameraCalibration()),
             calibrationThread(new QThread()),
             lineSource("Line1") {
+
+    pTl = _pTl;
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
@@ -31,6 +33,7 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
 }
 
+/*
 // Creates a stereo camera and attaches the two given Pylon camera device information
 StereoCamera::StereoCamera(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary, QObject* parent)
         : StereoCamera(parent) {
@@ -40,10 +43,19 @@ StereoCamera::StereoCamera(const CDeviceInfo &diMain, const CDeviceInfo &diSecon
 }
 
 // Creates a stereo camera and attaches the two given Pylon device names (fullnames)
-StereoCamera::StereoCamera(const String_t &fullnameMain, const String_t &fullnameSecondary, QObject* parent)
-        : StereoCamera(CDeviceInfo().SetFullName(fullnameMain), CDeviceInfo().SetFullName(fullnameSecondary), parent) {
+StereoCamera::StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, IGigETransportLayer* _pTl, QObject* parent) {
+
+    pTl = _pTl;
+
+    auto diMain = CDeviceInfo().SetFullName(friendlyNameMain.toStdString().c_str());
+    auto diSecondary = CDeviceInfo().SetFullName(friendlyNameSecondary.toStdString().c_str());
+
+    // TODO: LOOKUP
+
+    StereoCamera(diMain, diSecondary, parent);
 
 }
+ */
 
 // Destroys the stereo camera
 // Closes the camera array
@@ -73,6 +85,17 @@ void StereoCamera::genericExceptionOccured(const GenericException &e) {
 }
 
 // Attaches the main and secondary cameras to the camera array, based on their given device information
+void StereoCamera::attachCameras(const QString &friendlyNameMain, const QString &friendlyNameSecondary) {
+
+    auto diMain = CDeviceInfo().SetFriendlyName(friendlyNameMain.toStdString().c_str());
+    auto diSecondary = CDeviceInfo().SetFriendlyName(friendlyNameSecondary.toStdString().c_str());
+
+    // TODO: LOOKUP HERE, NOT IN STEREO CAMERA SETTINGS DIALOG
+
+    attachCameras(diMain, diSecondary);
+}
+
+// Attaches the main and secondary cameras to the camera array, based on their given device information
 void StereoCamera::attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary) {
 
     // If cameras are already attached to the array, remove them
@@ -85,8 +108,8 @@ void StereoCamera::attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &d
 //        safelyCloseCameras();
     }
 
-    cameras[0].Attach(CTlFactory::GetInstance().CreateDevice(diMain));
-    cameras[1].Attach(CTlFactory::GetInstance().CreateDevice(diSecondary));
+    cameras[0].Attach(TlFactory.CreateDevice(diMain));
+    cameras[1].Attach(TlFactory.CreateDevice(diSecondary));
 
     std::cout<<"Attached Camera0:" << cameras[0].GetDeviceInfo().GetFriendlyName() << std::endl;
     std::cout<<"Attached Camera1:" << cameras[1].GetDeviceInfo().GetFriendlyName() << std::endl << std::endl;

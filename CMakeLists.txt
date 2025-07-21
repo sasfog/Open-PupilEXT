@@ -17,7 +17,15 @@
 
 # During build it is important to set the VCPKG_TARGET_TRIPLET env variable
 
-cmake_minimum_required(VERSION 3.16)
+if(MSVC)
+    # Force /MT for the entire project
+    #set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # or force /MD (make and use DLLs)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
+
+#cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.9)
 project(PupilEXT)
 
 # On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
@@ -35,6 +43,10 @@ set(SPII_BUILD_MODE_VAR TRUE)
 
 # Provide the user name for your system, which is used to find the Qt6_DIR on Mac and Win
 set(QT_VERSION 6.8.3)
+
+
+###################### # DEV TEST: ?? newer cmake will not assume OFF, so we need to tell them
+######################set(BUILD_SHARED_LIBS OFF)
 
 # Provide the user name for your system, which is used to find the Qt6_DIR on mac
 # Windows users can ignore this line
@@ -56,6 +68,7 @@ endif()
 
 # Output of initial values -----------------------------------------------
 message("----- Output of initial values -----")
+message(STATUS "VCPKG_INSTALLED_DIR = ${VCPKG_INSTALLED_DIR}")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
@@ -74,6 +87,7 @@ if(APPLE)
 
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
+
 	set(PYLON_HOME "C:/basler-pylon-8/Development")
     set(PYLON_INCLUDE_DIR "C:/basler-pylon-8/Development/include")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
@@ -87,24 +101,25 @@ else()
     set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/pylon")
     set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/GenApi")
     set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/Base")
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake") # The find pylon file is in the cmake folder
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/opt/Qt/${QT_VERSION}/gcc_64")
 
     set(VCPKG_TARGET_TRIPLET x64-linux CACHE STRING "")
 endif()
 # ----------------------------------------------------------------------------------------------
 
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share")
 # set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share") # Normally this is set with the cmake call
-
+set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        CACHE STRING "Vcpkg toolchain file")
 
 # Setting the module paths to the <package-name>config.cmake files for each lib -------------------
-set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
-set(TBB_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
-set(Eigen3_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
-set(Ceres_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
-#set(BZip2_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
-set(glog_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glog")
+set(OpenCV_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/opencv")
+set(TBB_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/tbb")
+set(Eigen3_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/eigen3")
+set(Ceres_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/ceres")
+#set(BZip2_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
+set(glog_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/glog")
 # TODO: It seems that boost has no config file in vcpkg. The dirs need to be set manually on mac
 # ------------------------------------------------------------------------------------------------
 
@@ -134,7 +149,40 @@ message(STATUS "----- OpenCV packageconfig was not found ! -----")
 endif()
 
 if(TBB_FOUND)
+
+
+
 message(STATUS "----- TBB was found -----")
+message(STATUS "TBB_FOUND = ${TBB_FOUND}")
+get_target_property(_loc TBB::tbb IMPORTED_LOCATION_RELEASE)
+message(STATUS "TBB::tbb (release) = ${_loc}")
+get_target_property(_tbb_loc TBB::tbb IMPORTED_LOCATION)
+message(STATUS "TBB::tbb IMPORTED_LOCATION = ${_tbb_loc}")
+get_target_property(_tbb_libs TBB::tbb INTERFACE_LINK_LIBRARIES)
+message(STATUS "TBB::tbb INTERFACE_LINK_LIBRARIES = ${_tbb_libs}")
+
+foreach(prop
+        NAME
+        TYPE
+        IMPORTED_LOCATION_RELEASE
+        IMPORTED_LOCATION_DEBUG
+        IMPORTED_IMPLIB_RELEASE
+        IMPORTED_IMPLIB_DEBUG
+        INTERFACE_LINK_LIBRARIES
+        INTERFACE_INCLUDE_DIRECTORIES
+        INTERFACE_COMPILE_DEFINITIONS
+        INTERFACE_COMPILE_OPTIONS
+)
+    get_target_property(val TBB::tbb ${prop})
+    message(STATUS "TBB::tbb ${prop} = ${val}")
+
+    #set_target_properties(TBB::tbb PROPERTIES
+    #        IMPORTED_IMPLIB_DEBUG "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/tbb12.lib"
+    #        #IMPORTED_IMPLIB_DEBUG "${PROJECT_SOURCE_DIR}/cmake-build-debug/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/tbb12.lib"
+    #)
+
+endforeach()
+
 else()
 message(STATUS "----- TBB packageconfig was not found ! -----")
 endif()
@@ -173,6 +221,7 @@ endif()
 set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+#set(GLOG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###################################
 set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(BZip2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###########################################################
 # -------------------------------------------------------
@@ -279,6 +328,7 @@ include_directories(
         ${QuaZip_INCLUDE_DIR}
         ${EIGEN_INCLUDE_DIR}
         ${CERES_INCLUDE_DIRS}
+#        ${GLOG_INCLUDE_DIRS} #########################
         ${BZip2_INCLUDE_DIRS} ########################################################
         ${PYLON_INCLUDE_DIR}
         "singleeyefitter")
@@ -309,6 +359,7 @@ message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIR}")
 message(STATUS " QuaZip_INCLUDE_DIRS: ${QuaZip_INCLUDE_DIR}")
 message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
 message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}")
+#message(STATUS " GLOG_INCLUDE_DIRS: ${GLOG_INCLUDE_DIRS}")
 message(STATUS " BZip2_INCLUDE_DIRS: ${BZip2_INCLUDE_DIRS}") ########################################################
 message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}")
 message(STATUS "---------------------------" )

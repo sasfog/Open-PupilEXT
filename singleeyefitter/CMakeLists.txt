@@ -1,32 +1,70 @@
+#
+#
+#add_library (
+#    singleeyefitter STATIC
+#    SingleEyeFitter.cpp
+#    cvx.cpp
+#    utils.cpp
+#)
+#
+#if (MSVC)
+#    target_compile_definitions(
+#		singleeyefitter
+#		PRIVATE
+#		NOMINMAX
+#		)
+#endif()
+#
+#target_include_directories(
+#	singleeyefitter
+#	PUBLIC
+#    ${CMAKE_CURRENT_SOURCE_DIR}
+#	SYSTEM PUBLIC
+#	${Boost_INCLUDE_DIR}
+#    ${OpenCV_INCLUDE_DIRS}
+#    ${EIGEN_INCLUDE_DIR}
+#    ${CERES_INCLUDE_DIRS}
+#    ${spii_INCLUDE_DIR}
+#)
+#
+#target_link_libraries(
+#    singleeyefitter
+#    ${Boost_LIBRARIES}
+#    ${OpenCV_LIBS}
+#    ${CERES_LIBRARIES}
+#    ${spii_LIBRARIES}
+#)
 
+
+#set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_library (
-    singleeyefitter
-    SingleEyeFitter.cpp
-    cvx.cpp
-    utils.cpp
+		singleeyefitter STATIC
+		SingleEyeFitter.cpp
+		cvx.cpp
+		utils.cpp
 )
 
 if (MSVC)
-    add_definitions(-DNOMINMAX)
+	add_definitions(-DNOMINMAX)
 endif()
 
 include_directories(
-    SYSTEM
-	${Boost_INCLUDE_DIRS}
-    ${OpenCV_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
-    ${CERES_INCLUDE_DIRS}
-    ${spii_INCLUDE_DIRS}
+		SYSTEM
+		${Boost_INCLUDE_DIRS}
+		${OpenCV_INCLUDE_DIRS}
+		${EIGEN_INCLUDE_DIRS}
+		${CERES_INCLUDE_DIRS}
+		${spii_INCLUDE_DIRS}
 )
 include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
+		${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(
-    singleeyefitter
-    ${Boost_LIBRARIES}
-    ${OpenCV_LIBS}
-    ${CERES_LIBRARIES}
-    ${spii_LIBRARIES}
+		singleeyefitter
+		${Boost_LIBRARIES}
+		${OpenCV_LIBS}
+		${CERES_LIBRARIES}
+		${spii_LIBRARIES}
 )

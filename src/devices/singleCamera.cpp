@@ -3,18 +3,52 @@
 #include <QThread>
 #include "singleCamera.h"
 
-SingleCamera::SingleCamera(const String_t &fullname, QObject* parent)
-        : SingleCamera(CDeviceInfo().SetFullName(fullname), parent) {
-
-}
-
-SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
-        : Camera(parent), camera(CTlFactory::GetInstance().CreateDevice(di)),
+SingleCamera::SingleCamera(const QString &friendlyName, IGigETransportLayer* _pTl, QObject* parent)
+        : Camera(parent),
+        pTl(_pTl),
         frameCounter(new CameraFrameRateCounter(parent)),
         cameraCalibration(new CameraCalibration()),
         calibrationThread(new QThread()),
         hardwareTriggerEnabled(false),
         lineSource("Line1") {
+
+    // TODO: LOOKUP CAMERA
+
+    Pylon::DeviceInfoList_t allDevices;
+    Pylon::DeviceInfoList_t lstDevices;
+    TlFactory.EnumerateDevices(lstDevices);
+
+    if (pTl == NULL) {
+        qDebug() << "Error: No GigE transport layer installed.";
+        qDebug() << "       Please install GigE support as it is required for this sample.";
+        //return {};
+        allDevices = lstDevices;
+    } else {
+        Pylon::DeviceInfoList_t lstDevicesGigE;
+        pTl->EnumerateAllDevices(lstDevicesGigE);
+        std::merge(lstDevices.begin(), lstDevices.end(), lstDevicesGigE.begin(), lstDevicesGigE.end(), std::back_inserter(allDevices));
+    }
+
+    //Pylon::DeviceInfoList_t lstDevices = enumerateCameraDevices();
+    if(allDevices.empty()) {
+        // TODO
+        return;
+    }
+    CDeviceInfo di;
+    Pylon::DeviceInfoList_t::const_iterator deviceIt;
+    for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
+        qDebug() << "deviceIt->GetFriendlyName().c_str() " << deviceIt->GetFriendlyName().c_str();
+        if(deviceIt->GetFriendlyName().c_str() == friendlyName) {
+            qDebug() << "FOUND";
+            di = *deviceIt;
+            break;
+        }
+    }
+
+    //auto di = CDeviceInfo().SetFriendlyName(friendlyName.toStdString().c_str());
+
+    camera.Attach(TlFactory.CreateDevice(di));
+    //camera = TlFactory.CreateDevice(di);
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
@@ -53,6 +87,7 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
         camera.RegisterImageEventHandler(cameraImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
 
         camera.Open();
+        assert(camera.IsOpen());
 
         synchronizeTime();
         cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
@@ -126,7 +161,7 @@ void SingleCamera::close() {
 }
 
 void SingleCamera::enableHardwareTrigger(bool state) {
-    std::cout<< "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << std::endl;
+    std::cout<< "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << " to state: " << state << std::endl;
 
     frameCounter->reset();
 
@@ -159,8 +194,15 @@ void SingleCamera::enableHardwareTrigger(bool state) {
 
         camera.Open();
 
-        synchronizeTime();
-        cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
+        // DEV
+        // TODO: This guy is causing a lot of trouble.
+        try {
+            synchronizeTime();
+            cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
+        } catch (const GenericException &e) {
+            qDebug() << e.GetDescription();
+            //genericExceptionOccured(e);
+        }
 
         if (camera.CanWaitForFrameTriggerReady()) {
 
@@ -629,7 +671,12 @@ int SingleCamera::getAcquisitionFPSMax() {
 
 double SingleCamera::getResultingFrameRateValue() {
     try {
-        if (camera.ResultingFrameRate.IsReadable()) {
+        //qDebug() << "--------------------------------" << QString(camera.GetDeviceInfo().GetDeviceClass());
+        if(QString(camera.GetDeviceInfo().GetDeviceClass()) == "BaslerGigE") {
+            GenApi::INodeMap& nodemap = camera.GetNodeMap();
+            // Get the resulting acquisition frame rate
+            return CFloatParameter(nodemap, "ResultingFrameRateAbs").GetValue();
+        } else if (camera.ResultingFrameRate.IsReadable()) {
             return camera.ResultingFrameRate.GetValue();
         }
     } catch(const GenericException &e) {
@@ -651,10 +698,16 @@ bool SingleCamera::isHardwareTriggerEnabled() {
  */
 void SingleCamera::synchronizeTime() {
 
+    //GenApi::INodeMap& nodemap = camera.GetNodeMap();
+
+    // Take a "snapshot" of the camera's current timestamp value
+    //CCommandParameter(nodemap, "GevTimestampControlLatch").Execute();
     camera.TimestampLatch.Execute();
     std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
     std::chrono::time_point<std::chrono::system_clock> epoche = std::chrono::time_point<std::chrono::system_clock>{};
 
+    // Get the timestamp value
+    //cameraTime = CIntegerParameter(nodemap, "GevTimestampValue").GetValue();
     cameraTime = static_cast<uint64>(camera.TimestampLatchValue.GetValue());
     systemTime  = std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);

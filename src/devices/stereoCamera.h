@@ -9,6 +9,9 @@
 #include <QtCore/QObject>
 #include <pylon/PylonIncludes.h>
 #include <pylon/BaslerUniversalInstantCameraArray.h>
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
 #include "../frameRateCounter.h"
 #include "stereoCameraImageEventHandler.h"
 #include "cameraConfigurationEventHandler.h"
@@ -45,10 +48,8 @@ class StereoCamera : public Camera {
 
 public:
 
-    explicit StereoCamera(QObject *parent);
-
-    explicit StereoCamera(const String_t &fullnameRight, const String_t &fullnameLeft, QObject* parent=0);
-    explicit StereoCamera(const CDeviceInfo &diRight, const CDeviceInfo &diLeft, QObject* parent=0);
+    explicit StereoCamera(IGigETransportLayer* _pTl = nullptr, QObject *parent= 0);
+    //explicit StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, IGigETransportLayer* _pTl = nullptr, QObject* parent=0);
 
     ~StereoCamera() override;
 
@@ -80,7 +81,7 @@ public:
     double getGainMin();
     double getGainMax();
 
-    void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
+    void attachCameras(const QString &friendlyNameMain, const QString &friendlyNameSecondary);
     void open(bool enableHardwareTrigger);
 
     String_t getLineSource();
@@ -106,6 +107,17 @@ public:
     bool isGrabbing() override;
 
 private:
+
+    // We only let Pylon type input from within the class. Calls from outside are only to use friendly names with serial number
+    //  This is a preparatory step to later enable easier implementation of a general genicam camera wrapper
+//    explicit StereoCamera(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary, QObject* parent=0);
+    void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
+
+    // the TLFactory has this GetInstance method, but it has no getter to let us get the pointer to the
+    //  gigE transport layer that we have once created in mainwindow.. this is currently a workaround, to
+    //  always pass its pointer to the camera instance...
+    CTlFactory& TlFactory = CTlFactory::GetInstance();
+    IGigETransportLayer* pTl = nullptr;
 
     QDir settingsDirectory;
 

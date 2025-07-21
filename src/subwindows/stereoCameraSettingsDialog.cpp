@@ -10,11 +10,13 @@
 // A stereo camera consists of two physical cameras, which are chosen in this widget
 // For the hardware trigger a connection to a microcontroller is necessary which is handled through the MCUSettings object
 // This is ensured in this form by disabling the start hardware trigger buttons until the cameras are opened
-StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, MCUSettingsDialog *MCUSettings, QWidget *parent) :
+StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, MCUSettingsDialog *MCUSettings, IGigETransportLayer* _pTl, QWidget *parent) :
         QDialog(parent),
         camera(cameraPtr),
         MCUSettings(MCUSettings),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+
+    pTl = _pTl;
 
     settingsDirectory = QDir(applicationSettings->value("StereoCameraSettingsDialog.settingsDirectory", QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).toString());
 
@@ -518,17 +520,28 @@ void StereoCameraSettingsDialog::updateDevicesBox() {
     mainCameraBox->setDisabled(false);
     secondaryCameraBox->setDisabled(false);
 
-    CTlFactory& TlFactory = CTlFactory::GetInstance();
-
     mainCameraBox->clear();
     secondaryCameraBox->clear();
 
+    //Pylon::DeviceInfoList_t allDevices;
+    Pylon::DeviceInfoList_t lstDevices;
     TlFactory.EnumerateDevices(lstDevices);
 
-    if(!lstDevices.empty()) {
-        for(auto const &device: lstDevices) {
-            mainCameraBox->addItem(device.GetFriendlyName().c_str());
-            secondaryCameraBox->addItem(device.GetFriendlyName().c_str());
+    if (pTl == NULL) {
+        qDebug() << "Error: No GigE transport layer installed.";
+        qDebug() << "       Please install GigE support as it is required for this sample.";
+        //return {};
+        allDevices = lstDevices;
+    } else {
+        Pylon::DeviceInfoList_t lstDevicesGigE;
+        pTl->EnumerateAllDevices(lstDevicesGigE);
+        std::merge(lstDevices.begin(), lstDevices.end(), lstDevicesGigE.begin(), lstDevicesGigE.end(), std::back_inserter(allDevices));
+    }
+
+    if(!allDevices.empty()) {
+        for(auto const &device: allDevices) {
+            mainCameraBox->addItem(device.GetFriendlyName().c_str(), QVariant::fromValue<Pylon::CDeviceInfo>(device));
+            secondaryCameraBox->addItem(device.GetFriendlyName().c_str(), QVariant::fromValue<Pylon::CDeviceInfo>(device));
         }
     } else {
         mainCameraBox->addItem("No devices found.");
@@ -537,7 +550,7 @@ void StereoCameraSettingsDialog::updateDevicesBox() {
         secondaryCameraBox->setDisabled(true);
     }
 
-    if(lstDevices.size()>1) {
+    if(allDevices.size()>1) {
         //mainCameraBox->setCurrentIndex(0);
         secondaryCameraBox->setCurrentIndex(1);
     }
@@ -760,7 +773,7 @@ void StereoCameraSettingsDialog::openStereoCamera() {
     }
 
     try {
-        camera->attachCameras(lstDevices[mainCameraIndex], lstDevices[secondaryCameraIndex]);
+        camera->attachCameras(QString(allDevices[mainCameraIndex].GetFriendlyName()), QString(allDevices[secondaryCameraIndex].GetFriendlyName()) );
     } catch (const GenericException &e) {
         // Error handling.
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
@@ -770,8 +783,8 @@ void StereoCameraSettingsDialog::openStereoCamera() {
 
     bool enableHardwareTrigger = true;
     // For debug/testing purposes only
-    if(QString::fromStdString(lstDevices[mainCameraIndex].GetFriendlyName().c_str()).contains("emulat", Qt::CaseInsensitive) ||
-            QString::fromStdString(lstDevices[secondaryCameraIndex].GetFriendlyName().c_str()).contains("emulat", Qt::CaseInsensitive)) {
+    if(QString::fromStdString(allDevices[mainCameraIndex].GetFriendlyName().c_str()).contains("emulat", Qt::CaseInsensitive) ||
+            QString::fromStdString(allDevices[secondaryCameraIndex].GetFriendlyName().c_str()).contains("emulat", Qt::CaseInsensitive)) {
         enableHardwareTrigger = false;
     }
     // Its important to open the camera here not earlier, as loading config overrides the config in open
@@ -893,7 +906,7 @@ void StereoCameraSettingsDialog::saveSettings() {
 
     applicationSettings->setValue("StereoCameraSettingsDialog.settingsDirectory", settingsDirectory.path());
 
-    QString mainName = QString::fromStdString(lstDevices[mainCameraBox->currentIndex()].GetFriendlyName().c_str());
+    QString mainName = QString::fromStdString(allDevices[mainCameraBox->currentIndex()].GetFriendlyName().c_str());
     QString configFile = settingsDirectory.filePath(mainName+".pfs");
     configFile.replace(" ", "");
     std::cout<<"Saving config to settings directory: "<< configFile.toStdString() <<std::endl;

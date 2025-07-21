@@ -306,7 +306,7 @@ void SpaceBinSearcher::render(cv::Mat &img)
         cv::Vec2i center(ClusterCenters_.at<int>(idx, 0),
                          ClusterCenters_.at<int>(idx, 1));
         const int radius = 1;
-        if (bb.contains(center))
+        if (bb.contains((cv::Point2i)center)) // GB NOTE: needs to specify, does not infer automatically yet
         {
             if (taken_flags_[idx])
             {

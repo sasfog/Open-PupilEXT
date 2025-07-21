@@ -2,6 +2,7 @@
 #define singleeyefitter_math_h__
 
 #include <limits>
+#include <boost/math/special_functions/sign.hpp> // GB NOTE: needs for recent boost versions, to be specified here
 
 namespace singleeyefitter {
 
