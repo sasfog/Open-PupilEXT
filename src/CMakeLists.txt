@@ -106,7 +106,7 @@ if(SPII_BUILD_FOUND)
     target_link_libraries(
             ${CMAKE_PROJECT_NAME}
             PRIVATE
-            TBB::tbb #TBB::tbbmalloc TBB::tbbbind_2_5 TBB::tbbmalloc_proxy ##tbb12
+            TBB::tbb TBB::tbbmalloc #TBB::tbbbind_2_5 TBB::tbbmalloc_proxy ##tbb12
             QuaZip
             "singleeyefitter"
             Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
@@ -117,7 +117,9 @@ if(SPII_BUILD_FOUND)
             ${BZip2_LIBRARIES} ########################################################
             ${PYLON_LIBRARIES}
             ${OpenCV_LIBS}
-            opengl32
+#            ${FFMPEG_LIBRARIES}
+            #opengl32 # works only for windows
+            OpenGL::GL
             )
 
 else()
@@ -125,7 +127,7 @@ else()
     target_link_libraries(
             ${CMAKE_PROJECT_NAME}
             PRIVATE
-            TBB::tbb #TBB::tbbmalloc TBB::tbbmalloc_proxy ##tbb12
+            TBB::tbb TBB::tbbmalloc #TBB::tbbmalloc_proxy ##tbb12
             QuaZip
             "singleeyefitter"
             Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
@@ -137,7 +139,9 @@ else()
             ${BZip2_LIBRARIES} ########################################################
             ${PYLON_LIBRARIES}
             ${OpenCV_LIBS}
-            opengl32
+#            ${FFMPEG_LIBRARIES}
+            #opengl32 # works only for windows
+            OpenGL::GL
     )
 
 endif()

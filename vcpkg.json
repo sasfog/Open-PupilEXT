@@ -1,7 +1,7 @@
 {
   "name": "pupilext",
   "port-version": 1,
-  "version-string": "0.1.1.",
+  "version-string": "0.1.3.",
   "homepage": "https://github.com/openPupil/Open-PupilEXT",
   "description": "Implementation of a open-source pupillometry platform called PupilEXT.",
   "builtin-baseline": "b509a07261b982f35c663bf638aae5f77877d207",

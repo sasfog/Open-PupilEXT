@@ -32,7 +32,7 @@ QVector3D QtOpenGLViewer::screen2World(QVector3D screen, int *viewport, float *p
     );
     QVector4D out = (P * M).inverted() * in;
     if(out[3] == 0)
-        throw std::exception("QtOpenGLViewer::screen2World: Failed.");
+        throw std::runtime_error("QtOpenGLViewer::screen2World: Failed.");
     x = out[0] / out[3];
     y = out[1] / out[3];
     z = out[2] / out[3];
@@ -48,7 +48,7 @@ QVector3D QtOpenGLViewer::world2Screen(QVector3D world, int *viewport, float *pr
     QVector4D A(world.x(), world.y(), world.z(), 1);
     QVector4D B = (M * P) * A;
     if(B[3] == 0)
-        throw std::exception("QtOpenGLViewer::world2Screen: Failed.");
+        throw std::runtime_error("QtOpenGLViewer::world2Screen: Failed.");
     B[0] /= B[3];
     B[1] /= B[3];
     B[2] /= B[3];

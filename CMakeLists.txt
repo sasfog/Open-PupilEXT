@@ -68,7 +68,8 @@ endif()
 
 # Output of initial values -----------------------------------------------
 message("----- Output of initial values -----")
-message(STATUS "VCPKG_INSTALLED_DIR = ${VCPKG_INSTALLED_DIR}")
+message("PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
+message("VCPKG_INSTALLED_DIR = ${VCPKG_INSTALLED_DIR}")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
@@ -102,28 +103,45 @@ else()
     set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/GenApi")
     set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/Base")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake") # The find pylon file is in the cmake folder
+
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/opt/Qt/${QT_VERSION}/gcc_64")
+    set(Qt6_DIR "/opt/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6")
 
     set(VCPKG_TARGET_TRIPLET x64-linux CACHE STRING "")
 endif()
 # ----------------------------------------------------------------------------------------------
 
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share")
 # set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share") # Normally this is set with the cmake call
 set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
         CACHE STRING "Vcpkg toolchain file")
 
+
+if(APPLE)
+
+elseif(MSVC OR WIN32)
+
+else()
+    # DEV: Makes the ffmpeg finding problem go away on linux
+    include(${CMAKE_TOOLCHAIN_FILE})
+endif()
+
 # Setting the module paths to the <package-name>config.cmake files for each lib -------------------
-set(OpenCV_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/opencv")
-set(TBB_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/tbb")
-set(Eigen3_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/eigen3")
-set(Ceres_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/ceres")
-#set(BZip2_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
-set(glog_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/glog")
 # TODO: It seems that boost has no config file in vcpkg. The dirs need to be set manually on mac
+# NOTE: it may be desiring to only write "{VCPKG_INSTALLED_DIR}/" instead of "${PROJECT_SOURCE_DIR}/vcpkg_installed/"
+#  but DO NOT do that. On linux the VCPKG_INSTALLED_DIR is empty, thus will make no sense in that form, but the longer
+#  one still will.
+set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
+#set(FFMPEG_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ffmpeg")
+set(TBB_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
+set(Eigen3_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
+set(Ceres_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
+#set(BZip2_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
+set(glog_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glog")
 # ------------------------------------------------------------------------------------------------
 
 # Using the find package commands ----------------------------------------------------------------
+#find_package(FFMPEG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
@@ -148,40 +166,44 @@ else()
 message(STATUS "----- OpenCV packageconfig was not found ! -----")
 endif()
 
+#if(FFMPEG_FOUND)
+#    message(STATUS "----- FFMPEG was found -----")
+#else()
+#    message(STATUS "----- FFMPEG packageconfig was not found ! -----")
+#endif()
+
 if(TBB_FOUND)
 
+    message(STATUS "----- TBB was found -----")
+    message(STATUS "TBB_FOUND = ${TBB_FOUND}")
+    get_target_property(_loc TBB::tbb IMPORTED_LOCATION_RELEASE)
+    message(STATUS "TBB::tbb (release) = ${_loc}")
+    get_target_property(_tbb_loc TBB::tbb IMPORTED_LOCATION)
+    message(STATUS "TBB::tbb IMPORTED_LOCATION = ${_tbb_loc}")
+    get_target_property(_tbb_libs TBB::tbb INTERFACE_LINK_LIBRARIES)
+    message(STATUS "TBB::tbb INTERFACE_LINK_LIBRARIES = ${_tbb_libs}")
 
+    foreach(prop
+            NAME
+            TYPE
+            IMPORTED_LOCATION_RELEASE
+            IMPORTED_LOCATION_DEBUG
+            IMPORTED_IMPLIB_RELEASE
+            IMPORTED_IMPLIB_DEBUG
+            INTERFACE_LINK_LIBRARIES
+            INTERFACE_INCLUDE_DIRECTORIES
+            INTERFACE_COMPILE_DEFINITIONS
+            INTERFACE_COMPILE_OPTIONS
+    )
+        get_target_property(val TBB::tbb ${prop})
+        message(STATUS "TBB::tbb ${prop} = ${val}")
 
-message(STATUS "----- TBB was found -----")
-message(STATUS "TBB_FOUND = ${TBB_FOUND}")
-get_target_property(_loc TBB::tbb IMPORTED_LOCATION_RELEASE)
-message(STATUS "TBB::tbb (release) = ${_loc}")
-get_target_property(_tbb_loc TBB::tbb IMPORTED_LOCATION)
-message(STATUS "TBB::tbb IMPORTED_LOCATION = ${_tbb_loc}")
-get_target_property(_tbb_libs TBB::tbb INTERFACE_LINK_LIBRARIES)
-message(STATUS "TBB::tbb INTERFACE_LINK_LIBRARIES = ${_tbb_libs}")
+        #set_target_properties(TBB::tbb PROPERTIES
+        #        IMPORTED_IMPLIB_DEBUG "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/tbb12.lib"
+        #        #IMPORTED_IMPLIB_DEBUG "${PROJECT_SOURCE_DIR}/cmake-build-debug/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/tbb12.lib"
+        #)
 
-foreach(prop
-        NAME
-        TYPE
-        IMPORTED_LOCATION_RELEASE
-        IMPORTED_LOCATION_DEBUG
-        IMPORTED_IMPLIB_RELEASE
-        IMPORTED_IMPLIB_DEBUG
-        INTERFACE_LINK_LIBRARIES
-        INTERFACE_INCLUDE_DIRECTORIES
-        INTERFACE_COMPILE_DEFINITIONS
-        INTERFACE_COMPILE_OPTIONS
-)
-    get_target_property(val TBB::tbb ${prop})
-    message(STATUS "TBB::tbb ${prop} = ${val}")
-
-    #set_target_properties(TBB::tbb PROPERTIES
-    #        IMPORTED_IMPLIB_DEBUG "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/tbb12.lib"
-    #        #IMPORTED_IMPLIB_DEBUG "${PROJECT_SOURCE_DIR}/cmake-build-debug/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/tbb12.lib"
-    #)
-
-endforeach()
+    endforeach()
 
 else()
 message(STATUS "----- TBB packageconfig was not found ! -----")
@@ -221,6 +243,7 @@ endif()
 set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+#set(FFMPEG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 #set(GLOG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###################################
 set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(BZip2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###########################################################
@@ -322,6 +345,7 @@ include_directories(
         ${Qt6Xml_INCLUDE_DIRS}
         ${Qt6OpenGL_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
+#        ${FFMPEG_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
         ${spii_INCLUDE_DIR}
@@ -353,6 +377,7 @@ message(STATUS " Qt6Xml_INCLUDES: ${Qt6Xml_INCLUDE_DIRS}")
 message(STATUS " Qt6OpenGL_INCLUDES: ${Qt6OpenGL_INCLUDE_DIRS}")
 
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
+#message(STATUS " FFMPEG_INCLUDE_DIRS: ${FFMPEG_INCLUDE_DIRS}")
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
 message(STATUS " tbb_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}")
 message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIR}")
@@ -383,6 +408,10 @@ endif()
 # According to the published CMakeLists, these should be needed
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3")
+elseif(MSVC OR WIN32)
+
 else()
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl -V")
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3 -Wall -pedantic")
+    ## set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lGL -lGLU -lglut")
 endif()

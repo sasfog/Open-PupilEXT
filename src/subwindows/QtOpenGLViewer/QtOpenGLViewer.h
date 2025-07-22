@@ -16,7 +16,7 @@
 #include <QVector3D>
 #include <QOpenGLFunctions_4_5_Core>
 //#include "../../remoteSetupModel.h"
-#include "../QJSonModel/QJsonModel.hpp"
+#include "./../QJsonModel/QJsonModel.hpp"
 
 // DEV
 #include <QOpenGLDebugLogger>
