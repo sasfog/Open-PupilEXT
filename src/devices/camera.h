@@ -69,6 +69,7 @@ public:
     virtual bool isGrabbing() = 0;
 
 signals:
+//Q_SIGNALS:
 
     void onNewGrabResult(CameraImage grabResult);
 

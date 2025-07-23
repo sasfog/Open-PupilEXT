@@ -50,6 +50,7 @@
 #include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
 #include "subwindows/openZipChoiceDialog.h"
+#include "devices/singleAravisCamera.h"
 
 
 /**

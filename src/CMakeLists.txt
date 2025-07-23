@@ -13,6 +13,26 @@ set(MACOSX_BUNDLE_ICON_FILE icon.icns)
 set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns)
 set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
+## DEV: to eliminate pylon debug variant linking error, specific to MSVC on windows
+#if(MSVC)
+#    # Force all build types to use the release runtime (/MD)
+#    foreach(flag_var
+#            CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+#            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+#            CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+#            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+#        string(REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
+#    endforeach()
+#endif()
+#set_target_properties(PupilEXT PROPERTIES LINK_OPTIONS
+#        -nodefaultlib:GCBase_MDd_VC141_v3_1_Basler_pylon_v3.lib
+#        -nodefaultlib:GenApi_MDd_VC141_v3_1_Basler_pylon_v3.lib
+#)
+#target_link_options(PupilEXT PRIVATE
+#        "/NODEFAULTLIB:GCBase_MDd_VC141_v3_1_Basler_pylon_v3.lib"
+#        "/NODEFAULTLIB:GenApi_MDd_VC141_v3_1_Basler_pylon_v3.lib"
+#)
+#add_definitions(-DGENICAM_NO_AUTO_LINK)
 
 # For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp
 add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
@@ -95,11 +115,16 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/QJsonModel/QUtf8.hpp
         subwindows/openZipChoiceDialog.h
         subwindows/openZipChoiceDialog.cpp
+        devices/singleAravisCamera.h
+        devices/singleAravisCamera.cpp
+        devices/singleAravisCameraImageEventHandler.h
+        devices/singleAravisCameraImageEventHandler.cpp
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
 #set_property(TARGET PupilEXT PROPERTY CXX_STANDARD 17)
 #set(CMAKE_CXX_STANDARD 17)
+
 
 if(SPII_BUILD_FOUND)
 
@@ -107,6 +132,8 @@ if(SPII_BUILD_FOUND)
             ${CMAKE_PROJECT_NAME}
             PRIVATE
             TBB::tbb TBB::tbbmalloc #TBB::tbbbind_2_5 TBB::tbbmalloc_proxy ##tbb12
+            ${aravis_LIBRARIES}
+            ${glib_LIBRARIES}
             QuaZip
             "singleeyefitter"
             Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
@@ -116,10 +143,11 @@ if(SPII_BUILD_FOUND)
             ${CERES_LIBRARIES}
             ${BZip2_LIBRARIES} ########################################################
             ${PYLON_LIBRARIES}
+            #PylonRelease
             ${OpenCV_LIBS}
 #            ${FFMPEG_LIBRARIES}
-            #opengl32 # works only for windows
-            OpenGL::GL
+            opengl32 # works only for windows
+            #OpenGL::GL
             )
 
 else()
@@ -128,6 +156,8 @@ else()
             ${CMAKE_PROJECT_NAME}
             PRIVATE
             TBB::tbb TBB::tbbmalloc #TBB::tbbmalloc_proxy ##tbb12
+            ${aravis_LIBRARIES}
+            ${glib_LIBRARIES}
             QuaZip
             "singleeyefitter"
             Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
@@ -138,10 +168,11 @@ else()
             ${CERES_LIBRARIES}
             ${BZip2_LIBRARIES} ########################################################
             ${PYLON_LIBRARIES}
+            #PylonRelease
             ${OpenCV_LIBS}
 #            ${FFMPEG_LIBRARIES}
-            #opengl32 # works only for windows
-            OpenGL::GL
+            opengl32 # works only for windows
+            #OpenGL::GL
     )
 
 endif()
@@ -149,9 +180,6 @@ endif()
 
 
 ##################### target_link_directories(PupilEXT PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)
-
-
-
 
 
 # add_definitions(-DQCUSTOMPLOT_USE_OPENGL)

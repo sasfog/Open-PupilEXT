@@ -134,6 +134,7 @@ endif()
 set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
 #set(FFMPEG_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ffmpeg")
 set(TBB_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
+set(aravis_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/aravis")
 set(Eigen3_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
 set(Ceres_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
 #set(BZip2_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
@@ -141,17 +142,28 @@ set(glog_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/shar
 # ------------------------------------------------------------------------------------------------
 
 # Using the find package commands ----------------------------------------------------------------
+#find_package(TBB CONFIG REQUIRED)
+# Dirty fix to ALWAYS only detect and link the release version of tbb, as
+#  it might happen that both are detected, but the release version is looked up
+#  in the debug subfolder of vcpkg_installed.. now it is easier to just use it like this
+set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+set(CMAKE_BUILD_TYPE Release)
+find_package(TBB CONFIG REQUIRED)
+set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
+
 #find_package(FFMPEG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
-find_package(TBB CONFIG REQUIRED)
+find_package(glib REQUIRED) # This is required by aravis to operate. The "Findglib.cmake" is in the project folder in cmake/
+#find_package(aravis CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
 find_package(glog CONFIG REQUIRED)
 find_package(Qt6 COMPONENTS Core5Compat Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
-
 #find_package(Boost CONFIG REQUIRED)
+
+message(STATUS "aravis libraries: ${aravis_LIBRARIES}")
 
 # Check if everthing was found correctly for each used package
 if(OPENCV_FOUND)
@@ -240,13 +252,19 @@ message(STATUS "----- QTCore packageconfig was not found ! -----")
 endif()
 
 # -------------------------------------------------------
-set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-#set(FFMPEG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-#set(GLOG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###################################
-set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(BZip2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###########################################################
+# NOTE 2025.07.22: removed the /build/ subdirectory from before vcpkg_installed.
+#  reason: it already exists out there inside the plain ${PROJECT_SOURCE_DIR}, although that
+#  directory is indeed copied to the build folder. However, the build folder is called
+#  "cmake-build-debug" and "cmake-build-release" in windows and simply "build" in linux...
+#  To spare an if-else, currently we use the files in the outer vcpkg_installed directory
+set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(aravis_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/aravis-0.8")
+set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+#set(FFMPEG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+#set(GLOG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###################################
+set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(BZip2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###########################################################
 # -------------------------------------------------------
 
 # Adjustments for spii -------------------------------------------------------
@@ -319,6 +337,16 @@ find_library(QuaZip_LIBRARY_RELEASE
         QuaZip
         PATHS ${CMAKE_BINARY_DIR}/lib/)
 
+# Aravis lib check
+find_library(aravis_LIBRARIES
+        aravis-0.8
+        PATHS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
+message(STATUS "Aravis (aravis-0.8) lib location: ${aravis_LIBRARIES}")
+#find_library(glib_LIBRARIES
+#        glib-2.0
+#        PATHS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
+#message(STATUS "Glib (glib-2.0) lib location: ${glib_LIBRARIES}")
+
 message(STATUS "--------------------- QuaZip not found will be installed (automatic) ---------------------")
 add_subdirectory(${QuaZip_LIB_NAME})
 link_directories(${CMAKE_BINARY_DIR}/lib)
@@ -348,6 +376,8 @@ include_directories(
 #        ${FFMPEG_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
+        ${aravis_INCLUDE_DIR}
+        ${glib_INCLUDE_DIRS}
         ${spii_INCLUDE_DIR}
         ${QuaZip_INCLUDE_DIR}
         ${EIGEN_INCLUDE_DIR}
@@ -378,8 +408,10 @@ message(STATUS " Qt6OpenGL_INCLUDES: ${Qt6OpenGL_INCLUDE_DIRS}")
 
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 #message(STATUS " FFMPEG_INCLUDE_DIRS: ${FFMPEG_INCLUDE_DIRS}")
-message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
+message(STATUS " Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 message(STATUS " tbb_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}")
+message(STATUS " aravis_INCLUDE_DIR: ${aravis_INCLUDE_DIR}")
+message(STATUS " glib_INCLUDE_DIRS: ${glib_INCLUDE_DIRS}")
 message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIR}")
 message(STATUS " QuaZip_INCLUDE_DIRS: ${QuaZip_INCLUDE_DIR}")
 message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
