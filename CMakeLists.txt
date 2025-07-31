@@ -28,6 +28,10 @@ endif()
 cmake_minimum_required(VERSION 3.9)
 project(PupilEXT)
 
+# Use Pylon or Aravis
+#set(USE_PYLON TRUE)
+set(USE_PYLON FALSE)
+
 # On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
 #set(CMAKE_CXX_STANDARD 17)
 
@@ -77,11 +81,16 @@ message(STATUS "--------------------------------------------------------" )
 
 # The VCPKG_TARGET_TRIPLET should be commented out if you already set it during the cmake call in the settings.json
 if(APPLE)
-	set(PYLON_HOME "/Library/Frameworks/pylon.framework")
-    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers")
-    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers/GenICam")
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
+
+    if(USE_PYLON)
+        set(PYLON_HOME "/Library/Frameworks/pylon.framework")
+        set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers")
+        set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers/GenICam")
+        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/pylon-specific)
+    else()
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/aravis-specific)
+    endif()
 
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64")
     set(Qt6_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt6")
@@ -89,20 +98,30 @@ if(APPLE)
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
 
-	set(PYLON_HOME "C:/basler-pylon-8/Development")
-    set(PYLON_INCLUDE_DIR "C:/basler-pylon-8/Development/include")
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
+    if(USE_PYLON)
+        set(PYLON_HOME "C:/basler-pylon-8/Development")
+        set(PYLON_INCLUDE_DIR "C:/basler-pylon-8/Development/include")
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/pylon-specific)
+    else()
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/aravis-specific)
+    endif()
+
     # set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2019_64")
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2022_64")
 
     set(VCPKG_TARGET_TRIPLET x64-windows-static-md CACHE STRING "")
 else()
-	set(PYLON_HOME "/opt/pylon")
-    set(PYLON_INCLUDE_DIR "/opt/pylon/include")
-    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/pylon")
-    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/GenApi")
-    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/Base")
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake") # The find pylon file is in the cmake folder
+
+    if(USE_PYLON)
+        set(PYLON_HOME "/opt/pylon")
+        set(PYLON_INCLUDE_DIR "/opt/pylon/include")
+        set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/pylon")
+        set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/GenApi")
+        set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/Base")
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/pylon-specific")
+    else()
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/aravis-specific")
+    endif()
 
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/opt/Qt/${QT_VERSION}/gcc_64")
     set(Qt6_DIR "/opt/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6")
@@ -132,9 +151,11 @@ endif()
 #  but DO NOT do that. On linux the VCPKG_INSTALLED_DIR is empty, thus will make no sense in that form, but the longer
 #  one still will.
 set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
-#set(FFMPEG_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ffmpeg")
+set(FFMPEG_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ffmpeg")
 set(TBB_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
-set(aravis_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/aravis")
+if(NOT USE_PYLON)
+    set(aravis_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/aravis")
+endif()
 set(Eigen3_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
 set(Ceres_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
 #set(BZip2_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/bzip2") # DOES NOT HAVE CONFIG.CMAKE FILE
@@ -153,29 +174,30 @@ set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
 
 #find_package(FFMPEG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
-find_package(glib REQUIRED) # This is required by aravis to operate. The "Findglib.cmake" is in the project folder in cmake/
-#find_package(aravis CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
 find_package(glog CONFIG REQUIRED)
 find_package(Qt6 COMPONENTS Core5Compat Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
-find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
+if(USE_PYLON)
+    find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
+else()
+    find_package(glib REQUIRED) # This is required by aravis to operate. The "Findglib.cmake" is in the project folder in cmake/
+    message(STATUS "aravis libraries: ${aravis_LIBRARIES}")
+endif()
 #find_package(Boost CONFIG REQUIRED)
-
-message(STATUS "aravis libraries: ${aravis_LIBRARIES}")
 
 # Check if everthing was found correctly for each used package
 if(OPENCV_FOUND)
-message(STATUS "----- OpenCV was found with the following status: -----")
-message(STATUS "Version: ${OpenCV_VERSION}")
-message(STATUS "Libraries: ${OpenCV_LIBS}")
-message(STATUS "Include path: ${OpenCV_INCLUDE_DIRS}")
-message(STATUS "Dir path: ${OpenCV_DIR}")
-message(STATUS "Lib path: ${OpenCV_LIB_DIR}")
-message(STATUS "--------------------------------------------------------" )
+    message(STATUS "----- OpenCV was found with the following status: -----")
+    message(STATUS "Version: ${OpenCV_VERSION}")
+    message(STATUS "Libraries: ${OpenCV_LIBS}")
+    message(STATUS "Include path: ${OpenCV_INCLUDE_DIRS}")
+    message(STATUS "Dir path: ${OpenCV_DIR}")
+    message(STATUS "Lib path: ${OpenCV_LIB_DIR}")
+    message(STATUS "--------------------------------------------------------" )
 else()
-message(STATUS "----- OpenCV packageconfig was not found ! -----")
+    message(STATUS "----- OpenCV packageconfig was not found ! -----")
 endif()
 
 #if(FFMPEG_FOUND)
@@ -218,19 +240,19 @@ if(TBB_FOUND)
     endforeach()
 
 else()
-message(STATUS "----- TBB packageconfig was not found ! -----")
+    message(STATUS "----- TBB packageconfig was not found ! -----")
 endif()
 
 if(EIGEN3_FOUND)
-message(STATUS "----- EIGEN3 was found -----")
+    message(STATUS "----- EIGEN3 was found -----")
 else()
-message(STATUS "----- EIGEN3 packageconfig was not found ! -----")
+    message(STATUS "----- EIGEN3 packageconfig was not found ! -----")
 endif()
 
 if(Ceres_FOUND)
-message(STATUS "----- Ceres was found -----")
+    message(STATUS "----- Ceres was found -----")
 else()
-message(STATUS "----- Ceres packageconfig was not found ! -----")
+    message(STATUS "----- Ceres packageconfig was not found ! -----")
 endif()
 
 if(bzip2_FOUND) # DOES NOT HAVE CONFIG.CMAKE
@@ -240,15 +262,15 @@ else()
 endif()
 
 if(Boost_FOUND)
-message(STATUS "----- Boost was found -----")
+    message(STATUS "----- Boost was found -----")
 else()
-message(STATUS "----- Boost packageconfig was not found ! -----")
+    message(STATUS "----- Boost packageconfig was not found ! -----")
 endif()
 
 if(${Qt6Core_FOUND})
-message(STATUS "----- QTCore was found -----")
+    message(STATUS "----- QTCore was found -----")
 else()
-message(STATUS "----- QTCore packageconfig was not found ! -----")
+    message(STATUS "----- QTCore packageconfig was not found ! -----")
 endif()
 
 # -------------------------------------------------------
@@ -259,7 +281,9 @@ endif()
 #  To spare an if-else, currently we use the files in the outer vcpkg_installed directory
 set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(aravis_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/aravis-0.8")
+if(NOT USE_PYLON)
+    set(aravis_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/aravis-0.8")
+endif()
 set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 #set(FFMPEG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 #set(GLOG_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/") ###################################
@@ -274,31 +298,31 @@ set(SPII_INSTALL_DIR "3rdparty/spii/build")
 set(spii_LIB_NAME 3rdparty/spii)
 
 if(SPII_BUILD_MODE_VAR)
-# Autimatic build for spii
+    # Autimatic build for spii
     message(STATUS "--------------------- SPII automatic mode ---------------------")
     # Check install status of the library
     find_library(spii_LIBRARY_RELEASE
-    spii
-    PATHS ${CMAKE_BINARY_DIR}/lib/)
+            spii
+            PATHS ${CMAKE_BINARY_DIR}/lib/)
 
     find_library(meschach_LIBRARY_RELEASE
-    meschach
-    PATHS ${CMAKE_BINARY_DIR}/lib/)
+            meschach
+            PATHS ${CMAKE_BINARY_DIR}/lib/)
 
-        if(spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
-            message(STATUS "--------------------- SPII found (automatic)---------------------")
-            set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
-            message(STATUS "Libraries: ${spii_LIBRARIES}")
-            set(SPII_BUILD_FOUND TRUE)
-        else(spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
-            message(STATUS "--------------------- SPII not found will be installed (automatic) ---------------------")
-            add_subdirectory(${spii_LIB_NAME})
-            link_directories(${CMAKE_BINARY_DIR}/lib)
-            set(spii_LIBRARIES "")
-        endif()
+    if(spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
+        message(STATUS "--------------------- SPII found (automatic)---------------------")
+        set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
+        message(STATUS "Libraries: ${spii_LIBRARIES}")
+        set(SPII_BUILD_FOUND TRUE)
+    else(spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
+        message(STATUS "--------------------- SPII not found will be installed (automatic) ---------------------")
+        add_subdirectory(${spii_LIB_NAME})
+        link_directories(${CMAKE_BINARY_DIR}/lib)
+        set(spii_LIBRARIES "")
+    endif()
 else()
-# Manual build for spii
-message(STATUS "--------------------- SPII manual mode ---------------------")
+    # Manual build for spii
+    message(STATUS "--------------------- SPII manual mode ---------------------")
     find_library (spii_LIBRARY_RELEASE
             spii
             PATHS ${spii_LIB_NAME}/lib/)
@@ -337,15 +361,13 @@ find_library(QuaZip_LIBRARY_RELEASE
         QuaZip
         PATHS ${CMAKE_BINARY_DIR}/lib/)
 
-# Aravis lib check
-find_library(aravis_LIBRARIES
-        aravis-0.8
-        PATHS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
-message(STATUS "Aravis (aravis-0.8) lib location: ${aravis_LIBRARIES}")
-#find_library(glib_LIBRARIES
-#        glib-2.0
-#        PATHS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
-#message(STATUS "Glib (glib-2.0) lib location: ${glib_LIBRARIES}")
+if(NOT USE_PYLON)
+    # Aravis lib check
+    find_library(aravis_LIBRARIES
+            aravis-0.8
+            PATHS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
+    message(STATUS "Aravis (aravis-0.8) lib location: ${aravis_LIBRARIES}")
+endif()
 
 message(STATUS "--------------------- QuaZip not found will be installed (automatic) ---------------------")
 add_subdirectory(${QuaZip_LIB_NAME})
@@ -360,7 +382,7 @@ message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
 # ------------------------------------------------------------------------
 
-include_directories(
+set(ALL_INCLUDE_DIRS
         ${Qt6Core5Compat_INCLUDE_DIRS}
         ${Qt6Core_INCLUDE_DIRS}
         ${Qt6Widgets_INCLUDE_DIRS}
@@ -373,19 +395,27 @@ include_directories(
         ${Qt6Xml_INCLUDE_DIRS}
         ${Qt6OpenGL_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
-#        ${FFMPEG_INCLUDE_DIRS}
+        #        ${FFMPEG_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
-        ${aravis_INCLUDE_DIR}
-        ${glib_INCLUDE_DIRS}
         ${spii_INCLUDE_DIR}
         ${QuaZip_INCLUDE_DIR}
         ${EIGEN_INCLUDE_DIR}
         ${CERES_INCLUDE_DIRS}
-#        ${GLOG_INCLUDE_DIRS} #########################
+        #        ${GLOG_INCLUDE_DIRS} #########################
         ${BZip2_INCLUDE_DIRS} ########################################################
-        ${PYLON_INCLUDE_DIR}
         "singleeyefitter")
+
+if(USE_PYLON)
+    list(APPEND ALL_INCLUDE_DIRS ${PYLON_INCLUDE_DIR})
+else()
+    list(APPEND ALL_INCLUDE_DIRS ${glib_INCLUDE_DIRS})
+    list(APPEND ALL_INCLUDE_DIRS ${aravis_INCLUDE_DIR})
+endif()
+
+message("ALL_INCLUDE_DIRS: ${ALL_INCLUDE_DIRS}")
+
+include_directories(${ALL_INCLUDE_DIRS})
 
 add_subdirectory(src)
 
@@ -410,15 +440,18 @@ message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 #message(STATUS " FFMPEG_INCLUDE_DIRS: ${FFMPEG_INCLUDE_DIRS}")
 message(STATUS " Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 message(STATUS " tbb_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}")
-message(STATUS " aravis_INCLUDE_DIR: ${aravis_INCLUDE_DIR}")
-message(STATUS " glib_INCLUDE_DIRS: ${glib_INCLUDE_DIRS}")
 message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIR}")
 message(STATUS " QuaZip_INCLUDE_DIRS: ${QuaZip_INCLUDE_DIR}")
 message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
 message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}")
 #message(STATUS " GLOG_INCLUDE_DIRS: ${GLOG_INCLUDE_DIRS}")
 message(STATUS " BZip2_INCLUDE_DIRS: ${BZip2_INCLUDE_DIRS}") ########################################################
+if(USE_PYLON)
 message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}")
+else()
+    message(STATUS " aravis_INCLUDE_DIR: ${aravis_INCLUDE_DIR}")
+    message(STATUS " glib_INCLUDE_DIRS: ${glib_INCLUDE_DIRS}")
+endif()
 message(STATUS "---------------------------" )
 message(STATUS "")
 

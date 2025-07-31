@@ -3,7 +3,9 @@
 
 #include <QSettings>
 
+#ifdef USE_PYLON
 #include <pylon/PylonIncludes.h>
+#endif
 
 #include "execArgParser.h"
 
@@ -76,7 +78,9 @@ int main(int argc, char *argv[])
             //qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
             //qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
 
+#ifdef USE_PYLON
             Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
+#endif
 
             // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
             // useful e.g. in case of automatic exec on scheduled PC startup for warming up camera device before experimental session

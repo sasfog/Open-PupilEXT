@@ -2,6 +2,8 @@
 #include <opencv2/core.hpp>
 #include "stereoCameraImageEventHandler.h"
 
+#ifdef USE_PYLON
+
 // Creates a new stereo image event handler for a StereoCamera
 StereoCameraImageEventHandler::StereoCameraImageEventHandler(QObject* parent) : QObject(parent), systemTime(0), stereoImage() {
 
@@ -113,3 +115,9 @@ void StereoCameraImageEventHandler::setTimeSynchronization(uint64_t m_mainCamera
 
     systemTime = m_systemTime;
 }
+
+#else
+
+    // ...
+
+#endif

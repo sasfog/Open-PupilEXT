@@ -470,7 +470,7 @@ void SingleCameraSettingsDialog::updateForms() {
 
     // Note: is this surely good here?
     if(camera->isHardwareTriggerEnabled()) {
-        HWTlineSourceBox->setCurrentText(QString::fromStdString(camera->getLineSource().c_str()));
+        HWTlineSourceBox->setCurrentText(camera->getLineSource());
     }
 
     lastUsedBinningVal = camera->getBinningVal();
@@ -688,7 +688,7 @@ void SingleCameraSettingsDialog::loadSettings() {
     HWTradioButton->setChecked(SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled(), applicationSettings));
     camera->enableHardwareTrigger(HWTradioButton->isChecked());
 
-    HWTlineSourceBox->setCurrentText(applicationSettings->value("SingleCameraSettingsDialog.lineSource", QString::fromStdString(camera->getLineSource().c_str())).toString());
+    HWTlineSourceBox->setCurrentText(applicationSettings->value("SingleCameraSettingsDialog.lineSource", camera->getLineSource()).toString());
     camera->setLineSource(HWTlineSourceBox->currentText().toStdString().c_str());
 
     HWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.hwTriggerFramerate", HWTframerateBox->value()).toInt());

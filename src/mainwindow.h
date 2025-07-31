@@ -21,9 +21,6 @@
 #include <QMainWindow>
 #include <QMdiSubWindow>
 #include <QSettings>
-#include <pylon/TlFactory.h>
-//#include <pylon/PylonIncludes.h>
-#include <pylon/gige/GigETransportLayer.h>
 
 #include "supportFunctions.h"
 #include "metaSnapshotOrganizer.h"
@@ -50,7 +47,12 @@
 #include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
 #include "subwindows/openZipChoiceDialog.h"
-#include "devices/singleAravisCamera.h"
+
+#ifdef USE_PYLON
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
+#endif
 
 
 /**
@@ -80,9 +82,6 @@ protected:
     void dropEvent(QDropEvent* e);
 
 private:
-
-    CTlFactory& TlFactory = CTlFactory::GetInstance();
-    IGigETransportLayer* pTl = dynamic_cast<IGigETransportLayer*>(TlFactory.CreateTl( Pylon::BaslerGigEDeviceClass ));
  
     SignalPubSubHandler *signalPubSubHandler;
 
@@ -129,7 +128,7 @@ private:
     QIcon archiveIcon;
 
     QMenu *windowMenu;
-    QMenu *baslerCamerasMenu;
+    QMenu *camerasMenu;
 //    QMenu *openCVCamerasMenu;
 
     QAction *cameraViewAct;
@@ -182,7 +181,11 @@ private:
 
     QWidget* activeMdiChild() const;
 
+#ifdef USE_PYLON
     Pylon::DeviceInfoList_t enumerateCameraDevices();
+#else
+    QList<ArvDevice*> enumerateCameraDevices();
+#endif
 
     Camera *selectedCamera;
 
@@ -332,7 +335,7 @@ private slots:
     void imageRecordingOutputZipSelected();
 
     void updateMenus();
-    void updateBaslerCamerasMenu();
+    void updateCamerasMenu();
 //    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();

@@ -7,11 +7,14 @@
 
 #include <QtCore/QObject>
 #include <opencv2/core/mat.hpp>
+#include <QtCore/QMutex>
+#include "camera.h"
+
+#ifdef USE_PYLON
+
 #include <pylon/PylonImage.h>
 #include <pylon/ImageEventHandler.h>
 #include <pylon/PylonIncludes.h>
-#include <QtCore/QMutex>
-#include "camera.h"
 
 using namespace Pylon;
 
@@ -58,3 +61,9 @@ signals:
     void imagesSkipped();
 
 };
+
+#else
+
+    // ...
+
+#endif

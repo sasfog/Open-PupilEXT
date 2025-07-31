@@ -4,20 +4,24 @@
     @authors Moritz Lode, Bényei Gábor, Attila Boncser
 */
 
-
-#include "camera.h"
 #include <QtCore/QObject>
+#include "camera.h"
+#include "../frameRateCounter.h"
+#include "stereoCameraImageEventHandler.h"
+#include "../stereoCameraCalibration.h"
+#include "../cameraFrameRateCounter.h"
+
+
+#ifdef USE_PYLON
+
+#include "cameraConfigurationEventHandler.h"
+#include "hardwareTriggerConfiguration.h"
+
 #include <pylon/PylonIncludes.h>
 #include <pylon/BaslerUniversalInstantCameraArray.h>
 #include <pylon/TlFactory.h>
 //#include <pylon/PylonIncludes.h>
 #include <pylon/gige/GigETransportLayer.h>
-#include "../frameRateCounter.h"
-#include "stereoCameraImageEventHandler.h"
-#include "cameraConfigurationEventHandler.h"
-#include "../stereoCameraCalibration.h"
-#include "../cameraFrameRateCounter.h"
-#include "hardwareTriggerConfiguration.h"
 
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
@@ -48,8 +52,8 @@ class StereoCamera : public Camera {
 
 public:
 
-    explicit StereoCamera(IGigETransportLayer* _pTl = nullptr, QObject *parent= 0);
-    //explicit StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, IGigETransportLayer* _pTl = nullptr, QObject* parent=0);
+    explicit StereoCamera(QObject *parent= 0);
+    //explicit StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, QObject* parent=0);
 
     ~StereoCamera() override;
 
@@ -113,12 +117,6 @@ private:
 //    explicit StereoCamera(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary, QObject* parent=0);
     void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
 
-    // the TLFactory has this GetInstance method, but it has no getter to let us get the pointer to the
-    //  gigE transport layer that we have once created in mainwindow.. this is currently a workaround, to
-    //  always pass its pointer to the camera instance...
-    CTlFactory& TlFactory = CTlFactory::GetInstance();
-    IGigETransportLayer* pTl = nullptr;
-
     QDir settingsDirectory;
 
     uint64 cameraMainTime;
@@ -172,3 +170,139 @@ signals:
     void imagesSkipped();
 
 };
+
+#else
+
+// has to happen, because aravis includes glib-2.0, and there the definition "signals" is clashing with the Qt definition
+//#undef signals
+#undef signals
+//#define QT_NO_SIGNALS_SLOTS_KEYWORDS 1
+#include <arv.h>
+#define signals Q_SIGNALS
+//Q_SIGNALS
+
+class StereoCamera : public Camera {
+Q_OBJECT
+
+public:
+
+    explicit StereoCamera(QObject *parent= 0);
+    //explicit StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, QObject* parent=0);
+
+    ~StereoCamera() override;
+
+    bool isOpen() override;
+    void close() override;
+    CameraImageType getType() override;
+
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
+    std::vector<QString> getFriendlyNames();
+
+    void autoGainOnce();
+    void autoExposureOnce();
+
+    int getExposureTimeValue();
+    int getExposureTimeMin();
+    int getExposureTimeMax();
+
+    bool isEnabledAcquisitionFrameRate();
+    bool isEmulated();
+    double getResultingFrameRateValue();
+
+    int getAcquisitionFPSValue();
+    int getAcquisitionFPSMin();
+    int getAcquisitionFPSMax();
+
+    double getGainValue();
+    double getGainMin();
+    double getGainMax();
+
+    void attachCameras(const QString &friendlyNameMain, const QString &friendlyNameSecondary);
+    void open(bool enableHardwareTrigger);
+
+    QString getLineSource();
+
+    StereoCameraCalibration *getCameraCalibration();
+    QString getCalibrationFilename();
+
+    void loadMainFromFile(const std::string &filename);
+    //void loadSecondaryFromFile(const String_t &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
+    void saveMainToFile(const std::string &filename);
+    //void saveSecondaryToFile(const String_t &filename);
+
+    int getImageROIwidth() override;
+    int getImageROIheight() override;
+    int getImageROIoffsetX() override;
+    int getImageROIoffsetY() override;
+    int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    QRectF getImageROI() override;
+    int getBinningVal();
+    std::vector<double> getTemperatures();
+
+    bool isGrabbing() override;
+
+private:
+
+    void attachCameras(const ArvDevice &diMain, const ArvDevice &diSecondary);
+
+    QDir settingsDirectory;
+
+    uint64 cameraMainTime;
+    uint64 cameraSecondaryTime;
+    uint64 systemTime;
+
+    QString lineSource;
+
+    //CBaslerUniversalInstantCameraArray cameras;
+    std::vector<ArvCamera*> cameras;
+    /*
+    StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
+     */
+    CameraFrameRateCounter *frameCounter;
+
+    StereoCameraCalibration *cameraCalibration;
+    QThread *calibrationThread;
+
+    void synchronizeTime();
+    void loadCalibrationFile();
+    void genericExceptionOccured(const std::exception &e);
+
+    void safelyCloseCameras();
+
+public slots:
+
+    void setGainValue(double value);
+    void setExposureTimeValue(int value);
+    void setLineSource(QString value);
+    void enableAcquisitionFrameRate(bool enabled);
+    void setAcquisitionFPSValue(int value);
+    void resynchronizeTime();
+
+    bool setBinningVal(int value);
+    bool setImageROIwidth(int width);
+    bool setImageROIheight(int height);
+    bool setImageROIoffsetX(int offsetX);
+    bool setImageROIoffsetY(int offsetY);
+
+    bool setImageROIwidthEmu(int width);
+    bool setImageROIheightEmu(int height);
+    bool setImageROIoffsetXEmu(int offsetX);
+    bool setImageROIoffsetYEmu(int offsetY);
+
+signals:
+
+    void fps(double fps);
+    void framecount(int framecount);
+    void cameraDeviceRemoved();
+    void imagesSkipped();
+
+};
+
+#endif

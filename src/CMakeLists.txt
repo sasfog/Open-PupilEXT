@@ -3,6 +3,12 @@ if (MSVC)
     add_definitions(-DNOMINMAX)
 endif()
 
+## Let this variable be there in preprocessor code to use ifdef-endif
+#if(USE_PYLON)
+#    add_definitions(-DUSE_PYLON)
+#    # target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE USE_PYLON)
+#endif()
+
 set(RESOURCE "${PROJECT_SOURCE_DIR}/PupilExt.qrc")
 qt6_add_resources(RESOURCE_ADDED ${RESOURCE})
 
@@ -34,8 +40,9 @@ set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATIO
 #)
 #add_definitions(-DGENICAM_NO_AUTO_LINK)
 
-# For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp
-add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
+
+set(ALL_SOURCES_TO_ADD
+        main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
         supportFunctions.h
         subwindows/MCUSettingsDialog.cpp subwindows/MCUSettingsDialog.h
@@ -62,7 +69,6 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         devices/camera.h
         devices/singleCamera.cpp devices/singleCamera.h
         devices/singleCameraImageEventHandler.cpp devices/singleCameraImageEventHandler.h
-        devices/hardwareTriggerConfiguration.h
         frameRateCounter.h
         subwindows/singleCameraCalibrationView.cpp subwindows/singleCameraCalibrationView.h
         cameraCalibration.cpp cameraCalibration.h
@@ -98,7 +104,6 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         playbackSynchroniser.h
         subwindows/outputDataRuleDialog.h
         subwindows/outputDataRuleDialog.cpp
-        devices/cameraConfigurationEventHandler.h
         dataTypes.cpp
         dataTypes.h
         remoteSetupModel.h
@@ -115,68 +120,62 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/QJsonModel/QUtf8.hpp
         subwindows/openZipChoiceDialog.h
         subwindows/openZipChoiceDialog.cpp
-        devices/singleAravisCamera.h
-        devices/singleAravisCamera.cpp
-        devices/singleAravisCameraImageEventHandler.h
-        devices/singleAravisCameraImageEventHandler.cpp
 )
+
+if(USE_PYLON)
+    list(APPEND ALL_SOURCES_TO_ADD devices/cameraConfigurationEventHandler.h)
+    list(APPEND ALL_SOURCES_TO_ADD devices/hardwareTriggerConfiguration.h)
+endif()
+
+# For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp ...
+add_executable(PupilEXT ${ALL_SOURCES_TO_ADD})
+
+# Let this variable be there in preprocessor code to use ifdef-endif
+if(USE_PYLON)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE USE_PYLON)
+endif()
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
 #set_property(TARGET PupilEXT PROPERTY CXX_STANDARD 17)
 #set(CMAKE_CXX_STANDARD 17)
 
+set(ALL_LIBRARIES_TO_LINK
+        TBB::tbb TBB::tbbmalloc #TBB::tbbbind_2_5 TBB::tbbmalloc_proxy ##tbb12
+        QuaZip
+        "singleeyefitter"
+        Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
+        ${Boost_LIBRARIES}
+        #Boost::boost
+        ${CERES_LIBRARIES}
+        ${BZip2_LIBRARIES} ########################################################
+        ${OpenCV_LIBS}
+        # ${FFMPEG_LIBRARIES}
+        opengl32 # works only for windows
+        #OpenGL::GL
+)
 
 if(SPII_BUILD_FOUND)
-
-    target_link_libraries(
-            ${CMAKE_PROJECT_NAME}
-            PRIVATE
-            TBB::tbb TBB::tbbmalloc #TBB::tbbbind_2_5 TBB::tbbmalloc_proxy ##tbb12
-            ${aravis_LIBRARIES}
-            ${glib_LIBRARIES}
-            QuaZip
-            "singleeyefitter"
-            Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
-            ${Boost_LIBRARIES}
-            #Boost::boost
-            ${spii_LIBRARIES}
-            ${CERES_LIBRARIES}
-            ${BZip2_LIBRARIES} ########################################################
-            ${PYLON_LIBRARIES}
-            #PylonRelease
-            ${OpenCV_LIBS}
-#            ${FFMPEG_LIBRARIES}
-            opengl32 # works only for windows
-            #OpenGL::GL
-            )
-
+    list(APPEND ALL_LIBRARIES_TO_LINK ${spii_LIBRARIES})
 else()
-
-    target_link_libraries(
-            ${CMAKE_PROJECT_NAME}
-            PRIVATE
-            TBB::tbb TBB::tbbmalloc #TBB::tbbmalloc_proxy ##tbb12
-            ${aravis_LIBRARIES}
-            ${glib_LIBRARIES}
-            QuaZip
-            "singleeyefitter"
-            Qt6::Core5Compat Qt6::Widgets Qt6::Concurrent Qt6::SerialPort Qt6::Charts Qt6::Svg Qt6::PrintSupport Qt6::Network Qt6::Xml Qt6::OpenGL
-            ${Boost_LIBRARIES}
-            #Boost::boost
-            spii
-            meschach
-            ${CERES_LIBRARIES}
-            ${BZip2_LIBRARIES} ########################################################
-            ${PYLON_LIBRARIES}
-            #PylonRelease
-            ${OpenCV_LIBS}
-#            ${FFMPEG_LIBRARIES}
-            opengl32 # works only for windows
-            #OpenGL::GL
-    )
-
+    list(APPEND ALL_LIBRARIES_TO_LINK spii)
+    list(APPEND ALL_LIBRARIES_TO_LINK meschach)
 endif()
 
+if(USE_PYLON)
+    list(APPEND ALL_LIBRARIES_TO_LINK ${PYLON_LIBRARIES})
+    #list(APPEND ALL_LIBRARIES_TO_LINK PylonRelease)
+else()
+    list(APPEND ALL_LIBRARIES_TO_LINK ${glib_LIBRARIES})
+    list(APPEND ALL_LIBRARIES_TO_LINK ${aravis_LIBRARIES})
+endif()
+
+message("ALL_LIBRARIES_TO_LINK: ${ALL_LIBRARIES_TO_LINK}")
+
+target_link_libraries(
+        ${CMAKE_PROJECT_NAME}
+        PRIVATE
+        ${ALL_LIBRARIES_TO_LINK}
+)
 
 
 ##################### target_link_directories(PupilEXT PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)

@@ -18,12 +18,13 @@ void MainWindow::PRGopenSingleCamera(const QString &camName) {
     if(selectedCamera && selectedCamera->isOpen())
         return;
 
+#ifdef USE_PYLON
     Pylon::DeviceInfoList_t lstDevices = enumerateCameraDevices();
     QString temp = "";
     if (!lstDevices.empty()) {
-        Pylon::DeviceInfoList_t::const_iterator deviceIt;
         bool foundGiven = false;
 
+        Pylon::DeviceInfoList_t::const_iterator deviceIt;
         for(deviceIt = lstDevices.begin(); deviceIt != lstDevices.end(); ++deviceIt ) {
             //std::cout << "Found camera full name: " << deviceIt->GetFullName().c_str() << std::endl;
             //std::cout << "Found camera friendly name: " << deviceIt->GetFriendlyName().c_str() << std::endl;
@@ -38,9 +39,40 @@ void MainWindow::PRGopenSingleCamera(const QString &camName) {
         }
     }
     else {
-        std::cout << "Could not find the specified camera. Pylon library sees that there are no Basler cameras connecter currently" << std::endl;
+        std::cout << "Could not find the specified camera. The camera handling library sees that there are no cameras connected currently" << std::endl;
         return;
     }
+#else
+    QVector<ArvDevice*> lstDevices; // TODO
+
+    QString temp = "";
+    if (!lstDevices.empty()) {
+
+        QVector<ArvDevice*>::const_iterator deviceIt;
+        bool foundGiven = false;
+
+        for(deviceIt = lstDevices.begin(); deviceIt != lstDevices.end(); ++deviceIt ) {
+            //std::cout << "Found camera full name: " << deviceIt->GetFullName().c_str() << std::endl;
+            //std::cout << "Found camera friendly name: " << deviceIt->GetFriendlyName().c_str() << std::endl;
+
+            // TODO
+            //  ---------------------------------------------------
+//            if(QString::fromStdString(deviceIt->GetFriendlyName().c_str()).toLower() == camName) { // NOTE: we search for friendly name, but connection can be initiated with full name
+//                temp = QString::fromStdString(deviceIt->GetFullName().c_str());
+//                foundGiven = true;
+//            }
+        }
+        if(!foundGiven) {
+            std::cout << "Could not find the specified camera" << std::endl;
+            return;
+        }
+    }
+    else {
+        std::cout << "Could not find the specified camera. The camera handling library sees that there are no cameras connected currently" << std::endl;
+        return;
+    }
+#endif
+
     cameraAct->setData(temp);
     singleCameraSelected(cameraAct);
 }

@@ -303,10 +303,26 @@ void MainWindow::createActions() {
     cameraAct->setStatusTip(tr("Connect to camera(s)."));
     QMenu* cameraMenu = new QMenu(this);
 
-    baslerCamerasMenu = cameraMenu->addMenu(singleCameraIcon, tr("&Single Camera"));
-    updateBaslerCamerasMenu();
-    connect(baslerCamerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleCameraSelected(QAction *)));
-    connect(baslerCamerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateBaslerCamerasMenu()));
+    QWidget *cameraInfoWidget = new QWidget();
+    QHBoxLayout *cameraInfoLayout = new QHBoxLayout();
+    cameraInfoLayout->setContentsMargins(8,4,8,4);
+#ifdef USE_PYLON
+    QLabel *cameraInfoLabel = new QLabel("Connect Basler device:");
+#else
+    QLabel *cameraInfoLabel = new QLabel("Connect Aravis device:");
+#endif
+    cameraInfoLayout->addWidget(cameraInfoLabel);
+    cameraInfoWidget->setLayout(cameraInfoLayout);
+
+    QWidgetAction *bact1 = new QWidgetAction(cameraMenu);
+    bact1->setCheckable(false);
+    bact1->setDefaultWidget(cameraInfoWidget);
+    cameraMenu->addAction(bact1);
+
+    camerasMenu = cameraMenu->addMenu(singleCameraIcon, tr("&Single Camera"));
+    updateCamerasMenu();
+    connect(camerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleCameraSelected(QAction *)));
+    connect(camerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateCamerasMenu()));
 
     cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
 
@@ -986,9 +1002,10 @@ QWidget* MainWindow::activeMdiChild() const {
     return nullptr;
 }
 
-void MainWindow::updateBaslerCamerasMenu() {
+#ifdef USE_PYLON
+void MainWindow::updateCamerasMenu() {
 
-    baslerCamerasMenu->clear();
+    camerasMenu->clear();
 
     try {
         Pylon::DeviceInfoList_t allDevices = enumerateCameraDevices();
@@ -997,7 +1014,7 @@ void MainWindow::updateBaslerCamerasMenu() {
         }
         Pylon::DeviceInfoList_t::const_iterator deviceIt;
         for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
-            QAction *cameraAction = baslerCamerasMenu->addAction(deviceIt->GetFriendlyName().c_str());
+            QAction *cameraAction = camerasMenu->addAction(deviceIt->GetFriendlyName().c_str());
             qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
             qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
             cameraAction->setData(deviceIt->GetFriendlyName().c_str());
@@ -1012,15 +1029,55 @@ void MainWindow::updateBaslerCamerasMenu() {
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
         QMessageBox err(this);
         err.critical(this, "Device Error", e.GetDescription());
-        QAction *cameraAction = baslerCamerasMenu->addAction("Could not retrieve list of devices.");
+        QAction *cameraAction = camerasMenu->addAction("Could not retrieve list of devices.");
         return;
     }
 
     enumerateCameras_noDevicesFound:
     // "finally", if we did not find any device
-    QAction *cameraAction = baslerCamerasMenu->addAction("No devices.");
+    QAction *cameraAction = camerasMenu->addAction("No devices.");
     cameraAction->setEnabled(false);
 }
+#else
+void MainWindow::updateCamerasMenu() {
+
+    camerasMenu->clear();
+
+    try {
+        QList<ArvDevice*> allDevices = enumerateCameraDevices();
+        if(allDevices.empty()) {
+            goto enumerateCameras_noDevicesFound;
+        }
+
+        /*
+        QList<ArvDevice*>::const_iterator deviceIt;
+        for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
+            QAction *cameraAction = aravisCamerasMenu->addAction(arv_device_ge.c_str());
+            qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
+            qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
+            cameraAction->setData(deviceIt->GetFriendlyName().c_str());
+            //cameraAction->setData(QVariant::fromValue<Pylon::CDeviceInfo>(*deviceIt));
+            if (QString(deviceIt->GetModelName().c_str()).toLower().contains("emu")) {
+                cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(
+                        QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
+            }
+        }
+         */
+        return;
+    } catch (const std::exception &e) {
+        std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
+        QMessageBox err(this);
+        err.critical(this, "Device Error", e.what());
+        QAction *cameraAction = camerasMenu->addAction("Could not retrieve list of devices.");
+        return;
+    }
+
+    enumerateCameras_noDevicesFound:
+    // "finally", if we did not find any device
+    QAction *cameraAction = camerasMenu->addAction("No devices.");
+    cameraAction->setEnabled(false);
+}
+#endif
 
 // not working currently. On windows 10 it returns an empty list sometimes, even if camera is connected
 /*
@@ -1630,15 +1687,25 @@ void MainWindow::singleCameraSelected(QAction *action) {
     // // QString deviceFullname = QString(deviceInfo.GetFullName());
     QString deviceFriendlyName = actionData.value<QString>();
 
-    // BASLER SINGLE CAMERA
+    // SINGLE INDUSTRIAL CAMERA
     try {
-        selectedCamera = new SingleCamera(deviceFriendlyName, pTl, this);
-    } catch (const GenericException &e) {
+        selectedCamera = new SingleCamera(deviceFriendlyName, this);
+    }
+#ifdef USE_PYLON
+    catch (const GenericException &e) {
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
         QMessageBox err(this);
         err.critical(this, "Device Error", e.GetDescription());
         return;
     }
+#else
+    catch (const std::exception &e) {
+        std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
+        QMessageBox err(this);
+        err.critical(this, "Device Error", e.what());
+        return;
+    }
+#endif
 
     //safelyResetTrialCounter();
     //safelyResetMessageRegister();
@@ -1753,13 +1820,23 @@ void MainWindow::singleWebcamSelected(QAction *action) {
 void MainWindow::stereoCameraSelected() {
 
     try {
-        selectedCamera = new StereoCamera(pTl, this);
-    } catch (const GenericException &e) {
+        selectedCamera = new StereoCamera(this);
+    }
+#ifdef USE_PYLON
+    catch (const GenericException &e) {
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
         QMessageBox err(this);
         err.critical(this, "Device Error", e.GetDescription());
         return;
     }
+#else
+    catch (const std::exception &e) {
+        std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
+        QMessageBox err(this);
+        err.critical(this, "Device Error", e.what());
+        return;
+    }
+#endif
 
     //safelyResetTrialCounter();
     //safelyResetMessageRegister();
@@ -2013,7 +2090,7 @@ void MainWindow::onSingleWebcamSettingsClick() {
 }
 
 void MainWindow::onStereoCameraSettingsClick() {
-    stereoCameraSettingsDialog = new StereoCameraSettingsDialog(dynamic_cast<StereoCamera*>(selectedCamera), MCUSettingsDialogInst, pTl, this);
+    stereoCameraSettingsDialog = new StereoCameraSettingsDialog(dynamic_cast<StereoCamera*>(selectedCamera), MCUSettingsDialogInst, this);
 #ifdef Q_OS_MACOS // Q_OS_WIN
     stereoCameraSettingsDialog->setWindowFlags(Qt::Tool);
 #endif
@@ -2046,11 +2123,17 @@ void MainWindow::onStereoCameraSettingsClick() {
     stereoCameraSettingsDialog->updateSensorSize();
 }
 
+#ifdef USE_PYLON
 Pylon::DeviceInfoList_t MainWindow::enumerateCameraDevices() {
+
+    CTlFactory& TlFactory = CTlFactory::GetInstance();
+    IGigETransportLayer* pTl = dynamic_cast<IGigETransportLayer*>(TlFactory.CreateTl( Pylon::BaslerGigEDeviceClass ));
 
     Pylon::DeviceInfoList_t allDevices;
     Pylon::DeviceInfoList_t lstDevices;
     TlFactory.EnumerateDevices(lstDevices);
+
+    qDebug() << "lstDevices.size() = " << lstDevices.size();
 
     if (pTl == NULL) {
         qDebug() << "Error: No GigE transport layer installed.";
@@ -2064,13 +2147,61 @@ Pylon::DeviceInfoList_t MainWindow::enumerateCameraDevices() {
     }
     return allDevices;
 }
+#else
+QList<ArvDevice*> MainWindow::enumerateCameraDevices() {
+
+    QList<ArvDevice*> allDevices;
+
+    qDebug() << "arv_get_n_devices() = " << QString::number(arv_get_n_devices());
+    qDebug() << "arv_get_n_interfaces() = " << QString::number(arv_get_n_interfaces());
+
+    auto arvInterfaceInstanceUSB = arv_uv_interface_get_instance();
+    auto arvInterfaceInstanceGigE = arv_gv_interface_get_instance();
+
+    arv_interface_update_device_list(arvInterfaceInstanceUSB);
+    arv_interface_update_device_list(arvInterfaceInstanceGigE);
+
+    /*
+    uint nInterfaces = arv_get_n_interfaces();
+    for(uint cit = 0; cit < nInterfaces; cit++) {
+
+        arv_interface_update_device_list(ArvInterface *interface);
+    }
+     */
+    //arv_get_interface_id(unsigned int index);
+
+    qDebug() << "arv_get_n_devices() = " << QString::number(arv_get_n_devices());
+
+
+
+    quint64 n = 0;
+    qDebug() << "Attempting to update Aravis device list.";
+    arv_update_device_list();
+    n = arv_get_n_devices();
+    qDebug() << "Number of found devices: " << QString::number(n);
+
+    GError *error = nullptr;
+    for (int i = 0; i < n; i++) {
+        std::string deviceID = arv_get_device_id(i);
+        qDebug() << "device: " << deviceID;
+
+        ArvCamera* a = arv_camera_new(deviceID.c_str(), &error);
+        if(!error) {
+            ArvDevice* d = arv_camera_get_device(a);
+            // ...
+            allDevices.append(d);
+        }
+    }
+    return allDevices;
+}
+#endif
 
 MainWindow::~MainWindow() {
 
-    // Release transport layer for GigE
-    TlFactory.ReleaseTl( pTl );
+#ifdef USE_PYLON
     // Releases all pylon resources
     PylonTerminate();
+#endif
 
     pupilDetectionThread->quit();
     pupilDetectionThread->wait();

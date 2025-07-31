@@ -19,7 +19,9 @@
 #include "../devices/singleWebcam.h"
 #include "custom-widgets/camImageRegionsWidget.h"
 
+#ifdef USE_PYLON
 using namespace Pylon;
+#endif
 
 /**
     Settings widget/window for the configuration of a single camera (Basler)
