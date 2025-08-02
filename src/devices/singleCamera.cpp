@@ -1297,8 +1297,8 @@ void SingleCamera::resizeStreamBuffer() {
 
     GError *error = NULL;
 
+    // NOTE. already done in stopGrabbing, although not NULLed
     if(callbackData.stream) {
-        // TODO: átmeneti megoldás, nem várjuk meg míg beér a legutóbbi frame minden packetje, hanem killeljük a stream szálat
         arv_stream_stop_thread(callbackData.stream, true);
         g_clear_object (&callbackData.stream);
     }
@@ -1400,9 +1400,9 @@ void SingleCamera::close() {
     // TODO: might not necessarily happen here
     stopGrabbing();
 
-    // NOTE szerintem ez kell ide, nem várjuk meg míg beér a legutóbbi frame minden packetje, hanem killeljük a stream szálat
-    arv_stream_stop_thread(callbackData.stream, true);
-    g_clear_object(&callbackData.stream);
+    // // NOTE: already done in stopGrabbing
+    // arv_stream_stop_thread(callbackData.stream, true);
+    // g_clear_object(&callbackData.stream);
 
     g_clear_object(&camera);
     camera = nullptr;
