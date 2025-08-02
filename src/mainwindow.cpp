@@ -319,10 +319,10 @@ void MainWindow::createActions() {
     bact1->setDefaultWidget(cameraInfoWidget);
     cameraMenu->addAction(bact1);
 
-    camerasMenu = cameraMenu->addMenu(singleCameraIcon, tr("&Single Camera"));
-    updateCamerasMenu();
-    connect(camerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleCameraSelected(QAction *)));
-    connect(camerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateCamerasMenu()));
+    singleCamerasMenu = cameraMenu->addMenu(singleCameraIcon, tr("&Single Camera"));
+    updateSingleCamerasMenu();
+    connect(singleCamerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleCameraSelected(QAction *)));
+    connect(singleCamerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateSingleCamerasMenu()));
 
     cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
 
@@ -1005,7 +1005,8 @@ QWidget* MainWindow::activeMdiChild() const {
 #ifdef USE_PYLON
 void MainWindow::updateCamerasMenu() {
 
-    camerasMenu->clear();
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    singleCamerasMenu->clear();
 
     try {
         Pylon::DeviceInfoList_t allDevices = enumerateCameraDevices();
@@ -1014,7 +1015,7 @@ void MainWindow::updateCamerasMenu() {
         }
         Pylon::DeviceInfoList_t::const_iterator deviceIt;
         for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
-            QAction *cameraAction = camerasMenu->addAction(deviceIt->GetFriendlyName().c_str());
+            QAction *cameraAction = singleCamerasMenu->addAction(deviceIt->GetFriendlyName().c_str());
             qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
             qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
             cameraAction->setData(deviceIt->GetFriendlyName().c_str());
@@ -1024,57 +1025,84 @@ void MainWindow::updateCamerasMenu() {
                         QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
             }
         }
+        QApplication::restoreOverrideCursor();
         return;
     } catch (const GenericException &e) {
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
         QMessageBox err(this);
         err.critical(this, "Device Error", e.GetDescription());
-        QAction *cameraAction = camerasMenu->addAction("Could not retrieve list of devices.");
+        QAction *cameraAction = singleCamerasMenu->addAction("Could not retrieve list of devices.");
+        QApplication::restoreOverrideCursor();
         return;
     }
 
     enumerateCameras_noDevicesFound:
     // "finally", if we did not find any device
-    QAction *cameraAction = camerasMenu->addAction("No devices.");
+    QAction *cameraAction = singleCamerasMenu->addAction("No devices.");
+    QApplication::restoreOverrideCursor();
     cameraAction->setEnabled(false);
 }
 #else
-void MainWindow::updateCamerasMenu() {
+void MainWindow::updateSingleCamerasMenu() {
 
-    camerasMenu->clear();
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    singleCamerasMenu->clear();
 
     try {
-        QList<ArvDevice*> allDevices = enumerateCameraDevices();
-        if(allDevices.empty()) {
+        uint nDevices = enumerateCameraDevices();
+        if(nDevices < 1) {
             goto enumerateCameras_noDevicesFound;
         }
 
-        /*
-        QList<ArvDevice*>::const_iterator deviceIt;
-        for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
-            QAction *cameraAction = aravisCamerasMenu->addAction(arv_device_ge.c_str());
-            qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
-            qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
-            cameraAction->setData(deviceIt->GetFriendlyName().c_str());
+        for (uint i = 0; i < nDevices; ++i) {
+
+            GError *error = nullptr;
+
+            qDebug() << "arv_get_device_id() = " << arv_get_device_id(i);
+            qDebug() << "arv_get_device_vendor() = " << arv_get_device_vendor(i);
+            qDebug() << "arv_get_device_model() = " << arv_get_device_model(i);
+            qDebug() << "arv_get_device_serial_nbr() = " << arv_get_device_serial_nbr(i);
+            qDebug() << "arv_get_device_address() = " << arv_get_device_address(i);
+            qDebug() << "arv_get_device_physical_id() = " << arv_get_device_physical_id(i);
+            qDebug() << "arv_get_device_protocol() = " << arv_get_device_protocol(i);
+            qDebug() << "arv_get_device_manufacturer_info() = " << arv_get_device_manufacturer_info(i);
+
+            //auto c = arv_camera_new_with_device(*deviceIt, &error);
+            //if(error) continue;
+            //auto mn = arv_camera_get_model_name(c, &error);
+            //if(error) continue;
+            //auto id = arv_camera_get_device_id(c, &error);
+
+            QString friendlyName =
+                    QString(arv_get_device_vendor(i)) + " " +
+                    QString(arv_get_device_model(i)) + " (" +
+                    QString(arv_get_device_serial_nbr(i)) + ")";
+
+            QAction *cameraAction = singleCamerasMenu->addAction(friendlyName);
+            qDebug() << "--------------------------------- friendly name: " << friendlyName;
+            qDebug() << "--------------------------------- device id: " << arv_get_device_id(i);
+            cameraAction->setData(arv_get_device_id(i));
             //cameraAction->setData(QVariant::fromValue<Pylon::CDeviceInfo>(*deviceIt));
-            if (QString(deviceIt->GetModelName().c_str()).toLower().contains("emu")) {
+            if(QString(arv_get_device_id(i)).toLower().contains("emu")) {
                 cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(
                         QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
             }
         }
-         */
+        QApplication::restoreOverrideCursor();
         return;
     } catch (const std::exception &e) {
         std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
         QMessageBox err(this);
         err.critical(this, "Device Error", e.what());
-        QAction *cameraAction = camerasMenu->addAction("Could not retrieve list of devices.");
+        QAction *cameraAction = singleCamerasMenu->addAction("Could not retrieve list of devices.");
+        QApplication::restoreOverrideCursor();
         return;
     }
 
     enumerateCameras_noDevicesFound:
     // "finally", if we did not find any device
-    QAction *cameraAction = camerasMenu->addAction("No devices.");
+    QAction *cameraAction = singleCamerasMenu->addAction("No devices.");
+    QApplication::restoreOverrideCursor();
     cameraAction->setEnabled(false);
 }
 #endif
@@ -1884,6 +1912,7 @@ void MainWindow::stereoCameraSelected() {
 
 void MainWindow::onWebcamStartedToOpen() {
     currentStatusMessageLabel->setText("Opening OpenCV webcam. This might take a few seconds...");
+    QApplication::setOverrideCursor(Qt::WaitCursor);
 //    if(singleWebcamSettingsDialog) {
 //        singleWebcamSettingsDialog->setLimitationsWhileWaitingToOpen(false);
 //    }
@@ -1936,6 +1965,7 @@ void MainWindow::onWebcamSuccessfullyOpened() {
     if(singleWebcamSettingsDialog) {
         singleWebcamSettingsDialog->setLimitationsWhileWaitingToOpen(false);
     }
+    QApplication::restoreOverrideCursor();
     resetStatus(true);
 }
 
@@ -2148,9 +2178,10 @@ Pylon::DeviceInfoList_t MainWindow::enumerateCameraDevices() {
     return allDevices;
 }
 #else
-QList<ArvDevice*> MainWindow::enumerateCameraDevices() {
 
-    QList<ArvDevice*> allDevices;
+// NOTE: If we are to retreive ArvDevice's, it would take very long, and not useful.
+//  Retrieving just the device indexes (later usable for retrieving deviceIDS or anything) is enough.
+uint MainWindow::enumerateCameraDevices() {
 
     qDebug() << "arv_get_n_devices() = " << QString::number(arv_get_n_devices());
     qDebug() << "arv_get_n_interfaces() = " << QString::number(arv_get_n_interfaces());
@@ -2174,25 +2205,46 @@ QList<ArvDevice*> MainWindow::enumerateCameraDevices() {
 
 
 
-    quint64 n = 0;
+    uint n = 0;
     qDebug() << "Attempting to update Aravis device list.";
-    arv_update_device_list();
+    arv_update_device_list(); // may be time consuming
+
     n = arv_get_n_devices();
     qDebug() << "Number of found devices: " << QString::number(n);
 
-    GError *error = nullptr;
-    for (int i = 0; i < n; i++) {
+    /*
+    for(int i = 0; i < n; i++) {
         std::string deviceID = arv_get_device_id(i);
-        qDebug() << "device: " << deviceID;
 
-        ArvCamera* a = arv_camera_new(deviceID.c_str(), &error);
-        if(!error) {
-            ArvDevice* d = arv_camera_get_device(a);
-            // ...
-            allDevices.append(d);
-        }
+        qDebug() << "arv_get_device_id() = " << arv_get_device_id(i);
+        qDebug() << "arv_get_device_vendor() = " << arv_get_device_vendor(i);
+        qDebug() << "arv_get_device_model() = " << arv_get_device_model(i);
+        qDebug() << "arv_get_device_serial_nbr() = " << arv_get_device_serial_nbr(i);
+        qDebug() << "arv_get_device_address() = " << arv_get_device_address(i);
+        qDebug() << "arv_get_device_physical_id() = " << arv_get_device_physical_id(i);
+        qDebug() << "arv_get_device_protocol() = " << arv_get_device_protocol(i);
+        qDebug() << "arv_get_device_manufacturer_info() = " << arv_get_device_manufacturer_info(i);
+
+        // Expected output:
+        // arv_get_device_id() =  Basler-acA1300-60gm-22385478
+        // arv_get_device_vendor() =  Basler
+        // arv_get_device_model() =  acA1300-60gm
+        // arv_get_device_serial_nbr() =  22385478
+        // arv_get_device_address() =  100.1.1.100
+        // arv_get_device_physical_id() =  00:30:53:24:66:46
+        // arv_get_device_protocol() =  GigEVision
+        // arv_get_device_manufacturer_info() =  none
+
+        //ArvCamera* a = arv_camera_new(deviceID.c_str(), &error);
+        //if(!error) {
+        //    ArvDevice* d = arv_camera_get_device(a);
+        //    // ...
+        //    allDevices.append(d);
+        //}
     }
-    return allDevices;
+    */
+
+    return n;
 }
 #endif
 
@@ -2662,6 +2714,8 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     const int playbackSpeed = applicationSettings->value("playbackSpeed", 30).toInt();
     bool playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", true, applicationSettings);
 
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     // selectedCamera = new FileCamera(imageSource, 0, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)
     // std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
     while(  (selectedCamera = new FileCamera(imageSource, subrecordingNumber, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)) &&
@@ -2670,6 +2724,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
             qDebug() << "Could not open this FileCamera, due to ImageReader error.";
             auto zipMultiInfo = dynamic_cast<FileCamera*>(selectedCamera)->getFoundZipMultiInfo();
 
+            QApplication::restoreOverrideCursor();
             OpenZipChoiceDialog *dialog = new OpenZipChoiceDialog("Zip file contains multiple recordings", zipMultiInfo, this);
             dialog->setModal(true);
             // dialog->raise();
@@ -2682,6 +2737,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
                     selectedCamera->close();
                     selectedCamera = nullptr;
                     subrecordingNumber = selectedRecNumber;
+                    QApplication::setOverrideCursor(Qt::WaitCursor);
                     continue;
                 } else /*if(resp == OpenZipChoiceDialog::OpenZipChoiceResponse::CANCEL)*/ {
                     selectedCamera->close();
@@ -2690,11 +2746,13 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
                 }
             }
         } if( dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ERROR ){
+            QApplication::restoreOverrideCursor();
             qDebug() << "Could not open this FileCamera, due to ImageReader error.";
             selectedCamera->close();
             selectedCamera = nullptr;
             return;
         } else if (dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_UNOPENABLE) {
+            QApplication::restoreOverrideCursor();
             QMessageBox *msgBox = new QMessageBox(this);
             msgBox->setWindowTitle("Zip archive could not be opened");
             msgBox->setText(
@@ -2710,11 +2768,13 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
         } else {
             break;
         }
+        QApplication::restoreOverrideCursor();
         selectedCamera->close();
         selectedCamera = nullptr;
         return;
     }
     bool aha = selectedCamera->isOpen();
+    QApplication::restoreOverrideCursor();
     std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
 
     // NOTE: FROM THIS POINT we can safely say that the camera is opened!

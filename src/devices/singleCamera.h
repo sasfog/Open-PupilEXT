@@ -151,13 +151,11 @@ signals:
 
 #else
 
-// has to happen, because aravis includes glib-2.0, and there the definition "signals" is clashing with the Qt definition
-//#undef signals
+// NOTE: has to happen, because aravis includes glib-2.0, and there
+//  the definition "signals" is clashing with the Qt definition
 #undef signals
-//#define QT_NO_SIGNALS_SLOTS_KEYWORDS 1
 #include <arv.h>
 #define signals Q_SIGNALS
-//Q_SIGNALS
 
 #include <QtCore/QObject>
 #include "singleCameraImageEventHandler.h"
@@ -199,7 +197,7 @@ public:
     QString getFullName();
     QString getDeviceID();
 
-    // DEV EMPTY METHODS
+    // TODO: DEV EMPTY METHODS
     bool isOpen() override;
     void close() override;
     CameraImageType getType() override;
@@ -247,7 +245,7 @@ public:
     int getBinningVal();
     double getTemperature();
 
-    bool isGrabbing() override; //DEV
+    bool isGrabbing() override;
 
     void getTEST();
 
@@ -265,6 +263,9 @@ private:
 
     ArvCamera *camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
+    ArvStreamCallbackData callbackData;
+
+    void resizeStreamBuffer();
 
     /*
     CameraConfigurationEventHandler *cameraConfigurationEventHandler = nullptr;
@@ -275,12 +276,13 @@ private:
     CameraCalibration *cameraCalibration;
     QThread *calibrationThread;
 
-    // DEV EMPTY METHODS
+    // TODO: DEV EMPTY METHODS
     void synchronizeTime();
     void loadCalibrationFile();
-    /*
-    void genericExceptionOccured(const GenericException &e);
-     */
+
+    void genericExceptionOccured(const std::exception &e, const GError &lastAravisError);
+    void genericExceptionOccured(const std::exception &e, bool deviceRemoved = false);
+
 
 public slots:
 
@@ -300,7 +302,6 @@ public slots:
 
 
 signals:
-//Q_SIGNALS:
 
     void fps(double fps);
     void framecount(int framecount);

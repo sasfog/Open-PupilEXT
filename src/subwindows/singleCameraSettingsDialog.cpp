@@ -655,11 +655,21 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
 
     SWTframerateEnabled->setEnabled(!state);
     SWTframerateBox->setEnabled(!state && camera->isEnabledAcquisitionFrameRate());
+
+    // TODO: something strange is happening here. Why do we need this piece of code below anyway?
+    //  once we set the value in GUI (and in the camera accordingly) to the max possible, we cannot change
+    //  it back when the radio buttons are clicked back.
+//    if(state || !SWTframerateEnabled->isChecked()) {
+//        //camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+//        setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+//    } else {
+//        setAcquisitionFPSValue(SWTframerateBox->value());
+//    }
+    // I rather changed to this:
     if(state || !SWTframerateEnabled->isChecked()) {
-        //camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
-        setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+        camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
     } else {
-        setAcquisitionFPSValue(SWTframerateBox->value());
+        camera->setAcquisitionFPSValue(SWTframerateBox->value());
     }
 
     HWTframerateLayout->setEnabled(state);

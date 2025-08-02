@@ -36,18 +36,23 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
 
     //Pylon::DeviceInfoList_t lstDevices = enumerateCameraDevices();
     if(allDevices.empty()) {
-        // TODO
-        return;
+        throw new std::exception("Camera connection problem.");
+        //return;
     }
+    bool cfound = false;
     CDeviceInfo di;
     Pylon::DeviceInfoList_t::const_iterator deviceIt;
     for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
         qDebug() << "deviceIt->GetFriendlyName().c_str() " << deviceIt->GetFriendlyName().c_str();
         if(deviceIt->GetFriendlyName().c_str() == friendlyName) {
-            qDebug() << "FOUND";
+            //qDebug() << "FOUND";
+            cfound = true;
             di = *deviceIt;
             break;
         }
+    }
+    if(!cfound) {
+        throw new std::exception("The specified camera was not found among the ones currently detected.");
     }
 
     //auto di = CDeviceInfo().SetFriendlyName(friendlyName.toStdString().c_str());
@@ -1058,11 +1063,111 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
 
 SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         : Camera(parent),
-          frameCounter(new CameraFrameRateCounter(parent)),
-          cameraCalibration(new CameraCalibration()),
-          calibrationThread(new QThread()),
-//        hardwareTriggerEnabled(false),
-          lineSource("Line1") {
+        frameCounter(new CameraFrameRateCounter(parent)),
+        cameraCalibration(new CameraCalibration()),
+        calibrationThread(new QThread()),
+        hardwareTriggerEnabled(false),
+        lineSource("Line1") {
+
+    uint n = arv_get_n_devices();
+
+    // TODO
+    if(n < 1) {
+        throw new std::exception("Camera connection problem.");
+        //return;
+    }
+
+    int i = 0;
+    while(i < n) {
+
+        // TODO: regexp?
+        QString matchableFoundDeviceID = arv_get_device_id(i);
+        matchableFoundDeviceID.replace(" ", "");
+        matchableFoundDeviceID.replace("-", "");
+        matchableFoundDeviceID.replace("(", "");
+        matchableFoundDeviceID.replace(")", "");
+
+        QString matchableTargetDeviceID = friendlyName;
+        matchableTargetDeviceID.replace(" ", "");
+        matchableTargetDeviceID.replace("-", "");
+        matchableTargetDeviceID.replace("(", "");
+        matchableTargetDeviceID.replace(")", "");
+
+        if(matchableFoundDeviceID == matchableTargetDeviceID)
+            break;
+        i++;
+    }
+
+    if(i >= n) {
+        throw new std::exception("The specified camera was not found among the ones currently detected.");
+        //return;
+    }
+
+    GError *error = NULL;
+    camera = arv_camera_new(arv_get_device_id(i), &error);
+
+    // TODO
+    if(!ARV_IS_CAMERA(camera)) {
+        g_clear_object (&camera);
+        camera = nullptr;
+
+        throw new std::exception("Could not initialize Aravis camera.");
+        //return;
+    }
+
+    // TODO
+    if(error != NULL) {
+        /* En error happened, display the correspdonding message */
+        printf ("Error: %s\n", error->message);
+//        return EXIT_FAILURE;
+    }
+
+    qDebug() << "To our best knowledge, the camera was successfully opened: " << arv_get_device_id(i);
+    size_t xmls;
+    qDebug() << "GenICam XML:\n" << arv_device_get_genicam_xml(arv_camera_get_device(camera), &xmls);
+
+    connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
+    connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
+
+    cameraImageEventHandler = new SingleCameraImageEventHandler(parent);
+    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
+    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
+    //
+    connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
+
+    ////// camera.RegisterImageEventHandler(cameraImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
+    //arv_camera_set_acquisition_mode (camera, ARV_ACQUISITION_MODE_CONTINUOUS, &error);
+
+    callbackData.counter = 0;
+    callbackData.done = FALSE;
+    callbackData.stream = NULL;
+    callbackData.emitter = cameraImageEventHandler; //nullptr;
+    callbackData.aboutToStopGrabbing = false;
+
+    resizeStreamBuffer();
+
+    synchronizeTime();
+    cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
+
+    //camera.PixelFormat.SetValue(PixelFormat_Mono8);
+
+    // load calibration if existing
+    if(!cameraCalibration->isCalibrated()) {
+        // If we already used this camera before, a config file may exists
+        loadCalibrationFile();
+    }
+
+    //CIntegerParameter heartbeat( camera.GetTLNodeMap(), "HeartbeatTimeout" );
+    //heartbeat.TrySetValue( 1000, IntegerValueCorrection_Nearest );
+
+    startGrabbing();
+
+    // TODO
+    if(error != NULL) {
+        /* En error happened, display the correspdonding message */
+        printf ("Error: %s\n", error->message);
+//        return EXIT_FAILURE;
+    }
 
     /*
     // TODO: LOOKUP CAMERA
@@ -1185,14 +1290,51 @@ SingleCamera::~SingleCamera() {
     }
 }
 
+void SingleCamera::resizeStreamBuffer() {
+
+    // just to be sure
+    stopGrabbing();
+
+    GError *error = NULL;
+
+    if(callbackData.stream) {
+        // TODO: átmeneti megoldás, nem várjuk meg míg beér a legutóbbi frame minden packetje, hanem killeljük a stream szálat
+        arv_stream_stop_thread(callbackData.stream, true);
+        g_clear_object (&callbackData.stream);
+    }
+
+    // Create the stream object with callback
+    callbackData.stream = arv_camera_create_stream (camera, cameraImageEventHandler->stream_callback, &callbackData, &error);
+
+    if (ARV_IS_STREAM (callbackData.stream)) {
+        int i;
+        size_t payload;
+
+        // Retrieve the payload size for buffer creation
+        payload = arv_camera_get_payload(camera, &error);
+        if (error == NULL) {
+            // Insert some buffers in the stream buffer pool
+            for (i = 0; i < 2; i++)
+                arv_stream_push_buffer(callbackData.stream, arv_buffer_new(payload, NULL));
+        }
+    }
+
+    // TODO
+    if(error != NULL) {
+        // En error happened, display the correspdonding message
+        printf ("Error: %s\n", error->message);
+//        return EXIT_FAILURE;
+    }
+}
+
 void SingleCamera::getTEST() {
     ArvCamera *camera;
     GError *error = NULL;
 
     /* Connect to the first available camera */
-    camera = arv_camera_new (NULL, &error);
+    camera = arv_camera_new(NULL, &error);
 
-    if(!ARV_IS_CAMERA(camera)) {
+    if(ARV_IS_CAMERA(camera)) {
         int width;
         int height;
         const char *pixel_format;
@@ -1218,18 +1360,32 @@ void SingleCamera::getTEST() {
     }
 }
 
-/*
-void SingleCamera::genericExceptionOccured(const GenericException &e) {
+void SingleCamera::genericExceptionOccured(const std::exception &e, const GError &lastAravisError) {
     //QThread::msleep(1000);
-    std::cerr << "A Pylon exception occurred." << std::endl<< e.GetDescription() << std::endl;
-    if (camera.IsCameraDeviceRemoved()) {
+    std::cerr << "An Aravis exception occurred." << std::endl<< e.what() << std::endl;
+
+    // TODO: sketchy check if the device was removed or not
+    bool deviceRemoved = false;
+    if(QString::fromStdString(lastAravisError.message).toLower().contains("remov")) {
+        deviceRemoved = true;
+    }
+
+    genericExceptionOccured(e, deviceRemoved);
+}
+
+void SingleCamera::genericExceptionOccured(const std::exception &e, bool deviceRemoved) {
+    //QThread::msleep(1000);
+    std::cerr << "An Aravis exception occurred." << std::endl<< e.what() << std::endl;
+
+    // logic: only quick cleanup if the device got removed. If not, we will keep running
+
+    if (deviceRemoved) {
         emit cameraDeviceRemoved();
-        camera.Close();
-        camera.DetachDevice();
-        camera.DestroyDevice();
+        arv_shutdown();
+        g_clear_object (&camera);
+        camera = nullptr;
     }
 }
- */
 
 bool SingleCamera::isOpen() {
 
@@ -1241,7 +1397,14 @@ bool SingleCamera::isOpen() {
 void SingleCamera::close() {
     std::cout << "SingleCamera: Releasing resources.";
 
-    g_clear_object (&camera);
+    // TODO: might not necessarily happen here
+    stopGrabbing();
+
+    // NOTE szerintem ez kell ide, nem várjuk meg míg beér a legutóbbi frame minden packetje, hanem killeljük a stream szálat
+    arv_stream_stop_thread(callbackData.stream, true);
+    g_clear_object(&callbackData.stream);
+
+    g_clear_object(&camera);
     camera = nullptr;
 
     /*
@@ -1260,74 +1423,68 @@ void SingleCamera::close() {
 
 void SingleCamera::enableHardwareTrigger(bool state) {
 
-    //TODO
+    GError *error = nullptr;
 
-    /*
-    std::cout<< "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << " to state: " << state << std::endl;
+    qDebug() << "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << " to state: " << state;
 
     frameCounter->reset();
 
     try {
 
-        if(camera.IsOpen()) {
-            camera.StopGrabbing();
-            camera.Close();
+        stopGrabbing();
+
+        //auto a = arv_camera_get_acquisition_mode(camera, &error);
+        //auto t = arv_camera_get_trigger_source(camera, &error);
+        bool isSoftwareTriggerSupported = arv_camera_is_software_trigger_supported(camera, &error);
+        auto device = arv_camera_get_device(camera);
+
+        // TODO: set line source if not set
+        //setLineSource(lineSource);
+
+        arv_device_set_string_feature_value(device, "TriggerSelector", "FrameStart", &error);
+        if(error){
+            qDebug() << "Could not set TriggerSelector to value FrameStart.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
 
-
-        if(hardwareTriggerConfiguration) {
-            camera.DeregisterConfiguration(hardwareTriggerConfiguration);
-            hardwareTriggerConfiguration = nullptr;
-        }
-        if(softwareTriggerConfiguration) {
-            camera.DeregisterConfiguration(softwareTriggerConfiguration);
-            softwareTriggerConfiguration = nullptr;
+        //auto b = arv_acquisition_mode_from_string("Continuous");
+        //if(!error)
+        arv_camera_set_acquisition_mode(camera, ARV_ACQUISITION_MODE_CONTINUOUS, &error);
+        if(error){
+            qDebug() << "Could not set ARV_ACQUISITION_MODE_CONTINUOUS.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
 
-        if(state) {
-            hardwareTriggerConfiguration = new HardwareTriggerConfiguration(lineSource);
-            camera.RegisterConfiguration(hardwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
-            hardwareTriggerEnabled = true;
+        arv_device_set_string_feature_value(device, "TriggerMode", "On", &error);
+        //if(!error) arv_camera_set_trigger_source(camera, , &error);
+        if(!error){
+            hardwareTriggerEnabled = state;
         } else {
-            softwareTriggerConfiguration = new CAcquireContinuousConfiguration;
-            camera.RegisterConfiguration(softwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
-            hardwareTriggerEnabled = false;
+            qDebug() << "Could not set hardware/software triggering.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
 
-        camera.Open();
+        //camera.Open();
 
-        // DEV
-        // TODO: This guy is causing a lot of trouble.
+        // NOTE: Sure we need this here as well?
         try {
             synchronizeTime();
             cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
-        } catch (const GenericException &e) {
-            qDebug() << e.GetDescription();
-            //genericExceptionOccured(e);
+        } catch (const std::exception &e) {
+            genericExceptionOccured(e);
         }
 
-        if (camera.CanWaitForFrameTriggerReady()) {
+        startGrabbing();
 
-            // Start the grabbing using the grab loop thread, by setting the grabLoopType parameter
-            // to GrabLoop_ProvidedByInstantCamera. The grab results are delivered to the image event handlers.
-            // The GrabStrategy_OneByOne default grab strategy is used.
-            camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-        } else {
-            // See the documentation of CInstantCamera::CanWaitForFrameTriggerReady() for more information.
-            std::cout << std::endl;
-            std::cout << "Error: This sample can only be used with cameras that can be queried whether they are ready to accept the next frame trigger.";
-            std::cout << std::endl;
-            std::cout << std::endl;
-        }
-    } catch (const GenericException &e) {
+    } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
-    */
+
 }
 
 void SingleCamera::autoGainOnce() {
     try {
-        GError *error;
+        GError *error = nullptr;
 
         //if(!camera.IsOpen()) {
         //    camera.Open();
@@ -1341,21 +1498,24 @@ void SingleCamera::autoGainOnce() {
         bool isAuto = arv_camera_is_gain_auto_available(camera, &error);
 
         if(error) {
-            // ...
+            qDebug() << "Auto gain is not available.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(isAuto) {
             arv_camera_set_gain_auto(camera, ArvAuto::ARV_AUTO_ONCE, &error);
             if(error) {
-                // ...
+                qDebug() << "Could not et auto gain.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
+    startGrabbing();
 }
 
 void SingleCamera::autoExposureOnce() {
     try {
-        GError *error;
+        GError *error = nullptr;
 
         //if(!camera.IsOpen()) {
         //    camera.Open();
@@ -1369,45 +1529,42 @@ void SingleCamera::autoExposureOnce() {
         bool isAuto = arv_camera_is_exposure_auto_available(camera, &error);
 
         if(error) {
-            // ...
+            qDebug() << "Auto exposure is not available.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(isAuto) {
             arv_camera_set_exposure_time_auto(camera, ArvAuto::ARV_AUTO_ONCE, &error);
             if(error) {
-                // ...
+                qDebug() << "Could not set auto exposure.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
+    startGrabbing();
 }
 
 QString SingleCamera::getFriendlyName() {
     GError *error = nullptr;
     QString val = "";
     try {
-        val = QString(arv_camera_get_model_name(camera, &error));
-        if(error) {
-            // ...
-        }
+        QString vendorName, deviceModel, serialNumber = "";
+
+        vendorName = arv_camera_get_vendor_name(camera, &error);
+        if(!error) deviceModel = arv_camera_get_model_name(camera, &error);
+        if(!error) serialNumber = arv_camera_get_device_serial_number(camera, &error);
+
+        val = vendorName + " " + deviceModel + " (" + serialNumber + ")";
+
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
 
 QString SingleCamera::getFullName() {
-    GError *error = nullptr;
-    QString val = "";
-    try {
-        // TODO: at the moment it is the same as getFriendlyName... better solution?
-        val = QString(arv_camera_get_model_name(camera, &error));
-        if(error) {
-            // ...
-        }
-    } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
-    }
-    return val;
+    // shortcut for Aravis
+    return getDeviceID();
 }
 
 QString SingleCamera::getDeviceID() {
@@ -1416,10 +1573,11 @@ QString SingleCamera::getDeviceID() {
     try {
         val = QString(arv_camera_get_device_id(camera, &error));
         if(error) {
-            // ...
+            qDebug() << "Could not get device ID.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1427,6 +1585,10 @@ QString SingleCamera::getDeviceID() {
 int SingleCamera::getExposureTimeValue() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_exposure_time_available(camera, &error);
         if(canGet) {
@@ -1434,10 +1596,11 @@ int SingleCamera::getExposureTimeValue() {
             val = (int)round(arv_camera_get_exposure_time(camera, &error));
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get exposure time value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1445,6 +1608,10 @@ int SingleCamera::getExposureTimeValue() {
 int SingleCamera::getExposureTimeMin() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_exposure_time_available(camera, &error);
         if(canGet) {
@@ -1456,10 +1623,11 @@ int SingleCamera::getExposureTimeMin() {
             val = (int)round(valMin);
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get exposure time minimum value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1467,6 +1635,10 @@ int SingleCamera::getExposureTimeMin() {
 int SingleCamera::getExposureTimeMax() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_exposure_time_available(camera, &error);
         if(canGet) {
@@ -1478,10 +1650,11 @@ int SingleCamera::getExposureTimeMax() {
             val = (int)round(valMax);
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get exposure time maximum value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1489,6 +1662,10 @@ int SingleCamera::getExposureTimeMax() {
 double SingleCamera::getGainValue() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_gain_available(camera, &error);
         if(canGet) {
@@ -1496,10 +1673,11 @@ double SingleCamera::getGainValue() {
             val = arv_camera_get_gain(camera, &error);
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get gain value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1507,6 +1685,10 @@ double SingleCamera::getGainValue() {
 double SingleCamera::getGainMin() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_gain_available(camera, &error);
         if(canGet) {
@@ -1518,10 +1700,11 @@ double SingleCamera::getGainMin() {
             val = valMin;
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get gain minimum value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1529,6 +1712,10 @@ double SingleCamera::getGainMin() {
 double SingleCamera::getGainMax() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_gain_available(camera, &error);
         if(canGet) {
@@ -1540,10 +1727,11 @@ double SingleCamera::getGainMax() {
             val = valMax;
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get gain maximum value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1558,15 +1746,17 @@ void SingleCamera::setGainValue(double value) {
             arv_camera_get_gain_bounds(camera, &valMin, &valMax, &error);
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get gain value bounds.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(value <= valMax && value >= valMin) {
             arv_camera_set_gain(camera, value, &error);
             if(error) {
-                // ...
+                qDebug() << "Could not set gain value.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
 }
 
@@ -1580,20 +1770,23 @@ void SingleCamera::setExposureTimeValue(int value) {
             arv_camera_get_exposure_time_bounds(camera, &valMin, &valMax, &error);
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get exposure time value bounds.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(value <= valMax && value >= valMin) {
             arv_camera_set_exposure_time(camera, (double)value, &error);
             if(error) {
-                // ...
+                qDebug() << "Could not set exposure time value.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
 }
 
 void SingleCamera::loadFromFile(const std::string &filename) {
-    // TODO
+    // TODO: It seems aravis does not yet support saving and loading all features. We could iterate through the map
+    //  and save what we can, then restore all upon opening, but this requires further larger efforts. Yet unsupported
     /*
     try {
         CFeaturePersistence::Load( filename, &camera.GetNodeMap(), true );
@@ -1610,7 +1803,8 @@ void SingleCamera::loadFromFile(const std::string &filename) {
 }
 
 void SingleCamera::saveToFile(const std::string &filename) {
-    // TODO
+    // TODO: It seems aravis does not yet support saving and loading all features. We could iterate through the map
+    //  and save what we can, then restore all upon opening, but this requires further larger efforts. Yet unsupported
     /*
     try {
         CFeaturePersistence::Save(filename, &camera.GetNodeMap() );
@@ -1622,18 +1816,22 @@ void SingleCamera::saveToFile(const std::string &filename) {
 }
 
 bool SingleCamera::isEnabledAcquisitionFrameRate() {
-    // TODO
-    /*
+    GError *error = nullptr;
+    bool val = false;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-        if (camera.AcquisitionFrameRateEnable.IsReadable()) {
-            return camera.AcquisitionFrameRateEnable.GetValue();
+        val = arv_camera_get_frame_rate_enable(camera, &error);
+        if(error) {
+            qDebug() << "Could not get whether acquisition frame rate setting is enabled or not.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
-    } catch(const GenericException &e) {
+    } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
-    return false;
-     */
-    return true;
+    return val;
 }
 
 bool SingleCamera::isEmulated() {
@@ -1643,53 +1841,63 @@ bool SingleCamera::isEmulated() {
 }
 
 void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
-    // TODO
-    /*
+    GError *error = nullptr;
+
+    if(!ARV_IS_CAMERA(camera))
+        return;
+
     try {
-        if (camera.AcquisitionFrameRateEnable.IsWritable()) {
-            camera.AcquisitionFrameRateEnable.TrySetValue(enabled);
+        arv_camera_set_frame_rate_enable(camera, enabled, &error);
+        if(error) {
+            qDebug() << "Could not set acquisition frame rate enabled/disabled.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
-    } catch(const GenericException &e) {
+    } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
-     */
 }
 
 void SingleCamera::setAcquisitionFPSValue(int value) {
     GError *error = nullptr;
     try {
-        // TODO: not sure if needed
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(error) {
-            // ...
+            qDebug() << "Acquisition framerate not available.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(canGet) {
             arv_camera_set_frame_rate(camera, (double)value, &error);
             if(error) {
-                // ...
+                qDebug() << "Could not set acquisition framerate.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
 }
 
 int SingleCamera::getAcquisitionFPSValue() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-        // TODO: not sure if needed
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(error) {
-            // ...
+            qDebug() << "Acquisition framerate not available.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(canGet) {
             // NOTE: rounding here
             val = (int)round(arv_camera_get_frame_rate(camera, &error));
             if(error) {
-                // ...
+                qDebug() << "Could not get acquisition framerate.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1697,6 +1905,10 @@ int SingleCamera::getAcquisitionFPSValue() {
 int SingleCamera::getAcquisitionFPSMin() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(canGet) {
@@ -1708,10 +1920,10 @@ int SingleCamera::getAcquisitionFPSMin() {
             val = (int)round(valMin);
         }
         if(error) {
-            // ...
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1719,6 +1931,10 @@ int SingleCamera::getAcquisitionFPSMin() {
 int SingleCamera::getAcquisitionFPSMax() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(canGet) {
@@ -1730,17 +1946,48 @@ int SingleCamera::getAcquisitionFPSMax() {
             val = (int)round(valMax);
         }
         if(error) {
-            // ...
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
 
 double SingleCamera::getResultingFrameRateValue() {
-    // TODO: maybe something different?
-    return getAcquisitionFPSMax();
+    GError *error = nullptr;
+    int val = 1;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+        //auto temp = arv_camera_get_integer(camera, "ResultingFrameRate", &error);
+        GValue v = G_VALUE_INIT;
+        //g_value_init(&v, G_TYPE_DOUBLE);
+        arv_device_get_feature_value(arv_camera_get_device(camera), "ResultingFrameRate", &v, &error);
+        float temp = g_value_get_double(&v);
+
+        if(error) {
+            qDebug() << "Could not obtain resulting framerate value. This camera might not support it. (It is not a standard GenICam v2.7.1 feature.)";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qDebug() << "Falling back to acquisition framerate value.";
+            GValue h = G_VALUE_INIT;
+            //g_value_init(&h, G_TYPE_DOUBLE); // NOTE: already happens in the aravis get feature call
+            arv_device_get_feature_value(arv_camera_get_device(camera), "AcquisitionFrameRate", &h, &error);
+            temp = g_value_get_double(&h);
+        }
+        // additional checks could come here
+        if(error) {
+            qDebug() << "Could neither get resulting framerate, nor acquisition framerate.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            val = temp;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return val;
 }
 
 CameraCalibration *SingleCamera::getCameraCalibration() {
@@ -1752,17 +1999,26 @@ bool SingleCamera::isHardwareTriggerEnabled() {
     GError *error = nullptr;
     int val = false;
     try {
-        QString resp = QString(arv_camera_get_trigger_source(camera, &error));
-        qDebug() << "RESP = " << resp;
-        resp = resp.toLower();
-        if(resp.contains("hw") || resp.contains("hardware")) {
-            val = true;
-        }
+        // not a boolean but an On/Off "enum"
+        QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
+        val = (tval == "On");
+
         if(error) {
-            // ...
+            qDebug() << "Could not determine whether hardware triggering is enabled.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
+
+        //QString resp = QString(arv_camera_get_trigger_source(camera, &error));
+        //qDebug() << "RESP = " << resp;
+        //resp = resp.toLower();
+        //if(resp.contains("hw") || resp.contains("hardware")) {
+        //    val = true;
+        //}
+        //if(error) {
+        //    qDebug() << "Error during aravis API call. Message: " << error->message;
+        //}
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     hardwareTriggerEnabled = val; // TODO: get rid of this ?
     return val;
@@ -1772,18 +2028,40 @@ bool SingleCamera::isHardwareTriggerEnabled() {
 
 void SingleCamera::synchronizeTime() {
 
-    /*
+    GError *error = nullptr;
+
     //GenApi::INodeMap& nodemap = camera.GetNodeMap();
 
     // Take a "snapshot" of the camera's current timestamp value
     //CCommandParameter(nodemap, "GevTimestampControlLatch").Execute();
-    camera.TimestampLatch.Execute();
+    arv_device_execute_command(arv_camera_get_device(camera), "TimestampLatch", &error);
+    if(error) {
+        qDebug() << "Could not execute TimestampLatch command.";
+        qDebug() << "Error during aravis API call. Message: " << error->message;
+        qDebug() << "Falling back to deprecated GevTimestampControlLatch command, if this camera only understands that.";
+        arv_device_execute_command(arv_camera_get_device(camera), "GevTimestampControlLatch", &error);
+    }
+    if(error) {
+        qDebug() << "Could not execute timestamp latch command.";
+        // ...
+        return;
+    }
     std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
     std::chrono::time_point<std::chrono::system_clock> epoche = std::chrono::time_point<std::chrono::system_clock>{};
 
     // Get the timestamp value
-    //cameraTime = CIntegerParameter(nodemap, "GevTimestampValue").GetValue();
-    cameraTime = static_cast<uint64>(camera.TimestampLatchValue.GetValue());
+    cameraTime = arv_camera_get_integer(camera, "TimestampLatchValue", &error);
+    if(error) {
+        qDebug() << "Could not obtain TimestampLatchValue.";
+        qDebug() << "Error during aravis API call. Message: " << error->message;
+        qDebug() << "Falling back to deprecated GevTimestampValue, if this camera only understands that.";
+        arv_device_execute_command(arv_camera_get_device(camera), "GevTimestampValue", &error);
+    }
+    if(error) {
+        qDebug() << "Could not get camera timestamp latch value.";
+        // ...
+        return;
+    }
     systemTime  = std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);
     std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
@@ -1796,17 +2074,60 @@ void SingleCamera::synchronizeTime() {
     std::cout << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << std::endl;
     std::cout << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count() << std::endl;
     std::cout << "=========================" << std::endl;
-    */
+
 }
 
 QString SingleCamera::getLineSource() {
+
+    GError *error = nullptr;
+    //QString val = "";
+
+    if(!ARV_IS_CAMERA(camera))
+        //return val;
+        return lineSource;
+
+    try {
+        // otherwise we could just query the "TriggerSource" GenICam feature value
+        QString temp = QString(arv_camera_get_trigger_source(camera, &error));
+
+        // additional checks could come here
+        if(error) {
+            qDebug() << "Could not get trigger source.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            lineSource = temp;
+            //val = temp;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    //return val;
+
     return lineSource;
 }
 
 void SingleCamera::setLineSource(QString value) {
-    /*
-    lineSource = value;
-     */
+
+    GError *error = nullptr;
+    //QString val = "";
+
+    if(!ARV_IS_CAMERA(camera))
+        return;
+
+    try {
+        // otherwise we could just set the "TriggerSource" GenICam feature value
+        arv_camera_set_trigger_source(camera, value.toStdString().c_str(), &error);
+
+        if(error) {
+            qDebug() << "Could not set trigger source.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            lineSource = value;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
 }
 
 CameraImageType SingleCamera::getType() {
@@ -1820,13 +2141,20 @@ void SingleCamera::startGrabbing() {
 
     GError *error = nullptr;
 
-    arv_camera_set_acquisition_mode(camera, ArvAcquisitionMode::ARV_ACQUISITION_MODE_CONTINUOUS, &error);
-    if(!error) arv_camera_start_acquisition(camera, &error);
+    // TODO: set continous grabbing mode, if not set
+//    arv_camera_set_acquisition_mode(camera, ArvAcquisitionMode::ARV_ACQUISITION_MODE_CONTINUOUS, &error);
+
+    //if(!error)
+    callbackData.aboutToStopGrabbing = false;
+    arv_stream_start_thread(callbackData.stream);
+    arv_camera_start_acquisition(camera, &error);
 
     if(error) {
-        // ...
+        qDebug() << "Could not start grabbing.";
+        qDebug() << "Error during aravis API call. Message: " << error->message;
     } else {
         isGrabbingV = true;
+        qDebug() << "Started grabbing!";
     }
 
     // pylon version
@@ -1839,15 +2167,25 @@ void SingleCamera::stopGrabbing() {
         return;
 
     GError *error = nullptr;
+    callbackData.aboutToStopGrabbing = true;
+    gboolean delete_buffers = true;
+    arv_stream_stop_thread(callbackData.stream, delete_buffers);
+    //g_clear_object (&callbackData.stream);
+    //callbackData.stream = NULL;
     arv_camera_stop_acquisition(camera, &error);
+    // TODO: for some reason it causes errors like the following:
+    //  ** (process:8760): CRITICAL **: ...: arv_uv_stream_stop_thread: assertion 'priv->thread == NULL' failed
+    //  ** (process:8760): CRITICAL **: ...: arv_uv_stream_start_thread: assertion 'priv->thread == NULL' failed
+    //  although stop_thread is called, etc. Possible solution?
 
     if(error) {
-        // ...
-        // TODO
-
-        //arv_camera_abort_acquisition(camera, &error);
+        qDebug() << "Could not gracefully stop grabbing.";
+        qDebug() << "Error during aravis API call. Message: " << error->message;
+        qDebug() << "Falling back to abort call.";
+        arv_camera_abort_acquisition(camera, &error);
     }
     isGrabbingV = false;
+    qDebug() << "Stopped grabbing!";
 
     // pylon version
     //if (camera.IsOpen() && camera.IsGrabbing())
@@ -1875,80 +2213,88 @@ void SingleCamera::loadCalibrationFile() {
 
 int SingleCamera::getImageROIwidth() {
     GError *error = nullptr;
-    int val = 0;
+    int val = 1;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
-//    bool canGet = arv_camera_is_region_offset_available(camera, &error);
-//    if(error) {
-//        // ...
-//    } else if(canGet) {
-        val = arv_camera_get_width_increment(camera, &error);
+        auto temp = arv_camera_get_integer(camera, "Width", &error);
+        // additional checks could come here
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI Width.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            val = temp;
         }
-//    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
 
 int SingleCamera::getImageROIheight() {
     GError *error = nullptr;
-    int val = 0;
+    int val = 1;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
-//    bool canGet = arv_camera_is_region_offset_available(camera, &error);
-//    if(error) {
-//        // ...
-//    } else if(canGet) {
-        val = arv_camera_get_height_increment(camera, &error);
+        auto temp = arv_camera_get_integer(camera, "Height", &error);
+        // additional checks could come here
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI Height.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            val = temp;
         }
-//    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
 
 int SingleCamera::getImageROIoffsetX() {
     GError *error = nullptr;
-    int val = 0;
+    int val = 1;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
-//    bool canGet = arv_camera_is_region_offset_available(camera, &error);
-//    if(error) {
-//        // ...
-//    } else if(canGet) {
-        val = arv_camera_get_x_offset_increment(camera, &error);
+        auto temp = arv_camera_get_integer(camera, "OffsetX", &error);
+        // additional checks could come here
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI OffsetX.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            val = temp;
         }
-//    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
 
 int SingleCamera::getImageROIoffsetY() {
     GError *error = nullptr;
-    int val = 0;
+    int val = 1;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
-//    bool canGet = arv_camera_is_region_offset_available(camera, &error);
-//    if(error) {
-//        // ...
-//    } else if(canGet) {
-        val = arv_camera_get_y_offset_increment(camera, &error);
+        auto temp = arv_camera_get_integer(camera, "OffsetY", &error);
+        // additional checks could come here
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI OffsetY.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            val = temp;
         }
-//    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1957,23 +2303,27 @@ int SingleCamera::getImageROIoffsetY() {
 int SingleCamera::getImageROIwidthMax() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
 //    bool canGet = arv_camera_is_region_offset_available(camera, &error);
 //    if(error) {
 //        // ...
 //    } else if(canGet) {
         gint valMin = 0;
         gint valMax = 0;
-        arv_camera_get_height_bounds(camera, &valMin, &valMax, &error);
+        arv_camera_get_width_bounds(camera, &valMin, &valMax, &error);
         // additional checks could come here
-        val = valMin;
+        val = valMax;
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI Width maximum.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
 //    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -1982,23 +2332,22 @@ int SingleCamera::getImageROIwidthMax() {
 int SingleCamera::getImageROIheightMax() {
     GError *error = nullptr;
     int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
-//    bool canGet = arv_camera_is_region_offset_available(camera, &error);
-//    if(error) {
-//        // ...
-//    } else if(canGet) {
         gint valMin = 0;
         gint valMax = 0;
         arv_camera_get_height_bounds(camera, &valMin, &valMax, &error);
         // additional checks could come here
         val = valMax;
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI Height maximum.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         }
-//    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -2006,26 +2355,31 @@ int SingleCamera::getImageROIheightMax() {
 QRectF SingleCamera::getImageROI(){
     GError *error = nullptr;
     QRectF val = {0,0,0,0};
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-//    // TODO: not sure if needed
-//    bool canGet = arv_camera_is_region_offset_available(camera, &error);
-//    if(error) {
-//        // ...
-//    } else if(canGet) {
         gint valXoffset = 0;
         gint valYoffset = 0;
         gint valWidth = 0;
         gint valHeight = 0;
-        arv_camera_get_region(camera, &valXoffset, &valYoffset, &valWidth, &valHeight, &error);
+        //arv_camera_get_region(camera, &valXoffset, &valYoffset, &valWidth, &valHeight, &error);
+
+        if(!error) valXoffset = arv_camera_get_integer(camera, "OffsetX", &error);
+        if(!error) valYoffset = arv_camera_get_integer(camera, "OffsetY", &error);
+        if(!error) valWidth = arv_camera_get_integer(camera, "Width", &error);
+        if(!error) valHeight = arv_camera_get_integer(camera, "Height", &error);
+
         // additional checks could come here
         if(error) {
-            // ...
+            qDebug() << "Could not get image acquisition ROI.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else {
             val = QRectF(valXoffset, valYoffset, valWidth, valHeight);
         }
-//    }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
@@ -2033,11 +2387,15 @@ QRectF SingleCamera::getImageROI(){
 int SingleCamera::getBinningVal() {
     GError *error = nullptr;
     int val = 1;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
     try {
-        // TODO: not sure if needed
         bool canGet = arv_camera_is_binning_available(camera, &error);
         if(error) {
-            // ...
+            qDebug() << "Could not get binning value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if(canGet) {
             gint valX = 1;
             gint valY = 1;
@@ -2050,36 +2408,46 @@ int SingleCamera::getBinningVal() {
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
     }
     return val;
 }
 
 double SingleCamera::getTemperature() {
 
-    // arv_device_get_genicam_xml()
-    // DeviceTemperature descriptor benne
+    GError *error = nullptr;
+    double val = 0.0;
 
-    double d = 0.0;
+    if(!ARV_IS_CAMERA(camera))
+        return val;
 
-    // TODO
+    try {
+        auto temp = arv_camera_get_float(camera, "DeviceTemperature", &error);
+        // fallbacks: set "DeviceTemperatureSelector" value to "Sensor" or "Mainboard"
 
-    return d;
+        // additional checks could come here
+        if(error) {
+            qDebug() << "Could not get camera temperature reading.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        } else {
+            val = temp;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return val;
 }
 
 bool SingleCamera::isGrabbing() {
-
-    // TODO
     return isGrabbingV;
-
-    // pylon version
-    //return camera.IsGrabbing();
 }
 
 // NOTE: grabbing "pause" is necessary for setting binning
 bool SingleCamera::setBinningVal(int value) {
 
     bool success = false;
+
+    stopGrabbing();
 
     GError *error = nullptr;
     try {
@@ -2090,23 +2458,31 @@ bool SingleCamera::setBinningVal(int value) {
         gint valYMax = 1;
         if(canGet) {
             arv_camera_get_x_binning_bounds(camera, &valXMin, &valXMax, &error);
-            arv_camera_get_x_binning_bounds(camera, &valYMin, &valYMax, &error);
+            arv_camera_get_y_binning_bounds(camera, &valYMin, &valYMax, &error);
+        } else {
+            qDebug() << "Binning value is not avaliable.";
         }
         if(error) {
-            // ...
+            qDebug() << "Could not get binning value.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else if( (value <= valXMax && value >= valXMin) && (value <= valYMax && value >= valYMin) ) {
             // TODO: better, find common number of available X and Y binning values (if they might differ)
             arv_camera_set_binning(camera, value, value, &error);
+
+            resizeStreamBuffer();
             if(error) {
-                // ...
+                qDebug() << "Could not set binning value.";
+                qDebug() << "Error during aravis API call. Message: " << error->message;
             } else {
                 success = true;
             }
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
         return false;
     }
+
+    startGrabbing();
 
     return success;
 }
@@ -2136,13 +2512,16 @@ bool SingleCamera::setImageROIwidth(int width) {
     try {
         auto currentROI = getImageROI();
         arv_camera_set_region(camera, currentROI.x(), currentROI.y(), bestWidth, currentROI.height(), &error);
+
+        resizeStreamBuffer();
         if(error) {
-            // ...
+            qDebug() << "Could not set image acquisition ROI Width.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else {
             success = true;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
         return false;
     }
 
@@ -2176,13 +2555,16 @@ bool SingleCamera::setImageROIheight(int height) {
     try {
         auto currentROI = getImageROI();
         arv_camera_set_region(camera, currentROI.x(), currentROI.y(), currentROI.width(), bestHeight, &error);
+
+        resizeStreamBuffer();
         if(error) {
-            // ...
+            qDebug() << "Could not set image acquisition ROI Height.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else {
             success = true;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
         return false;
     }
 
@@ -2217,14 +2599,17 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
     GError *error = nullptr;
     try {
         auto currentROI = getImageROI();
-        arv_camera_set_region(camera, offsetX, currentROI.y(), currentROI.width(), currentROI.width(), &error);
+        arv_camera_set_region(camera, offsetX, currentROI.y(), currentROI.width(), currentROI.height(), &error);
+
+        resizeStreamBuffer();
         if(error) {
-            // ...
+            qDebug() << "Could not set image acquisition ROI OffsetX.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else {
             success = true;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
         return false;
     }
 
@@ -2259,14 +2644,17 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
     GError *error = nullptr;
     try {
         auto currentROI = getImageROI();
-        arv_camera_set_region(camera, currentROI.x(), offsetY, currentROI.width(), currentROI.width(), &error);
+        arv_camera_set_region(camera, currentROI.x(), offsetY, currentROI.width(), currentROI.height(), &error);
+
+        resizeStreamBuffer();
         if(error) {
-            // ...
+            qDebug() << "Could not set image acquisition ROI OffsetY.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
         } else {
             success = true;
         }
     } catch (const std::exception &e) {
-        qDebug() << "Exception occured in aravis wrapper. Message: " << e.what();
+        genericExceptionOccured(e);
         return false;
     }
 

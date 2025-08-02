@@ -128,7 +128,7 @@ private:
     QIcon archiveIcon;
 
     QMenu *windowMenu;
-    QMenu *camerasMenu;
+    QMenu *singleCamerasMenu;
 //    QMenu *openCVCamerasMenu;
 
     QAction *cameraViewAct;
@@ -184,7 +184,7 @@ private:
 #ifdef USE_PYLON
     Pylon::DeviceInfoList_t enumerateCameraDevices();
 #else
-    QList<ArvDevice*> enumerateCameraDevices();
+    uint enumerateCameraDevices();
 #endif
 
     Camera *selectedCamera;
@@ -335,7 +335,7 @@ private slots:
     void imageRecordingOutputZipSelected();
 
     void updateMenus();
-    void updateCamerasMenu();
+    void updateSingleCamerasMenu();
 //    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();
