@@ -1455,7 +1455,15 @@ void SingleCamera::enableHardwareTrigger(bool state) {
             qDebug() << "Error during aravis API call. Message: " << error->message;
         }
 
-        arv_device_set_string_feature_value(device, "TriggerMode", "On", &error);
+        std::string stateStr = (state) ? "On" : "Off";
+        arv_device_set_string_feature_value(device, "TriggerMode", stateStr.c_str(), &error);
+        if(error){
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        }
+
+        if(!state) {
+            arv_camera_software_trigger(camera, &error);
+        }
         //if(!error) arv_camera_set_trigger_source(camera, , &error);
         if(!error){
             hardwareTriggerEnabled = state;
@@ -1467,14 +1475,31 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         //camera.Open();
 
         // NOTE: Sure we need this here as well?
-        try {
-            synchronizeTime();
-            cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
-        } catch (const std::exception &e) {
-            genericExceptionOccured(e);
-        }
+        synchronizeTime();
+        cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
 
         startGrabbing();
+
+        // TODO: for some reason we need this workaround to get things started
+        setImageROIwidth(getImageROIwidth());
+
+        // DEV
+    //    auto temp = arv_camera_get_integer(camera, "Width", &error);
+    //    arv_camera_set_integer(camera, "Width", temp, &error);
+
+        //stopGrabbing();
+        //startGrabbing();
+
+        //if(!state) {
+        //    arv_camera_software_trigger(camera, &error);
+        //}
+        ////if(!error) arv_camera_set_trigger_source(camera, , &error);
+        //if(!error){
+        //    hardwareTriggerEnabled = state;
+        //} else {
+        //    qDebug() << "Could not set hardware/software triggering.";
+        //    qDebug() << "Error during aravis API call. Message: " << error->message;
+        //}
 
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
