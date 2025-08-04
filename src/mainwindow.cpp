@@ -301,7 +301,7 @@ void MainWindow::createActions() {
 
     cameraAct = new QAction(singleCameraIcon, tr("Camera"), this);
     cameraAct->setStatusTip(tr("Connect to camera(s)."));
-    QMenu* cameraMenu = new QMenu(this);
+    cameraMenu = new QMenu(this);
 
     QWidget *cameraInfoWidget = new QWidget();
     QHBoxLayout *cameraInfoLayout = new QHBoxLayout();
@@ -323,6 +323,11 @@ void MainWindow::createActions() {
     updateSingleCamerasMenu();
     connect(singleCamerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleCameraSelected(QAction *)));
     connect(singleCamerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateSingleCamerasMenu()));
+
+    MouseLeaveCatchFilter *mlcf = new MouseLeaveCatchFilter(this);
+    singleCamerasMenu->installEventFilter(mlcf);
+    MouseLeaveCatchFilter *mlcf2 = new MouseLeaveCatchFilter(this);
+    cameraMenu->installEventFilter(mlcf2);
 
     cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
 
@@ -1048,11 +1053,18 @@ void MainWindow::updateSingleCamerasMenu() {
     QApplication::setOverrideCursor(Qt::WaitCursor);
     singleCamerasMenu->clear();
 
+    // To prevent the user from accedentally triggering a focus change (and making
+    //  the newly updated device list menu disappear just upon appearance)
+    cameraMenu->blockSignals(true);
+
     try {
         uint nDevices = enumerateCameraDevices();
         if(nDevices < 1) {
             goto enumerateCameras_noDevicesFound;
         }
+
+        // Now the user regains the right to select any other menu by hovering on
+        cameraMenu->blockSignals(false);
 
         for (uint i = 0; i < nDevices; ++i) {
 

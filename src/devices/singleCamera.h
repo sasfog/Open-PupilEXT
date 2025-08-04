@@ -257,7 +257,7 @@ public:
 
     void getTEST();
 
-    void recoverFromPossibleLostControl(GError *error);
+    void wrappedErrorOccured(GError *error);
     // TODO
     void manualResetDevice() {}; // needed for GigE devices, that can get stuck in an error state sometimes
 

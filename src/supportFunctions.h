@@ -21,6 +21,7 @@
     Various little functions that are needed here and there, e.g. checking and simplifying strings of filenames and paths before using them for I/O
 
 */
+
 class SupportFunctions : public QObject
 {
     Q_OBJECT

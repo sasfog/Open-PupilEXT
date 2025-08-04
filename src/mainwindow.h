@@ -55,6 +55,32 @@
 #endif
 
 
+class MouseLeaveCatchFilter : public QObject {
+Q_OBJECT
+public:
+    explicit MouseLeaveCatchFilter(QObject *parent = nullptr) : QObject(parent) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        if (auto menu = qobject_cast<QMenu*>(watched)) {
+            if (event->type() == QEvent::Leave) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            } else if (event->type() == QEvent::HoverLeave) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            } else if (event->type() == QEvent::FocusAboutToChange) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            } else if (event->type() == QEvent::FocusOut) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            }
+        }
+        return QObject::eventFilter(watched, event);
+    }
+};
+
 /**
     Main interface of the software
 
@@ -128,6 +154,7 @@ private:
     QIcon archiveIcon;
 
     QMenu *windowMenu;
+    QMenu *cameraMenu;
     QMenu *singleCamerasMenu;
 //    QMenu *openCVCamerasMenu;
 
@@ -472,3 +499,6 @@ signals:
     void playbackStopApproved();
 
 };
+
+
+

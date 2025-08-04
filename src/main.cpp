@@ -60,6 +60,14 @@ int main(int argc, char *argv[])
 {
     try {
 
+        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg){
+            QFile logFile("lastrun.txt");
+            if (logFile.open(QIODevice::WriteOnly)) {
+                QTextStream out(&logFile);
+                out << msg << "\n";
+            }
+        });
+
         int result = 0;
         do {
             QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);

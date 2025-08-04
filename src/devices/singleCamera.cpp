@@ -1264,7 +1264,6 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
-
     // TODO: pixel format to mono 8, set continous acquisition
     // TODO: manual reset
     // TODO: reset when error occurs
@@ -1281,32 +1280,10 @@ SingleCamera::~SingleCamera() {
 
 void SingleCamera::resizeStreamBuffer() {
 
-    // just to be sure
     // TODO: UNNECESSARY
     stopGrabbing();
 
     GError *error = nullptr;
-
-//    // TODO: THIS IS NEVER NEEDED
-//    // NOTE. already done in stopGrabbing, although not NULLed
-//    if(callbackData.stream) {
-//
-////        ////// OLD VERSION, FOR USB3
-////        arv_stream_stop_thread(callbackData.stream, true);
-////        g_clear_object (&callbackData.stream);
-//
-//
-//        ///// NEW VERSION, FOR GIGE
-//    //    arv_stream_stop_thread(callbackData.stream, true);
-//
-//        arv_stream_try_pop_buffer(callbackData.stream);
-//        arv_stream_set_emit_signals(callbackData.stream, FALSE);
-//        g_object_unref(callbackData.stream);
-//        callbackData.stream = nullptr;
-//
-//        g_clear_object (&callbackData.stream);
-//    }
-//    //
 
     // Create the stream object with callback
     callbackData.stream = arv_camera_create_stream(camera, cameraImageEventHandler->stream_callback, &callbackData, &error);
@@ -1319,20 +1296,14 @@ void SingleCamera::resizeStreamBuffer() {
         error = nullptr;
         payload = arv_camera_get_payload(camera, &error);
         if(!error) {
-            // TODO: WHY 2??
-            // Insert some buffers in the stream buffer pool
-            for (i = 0; i < 2; i++)
+            // TODO: should be a huge number, e.g. 20-50 ?
+            for (i = 0; i < 20; i++)
                 arv_stream_push_buffer(callbackData.stream, arv_buffer_new(payload, NULL));
-
-            //gint aaa = 20;
-            //gint bbb = 20;
-            //arv_stream_get_n_buffers(callbackData.stream, &aaa, &bbb);
-            //qDebug() << "arv_stream_get_n_buffers: " << aaa << " and " << bbb;
         }
     }
 
     if(error) {
-        qDebug() << "Error during aravis API call. Message: " << error->message;
+        wrappedErrorOccured(error);
     }
 
 }
@@ -1568,9 +1539,6 @@ void SingleCamera::autoGainOnce() {
     try {
         GError *error = nullptr;
 
-        //if(!camera.IsOpen()) {
-        //    camera.Open();
-        //}
         if(!camera) {
             return;
         }
@@ -1604,9 +1572,6 @@ void SingleCamera::autoExposureOnce() {
     try {
         GError *error = nullptr;
 
-        //if(!camera.IsOpen()) {
-        //    camera.Open();
-        //}
         if(!camera) {
             return;
         }
@@ -1987,16 +1952,6 @@ int SingleCamera::getAcquisitionFPSValue() {
         return val;
 
     try {
-
-        //...
-        //if(arv_device_is_feature_available(arv_camera_get_device(camera), "AcquisitionFrameRate", &error)) {
-        //    arv_device_get_feature_value(arv_camera_get_device(camera), "AcquisitionFrameRate", &v, &error);
-        //} else if(arv_device_is_feature_available(arv_camera_get_device(camera), "AcquisitionFrameRateAbs", &error)) {
-        //    arv_device_get_feature_value(arv_camera_get_device(camera), "AcquisitionFrameRateAbs", &v, &error);
-        //}
-
-
-
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(error) {
             qDebug() << "Acquisition framerate not available.";
@@ -2132,35 +2087,17 @@ bool SingleCamera::isHardwareTriggerEnabled() {
             qDebug() << "Could not determine whether hardware triggering is enabled.";
             qDebug() << "Error during aravis API call. Message: " << error->message;
         }
-
-        //QString resp = QString(arv_camera_get_trigger_source(camera, &error));
-        //qDebug() << "RESP = " << resp;
-        //resp = resp.toLower();
-        //if(resp.contains("hw") || resp.contains("hardware")) {
-        //    val = true;
-        //}
-        //if(error) {
-        //    qDebug() << "Error during aravis API call. Message: " << error->message;
-        //}
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
     hardwareTriggerEnabled = val; // TODO: get rid of this ?
     return val;
-
-    //return hardwareTriggerEnabled;
 }
 
 void SingleCamera::synchronizeTime() {
 
-    //arv_camera_is_feature_available(device, "MyFeatureName")
-
     GError *error = nullptr;
 
-    //GenApi::INodeMap& nodemap = camera.GetNodeMap();
-
-    // Take a "snapshot" of the camera's current timestamp value
-    //CCommandParameter(nodemap, "GevTimestampControlLatch").Execute();
     if(arv_device_is_feature_available(arv_camera_get_device(camera), "TimestampLatch", NULL)) {
         qDebug() << "Executing TimestampLatch command.";
         arv_device_execute_command(arv_camera_get_device(camera), "TimestampLatch", &error);
@@ -2181,7 +2118,7 @@ void SingleCamera::synchronizeTime() {
     if(error) {
         qDebug() << "Could not execute timestamp latch command.";
 
-        recoverFromPossibleLostControl(error);
+        wrappedErrorOccured(error);
         // TODO
 
         return;
@@ -2201,7 +2138,7 @@ void SingleCamera::synchronizeTime() {
     // TODO
     if(error) {
         qDebug() << "Could not get camera timestamp latch value.";
-        recoverFromPossibleLostControl(error);
+        wrappedErrorOccured(error);
         // TODO set default values for camera and system time?
         return;
     }
@@ -2236,7 +2173,7 @@ QString SingleCamera::getLineSource() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get trigger source.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             lineSource = temp;
             //val = temp;
@@ -2263,7 +2200,7 @@ void SingleCamera::setLineSource(QString value) {
 
         if(error) {
             qDebug() << "Could not set trigger source.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             lineSource = value;
         }
@@ -2289,18 +2226,19 @@ void SingleCamera::startGrabbing() {
 
     //if(!error)
     callbackData.aboutToStopGrabbing = false;
-//    arv_stream_start_thread(callbackData.stream);
+////    arv_stream_start_thread(callbackData.stream);
+//    arv_camera_start_acquisition(camera, &error);
+
     arv_camera_start_acquisition(camera, &error);
-
     //arv_stream_try_pop_buffer(callbackData.stream);
-
     if(error) {
         qDebug() << "Could not start grabbing.";
-        recoverFromPossibleLostControl(error);
+        wrappedErrorOccured(error);
     } else {
         isGrabbingV = true;
         qDebug() << "Started grabbing!";
     }
+    arv_stream_start_thread(callbackData.stream);
 
     // pylon version
     //camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
@@ -2313,48 +2251,30 @@ void SingleCamera::stopGrabbing() {
 
     GError *error = nullptr;
 
-    //// NEW VERSION, FOR GIGE
     callbackData.aboutToStopGrabbing = true;
 
-    gboolean delete_buffers = true;
-
-    // THIS BELOW LINE MIGHT NOT BE NEEDED
-    arv_stream_stop_thread(callbackData.stream, delete_buffers);
-    //g_clear_object (&callbackData.stream);
-    //callbackData.stream = NULL;
-
-////    arv_stream_pop_buffer(callbackData.stream);
-
-    // THESE BELOW 2 LINES MIGHT BE NEEDED, IDK
-//    arv_stream_set_emit_signals(callbackData.stream, FALSE);
-//    g_object_unref(callbackData.stream);
-
-    //g_clear_object (&callbackData.stream);
-    callbackData.stream = nullptr;
-
-    arv_camera_stop_acquisition(camera, &error);
+//    arv_stream_stop_thread(callbackData.stream, delete_buffers);
+//    //g_clear_object (&callbackData.stream);
+//    //callbackData.stream = NULL;
+////    arv_stream_set_emit_signals(callbackData.stream, FALSE);
+////    g_object_unref(callbackData.stream);
+//    //g_clear_object (&callbackData.stream);
+//    callbackData.stream = nullptr;
+//    arv_camera_stop_acquisition(camera, &error);
     // TODO: for some reason it causes errors like the following:
     //  ** (process:8760): CRITICAL **: ...: arv_uv_stream_stop_thread: assertion 'priv->thread == NULL' failed
     //  ** (process:8760): CRITICAL **: ...: arv_uv_stream_start_thread: assertion 'priv->thread == NULL' failed
     //  although stop_thread is called, etc. Possible solution?
 
-    
-
-
-//    //// OLD VERSION, FOR USB3
-//    callbackData.aboutToStopGrabbing = true;
-//    gboolean delete_buffers = true;
-//    arv_stream_stop_thread(callbackData.stream, delete_buffers);
-//    //g_clear_object (&callbackData.stream);
-//    //callbackData.stream = NULL;
-//    arv_camera_stop_acquisition(camera, &error);
-
+    arv_camera_stop_acquisition(camera, &error);
     if(error) {
         qDebug() << "Could not gracefully stop grabbing.";
         qDebug() << "Error during aravis API call. Message: " << error->message;
         qDebug() << "Falling back to abort call.";
         arv_camera_abort_acquisition(camera, NULL);
     }
+    gboolean delete_buffers = true;
+    arv_stream_stop_thread(callbackData.stream, delete_buffers);
     isGrabbingV = false;
     qDebug() << "Stopped grabbing!";
 
@@ -2394,7 +2314,7 @@ int SingleCamera::getImageROIwidth() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get image acquisition ROI Width.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             val = temp;
         }
@@ -2416,7 +2336,7 @@ int SingleCamera::getImageROIheight() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get image acquisition ROI Height.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             val = temp;
         }
@@ -2438,7 +2358,7 @@ int SingleCamera::getImageROIoffsetX() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get image acquisition ROI OffsetX.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             val = temp;
         }
@@ -2460,7 +2380,7 @@ int SingleCamera::getImageROIoffsetY() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get image acquisition ROI OffsetY.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             val = temp;
         }
@@ -2486,7 +2406,7 @@ int SingleCamera::getImageROIwidthMax() {
         val = valMax;
         if(error) {
             qDebug() << "Could not get image acquisition ROI Width maximum.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2510,7 +2430,7 @@ int SingleCamera::getImageROIheightMax() {
         val = valMax;
         if(error) {
             qDebug() << "Could not get image acquisition ROI Height maximum.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2540,7 +2460,7 @@ QRectF SingleCamera::getImageROI(){
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get image acquisition ROI.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             val = QRectF(valXoffset, valYoffset, valWidth, valHeight);
         }
@@ -2561,7 +2481,7 @@ bool SingleCamera::isBinningAvailable() {
         bool tval = arv_camera_is_binning_available(camera, &error);
         if(error) {
             qDebug() << "Could not get whether binning setting is available, assuming not.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         }
 
         // This way we can be 100% sure if binning is not available. Might be important for certain cameras.
@@ -2572,7 +2492,7 @@ bool SingleCamera::isBinningAvailable() {
 
         if(error) {
             qDebug() << "Could not get whether binning setting is available, assuming not.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else if(bxmin != bxmax) {
             val = tval;
         }
@@ -2593,7 +2513,7 @@ int SingleCamera::getBinningVal() {
         bool canGet = arv_camera_is_binning_available(camera, &error);
         if(error) {
             qDebug() << "Could not get binning value.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else if(canGet) {
             gint valX = 1;
             gint valY = 1;
@@ -2603,7 +2523,7 @@ int SingleCamera::getBinningVal() {
             // TODO reset to larget/smaller (?) value if not equal
             val = valX;
             if(error) {
-                recoverFromPossibleLostControl(error);
+                wrappedErrorOccured(error);
             }
         }
     } catch (const std::exception &e) {
@@ -2648,7 +2568,7 @@ double SingleCamera::getTemperature() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get camera temperature reading.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             val = temp;
         }
@@ -2685,7 +2605,7 @@ bool SingleCamera::setBinningVal(int value) {
         }
         if(error) {
             qDebug() << "Could not get binning value.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else if( (value <= valXMax && value >= valXMin) && (value <= valYMax && value >= valYMin) ) {
             // TODO: better, find common number of available X and Y binning values (if they might differ)
             arv_camera_set_binning(camera, value, value, &error);
@@ -2693,7 +2613,7 @@ bool SingleCamera::setBinningVal(int value) {
             resizeStreamBuffer();
             if(error) {
                 qDebug() << "Could not set binning value.";
-                recoverFromPossibleLostControl(error);
+                wrappedErrorOccured(error);
             } else {
                 success = true;
             }
@@ -2737,7 +2657,7 @@ bool SingleCamera::setImageROIwidth(int width) {
         resizeStreamBuffer();
         if(error) {
             qDebug() << "Could not set image acquisition ROI Width.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             success = true;
         }
@@ -2780,7 +2700,7 @@ bool SingleCamera::setImageROIheight(int height) {
         resizeStreamBuffer();
         if(error) {
             qDebug() << "Could not set image acquisition ROI Height.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             success = true;
         }
@@ -2825,7 +2745,7 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
         resizeStreamBuffer();
         if(error) {
             qDebug() << "Could not set image acquisition ROI OffsetX.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             success = true;
         }
@@ -2870,7 +2790,7 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
         resizeStreamBuffer();
         if(error) {
             qDebug() << "Could not set image acquisition ROI OffsetY.";
-            recoverFromPossibleLostControl(error);
+            wrappedErrorOccured(error);
         } else {
             success = true;
         }
@@ -2884,20 +2804,23 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
     return success;
 }
 
-// On GigEVision cameras, any error on the API call can result in control lost over the camera
-//  These special cases need the acquisition be stopped and restarted
-void SingleCamera::recoverFromPossibleLostControl(GError *error) {
+void SingleCamera::wrappedErrorOccured(GError *error) {
 
     qDebug() << "Error during aravis API call. Message: " << error->message;
 
     GValue v = G_VALUE_INIT;
     auto device_type = arv_device_get_type();
     if(device_type == ARV_TYPE_UV_DEVICE) {
-        // as far as we know, USB3 devices cannot get in a stuck-with-error state, so nothing to do here
+        // as far as we know, USB3 devices cannot get in a stuck-with-error state, so (almost) nothing to do here
+
+        // if the device is unplugged this if branch just cannot get control...
+        //  whatever. I put the device umplug emit outside then.
 
     } else if(QString(error->message).contains("access-denied")) {
         // NOTE: if(device_type == ARV_TYPE_GV_DEVICE) does not always work. I dont know why.
         //  We assume it is always GigE if not USB3
+        // On GigEVision cameras, any error on the API call can result in control lost over the camera
+        //  These special cases need the acquisition be stopped and restarted
 
         qDebug() << "This is a GigE device, thus needs to be reset now.";
         GError *error2 = nullptr;
@@ -2913,6 +2836,14 @@ void SingleCamera::recoverFromPossibleLostControl(GError *error) {
         } else {
             emit manualDeviceResetNecessary();
         }
+    }
+
+    if(QString(error->message).endsWith("timeout")) {
+        // camera is likely unplugged.
+        // TODO emit, also close and cleanup (likely top-level initiated already after signal arrived in slot)
+        // TODO: check if the device exists if we re-enumerate devices list?
+
+        cameraDeviceRemoved();
     }
 }
 

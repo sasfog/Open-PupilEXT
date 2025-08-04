@@ -97,7 +97,9 @@ void MainWindow::PRGcloseCamera() {
 void MainWindow::PRGsetImageOutputTarget(QString str) {
 
     if(str.endsWith(".zip")) {
-        // TODO
+        // NOTE. this way we simplify everything except the .zip suffix
+        QString strSim = SupportFunctions::simplifyPathName(str.mid(0, str.length()-5));
+        str = strSim + ".zip";
     } else {
         //std::cout << "received path = " << fullPath.toStdString() << std::endl;
         str = SupportFunctions::simplifyPathName(str);
@@ -112,8 +114,8 @@ void MainWindow::PRGsetImageOutputTarget(QString str) {
 
     //std::cout << "reformed path = " << fullPath.toStdString() << std::endl;
 
-    dataRecordingOutputTarget.clear();
-    dataRecordingOutputTarget = str;
+    imageRecordingOutputTarget.clear();
+    imageRecordingOutputTarget = str;
     //std::cout << "outputDirectory (image dir) after image dir setting = " << outputDirectory.toStdString() << std::endl;
 
     // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
