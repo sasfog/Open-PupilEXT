@@ -31,6 +31,8 @@ public:
     bool getSaveOfflineEventLog() const;
     bool getAlwaysOnTop() const;
 
+    bool getIgnoreFrameSkip() const;
+
 private:
 
     QSettings *applicationSettings;
@@ -80,6 +82,8 @@ private:
     bool saveOfflineEventLog;
     bool alwaysOnTop;
 
+    bool ignoreFrameSkip;
+
     QString dataWriterDelimiter;
     QString dataWriterDataStyle;
     QString dataWriterDataRule;
@@ -92,6 +96,8 @@ private:
     QCheckBox *metaSnapshotBox;
     QCheckBox *saveOfflineEventLogBox;
     QCheckBox *alwaysOnTopBox;
+
+    QCheckBox *ignoreFrameSkipBox;
 
     void createForm();
     void saveSettings();
@@ -117,6 +123,8 @@ public slots:
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
     void setAlwaysOnTop(int m_state);
+
+    void setIgnoreFrameSkip(int m_state);
 
     void onImageWriterFormatPngCompressionChange(int index);
     void onImageWriterFormatJpegQualityChange(int value);

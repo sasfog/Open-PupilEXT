@@ -471,7 +471,7 @@ QWizardPage* GettingStartedWizard::createUserGuide07() {
     "<li>If you want to perform live pupil detection to write output to e.g. a .csv file or stream it on the spot</li>"
     "<li>If you want to run analysis on previously made image recordings</li>"
     "</ol>"
-    "Yet, as of PupilEXT version v0.1.2 the latter is recommended, to ensure precise trial and message triggering. "
+    "Yet, as of PupilEXT version v0.1.3 the latter is recommended, to ensure precise trial and message triggering. "
     "Now we advise to first acquire images and run pupil detection on the recordings later, to produce data files.";
 
     QLabel *label = new QLabel(labelText);

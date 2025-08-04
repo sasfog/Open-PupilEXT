@@ -289,6 +289,8 @@ private slots:
 
     void onDeviceWarmupHasDeltaTimeData();
     void onDeviceWarmedUp();
+    void onDeviceWarmUpReadingsInvalid();
+    void onDeviceWarmUpReadingsUnavailable();
     void onDeviceWarmedUpReset();
 
     void onWebcamStartedToOpen();

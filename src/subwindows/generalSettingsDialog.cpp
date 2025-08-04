@@ -44,6 +44,8 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
     connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
 
+    connect(ignoreFrameSkipBox, SIGNAL(stateChanged(int)), this, SLOT(setIgnoreFrameSkip(int)));
+
     connect(applyButton, &QPushButton::clicked, this, &GeneralSettingsDialog::apply);
     connect(cancelButton, &QPushButton::clicked, this, &GeneralSettingsDialog::cancel);
 }
@@ -82,6 +84,8 @@ void GeneralSettingsDialog::readSettings() {
     metaSnapshotsEnabled = SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings);
     saveOfflineEventLog = SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings);
     alwaysOnTop = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
+
+    ignoreFrameSkip = SupportFunctions::readBoolFromQSettings("ignoreFrameSkipWarnings", false, applicationSettings);
 
     darkAdaptMode = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
     // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
@@ -133,6 +137,8 @@ void GeneralSettingsDialog::updateForm() {
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
     saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
     alwaysOnTopBox->setChecked(alwaysOnTop);
+
+    ignoreFrameSkipBox->setChecked(ignoreFrameSkip);
 }
 
 // Saved the settings selected in the dialog to the QT application settings
@@ -149,6 +155,7 @@ void GeneralSettingsDialog::saveSettings() {
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
     applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
     applicationSettings->setValue("alwaysOnTop", alwaysOnTop );
+    applicationSettings->setValue("ignoreFrameSkipWarnings", ignoreFrameSkip );
 }
 
 void GeneralSettingsDialog::createForm() {
@@ -169,8 +176,8 @@ void GeneralSettingsDialog::createForm() {
 
     QLabel *dataWriterDataStyleLabel = new QLabel(tr("Data Style*: "));
     dataWriterDataStyleBox = new QComboBox();
-    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1"));
-    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2"));
+    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1")); // TODO: remove,
+    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2")); // TODO add 0.1.3
     dataWriterDataStyleBox->setCurrentText(dataWriterDataStyle);
     dataOutLayout->addRow(dataWriterDataStyleLabel, dataWriterDataStyleBox);
     QLabel *dataWriterDataStyleWarnLabel = new QLabel(tr("*Older version will not save trial numbering."));
@@ -305,6 +312,16 @@ void GeneralSettingsDialog::createForm() {
     mainLayout->addWidget(appearanceGroup);
 
 
+    QGroupBox *cameraInterfacingGroup = new QGroupBox("Camera Interfacing");
+    QFormLayout *cameraInterfacingLayout = new QFormLayout();
+
+    ignoreFrameSkipBox = new QCheckBox("Ignore frame skip warnings");
+    ignoreFrameSkipBox->setChecked(getIgnoreFrameSkip());
+    cameraInterfacingLayout->addRow(ignoreFrameSkipBox);
+
+    cameraInterfacingGroup->setLayout(cameraInterfacingLayout);
+    mainLayout->addWidget(cameraInterfacingGroup);
+
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
@@ -382,6 +399,9 @@ bool GeneralSettingsDialog::getSaveOfflineEventLog() const {
 bool GeneralSettingsDialog::getAlwaysOnTop() const {
     return alwaysOnTop;
 }
+bool GeneralSettingsDialog::getIgnoreFrameSkip() const {
+    return ignoreFrameSkip;
+}
 
 
 //// Returns the current writer format setting i.e. tiff, jpeg, bmp
@@ -406,6 +426,9 @@ void GeneralSettingsDialog::setSaveOfflineEventLog(int m_state) {
 }
 void GeneralSettingsDialog::setAlwaysOnTop(int m_state) {
     alwaysOnTop = (bool) m_state;
+}
+void GeneralSettingsDialog::setIgnoreFrameSkip(int m_state) {
+    ignoreFrameSkip = (bool) m_state;
 }
 
 //// Set the image writer format, all formats supported by OpenCV's imwrite can be specified

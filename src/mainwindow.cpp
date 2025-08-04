@@ -2985,6 +2985,18 @@ void MainWindow::onDeviceWarmedUp() {
     warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(12, 12));
 }
 
+void MainWindow::onDeviceWarmUpReadingsInvalid() {
+    warmedUpStatusIcon->setEnabled(true);
+    const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-conflicting.svg"), applicationSettings);
+    warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(12, 12));
+}
+
+void MainWindow::onDeviceWarmUpReadingsUnavailable() {
+    warmedUpStatusIcon->setEnabled(true);
+    const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/vcs-question.svg"), applicationSettings);
+    warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(12, 12));
+}
+
 void MainWindow::onDeviceWarmedUpReset() {
     const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(16, 16));
@@ -3402,7 +3414,8 @@ void MainWindow::resetStatus(bool isConnect)
 }
 
 void MainWindow::onImagesSkipped() {
-    if(imagesSkippedMsgBox != nullptr) {
+    bool se = SupportFunctions::readBoolFromQSettings("ignoreFrameSkipWarnings", false, applicationSettings);
+    if(imagesSkippedMsgBox != nullptr || se ) {
         return;
     }
     imagesSkippedMsgBox = new QMessageBox(this);
@@ -3564,6 +3577,12 @@ void MainWindow::onStereoCamerasClosed() {
 }
 
 void MainWindow::createCamTempMonitor() {
+
+    if(!selectedCamera->isTemperatureReadingSupported()) {
+        onDeviceWarmUpReadingsUnavailable();
+        return;
+    }
+
     QThread *tempMonitorThread = new QThread();
     camTempMonitor = new CamTempMonitor(selectedCamera);
     connect(tempMonitorThread, &QThread::started, camTempMonitor, &CamTempMonitor::run);
@@ -3575,12 +3594,15 @@ void MainWindow::createCamTempMonitor() {
 
     // NOTE: This is just the first demo version. The final version should support checking for illuminator temperature via the MCU
     connect(camTempMonitor, SIGNAL(cameraWarmedUp()), this, SLOT(onDeviceWarmedUp()));
+    connect(camTempMonitor, SIGNAL(cameraWarmUpReadingsInvalid()), this, SLOT(onDeviceWarmUpReadingsInvalid()));
     connect(camTempMonitor, SIGNAL(cameraWarmupHasDeltaTimeData()), this, SLOT(onDeviceWarmupHasDeltaTimeData()));
 }
 
 void MainWindow::destroyCamTempMonitor() {
-    if(!camTempMonitor)
+    if(!camTempMonitor) {
+        onDeviceWarmedUpReset();
         return;
+    }
 
     if(recEventTracker)
         disconnect(camTempMonitor, SIGNAL(camTempChecked(std::vector<double>)), recEventTracker, SLOT(addTemperatureCheck(std::vector<double>)));

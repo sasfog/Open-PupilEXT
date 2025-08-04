@@ -53,6 +53,7 @@ signals:
     void camTempChecked(std::vector<double> temperatures);
     void cameraWarmupHasDeltaTimeData();
     void cameraWarmedUp();
+    void cameraWarmUpReadingsInvalid();
  
 public slots:
     void run();

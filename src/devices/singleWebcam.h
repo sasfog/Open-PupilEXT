@@ -110,6 +110,8 @@ public:
     int getImageROIoffsetY() override;
     QRectF getImageROI() override;
 
+    bool isTemperatureReadingSupported() override {return false;};
+
     bool isHardwareTriggerEnabled();
 
     CameraCalibration* getCameraCalibration();

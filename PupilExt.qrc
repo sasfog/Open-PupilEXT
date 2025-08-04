@@ -23,6 +23,8 @@
         <file>icons/Breeze/actions/22/view-presentation.svg</file>
 
         <file>icons/Breeze/emblems/22/vcs-normal.svg</file>
+        <file>icons/vcs-question.svg</file>
+        <file>icons/Breeze/emblems/22/vcs-conflicting.svg</file>
         <file>icons/Breeze/actions/22/dialog-ok-apply.svg</file>
         <file>icons/Breeze/actions/22/dialog-cancel.svg</file>
         <file>icons/Breeze/actions/22/gtk-convert.svg</file>

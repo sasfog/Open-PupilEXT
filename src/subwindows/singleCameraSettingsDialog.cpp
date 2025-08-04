@@ -109,6 +109,7 @@ void SingleCameraSettingsDialog::createForm() {
     exposureInputLayout->addWidget(autoExposureOnceButton);
     exposureInputLayout->addStretch();
     acquisitionLayout->addLayout(exposureInputLayout);
+    autoExposureOnceButton->setEnabled(camera->isAutoExposureAvailable());
 
     QHBoxLayout *imageROIlayoutHBlock = new QHBoxLayout;
 
@@ -215,6 +216,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutRow5->addWidget(binningBox);
     imageROIlayoutRow5->addStretch();
     acquisitionLayout->addLayout(imageROIlayoutRow5);
+    binningBox->setEnabled(camera->isBinningAvailable());
 
     /////////////////////////////////////////////////
     QHBoxLayout *imageROIlayoutRow6 = new QHBoxLayout;
@@ -384,6 +386,7 @@ void SingleCameraSettingsDialog::createForm() {
     gainLayout->addWidget(gainBox);
     gainLayout->addWidget(autoGainOnceButton);
     analogLayout->addRow(gainLabel, gainLayout);
+    autoGainOnceButton->setEnabled(camera->isAutoGainAvailable());
 
     analogGroup->setLayout(analogLayout);
     //analogGroup->setDisabled(true);
@@ -711,13 +714,19 @@ void SingleCameraSettingsDialog::loadSettings() {
     camera->setExposureTimeValue(exposureInputBox->value());
 
     int lastUsedBinningVal = applicationSettings->value("SingleCameraSettingsDialog.binningVal", camera->getBinningVal()).toInt();
-    camera->setBinningVal(lastUsedBinningVal);
-    int tempidx = 0;
-    if(lastUsedBinningVal==2 || lastUsedBinningVal==3)
-        tempidx = 1;
-    else if(lastUsedBinningVal==4)
-        tempidx = 2;
-    binningBox->setCurrentIndex(tempidx);
+    if(lastUsedBinningVal != 1 && camera->isBinningAvailable()) {
+        camera->setBinningVal(lastUsedBinningVal);
+        int tempidx = 0;
+        if (lastUsedBinningVal == 2 || lastUsedBinningVal == 3)
+            tempidx = 1;
+        else if (lastUsedBinningVal == 4)
+            tempidx = 2;
+        binningBox->setCurrentIndex(tempidx);
+    } else {
+        lastUsedBinningVal = 1;
+        binningBox->setCurrentIndex(0);
+        applicationSettings->setValue("SingleCameraSettingsDialog.binningVal", lastUsedBinningVal);
+    }
 
     imageROIwidthInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIwidth", camera->getImageROIwidthMax() ).toInt());
     imageROIheightInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIheight", camera->getImageROIheightMax()).toInt());

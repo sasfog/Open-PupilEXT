@@ -73,6 +73,8 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 The following icon files are modifications of existing icons from the KDE Breeze icon set: 1cam1pup.svg, 1cam2pup.svg, 1cam1pup.svg, 1Mcam1pup.svg, 2cam1pup.svg, 2cam2pup.svg, 2cam2pupNS.svg, media-record-green.svg, camera-video-stereo.svg, crosshairs-gaze-calibration.svg, crosshairs-gaze-validation.svg. These modified files were made by contributor Gábor Bényei, and can be found in the icons folder as resources, licensed in accordance to KDE Breeze license (GNU LESSER GENERAL PUBLIC LICENSE Version 3).
 
+The pictogram vcs-question.svg is derived work, made combining the emblem-question.svg and vcs-conflicting.svg files from the Breeze icon set.
+
 The following icon files are the work of Gábor Bényei, and are declared public domain: computer-connection.svg, equals1b.svg, plus1b.svg, messageEmpty.svg, rs232.svg.
 
 The OpenCV logo (OpenCV_Logo_with_text_svg_version.svg) is the work of Adi Shavit, under BSD license. License text and source: https://commons.wikimedia.org/wiki/File:OpenCV_Logo_with_text_svg_version.svg, last accessed 2024.08.16. 09:36 CET

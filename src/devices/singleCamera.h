@@ -101,6 +101,8 @@ public:
     double getTemperature();
     bool isGrabbing() override;
 
+    bool isTemperatureReadingSupported() override;
+
 private:
 
     QDir settingsDirectory;
@@ -217,6 +219,10 @@ public:
     bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
+    bool isAutoGainAvailable();
+    bool isAutoExposureAvailable();
+    bool isBinningAvailable();
+
     int getAcquisitionFPSValue();
     int getAcquisitionFPSMin();
     int getAcquisitionFPSMax();
@@ -245,9 +251,16 @@ public:
     int getBinningVal();
     double getTemperature();
 
+    bool isTemperatureReadingSupported() override;
+
     bool isGrabbing() override;
 
     void getTEST();
+
+    void recoverFromPossibleLostControl(GError *error);
+    // TODO
+    void manualResetDevice() {}; // needed for GigE devices, that can get stuck in an error state sometimes
+
 
 private:
 
@@ -307,6 +320,12 @@ signals:
     void framecount(int framecount);
     void cameraDeviceRemoved();
     void imagesSkipped();
+
+    // TODO -----------------------------------
+    // in case of GigE this is (rarely) needed. Conseq: just inform the user from top GUI
+    void deviceWasReset();
+    // in case of GigE this is (rarely) needed. Conseq: safely close camera (and stop rec), inform user from top GUI
+    void manualDeviceResetNecessary();
 
 };
 

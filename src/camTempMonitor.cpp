@@ -53,7 +53,19 @@ void CamTempMonitor::run() {
             temps[0] - tempChecks[tempChecks.size()-(warmupStableDeltaTime/checkIntervalSec)][0] <= warmupStableDeltaTemp &&
             temps[1] - tempChecks[tempChecks.size()-(warmupStableDeltaTime/checkIntervalSec)][1] <= warmupStableDeltaTemp ) {
 
-            emit cameraWarmedUp();
+            float cavg0 = CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE;
+            float cavg1 = CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE;
+            for(auto chk : tempChecks) {
+                cavg0 = (cavg0 + chk[0])/2;
+                cavg1 = (cavg1 + chk[1])/2;
+            }
+
+            if( camera->getType() == LIVE_SINGLE_CAMERA && cavg0 == CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE ||
+                camera->getType() == LIVE_STEREO_CAMERA && (cavg0 == CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE || cavg1 == CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE) ) {
+                emit cameraWarmUpReadingsInvalid();
+            } else {
+                emit cameraWarmedUp();
+            }
             warmupDone = true;
         }
     } while(m_running); // must happen here, as it can happen that this thread is scheduled for deletion (set m_running to false) while it is asleep

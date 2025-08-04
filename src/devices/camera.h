@@ -67,6 +67,7 @@ public:
     virtual void startGrabbing() = 0;
 
     virtual bool isGrabbing() = 0;
+    virtual bool isTemperatureReadingSupported() = 0;
 
 signals:
 //Q_SIGNALS:

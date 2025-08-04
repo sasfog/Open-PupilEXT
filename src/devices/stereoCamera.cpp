@@ -1,5 +1,6 @@
 
 #include "stereoCamera.h"
+#include "../camTempMonitor.h"
 #include <QThread>
 
 #ifdef USE_PYLON
@@ -1089,7 +1090,7 @@ int StereoCamera::getBinningVal() {
 }
 
 std::vector<double> StereoCamera::getTemperatures() {
-    std::vector<double> temperatures = {0.0, 0.0};
+    std::vector<double> temperatures = {CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE, CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE};
     try {
         if (cameras.GetSize() != 2)
             return temperatures;
@@ -2599,8 +2600,35 @@ int StereoCamera::getBinningVal() {
     return 1;
 }
 
+bool StereoCamera::isTemperatureReadingSupported() {
+
+    return true;
+    /*
+    GError *error = nullptr;
+    bool isit = false;
+
+    if(!ARV_IS_CAMERA(camera))
+        return isit;
+
+    try {
+        auto temp = arv_camera_get_float(camera, "DeviceTemperature", &error);
+        // fallbacks: set "DeviceTemperatureSelector" value to "Sensor" or "Mainboard"
+
+        if(error && QString(error->message).contains("Temperature] Not found")) {
+            isit = false;
+            qDebug() << "This camera does not support temperature readings.";
+        } else {
+            isit = true;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return isit;
+    */
+}
+
 std::vector<double> StereoCamera::getTemperatures() {
-    std::vector<double> temperatures = {0.0, 0.0};
+    std::vector<double> temperatures = {CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE, CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE};
     /*
     try {
         if (cameras.GetSize() != 2)

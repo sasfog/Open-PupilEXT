@@ -108,6 +108,8 @@ public:
     int getBinningVal();
     std::vector<double> getTemperatures();
 
+    bool isTemperatureReadingSupported() override;
+
     bool isGrabbing() override;
 
 private:
@@ -241,6 +243,8 @@ public:
     QRectF getImageROI() override;
     int getBinningVal();
     std::vector<double> getTemperatures();
+
+    bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
 
