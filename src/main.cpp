@@ -90,9 +90,33 @@ int main(int argc, char *argv[])
             Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
 #endif
 
+            // Test exec args:
+            int argcT = 14;
+            char* argvT[16];
+
+            argvT[0] = (char*)"blabla";
+            argvT[1] = (char*)"-setAcquisitionTriggeringMode";
+            argvT[2] = (char*)"S";
+            argvT[3] = (char*)"-setExposureTimeMicrosec";
+            argvT[4] = (char*)"10000";
+            argvT[5] = (char*)"-setGain";
+            argvT[6] = (char*)"15";
+            argvT[7] = (char*)"-setSoftwareTriggeringFramerate";
+            argvT[8] = (char*)"50";
+            argvT[9] = (char*)"-openSingleCamera";
+            argvT[10] = (char*)"Basler acA1300-60gm (22385468)";
+            argvT[11] = (char*)"-connectRemoteUDP";
+            argvT[12] = (char*)"0.0.0.0:6900";
+            argvT[13] = (char*)"-setImageOutputFormat";
+            argvT[14] = (char*)"jpeg";
+            argvT[15] = nullptr;
+
+            //char *argvT[] = {, , };
+            ExecArgParser* execArgParser = new ExecArgParser(argcT, argvT);
+
             // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
             // useful e.g. in case of automatic exec on scheduled PC startup for warming up camera device before experimental session
-            ExecArgParser* execArgParser = new ExecArgParser(argc, argv);
+ //           ExecArgParser* execArgParser = new ExecArgParser(argc, argv);
 
             MainWindow w;
             w.setWindowIcon(QIcon(":/icon.svg"));

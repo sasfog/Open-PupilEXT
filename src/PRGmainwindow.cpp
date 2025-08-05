@@ -18,57 +18,43 @@ void MainWindow::PRGopenSingleCamera(const QString &camName) {
     if(selectedCamera && selectedCamera->isOpen())
         return;
 
-#ifdef USE_PYLON
-    Pylon::DeviceInfoList_t lstDevices = enumerateCameraDevices();
     QString temp = "";
-    if (!lstDevices.empty()) {
-        bool foundGiven = false;
 
-        Pylon::DeviceInfoList_t::const_iterator deviceIt;
-        for(deviceIt = lstDevices.begin(); deviceIt != lstDevices.end(); ++deviceIt ) {
-            //std::cout << "Found camera full name: " << deviceIt->GetFullName().c_str() << std::endl;
-            //std::cout << "Found camera friendly name: " << deviceIt->GetFriendlyName().c_str() << std::endl;
-            if(QString::fromStdString(deviceIt->GetFriendlyName().c_str()).toLower() == camName) { // NOTE: we search for friendly name, but connection can be initiated with full name
-                temp = QString::fromStdString(deviceIt->GetFullName().c_str());
-                foundGiven = true;
-            }
-        }
-        if(!foundGiven) {
-            std::cout << "Could not find the specified camera" << std::endl;
-            return;
-        }
+#ifdef USE_PYLON
+
+    // Further checks and name lookup will rather happen in the camera class
+
+    Pylon::DeviceInfoList_t allDevices;
+    Pylon::DeviceInfoList_t lstDevices;
+    TlFactory.EnumerateDevices(lstDevices);
+
+    if (pTl == NULL) {
+        qDebug() << "Error: No GigE transport layer installed.";
+        qDebug() << "       Please install GigE support as it is required for this sample.";
+        //return {};
+        allDevices = lstDevices;
+    } else {
+        Pylon::DeviceInfoList_t lstDevicesGigE;
+        pTl->EnumerateAllDevices(lstDevicesGigE);
+        std::merge(lstDevices.begin(), lstDevices.end(), lstDevicesGigE.begin(), lstDevicesGigE.end(), std::back_inserter(allDevices));
     }
-    else {
-        std::cout << "Could not find the specified camera. The camera handling library sees that there are no cameras connected currently" << std::endl;
+
+    if (!allDevices.empty()) {
+        temp = camName;
+    } else {
+        qDebug() << "Could not find the specified camera. The camera handling library sees that there are no cameras connected currently";
         return;
     }
 #else
-    QVector<ArvDevice*> lstDevices; // TODO
 
-    QString temp = "";
-    if (!lstDevices.empty()) {
+    // Further checks and name lookup will rather happen in the camera class
 
-        QVector<ArvDevice*>::const_iterator deviceIt;
-        bool foundGiven = false;
+    auto n = enumerateCameraDevices();
 
-        for(deviceIt = lstDevices.begin(); deviceIt != lstDevices.end(); ++deviceIt ) {
-            //std::cout << "Found camera full name: " << deviceIt->GetFullName().c_str() << std::endl;
-            //std::cout << "Found camera friendly name: " << deviceIt->GetFriendlyName().c_str() << std::endl;
-
-            // TODO
-            //  ---------------------------------------------------
-//            if(QString::fromStdString(deviceIt->GetFriendlyName().c_str()).toLower() == camName) { // NOTE: we search for friendly name, but connection can be initiated with full name
-//                temp = QString::fromStdString(deviceIt->GetFullName().c_str());
-//                foundGiven = true;
-//            }
-        }
-        if(!foundGiven) {
-            std::cout << "Could not find the specified camera" << std::endl;
-            return;
-        }
-    }
-    else {
-        std::cout << "Could not find the specified camera. The camera handling library sees that there are no cameras connected currently" << std::endl;
+    if (n > 0) {
+        temp = camName;
+    } else {
+        qDebug() << "Could not find the specified camera. The camera handling library sees that there are no cameras connected currently";
         return;
     }
 #endif

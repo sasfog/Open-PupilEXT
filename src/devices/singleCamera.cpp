@@ -37,7 +37,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
 
     //Pylon::DeviceInfoList_t lstDevices = enumerateCameraDevices();
     if(allDevices.empty()) {
-        throw new std::exception("Camera connection problem.");
+        throw std::runtime_error("Camera connection problem.");
         //return;
     }
     bool cfound = false;
@@ -53,7 +53,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         }
     }
     if(!cfound) {
-        throw new std::exception("The specified camera was not found among the ones currently detected.");
+        throw std::runtime_error("The specified camera was not found among the ones currently detected.");
     }
 
     //auto di = CDeviceInfo().SetFriendlyName(friendlyName.toStdString().c_str());
@@ -1074,7 +1074,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
 
     // TODO
     if(n < 1) {
-        throw new std::exception("Camera connection problem.");
+        throw std::runtime_error("Camera connection problem.");
         //return;
     }
 
@@ -1087,12 +1087,14 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         matchableFoundDeviceID.replace("-", "");
         matchableFoundDeviceID.replace("(", "");
         matchableFoundDeviceID.replace(")", "");
+        matchableFoundDeviceID = matchableFoundDeviceID.toLower();
 
         QString matchableTargetDeviceID = friendlyName;
         matchableTargetDeviceID.replace(" ", "");
         matchableTargetDeviceID.replace("-", "");
         matchableTargetDeviceID.replace("(", "");
         matchableTargetDeviceID.replace(")", "");
+        matchableTargetDeviceID = matchableTargetDeviceID.toLower();
 
         if(matchableFoundDeviceID == matchableTargetDeviceID)
             break;
@@ -1100,7 +1102,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     }
 
     if(i >= n) {
-        throw new std::exception("The specified camera was not found among the ones currently detected.");
+        throw std::runtime_error("The specified camera was not found among the ones currently detected.");
         //return;
     }
 
@@ -1118,11 +1120,11 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         g_clear_object (&camera);
         camera = nullptr;
 
-        throw new std::exception("Could not initialize Aravis camera.");
+        throw std::runtime_error("Could not initialize Aravis camera.");
         //return;
     }
     if(error != NULL) {
-        throw new std::exception(error->message);
+        throw std::runtime_error(error->message);
     }
 
     qDebug() << "To our best knowledge, the camera was successfully opened: " << arv_get_device_id(i);
@@ -2238,6 +2240,8 @@ void SingleCamera::startGrabbing() {
         isGrabbingV = true;
         qDebug() << "Started grabbing!";
     }
+    // TODO: here something is wrong in case of gv
+    //  arv_gv_stream_start_thread: assertion 'priv->thread == NULL' failed
     arv_stream_start_thread(callbackData.stream);
 
     // pylon version

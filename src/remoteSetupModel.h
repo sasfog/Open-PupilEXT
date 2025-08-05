@@ -66,7 +66,7 @@ public:
         }
 
         if(!success)
-            throw new QException();
+            throw std::runtime_error("json not found");
         //linkDataRSM();
 
         rep->makeKeysFriendly();

@@ -627,25 +627,30 @@ void MainWindow::createStatusBar() {
     const QIcon remoteIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     remoteStatusIcon = new QLabel();
     remoteStatusIcon->setPixmap(remoteIcon.pixmap(16, 16));
+    remoteStatusIcon->setToolTip("Remote control connection is not established");
 
     QLabel *calibrationLabel = new QLabel("Camera Calibration");
     const QIcon calibrationIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     calibrationStatusIcon = new QLabel();
     calibrationStatusIcon->setPixmap(calibrationIcon.pixmap(16, 16));
+    calibrationStatusIcon->setToolTip("Camera calibration is not loaded");
 
     QLabel *serialLabel = new QLabel("Microcontroller Conn.");
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     serialStatusIcon = new QLabel();
     serialStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
+    serialStatusIcon->setToolTip("Microcontroller connection is not established");
 
     QLabel *hwTriggerLabel = new QLabel("Hardware Trigger");
     hwTriggerStatusIcon = new QLabel();
     hwTriggerStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
+    hwTriggerStatusIcon->setToolTip("Hardware triggering is not running");
 
     QLabel *warmedUpLabel = new QLabel("Warmup");
     warmedUpStatusIcon = new QLabel();
     warmedUpStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
     warmedUpStatusIcon->setEnabled(false);
+    warmedUpStatusIcon->setToolTip("Warmup state indication will appear here");
 
     QLabel *versionLabel = new QLabel(QCoreApplication::applicationVersion());
 
@@ -895,7 +900,7 @@ void MainWindow::imageRecordingOutputZipSelected() {
 
     // NOTE: The file name will be considered the recording (or participant) name
     // TODO: remember last/default path !!
-    QFileDialog dialog(0, "Save file", QDir::currentPath(), filters);
+    QFileDialog dialog(0, "Save file", recentImageWritingDirectory, filters);
     //dialog.selectNameFilter(defaultFilter);
 
     dialog.setOptions(QFileDialog::DontResolveSymlinks);
@@ -2195,6 +2200,7 @@ Pylon::DeviceInfoList_t MainWindow::enumerateCameraDevices() {
 //  Retrieving just the device indexes (later usable for retrieving deviceIDS or anything) is enough.
 uint MainWindow::enumerateCameraDevices() {
 
+    // Weidrly, these are ALSO needed, or sometimes it does not detect devices.
     qDebug() << "arv_get_n_devices() = " << QString::number(arv_get_n_devices());
     qDebug() << "arv_get_n_interfaces() = " << QString::number(arv_get_n_interfaces());
 
@@ -2215,8 +2221,7 @@ uint MainWindow::enumerateCameraDevices() {
 
     qDebug() << "arv_get_n_devices() = " << QString::number(arv_get_n_devices());
 
-
-
+    // And this too
     uint n = 0;
     qDebug() << "Attempting to update Aravis device list.";
     arv_update_device_list(); // may be time consuming
@@ -2968,23 +2973,27 @@ void MainWindow::onPlaybackStopInitiated() {
 void MainWindow::onSerialConnect() {
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     serialStatusIcon->setPixmap(offlineIcon.pixmap(12, 12));
+    serialStatusIcon->setToolTip("Microcontroller connection is live");
 }
 
 void MainWindow::onSerialDisconnect() {
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     serialStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
+    serialStatusIcon->setToolTip("Microcontroller connection is not established");
 }
 
 void MainWindow::onHwTriggerEnable() {
     hwTriggerOn = true;
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     hwTriggerStatusIcon->setPixmap(offlineIcon.pixmap(12, 12));
+    hwTriggerStatusIcon->setToolTip("Hardware triggering is running");
 }
 
 void MainWindow::onHwTriggerDisable() {
     hwTriggerOn = false;
     const QIcon offlineIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     hwTriggerStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
+    hwTriggerStatusIcon->setToolTip("Hardware triggering is not running");
 }
 
 void MainWindow::onDeviceWarmupHasDeltaTimeData() {
@@ -2995,34 +3004,40 @@ void MainWindow::onDeviceWarmedUp() {
     warmedUpStatusIcon->setEnabled(true);
     const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(12, 12));
+    warmedUpStatusIcon->setToolTip("Device is warmed up");
 }
 
 void MainWindow::onDeviceWarmUpReadingsInvalid() {
     warmedUpStatusIcon->setEnabled(true);
     const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-conflicting.svg"), applicationSettings);
     warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(12, 12));
+    warmedUpStatusIcon->setToolTip("Device temperature readings are invalid");
 }
 
 void MainWindow::onDeviceWarmUpReadingsUnavailable() {
     warmedUpStatusIcon->setEnabled(true);
     const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/vcs-question.svg"), applicationSettings);
     warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(12, 12));
+    warmedUpStatusIcon->setToolTip("Device temperature readings are not available");
 }
 
 void MainWindow::onDeviceWarmedUpReset() {
     const QIcon warmupIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     warmedUpStatusIcon->setPixmap(warmupIcon.pixmap(16, 16));
     warmedUpStatusIcon->setEnabled(false);
+    warmedUpStatusIcon->setToolTip("Warmup indication will appear here");
 }
 
 void MainWindow::onCameraCalibrationEnabled() {
     const QIcon calibIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/emblems/22/vcs-normal.svg"), applicationSettings);
     calibrationStatusIcon->setPixmap(calibIcon.pixmap(12, 12));
+    calibrationStatusIcon->setToolTip("Camera calibration is loaded");
 }
 
 void MainWindow::onCameraCalibrationDisabled() {
     const QIcon calibIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/media-record.svg"), applicationSettings);
     calibrationStatusIcon->setPixmap(calibIcon.pixmap(16, 16));
+    calibrationStatusIcon->setToolTip("Camera calibration is not loaded");
 }
 
 

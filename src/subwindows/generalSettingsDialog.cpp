@@ -13,10 +13,10 @@
 GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         QDialog(parent),
         //playbackSpeed(30),
-        imageWriterFormat("tiff"),
-        imageWriterDataRule("ask"),
-        dataWriterDelimiter(","),
-        dataWriterDataRule("ask"),
+        //imageWriterFormat("tiff"),
+        //imageWriterDataRule("ask"),
+        //dataWriterDelimiter(","),
+        //dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(200, 330); 
@@ -61,7 +61,7 @@ void GeneralSettingsDialog::readSettings() {
     imageWriterFormatJpegQuality = applicationSettings->value("imageWriterFormat.jpeg.quality", "100").toInt();
     imageWriterFormatWebpQuality = applicationSettings->value("imageWriterFormat.webp.quality", "100").toInt();
 
-    const QString m_imageWriterDataRule = applicationSettings->value("imageWriterDataRule", QByteArray()).toString();
+    const QString m_imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
     if (!m_imageWriterDataRule.isEmpty()) {
         imageWriterDataRule = m_imageWriterDataRule;
     }
@@ -76,7 +76,7 @@ void GeneralSettingsDialog::readSettings() {
         dataWriterDataStyle = m_dataWriterDataStyle;
     }
 
-    const QString m_dataWriterDataRule = applicationSettings->value("dataWriterDataRule", QByteArray()).toString();
+    const QString m_dataWriterDataRule = applicationSettings->value("dataWriterDataRule", "ask").toString();
     if (!m_dataWriterDataRule.isEmpty()) {
         dataWriterDataRule = m_dataWriterDataRule;
     }

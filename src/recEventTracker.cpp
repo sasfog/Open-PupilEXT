@@ -554,6 +554,6 @@ QChar RecEventTracker::determineDelimiter(QString _text)
 getout:
 
     // if (delimiter == 'E')
-    //     throw new Exception();
+    //     throw std::runtime_error("delimiter error");
     return delimiter;
 }

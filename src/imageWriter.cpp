@@ -13,25 +13,6 @@ ImageWriter::ImageWriter(QObject *parent) :
     //stereoMode(stereo),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    // TODO: is this advised like this, if we are inside a thread ?
-    imageWriterFormatString = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
-
-    if(imageWriterFormatString == "png") {
-        int pngCompression = applicationSettings->value("imageWriterFormat.png.compression", "0").toInt();
-        writeParams = {cv::IMWRITE_PNG_COMPRESSION , pngCompression};
-        qDebug() << "PNG compression: " << pngCompression;
-    } else if(imageWriterFormatString == "jpeg") {
-        int jpegQuality = applicationSettings->value("imageWriterFormat.jpeg.quality", "100").toInt();
-        writeParams = {cv::IMWRITE_JPEG_QUALITY, jpegQuality};
-        qDebug() << "JPEG quality: " << jpegQuality;
-    } else if(imageWriterFormatString == "webp") {
-        int webpQuality = applicationSettings->value("imageWriterFormat.webp.quality", "100").toInt();
-        writeParams = {cv::IMWRITE_WEBP_QUALITY, webpQuality};
-        qDebug() << "WEBP quality:" << webpQuality;
-    } else {
-        writeParams = std::vector<int>();
-    }
-
     /*
     outputDirectory = QDir(directory);
 
@@ -55,6 +36,25 @@ ImageWriter::~ImageWriter() {
 };
 
 bool ImageWriter::prepareForWriting(const QString& imageOutputTarget, bool stereo) {
+
+    // TODO: is this advised like this, if we are inside a thread ?
+    imageWriterFormatString = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
+
+    if(imageWriterFormatString == "png") {
+        int pngCompression = applicationSettings->value("imageWriterFormat.png.compression", "0").toInt();
+        writeParams = {cv::IMWRITE_PNG_COMPRESSION , pngCompression};
+        qDebug() << "PNG compression: " << pngCompression;
+    } else if(imageWriterFormatString == "jpeg") {
+        int jpegQuality = applicationSettings->value("imageWriterFormat.jpeg.quality", "100").toInt();
+        writeParams = {cv::IMWRITE_JPEG_QUALITY, jpegQuality};
+        qDebug() << "JPEG quality: " << jpegQuality;
+    } else if(imageWriterFormatString == "webp") {
+        int webpQuality = applicationSettings->value("imageWriterFormat.webp.quality", "100").toInt();
+        writeParams = {cv::IMWRITE_WEBP_QUALITY, webpQuality};
+        qDebug() << "WEBP quality:" << webpQuality;
+    } else {
+        writeParams = std::vector<int>();
+    }
 
     stereoMode = stereo;
 
