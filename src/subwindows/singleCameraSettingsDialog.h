@@ -155,6 +155,7 @@ private slots:
     void MCUConnDisconnButtonClicked();
 
     void updateImageROISettingsMax();
+    void updateImageROISettingsInc();
 
     void updateHWTStartStopRelatedWidgets();
     void updateMCUConnDisconnButtonState();

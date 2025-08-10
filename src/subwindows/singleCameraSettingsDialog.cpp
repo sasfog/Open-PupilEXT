@@ -491,7 +491,7 @@ void SingleCameraSettingsDialog::saveButtonClick() {
             filename = filename + ".pfs";
         }
 
-        camera->saveToFile(filename.toStdString().c_str());
+        camera->saveToFile(filename);
     }
 }
 
@@ -501,7 +501,7 @@ void SingleCameraSettingsDialog::loadButtonClick() {
 
     if(!filename.isEmpty()) {
 
-        camera->loadFromFile(filename.toStdString().c_str());
+        camera->loadFromFile(filename);
         updateForms();
     }
 }
@@ -557,7 +557,7 @@ void SingleCameraSettingsDialog::updateFrameRateValue() {
 
 void SingleCameraSettingsDialog::onLineSourceChange(int index) {
     if(index!=0) {
-        camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
+        camera->setLineSource(HWTlineSourceBox->itemText(index));
         HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
         HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
         HWTstartStopButton->setEnabled(MCUSettings->isConnected());
@@ -702,7 +702,7 @@ void SingleCameraSettingsDialog::loadSettings() {
     camera->enableHardwareTrigger(HWTradioButton->isChecked());
 
     HWTlineSourceBox->setCurrentText(applicationSettings->value("SingleCameraSettingsDialog.lineSource", camera->getLineSource()).toString());
-    camera->setLineSource(HWTlineSourceBox->currentText().toStdString().c_str());
+    camera->setLineSource(HWTlineSourceBox->currentText());
 
     HWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.hwTriggerFramerate", HWTframerateBox->value()).toInt());
     HWTtimeSpanBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.hwTriggerTime", HWTtimeSpanBox->value()).toDouble());
@@ -769,7 +769,7 @@ void SingleCameraSettingsDialog::saveSettings() {
     QString configFile = settingsDirectory.filePath(camera->getFriendlyName() + ".pfs");
     configFile.replace(" ", "");
     std::cout<<"Saving config to settings directory: "<< configFile.toStdString() <<std::endl;
-    camera->saveToFile(configFile.toStdString().c_str());
+    camera->saveToFile(configFile);
 }
 
 void SingleCameraSettingsDialog::onSettingsChange() {
@@ -813,15 +813,29 @@ void SingleCameraSettingsDialog::onSetImageROIoffsetY(int val) {
 
 void SingleCameraSettingsDialog::updateImageROISettingsMax() {
 
-    imageROIwidthInputBox->setMaximum(camera->getImageROIwidthMax());
-    imageROIheightInputBox->setMaximum(camera->getImageROIheightMax());
-    imageROIoffsetXInputBox->setMaximum(camera->getImageROIwidthMax() - camera->getImageROIwidth());
-    imageROIoffsetYInputBox->setMaximum(camera->getImageROIheightMax() - camera->getImageROIheight());
+    auto wm = camera->getImageROIwidthMax();
+    auto hm = camera->getImageROIheightMax();
 
-    imageROIwidthMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIwidthMax()));
-    imageROIheightMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax()));
-    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIwidthMax() - camera->getImageROIwidth()));
-    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax() - camera->getImageROIheight()));
+    std::cout << "wm = " << wm << std::endl;
+    std::cout << "hm = " << hm << std::endl;
+
+    imageROIwidthInputBox->setMaximum(wm);
+    imageROIheightInputBox->setMaximum(hm);
+    imageROIoffsetXInputBox->setMaximum(wm - camera->getImageROIwidth());
+    imageROIoffsetYInputBox->setMaximum(hm - camera->getImageROIheight());
+
+    imageROIwidthMaxLabel->setText(QString("/ ") + QString::number(wm));
+    imageROIheightMaxLabel->setText(QString("/ ") + QString::number(hm));
+    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(wm - camera->getImageROIwidth()));
+    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(hm - camera->getImageROIheight()));
+}
+
+void SingleCameraSettingsDialog::updateImageROISettingsInc() {
+
+    imageROIwidthInputBox->setSingleStep(camera->getImageROIwidthInc());
+    imageROIheightInputBox->setSingleStep(camera->getImageROIheightInc());
+    imageROIoffsetXInputBox->setSingleStep(camera->getImageROIoffsetXInc());
+    imageROIoffsetYInputBox->setSingleStep(camera->getImageROIoffsetYInc());
 }
 
 void SingleCameraSettingsDialog::updateImageROISettingsValues() {
@@ -850,7 +864,10 @@ void SingleCameraSettingsDialog::onBinningModeChange(int index) {
 
     camera->setBinningVal(binningVal);
 
+    // TODO: Min and SingleStep values for the ROI setting boxes could be updated and set per current binning
+
     if(lastUsedBinningVal > binningVal) {
+        updateImageROISettingsInc();
         //qDebug() << "Inflating image ROI";
         // First set maximum values for the widgets
         // (first setting the actual value would take no effect as the maximum does not let it happen)
@@ -864,6 +881,7 @@ void SingleCameraSettingsDialog::onBinningModeChange(int index) {
         updateImageROISettingsMax();
         // Then set maximum values for the widgets (e.g. first setting the maximum
         // would auto-reset the value if that was a bigger number... and that would cause strange behaviour of the GUI)
+        updateImageROISettingsInc();
     }
 
     // GB NOTE: here we could tell cameraview that it should expect different image size. But it is now programmed to be adaptive

@@ -605,7 +605,7 @@ void StereoCameraSettingsDialog::saveButtonClick() {
         if(fileInfo.suffix().isEmpty()) {
             filename = filename + ".pfs";
         }
-        camera->saveMainToFile(filename.toStdString().c_str());
+        camera->saveMainToFile(filename);
     }
 }
 
@@ -616,7 +616,7 @@ void StereoCameraSettingsDialog::loadButtonClick() {
 
     if(!filename.isEmpty()) {
 
-        camera->loadMainFromFile(filename.toStdString().c_str());
+        camera->loadMainFromFile(filename);
         updateForms();
     }
 }
@@ -655,7 +655,7 @@ void StereoCameraSettingsDialog::updateFrameRateValue() {
 // TODO: ez miért ilyen?
 void StereoCameraSettingsDialog::onLineSourceChange(int index) {
     if(index!=0) {
-        camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
+        camera->setLineSource(HWTlineSourceBox->itemText(index));
         HWTframerateBox->setEnabled(true);
         HWTtimeSpanBox->setEnabled(true);
         HWTstartStopButton->setEnabled(MCUSettings->isConnected());
@@ -868,7 +868,7 @@ void StereoCameraSettingsDialog::loadSettings() {
     secondaryCameraBox->setCurrentText(applicationSettings->value("StereoCameraSettingsDialog.secondaryCamera", secondaryCameraBox->currentText()).toString());
 
     HWTlineSourceBox->setCurrentText(applicationSettings->value("StereoCameraSettingsDialog.lineSource", camera->getLineSource()).toString());
-    camera->setLineSource(HWTlineSourceBox->currentText().toStdString().c_str());
+    camera->setLineSource(HWTlineSourceBox->currentText());
 
     HWTframerateBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.hwTriggerFramerate", 30).toInt());
     HWTtimeSpanBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.hwTriggerTime", 0).toDouble());
@@ -944,7 +944,7 @@ void StereoCameraSettingsDialog::saveSettings() {
     QString configFile = settingsDirectory.filePath(mainName+".pfs");
     configFile.replace(" ", "");
     std::cout<<"Saving config to settings directory: "<< configFile.toStdString() <<std::endl;
-    camera->saveMainToFile(configFile.toStdString().c_str());
+    camera->saveMainToFile(configFile);
 
 }
 
@@ -1012,6 +1012,17 @@ void StereoCameraSettingsDialog::updateImageROISettingsMax() {
     imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax() -camera->getImageROIheight()));
 }
 
+void StereoCameraSettingsDialog::updateImageROISettingsInc() {
+    if(!camera->isOpen()) {
+        return;
+    }
+
+    imageROIwidthInputBox->setMaximum(camera->getImageROIwidthInc());
+    imageROIheightInputBox->setMaximum(camera->getImageROIheightInc());
+    imageROIoffsetXInputBox->setMaximum(camera->getImageROIoffsetXInc());
+    imageROIoffsetYInputBox->setMaximum(camera->getImageROIoffsetYInc());
+}
+
 void StereoCameraSettingsDialog::updateImageROISettingsValues() {
     if(!camera->isOpen())
         return;
@@ -1037,6 +1048,8 @@ void StereoCameraSettingsDialog::onBinningModeChange(int index) {
         binningVal = 4;
 
     camera->setBinningVal(binningVal);
+
+    // TODO: Min and SingleStep values for the ROI setting boxes could be updated and set per current binning
 
     if(lastUsedBinningVal > binningVal) {
         //qDebug() << "Inflating image ROI";

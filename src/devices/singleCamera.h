@@ -73,6 +73,13 @@ public:
     bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
+    // AFAIK it is always supported by Basler cameras.
+    // Prepping is already done properly in the corresponding method performing this auto function.
+    static bool isAutoGainAvailable() { return true; };
+    static bool isAutoExposureAvailable() { return true; };
+
+    bool isBinningAvailable();
+
     int getAcquisitionFPSValue();
     int getAcquisitionFPSMin();
     int getAcquisitionFPSMax();
@@ -81,22 +88,26 @@ public:
     double getGainMin();
     double getGainMax();
 
-    String_t getLineSource();
+    QString getLineSource();
     bool isHardwareTriggerEnabled();
 
     CameraCalibration* getCameraCalibration();
     QString getCalibrationFilename();
 
-    void loadFromFile(const String_t &filename);
-    void saveToFile(const String_t &filename);
+    void loadFromFile(const QString &filename);
+    void saveToFile(const QString &filename);
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
     int getImageROIoffsetX() override;
+    int getImageROIoffsetXInc() override;
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override;
     QRectF getImageROI() override;
     int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIwidthInc() override;
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightInc() override;
     int getBinningVal();
     double getTemperature();
     bool isGrabbing() override;
@@ -111,7 +122,7 @@ private:
     uint64 systemTime;
 
     bool hardwareTriggerEnabled;
-    String_t lineSource;
+    QString lineSource;
 
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
@@ -127,11 +138,13 @@ private:
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
 
+    void enableSensorLevelBinningIfPossible();
+
 public slots:
 
     void setGainValue(double value);
     void setExposureTimeValue(int value);
-    void setLineSource(String_t value);
+    void setLineSource(QString value);
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
     void enableHardwareTrigger(bool state);
@@ -148,6 +161,10 @@ signals:
     void framecount(int framecount);
     void cameraDeviceRemoved();
     void imagesSkipped();
+
+    // TODO: implement to Pylon too
+    void deviceWasReset();
+    void manualDeviceResetNecessary();
 
 };
 
@@ -221,6 +238,7 @@ public:
 
     bool isAutoGainAvailable();
     bool isAutoExposureAvailable();
+
     bool isBinningAvailable();
 
     int getAcquisitionFPSValue();
@@ -238,24 +256,26 @@ public:
 
     QString getCalibrationFilename();
 
-    void loadFromFile(const std::string &filename);
-    void saveToFile(const std::string &filename);
+    void loadFromFile(const QString &filename);
+    void saveToFile(const QString &filename);
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
     int getImageROIoffsetX() override;
+    int getImageROIoffsetXInc() override;
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override;
     QRectF getImageROI() override;
     int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIwidthInc() override;
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightInc() override;
     int getBinningVal();
     double getTemperature();
 
     bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
-
-    void getTEST();
 
     void wrappedErrorOccured(GError *error);
     // TODO
@@ -280,18 +300,14 @@ private:
 
     void resizeStreamBuffer();
 
-    /*
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler = nullptr;
-    HardwareTriggerConfiguration *hardwareTriggerConfiguration = nullptr;
-    CAcquireContinuousConfiguration *softwareTriggerConfiguration = nullptr;
-     */
     CameraFrameRateCounter *frameCounter;
     CameraCalibration *cameraCalibration;
     QThread *calibrationThread;
 
-    // TODO: DEV EMPTY METHODS
     void synchronizeTime();
     void loadCalibrationFile();
+
+    void enableSensorLevelBinningIfPossible();
 
     void genericExceptionOccured(const std::exception &e, const GError &lastAravisError);
     void genericExceptionOccured(const std::exception &e, bool deviceRemoved = false);
@@ -321,10 +337,7 @@ signals:
     void cameraDeviceRemoved();
     void imagesSkipped();
 
-    // TODO -----------------------------------
-    // in case of GigE this is (rarely) needed. Conseq: just inform the user from top GUI
     void deviceWasReset();
-    // in case of GigE this is (rarely) needed. Conseq: safely close camera (and stop rec), inform user from top GUI
     void manualDeviceResetNecessary();
 
 };

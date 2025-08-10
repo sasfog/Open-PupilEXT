@@ -58,9 +58,13 @@ public:
     virtual int getImageROIwidth() = 0;
     virtual int getImageROIheight() = 0;
     virtual int getImageROIwidthMax() = 0;
+    virtual int getImageROIwidthInc() = 0;
     virtual int getImageROIheightMax() = 0;
-    virtual int getImageROIoffsetX() = 0; 
-    virtual int getImageROIoffsetY() = 0;  
+    virtual int getImageROIheightInc() = 0;
+    virtual int getImageROIoffsetX() = 0;
+    virtual int getImageROIoffsetXInc() = 0;
+    virtual int getImageROIoffsetY() = 0;
+    virtual int getImageROIoffsetYInc() = 0;
     virtual QRectF getImageROI() = 0;
 
     virtual void stopGrabbing() = 0;

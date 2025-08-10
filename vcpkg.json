@@ -7,6 +7,10 @@
   "builtin-baseline": "b509a07261b982f35c663bf638aae5f77877d207",
   "dependencies": [
     {
+      "name": "liblsl",
+      "version>=": "1.16.2#0"
+    },
+    {
       "name": "aravis",
       "version>=": "0.8.34#1"
     },
@@ -51,6 +55,10 @@
       "version>=": "2.0.0#3"
     },
     {
+      "name": "onnx",
+      "version>=": "1.17.0#2"
+    },
+    {
       "name": "opencv",
       "version>=": "4.5.1",
       "features": [
@@ -61,6 +69,16 @@
         "tiff",
         "ffmpeg"
       ]
+    }
+  ],
+  "overrides": [
+    {
+      "name": "opencv",
+      "version": "4.11.0"
+    },
+    {
+      "name": "onnx",
+      "version": "1.17.0#2"
     }
   ]
 }

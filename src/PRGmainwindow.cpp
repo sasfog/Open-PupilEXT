@@ -24,6 +24,9 @@ void MainWindow::PRGopenSingleCamera(const QString &camName) {
 
     // Further checks and name lookup will rather happen in the camera class
 
+    CTlFactory& TlFactory = CTlFactory::GetInstance();
+    IGigETransportLayer* pTl = dynamic_cast<IGigETransportLayer*>(TlFactory.CreateTl( Pylon::BaslerGigEDeviceClass ));
+
     Pylon::DeviceInfoList_t allDevices;
     Pylon::DeviceInfoList_t lstDevices;
     TlFactory.EnumerateDevices(lstDevices);

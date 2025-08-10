@@ -40,21 +40,51 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         throw std::runtime_error("Camera connection problem.");
         //return;
     }
+
     bool cfound = false;
     CDeviceInfo di;
     Pylon::DeviceInfoList_t::const_iterator deviceIt;
     for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
-        qDebug() << "deviceIt->GetFriendlyName().c_str() " << deviceIt->GetFriendlyName().c_str();
-        if(deviceIt->GetFriendlyName().c_str() == friendlyName) {
-            //qDebug() << "FOUND";
-            cfound = true;
+
+        // TODO: regexp?
+        QString matchableFoundDeviceID = deviceIt->GetFriendlyName().c_str();
+        matchableFoundDeviceID.replace(" ", "");
+        matchableFoundDeviceID.replace("-", "");
+        matchableFoundDeviceID.replace("(", "");
+        matchableFoundDeviceID.replace(")", "");
+        matchableFoundDeviceID = matchableFoundDeviceID.toLower();
+
+        QString matchableTargetDeviceID = friendlyName;
+        matchableTargetDeviceID.replace(" ", "");
+        matchableTargetDeviceID.replace("-", "");
+        matchableTargetDeviceID.replace("(", "");
+        matchableTargetDeviceID.replace(")", "");
+        matchableTargetDeviceID = matchableTargetDeviceID.toLower();
+
+        if(matchableFoundDeviceID == matchableTargetDeviceID) {
             di = *deviceIt;
+            cfound = true;
             break;
         }
     }
     if(!cfound) {
         throw std::runtime_error("The specified camera was not found among the ones currently detected.");
     }
+    //bool cfound = false;
+    //CDeviceInfo di;
+    //Pylon::DeviceInfoList_t::const_iterator deviceIt;
+    //for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
+    //    qDebug() << "deviceIt->GetFriendlyName().c_str() " << deviceIt->GetFriendlyName().c_str();
+    //    if(deviceIt->GetFriendlyName().c_str() == friendlyName) {
+    //        //qDebug() << "FOUND";
+    //        cfound = true;
+    //        di = *deviceIt;
+    //        break;
+    //    }
+    //}
+    //if(!cfound) {
+    //    throw std::runtime_error("The specified camera was not found among the ones currently detected.");
+    //}
 
     //auto di = CDeviceInfo().SetFriendlyName(friendlyName.toStdString().c_str());
 
@@ -104,6 +134,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
 
         camera.PixelFormat.SetValue(PixelFormat_Mono8);
+        enableSensorLevelBinningIfPossible();
 
         // load calibration if existing
         if(!cameraCalibration->isCalibrated()) {
@@ -172,7 +203,7 @@ void SingleCamera::close() {
 }
 
 void SingleCamera::enableHardwareTrigger(bool state) {
-    std::cout<< "SingleCamera: Enabling Hardware trigger to line source: " + lineSource << " to state: " << state << std::endl;
+    qDebug() << "SingleCamera: Enabling Hardware trigger to line source: " << lineSource << " to state: " << state;
 
     frameCounter->reset();
 
@@ -194,7 +225,7 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         }
 
         if(state) {
-            hardwareTriggerConfiguration = new HardwareTriggerConfiguration(lineSource);
+            hardwareTriggerConfiguration = new HardwareTriggerConfiguration(lineSource.toStdString().c_str());
             camera.RegisterConfiguration(hardwareTriggerConfiguration, RegistrationMode_Append, Cleanup_Delete);
             hardwareTriggerEnabled = true;
         } else {
@@ -587,9 +618,9 @@ void SingleCamera::setExposureTimeValue(int value) {
     }
 }
 
-void SingleCamera::loadFromFile(const String_t &filename) {
+void SingleCamera::loadFromFile(const QString &filename) {
     try {
-        CFeaturePersistence::Load( filename, &camera.GetNodeMap(), true );
+        CFeaturePersistence::Load( filename.toStdString().c_str(), &camera.GetNodeMap(), true );
     } catch (const GenericException &e) {
         // Error handling.
         std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
@@ -601,9 +632,9 @@ void SingleCamera::loadFromFile(const String_t &filename) {
     }
 }
 
-void SingleCamera::saveToFile(const String_t &filename) {
+void SingleCamera::saveToFile(const QString &filename) {
     try {
-        CFeaturePersistence::Save(filename, &camera.GetNodeMap() );
+        CFeaturePersistence::Save(filename.toStdString().c_str(), &camera.GetNodeMap() );
     } catch (const GenericException &e) {
         // Error handling.
         std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
@@ -734,11 +765,11 @@ void SingleCamera::synchronizeTime() {
     std::cout << "=========================" << std::endl;
 }
 
-String_t SingleCamera::getLineSource() {
+QString SingleCamera::getLineSource() {
     return lineSource;
 }
 
-void SingleCamera::setLineSource(String_t value) {
+void SingleCamera::setLineSource(QString value) {
     lineSource = value;
 }
 
@@ -810,10 +841,32 @@ int SingleCamera::getImageROIoffsetX() {
     return 0;
 }
 
+int SingleCamera::getImageROIoffsetXInc() {
+    try {
+        if(camera.OffsetX.IsReadable()) {
+            return static_cast<int>(camera.OffsetX.GetInc());
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 0;
+}
+
 int SingleCamera::getImageROIoffsetY() {
     try {
         if (camera.OffsetY.IsReadable()) {
             return static_cast<int>(camera.OffsetY.GetValue());
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 0;
+}
+
+int SingleCamera::getImageROIoffsetYInc() {
+    try {
+        if (camera.OffsetY.IsReadable()) {
+            return static_cast<int>(camera.OffsetY.GetInc());
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
@@ -836,13 +889,24 @@ int SingleCamera::getImageROIwidthMax() {
     return 0;
 }
 
+int SingleCamera::getImageROIwidthInc() {
+    try {
+        if(camera.Width.IsReadable()) {
+            return static_cast<int>(camera.Width.GetInc());
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 16;
+}
+
 // NOTE: Binning affects this
 int SingleCamera::getImageROIheightMax() {
     // Classic/U/L GigE cameras
   //  return (int)camera.Height.GetMax();
     // other cameras
     try {
-        if (camera.WidthMax.IsReadable()) {
+        if (camera.HeightMax.IsReadable()) {
             return static_cast<int>(camera.HeightMax.GetValue());
         }
     } catch(const GenericException &e) {
@@ -851,8 +915,52 @@ int SingleCamera::getImageROIheightMax() {
     return 0;
 }
 
+// NOTE: Binning affects this
+int SingleCamera::getImageROIheightInc() {
+    try {
+        if (camera.Height.IsReadable()) {
+            return static_cast<int>(camera.Height.GetInc());
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 16;
+}
+
 QRectF SingleCamera::getImageROI(){
     return QRectF(getImageROIoffsetX(),getImageROIoffsetY(),getImageROIwidth(), getImageROIheight());
+}
+
+bool SingleCamera::isBinningAvailable() {
+
+    bool val = false;
+
+    try {
+        bool wasGrabbing = false;
+        if(camera.IsGrabbing()) {
+            wasGrabbing = true;
+            camera.StopGrabbing();
+        }
+
+        // NOTE: .GetListOfValidValues().size() does not work here
+        if( camera.BinningHorizontal.IsReadable() &&
+            camera.BinningHorizontal.IsWritable() &&
+            (camera.BinningHorizontal.GetMax() != camera.BinningHorizontal.GetMin()) &&
+            camera.BinningVertical.IsReadable() &&
+            camera.BinningVertical.IsWritable() &&
+            (camera.BinningVertical.GetMax() != camera.BinningVertical.GetMin()) ) {
+
+            val = true;
+        }
+
+        if(wasGrabbing) {
+            camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+        }
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
 }
 
 int SingleCamera::getBinningVal() {
@@ -864,6 +972,18 @@ int SingleCamera::getBinningVal() {
     catch (const GenericException &e) {
         return 1;
     }
+}
+
+bool SingleCamera::isTemperatureReadingSupported() {
+    try {
+        camera.DeviceTemperatureSelector.TrySetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
+
+        if(camera.DeviceTemperature.IsReadable() && camera.DeviceTemperature.GetValue() > CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE)
+            return true;
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return false;
 }
 
 double SingleCamera::getTemperature() {
@@ -892,6 +1012,35 @@ bool SingleCamera::isGrabbing()
     return camera.IsGrabbing();
 }
 
+void SingleCamera::enableSensorLevelBinningIfPossible() {
+
+    // Binning***Mode_Average setting is only possible if the BinningSelector setting is not in Sensor mode
+    //  and Binning***Mode_Sum only really has a meaning if BinningSelector_Sensor is the case, to compensate
+    //  image brightness lost due to smaller area per "pixel", i.e. to retain same brightness even if switched
+    //  to binning level 2 or 4 later.
+    //  So we set Binning***Mode_Sum only if BinningSelector_Sensor is the case, and to
+    //  Binning***Mode_Average if BinningSelector is set otherwise.
+
+    // Try enable sensor level binning, to improve max possible FPS
+    if(camera.BinningSelector.IsWritable() && camera.BinningSelector.CanSetValue(BinningSelector_Sensor)) {
+        if(camera.BinningHorizontalMode.IsWritable() && camera.BinningHorizontalMode.CanSetValue(BinningHorizontalMode_Sum)) {
+            camera.BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Sum);
+        }
+        if(camera.BinningVerticalMode.IsWritable() && camera.BinningVerticalMode.CanSetValue(BinningVerticalMode_Sum)) {
+            camera.BinningVerticalMode.TrySetValue(BinningVerticalMode_Sum);
+        }
+
+        camera.BinningSelector.TrySetValue(BinningSelector_Sensor);
+    } else {
+        if(camera.BinningHorizontalMode.IsWritable() && camera.BinningHorizontalMode.CanSetValue(BinningHorizontalMode_Average)) {
+            camera.BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
+        }
+        if(camera.BinningVerticalMode.IsWritable() && camera.BinningVerticalMode.CanSetValue(BinningVerticalMode_Average)) {
+            camera.BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
+        }
+    }
+}
+
 // NOTE: grabbing "pause" is necessary for setting binning
 bool SingleCamera::setBinningVal(int value) {
 
@@ -901,16 +1050,9 @@ bool SingleCamera::setBinningVal(int value) {
         camera.StopGrabbing();
 
     // in case of our Basler cameras here, only mode=1,2,4 are only valid values
-    if (camera.BinningVertical.IsWritable()) {
-        // "Enable sensor binning"
-        // "Note: Available on selected camera models only"
-       // camera.BinningSelector.SetValue(BinningSelector_Sensor); // NOTE: found in Basler docs, but no trace of it in Pylon::CBaslerUniversalInstantCamera:: when code tries to compile. What is this?
+    if(isBinningAvailable()) {
 
-        // Set "binning mode" of camera
-        camera.BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
-        //camera.BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
-        camera.BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
-        //camera.BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
+        enableSensorLevelBinningIfPossible();
 
         if(value==2 || value==3) {
             success = camera.BinningHorizontal.TrySetValue(2) &&
@@ -945,14 +1087,14 @@ bool SingleCamera::setImageROIwidth(int width) {
     int maxWidth = getImageROIwidthMax();
     int offsetX = getImageROIoffsetX();
 
-    if(width < 16)
-        width=16;
+    if(width < camera.Width.GetMin())
+        width = camera.Width.GetMin();
 
-    int modVal=width%16;
+    int modVal = width % camera.Width.GetInc();
     if(modVal != 0)
         width -= modVal;
 
-    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX) % camera.Width.GetInc()) : width;
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
 
@@ -978,14 +1120,14 @@ bool SingleCamera::setImageROIheight(int height) {
     int maxHeight = getImageROIheightMax();
     int offsetY = getImageROIoffsetY();
 
-    if(height < 16)
-        height=16;
+    if(height < camera.Height.GetMin())
+        height = camera.Height.GetMin();
 
-    int modVal=height%16;
+    int modVal = height % camera.Height.GetInc();
     if(modVal != 0)
         height -= modVal;
 
-    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY) % camera.Height.GetInc()) : height;
 //    if (offsetY >= maxHeight-16)
 //        height = maxHeight-offsetY;
 
@@ -1011,12 +1153,12 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
     int maxWidth = getImageROIwidthMax();
     int width = getImageROIwidth();
 
-    if(maxWidth - offsetX < 16)
-        offsetX = maxWidth - 16;
+    if(maxWidth - offsetX < camera.OffsetX.GetInc())
+        offsetX = maxWidth - camera.OffsetX.GetInc();
     //if(width + offsetX > maxWidth)
     //    return;
     
-    int modVal=offsetX%16;
+    int modVal = offsetX % camera.OffsetX.GetInc();
     if(modVal != 0)
         offsetX -= modVal;
 
@@ -1042,12 +1184,12 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
     int maxHeight = getImageROIheightMax();
     int height = getImageROIheight();
 
-    if(maxHeight - offsetY < 16)
-        offsetY = maxHeight - 16;
+    if(maxHeight - offsetY < camera.OffsetY.GetInc())
+        offsetY = maxHeight - camera.OffsetY.GetInc();
     //if(height + offsetY > maxHeight)
     //    return;
 
-    int modVal=offsetY%16;
+    int modVal=offsetY % camera.OffsetY.GetInc();
     if(modVal != 0)
         offsetY -= modVal;
 
@@ -1100,7 +1242,6 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
             break;
         i++;
     }
-
     if(i >= n) {
         throw std::runtime_error("The specified camera was not found among the ones currently detected.");
         //return;
@@ -1163,31 +1304,24 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         }
     }
 
-
-
-
     error = nullptr;
     arv_camera_set_acquisition_mode(camera, ARV_ACQUISITION_MODE_CONTINUOUS, &error);
     if(error){
         qDebug() << "Could not set ARV_ACQUISITION_MODE_CONTINUOUS.";
         qDebug() << "Error during aravis API call. Message: " << error->message;
     }
-    auto am = arv_camera_get_acquisition_mode(camera, &error);
-    switch(am) {
-        case ARV_ACQUISITION_MODE_CONTINUOUS:
-            qDebug() << "ARV_ACQUISITION_MODE_CONTINUOUS";
-            break;
-        case ARV_ACQUISITION_MODE_MULTI_FRAME:
-            qDebug() << "ARV_ACQUISITION_MODE_MULTI_FRAME";
-            break;
-        case ARV_ACQUISITION_MODE_SINGLE_FRAME:
-            qDebug() << "ARV_ACQUISITION_MODE_SINGLE_FRAME";
-            break;
-    }
-
-
-
-
+    //auto am = arv_camera_get_acquisition_mode(camera, &error);
+    //switch(am) {
+    //    case ARV_ACQUISITION_MODE_CONTINUOUS:
+    //        qDebug() << "ARV_ACQUISITION_MODE_CONTINUOUS";
+    //        break;
+    //    case ARV_ACQUISITION_MODE_MULTI_FRAME:
+    //        qDebug() << "ARV_ACQUISITION_MODE_MULTI_FRAME";
+    //        break;
+    //    case ARV_ACQUISITION_MODE_SINGLE_FRAME:
+    //        qDebug() << "ARV_ACQUISITION_MODE_SINGLE_FRAME";
+    //        break;
+    //}
 
     if(arv_device_is_feature_available(arv_camera_get_device(camera), "GevHeartbeatTimeout", NULL)) {
 
@@ -1210,6 +1344,11 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     if(arv_device_is_feature_available(arv_camera_get_device(camera), "BinningModeVertical", NULL)) {
         arv_device_set_string_feature_value(arv_camera_get_device(camera), "BinningModeVertical", "Averaging", &error);
     }
+
+    if(arv_device_is_feature_available(arv_camera_get_device(camera), "PixelFormat", NULL)) {
+        arv_device_set_string_feature_value(arv_camera_get_device(camera), "PixelFormat", "Mono8", &error);
+    }
+    enableSensorLevelBinningIfPossible();
 
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
@@ -1242,15 +1381,6 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         loadCalibrationFile();
     }
 
-    //CIntegerParameter heartbeat( camera.GetTLNodeMap(), "HeartbeatTimeout" );
-    //heartbeat.TrySetValue( 1000, IntegerValueCorrection_Nearest );
-
-
-    //GevGVCPHeartbeatDisable // True or False
-
-    //DeviceLinkHeartbeatMode // on or off
-    //DeviceLinkHeartbeatTimeout // ms
-
     startGrabbing();
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
@@ -1266,7 +1396,6 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
-    // TODO: pixel format to mono 8, set continous acquisition
     // TODO: manual reset
     // TODO: reset when error occurs
 }
@@ -1308,37 +1437,6 @@ void SingleCamera::resizeStreamBuffer() {
         wrappedErrorOccured(error);
     }
 
-}
-
-void SingleCamera::getTEST() {
-    ArvCamera *camera;
-    GError *error = NULL;
-
-    /* Connect to the first available camera */
-    camera = arv_camera_new(NULL, &error);
-
-    if(ARV_IS_CAMERA(camera)) {
-        int width;
-        int height;
-        const char *pixel_format;
-
-        printf("Found camera '%s'\n", arv_camera_get_model_name(camera, NULL));
-
-        if (!error) arv_camera_get_region(camera, NULL, NULL, &width, &height, &error);
-        if (!error) pixel_format = arv_camera_get_pixel_format_as_string(camera, &error);
-
-        if (error == NULL) {
-            printf ("Width = %d\n", width);
-            printf ("Height = %d\n", height);
-            printf ("Pixel format = %s\n", pixel_format);
-        }
-
-        g_clear_object (&camera);
-    }
-
-    if (error) {
-        qDebug() << "Error during aravis API call. Message: " << error->message;
-    }
 }
 
 void SingleCamera::genericExceptionOccured(const std::exception &e, const GError &lastAravisError) {
@@ -1853,7 +1951,7 @@ void SingleCamera::setExposureTimeValue(int value) {
     }
 }
 
-void SingleCamera::loadFromFile(const std::string &filename) {
+void SingleCamera::loadFromFile(const QString &filename) {
     // TODO: It seems aravis does not yet support saving and loading all features. We could iterate through the map
     //  and save what we can, then restore all upon opening, but this requires further larger efforts. Yet unsupported
     /*
@@ -1871,7 +1969,7 @@ void SingleCamera::loadFromFile(const std::string &filename) {
      */
 }
 
-void SingleCamera::saveToFile(const std::string &filename) {
+void SingleCamera::saveToFile(const QString &filename) {
     // TODO: It seems aravis does not yet support saving and loading all features. We could iterate through the map
     //  and save what we can, then restore all upon opening, but this requires further larger efforts. Yet unsupported
     /*
@@ -2372,6 +2470,28 @@ int SingleCamera::getImageROIoffsetX() {
     return val;
 }
 
+int SingleCamera::getImageROIoffsetXInc() {
+    GError *error = nullptr;
+    int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+        auto temp = arv_camera_get_x_offset_increment(camera, &error);
+        // additional checks could come here
+        if(error) {
+            qDebug() << "Could not get image acquisition ROI OffsetX increment.";
+            wrappedErrorOccured(error);
+        } else {
+            val = temp;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return val;
+}
+
 int SingleCamera::getImageROIoffsetY() {
     GError *error = nullptr;
     int val = 1;
@@ -2384,6 +2504,28 @@ int SingleCamera::getImageROIoffsetY() {
         // additional checks could come here
         if(error) {
             qDebug() << "Could not get image acquisition ROI OffsetY.";
+            wrappedErrorOccured(error);
+        } else {
+            val = temp;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return val;
+}
+
+int SingleCamera::getImageROIoffsetYInc() {
+    GError *error = nullptr;
+    int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+        auto temp = arv_camera_get_y_offset_increment(camera, &error);
+        // additional checks could come here
+        if(error) {
+            qDebug() << "Could not get image acquisition ROI OffsetY increment.";
             wrappedErrorOccured(error);
         } else {
             val = temp;
@@ -2407,9 +2549,33 @@ int SingleCamera::getImageROIwidthMax() {
         gint valMax = 0;
         arv_camera_get_width_bounds(camera, &valMin, &valMax, &error);
         // additional checks could come here
-        val = valMax;
+
+        // NOTE: the Aravis library provides the maximum with the offset already subtracted.
+        //  But in camera settings GUI, etc we want to know the max possible value, and the
+        //  offset is already taken care of separately. So just add that.
+        val = valMax + getImageROIoffsetX();
+
         if(error) {
             qDebug() << "Could not get image acquisition ROI Width maximum.";
+            wrappedErrorOccured(error);
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return val;
+}
+
+int SingleCamera::getImageROIwidthInc() {
+    GError *error = nullptr;
+    int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+        val = arv_camera_get_width_increment(camera, &error);
+        if(error) {
+            qDebug() << "Could not get image acquisition ROI Width increment.";
             wrappedErrorOccured(error);
         }
     } catch (const std::exception &e) {
@@ -2431,9 +2597,33 @@ int SingleCamera::getImageROIheightMax() {
         gint valMax = 0;
         arv_camera_get_height_bounds(camera, &valMin, &valMax, &error);
         // additional checks could come here
-        val = valMax;
+
+        // NOTE: the Aravis library provides the maximum with the offset already subtracted.
+        //  But in camera settings GUI, etc we want to know the max possible value, and the
+        //  offset is already taken care of separately. So just add that.
+        val = valMax + getImageROIoffsetY();
+
         if(error) {
             qDebug() << "Could not get image acquisition ROI Height maximum.";
+            wrappedErrorOccured(error);
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    return val;
+}
+
+int SingleCamera::getImageROIheightInc() {
+    GError *error = nullptr;
+    int val = 0;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+        val = arv_camera_get_height_increment(camera, &error);
+        if(error) {
+            qDebug() << "Could not get image acquisition ROI Height increment.";
             wrappedErrorOccured(error);
         }
     } catch (const std::exception &e) {
@@ -2586,6 +2776,51 @@ bool SingleCamera::isGrabbing() {
     return isGrabbingV;
 }
 
+void SingleCamera::enableSensorLevelBinningIfPossible() {
+
+    // Average BinningMode setting is only possible if the BinningSelector setting is not in Sensor mode
+    //  and Sum BinningMode only really has a meaning if Sensor BinningSelector is the case, to compensate
+    //  image brightness lost due to smaller area per "pixel", i.e. to retain same brightness even if switched
+    //  to binning level 2 or 4 later.
+    //  So we set Sum BinningMode only if Sensor BinningSelector is the case, and to
+    //  Average BinningMode if BinningSelector is set otherwise.
+
+    GError *error = nullptr;
+    try {
+
+        if(arv_device_is_feature_available(arv_camera_get_device(camera), "BinningSelector", NULL)) {
+
+            if(arv_device_is_feature_available(arv_camera_get_device(camera), "BinningHorizontalMode", NULL)) {
+                arv_device_set_string_feature_value(arv_camera_get_device(camera), "BinningHorizontalMode", "Sum", &error);
+            }
+            if(!error && arv_device_is_feature_available(arv_camera_get_device(camera), "BinningVerticalMode", NULL)) {
+                arv_device_set_string_feature_value(arv_camera_get_device(camera), "BinningVerticalMode", "Sum", &error);
+            }
+
+            if(!error) arv_device_set_string_feature_value(arv_camera_get_device(camera), "BinningSelector", "Sensor", &error);
+
+            if(error) {
+                qDebug() << "Could not set sensor level binning.";
+                wrappedErrorOccured(error);
+            }
+        } else {
+
+            if(arv_device_is_feature_available(arv_camera_get_device(camera), "BinningHorizontalMode", NULL)) {
+                arv_device_set_string_feature_value(arv_camera_get_device(camera), "BinningHorizontalMode", "Average", &error);
+            }
+            if(!error && arv_device_is_feature_available(arv_camera_get_device(camera), "BinningVerticalMode", NULL)) {
+                arv_device_set_string_feature_value(arv_camera_get_device(camera), "BinningVerticalMode", "Average", &error);
+            }
+            if(error) {
+                qDebug() << "Could not set Average as Binning Mode, although this should always be possible.";
+                wrappedErrorOccured(error);
+            }
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+}
+
 // NOTE: grabbing "pause" is necessary for setting binning
 bool SingleCamera::setBinningVal(int value) {
 
@@ -2595,6 +2830,10 @@ bool SingleCamera::setBinningVal(int value) {
 
     GError *error = nullptr;
     try {
+
+        enableSensorLevelBinningIfPossible();
+
+        error = nullptr;
         bool canGet = arv_camera_is_binning_available(camera, &error);
         gint valXMin = 1;
         gint valXMax = 1;
@@ -2611,6 +2850,7 @@ bool SingleCamera::setBinningVal(int value) {
             qDebug() << "Could not get binning value.";
             wrappedErrorOccured(error);
         } else if( (value <= valXMax && value >= valXMin) && (value <= valYMax && value >= valYMin) ) {
+
             // TODO: better, find common number of available X and Y binning values (if they might differ)
             arv_camera_set_binning(camera, value, value, &error);
 
@@ -2643,15 +2883,23 @@ bool SingleCamera::setImageROIwidth(int width) {
     int offsetX = getImageROIoffsetX();
 
     if(width < 16)
-        width=16;
+        width = 16;
 
-    int modVal=width%16;
+    int modVal = width % getImageROIwidthInc();
     if(modVal != 0)
         width -= modVal;
 
-    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX) % getImageROIwidthInc()) : width;
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
+
+    //std::cout << "width = " << width << std::endl;
+    //std::cout << "maxWidth = " << maxWidth << std::endl;
+    //std::cout << "offsetX = " << offsetX << std::endl;
+    //std::cout << "getImageROIwidthMax() = " << getImageROIwidthMax() << std::endl;
+    //std::cout << "getImageROIwidthInc() = " << getImageROIwidthInc() << std::endl;
+    //std::cout << "modVal = " << modVal << std::endl;
+    //std::cout << "bestWidth = " << bestWidth << std::endl;
 
     GError *error = nullptr;
     try {
@@ -2688,11 +2936,11 @@ bool SingleCamera::setImageROIheight(int height) {
     if(height < 16)
         height=16;
 
-    int modVal=height%16;
+    int modVal=height % getImageROIheightInc();
     if(modVal != 0)
         height -= modVal;
 
-    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY) % getImageROIheightInc()) : height;
 //    if (offsetY >= maxHeight-16)
 //        height = maxHeight-offsetY;
 
@@ -2728,12 +2976,12 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
     int maxWidth = getImageROIwidthMax();
     int width = getImageROIwidth();
 
-    if(maxWidth - offsetX < 16)
-        offsetX = maxWidth - 16;
+    if(maxWidth - offsetX < getImageROIoffsetXInc())
+        offsetX = maxWidth - getImageROIoffsetXInc();
     //if(width + offsetX > maxWidth)
     //    return;
 
-    int modVal=offsetX%16;
+    int modVal=offsetX % getImageROIoffsetXInc();
     if(modVal != 0)
         offsetX -= modVal;
 
@@ -2773,12 +3021,12 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
     int maxHeight = getImageROIheightMax();
     int height = getImageROIheight();
 
-    if(maxHeight - offsetY < 16)
-        offsetY = maxHeight - 16;
+    if(maxHeight - offsetY < getImageROIoffsetYInc())
+        offsetY = maxHeight - getImageROIoffsetYInc();
     //if(height + offsetY > maxHeight)
     //    return;
 
-    int modVal=offsetY%16;
+    int modVal = offsetY % getImageROIoffsetYInc();
     if(modVal != 0)
         offsetY -= modVal;
 

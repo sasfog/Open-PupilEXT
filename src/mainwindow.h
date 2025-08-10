@@ -287,6 +287,7 @@ private:
 
     QMessageBox *imagesSkippedMsgBox = nullptr;
     QMessageBox *imageWriterFailedMsgBox = nullptr;
+    QMessageBox *deviceWasResetMsgBox = nullptr;
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
@@ -476,12 +477,14 @@ public slots:
     void onImageWriterFailed();
     void onImageWriterFailedMsgClose();
     //void onImageWriterStopDone();
+    void onCameraUnexpectedlyDisconnected();
+    void onDeviceWasReset();
+    void onDeviceWasResetMsgClose();
+    void onManualDeviceResetNecessary();
 
     void onCameraFreezePressed();
 
     void onCameraPlaybackChanged();
-
-    void onCameraUnexpectedlyDisconnected();
 
     void onStereoCamerasOpened();
     void onStereoCamerasClosed();

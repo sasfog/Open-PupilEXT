@@ -149,8 +149,8 @@ void StereoCamera::open(bool enableHardwareTrigger) {
         // Setting both to receive hardware trigger signals on the given line source
         // NOTE: always true except when emulated cameras are used
         if(enableHardwareTrigger) {
-            hardwareTriggerConfiguration0 = new HardwareTriggerConfiguration(lineSource);
-            hardwareTriggerConfiguration1 = new HardwareTriggerConfiguration(lineSource);
+            hardwareTriggerConfiguration0 = new HardwareTriggerConfiguration(lineSource.toStdString().c_str());
+            hardwareTriggerConfiguration1 = new HardwareTriggerConfiguration(lineSource.toStdString().c_str());
             cameras[0].RegisterConfiguration(hardwareTriggerConfiguration0, RegistrationMode_Append, Cleanup_Delete);
             cameras[1].RegisterConfiguration(hardwareTriggerConfiguration1, RegistrationMode_Append, Cleanup_Delete);
 //            cameras[0].TriggerActivation.SetValue(TriggerActivation_RisingEdge);
@@ -179,6 +179,7 @@ void StereoCamera::open(bool enableHardwareTrigger) {
 
         cameras[0].PixelFormat.SetValue(PixelFormat_Mono8);
         cameras[1].PixelFormat.SetValue(PixelFormat_Mono8);
+        enableSensorLevelBinningIfPossible();
 
         // Load calibration if existing
         if(!cameraCalibration->isCalibrated()) {
@@ -442,7 +443,7 @@ void StereoCamera::setExposureTimeValue(int value) {
 // Loads the camera settings of the main camera and sets its values to both the main and secondary camera
 // Reads the Basler specific camera setting file format
 // Camera settings are automatically saved in the applications settings directory (Path visible in the about window)
-void StereoCamera::loadMainFromFile(const String_t &filename) {
+void StereoCamera::loadMainFromFile(const QString &filename) {
 
     bool wasOpen = cameras.IsOpen();
     if(!wasOpen) {
@@ -450,7 +451,7 @@ void StereoCamera::loadMainFromFile(const String_t &filename) {
     }
 
     try {
-        CFeaturePersistence::Load(filename, &cameras[0].GetNodeMap(), true);
+        CFeaturePersistence::Load(filename.toStdString().c_str(), &cameras[0].GetNodeMap(), true);
     } catch (const GenericException &e) {
         // Error handling.
         std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
@@ -471,9 +472,9 @@ void StereoCamera::loadMainFromFile(const String_t &filename) {
 
 // Saves the main camera settings to file
 // Uses the Basler specific file format
-void StereoCamera::saveMainToFile(const String_t &filename) {
+void StereoCamera::saveMainToFile(const QString &filename) {
     try {
-        CFeaturePersistence::Save(filename, &cameras[0].GetNodeMap());
+        CFeaturePersistence::Save(filename.toStdString().c_str(), &cameras[0].GetNodeMap());
     } catch (const GenericException &e) {
         // Error handling.
         std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
@@ -857,14 +858,14 @@ void StereoCamera::autoExposureOnce() {
 // The current used linesource as the hardware trigger source
 // The same linesource is used for both cameras
 // When the linesource changes, the camera must be closed and opened again
-String_t StereoCamera::getLineSource() {
+QString StereoCamera::getLineSource() {
     return lineSource;
 }
 
 // Sets the linesource used as the hardware trigger source
 // The same linesource is used for both cameras
 // When the linesource changes, the camera must be closed and opened again
-void StereoCamera::setLineSource(String_t value) {
+void StereoCamera::setLineSource(QString value) {
     lineSource = value;
 }
 
@@ -994,6 +995,25 @@ int StereoCamera::getImageROIoffsetX() {
     return 0;
 }
 
+int StereoCamera::getImageROIoffsetXInc() {
+    try {
+        if (cameras.GetSize() != 2 || !cameras[0].OffsetX.IsReadable() || !cameras[1].OffsetX.IsReadable()) {
+            return 0;
+        }
+
+        int val0 = (int) cameras[0].OffsetX.GetInc();
+        int val1 = (int) cameras[1].OffsetX.GetInc();
+        if (val0 != val1) {
+            // if not same, use max
+            val0 = (val0 > val1) ? val0 : val1;
+        }
+        return val0;
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 0;
+}
+
 int StereoCamera::getImageROIoffsetY() {
     try {
         if (cameras.GetSize() != 2 || !cameras[0].OffsetY.IsReadable() || !cameras[1].OffsetY.IsReadable()) {
@@ -1007,6 +1027,25 @@ int StereoCamera::getImageROIoffsetY() {
             int minVal = (val0 < val1) ? val0 : val1;
             cameras[0].OffsetY.TrySetValue(minVal);
             cameras[1].OffsetY.TrySetValue(minVal);
+        }
+        return val0;
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 0;
+}
+
+int StereoCamera::getImageROIoffsetYInc() {
+    try {
+        if (cameras.GetSize() != 2 || !cameras[0].OffsetY.IsReadable() || !cameras[1].OffsetY.IsReadable()) {
+            return 0;
+        }
+
+        int val0 = (int) cameras[0].OffsetY.GetInc();
+        int val1 = (int) cameras[1].OffsetY.GetInc();
+        if (val0 != val1) {
+            // if not same, use max
+            val0 = (val0 > val1) ? val0 : val1;
         }
         return val0;
     } catch (const GenericException &e) {
@@ -1040,6 +1079,26 @@ int StereoCamera::getImageROIwidthMax() {
     return 0;
 }
 
+int StereoCamera::getImageROIwidthInc() {
+    try {
+        if (cameras.GetSize() != 2 || !cameras[0].Width.IsReadable() || !cameras[1].Width.IsReadable()) {
+            return 0;
+        }
+
+        int val0 = (int) cameras[0].Width.GetInc();
+        int val1 = (int) cameras[1].Width.GetInc();
+        if (val0 != val1) {
+            std::cout << "Image acquisition ROI width increment of the two cameras are not the same. Now using the higher (safer) value." << std::endl;
+            if (val0 < val1)
+                val0 = val1;
+        }
+        return val0;
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 16;
+}
+
 // NOTE: Binning affects this
 int StereoCamera::getImageROIheightMax() {
     try {
@@ -1065,8 +1124,65 @@ int StereoCamera::getImageROIheightMax() {
     return 0;
 }
 
+int StereoCamera::getImageROIheightInc() {
+    try {
+        if (cameras.GetSize() != 2 || !cameras[0].Height.IsReadable() || !cameras[1].Height.IsReadable()) {
+            return 0;
+        }
+
+        int val0 = (int) cameras[0].Height.GetInc();
+        int val1 = (int) cameras[1].Height.GetInc();
+        if (val0 != val1) {
+            std::cout << "Image acquisition ROI height increment of the two cameras are not the same. Now using the higher (safer) value." << std::endl;
+            if (val0 < val1)
+                val0 = val1;
+        }
+        return val0;
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return 16;
+}
+
 QRectF StereoCamera::getImageROI(){
     return QRectF(getImageROIoffsetX(),getImageROIoffsetY(),getImageROIwidth(), getImageROIheight());
+}
+
+bool StereoCamera::isBinningAvailable() {
+
+    bool val = false;
+
+    try {
+        bool wasGrabbing = false;
+        if(cameras.IsGrabbing()) {
+            wasGrabbing = true;
+            stopGrabbing();
+        }
+
+        if( cameras[0].BinningHorizontal.IsReadable() &&
+            cameras[0].BinningHorizontal.IsWritable() &&
+            (cameras[0].BinningHorizontal.GetMax() != cameras[0].BinningHorizontal.GetMin()) &&
+            cameras[0].BinningVertical.IsReadable() &&
+            cameras[0].BinningVertical.IsWritable() &&
+            (cameras[0].BinningVertical.GetMax() != cameras[0].BinningVertical.GetMin()) &&
+            cameras[1].BinningHorizontal.IsReadable() &&
+            cameras[1].BinningHorizontal.IsWritable() &&
+            (cameras[1].BinningHorizontal.GetMax() != cameras[1].BinningHorizontal.GetMin()) &&
+            cameras[1].BinningVertical.IsReadable() &&
+            cameras[1].BinningVertical.IsWritable() &&
+            (cameras[1].BinningVertical.GetMax() != cameras[1].BinningVertical.GetMin()) ) {
+
+            val = true;
+        }
+
+        if(wasGrabbing) {
+            startGrabbing();
+        }
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
 }
 
 int StereoCamera::getBinningVal() {
@@ -1087,6 +1203,22 @@ int StereoCamera::getBinningVal() {
         genericExceptionOccured(e);
     }
     return 1;
+}
+
+bool StereoCamera::isTemperatureReadingSupported() {
+    try {
+        cameras[0].DeviceTemperatureSelector.TrySetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
+        cameras[1].DeviceTemperatureSelector.TrySetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
+
+        if( cameras[0].DeviceTemperature.IsReadable() && cameras[0].DeviceTemperature.GetValue() > CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE &&
+            cameras[1].DeviceTemperature.IsReadable() && cameras[1].DeviceTemperature.GetValue() > CamTempMonitor::MINIMUM_DEVICE_TEMPERATURE ) {
+
+            return true;
+        }
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return false;
 }
 
 std::vector<double> StereoCamera::getTemperatures() {
@@ -1121,6 +1253,50 @@ bool StereoCamera::isGrabbing()
     return cameras.IsGrabbing();
 }
 
+void StereoCamera::enableSensorLevelBinningIfPossible() {
+
+    // Binning***Mode_Average setting is only possible if the BinningSelector setting is not in Sensor mode
+    //  and Binning***Mode_Sum only really has a meaning if BinningSelector_Sensor is the case, to compensate
+    //  image brightness lost due to smaller area per "pixel", i.e. to retain same brightness even if switched
+    //  to binning level 2 or 4 later.
+    //  So we set Binning***Mode_Sum only if BinningSelector_Sensor is the case, and to
+    //  Binning***Mode_Average if BinningSelector is set otherwise.
+
+    // Try enable sensor level binning, to improve max possible FPS
+    if( cameras[0].BinningSelector.IsWritable() && cameras[0].BinningSelector.CanSetValue(BinningSelector_Sensor) &&
+        cameras[1].BinningSelector.IsWritable() && cameras[1].BinningSelector.CanSetValue(BinningSelector_Sensor) ) {
+
+        if( cameras[0].BinningHorizontalMode.IsWritable() && cameras[0].BinningHorizontalMode.CanSetValue(BinningHorizontalMode_Sum) &&
+            cameras[1].BinningHorizontalMode.IsWritable() && cameras[1].BinningHorizontalMode.CanSetValue(BinningHorizontalMode_Sum) ) {
+
+            cameras[0].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Sum);
+            cameras[1].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Sum);
+        }
+        if( cameras[0].BinningVerticalMode.IsWritable() && cameras[0].BinningVerticalMode.CanSetValue(BinningVerticalMode_Sum) &&
+            cameras[1].BinningVerticalMode.IsWritable() && cameras[1].BinningVerticalMode.CanSetValue(BinningVerticalMode_Sum) ) {
+
+            cameras[0].BinningVerticalMode.TrySetValue(BinningVerticalMode_Sum);
+            cameras[1].BinningVerticalMode.TrySetValue(BinningVerticalMode_Sum);
+        }
+
+        cameras[0].BinningSelector.TrySetValue(BinningSelector_Sensor);
+        cameras[1].BinningSelector.TrySetValue(BinningSelector_Sensor);
+    } else {
+        if( cameras[0].BinningHorizontalMode.IsWritable() && cameras[0].BinningHorizontalMode.CanSetValue(BinningHorizontalMode_Average) &&
+            cameras[1].BinningHorizontalMode.IsWritable() && cameras[1].BinningHorizontalMode.CanSetValue(BinningHorizontalMode_Average) ) {
+
+            cameras[0].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
+            cameras[1].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
+        }
+        if( cameras[0].BinningVerticalMode.IsWritable() && cameras[0].BinningVerticalMode.CanSetValue(BinningVerticalMode_Average) &&
+            cameras[1].BinningVerticalMode.IsWritable() && cameras[1].BinningVerticalMode.CanSetValue(BinningVerticalMode_Average) ) {
+
+            cameras[0].BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
+            cameras[1].BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
+        }
+    }
+}
+
 // NOTE: grabbing "pause" is necessary for setting binning
 bool StereoCamera::setBinningVal(int value) {
     if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
@@ -1132,22 +1308,9 @@ bool StereoCamera::setBinningVal(int value) {
         stopGrabbing();
 
     // in case of our Basler cameras here, only mode=1,2,4 are only valid values
-    if (cameras[0].BinningHorizontal.IsWritable() && cameras[0].BinningVertical.IsWritable() &&
-        cameras[1].BinningHorizontal.IsWritable() && cameras[1].BinningVertical.IsWritable()) {
-        // "Enable sensor binning"
-        // "Note: Available on selected camera models only"
-       // camera.BinningSelector.SetValue(BinningSelector_Sensor); // NOTE: found in Basler docs, but no trace of it in Pylon::CBaslerUniversalInstantCamera:: when code tries to compile. What is this?
+    if(isBinningAvailable()) {
 
-        // Set "binning mode" of camera
-        cameras[0].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
-        //cameras[0].BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
-        cameras[0].BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
-        //cameras[0].BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
-        //
-        cameras[1].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
-        //cameras[1].BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
-        cameras[1].BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
-        //cameras[1].BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
+        enableSensorLevelBinningIfPossible();
 
         if(value==2 || value==3) {
             success = cameras[0].BinningHorizontal.TrySetValue(2) &&
@@ -1189,12 +1352,12 @@ bool StereoCamera::setImageROIwidth(int width) {
     int maxWidth = getImageROIwidthMax();
     int offsetX = getImageROIoffsetX();
 
-    if(width < 16)
-        width=16;
-    int modVal=width%16;
+    if(width < cameras[0].Width.GetMin())
+        width = cameras[0].Width.GetMin();
+    int modVal = width % cameras[0].Width.GetInc();
     if(modVal != 0)
         width -= modVal;
-    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX) % cameras[0].Width.GetInc()) : width;
 //    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
 
     if (cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
@@ -1221,12 +1384,12 @@ bool StereoCamera::setImageROIheight(int height) {
     int maxHeight = getImageROIheightMax();
     int offsetY = getImageROIoffsetY();
 
-    if(height < 16)
-        height=16;
-    int modVal=height%16;
+    if(height < cameras[0].Height.GetMin())
+        height = cameras[0].Height.GetMin();
+    int modVal = height % cameras[0].Height.GetInc();
     if(modVal != 0)
         height -= modVal;
-    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY) % cameras[0].Height.GetInc()) : height;
 //    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
 
     if (cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
@@ -1253,9 +1416,9 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
     int maxWidth = getImageROIwidthMax();
     int width = getImageROIwidth();
 
-    if(maxWidth - offsetX < 16)
-        offsetX = maxWidth - 16;
-    int modVal=offsetX%16;
+    if(maxWidth - offsetX < cameras[0].OffsetX.GetInc())
+        offsetX = maxWidth - cameras[0].OffsetX.GetInc();
+    int modVal = offsetX % cameras[0].OffsetX.GetInc();
     if(modVal != 0)
         offsetX -= modVal;
 
@@ -1283,9 +1446,9 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
     int maxHeight = getImageROIheightMax();;
     int height = getImageROIheight();;
 
-    if(maxHeight - offsetY < 16)
-        offsetY = maxHeight - 16;
-    int modVal=offsetY%16;
+    if(maxHeight - offsetY < cameras[0].OffsetY.GetInc())
+        offsetY = maxHeight - cameras[0].OffsetY.GetInc();
+    int modVal = offsetY % cameras[0].OffsetY.GetInc();
     if(modVal != 0)
         offsetY -= modVal;
 
@@ -1312,6 +1475,7 @@ bool StereoCamera::setImageROIwidthEmu(int width) {
     int maxWidth = getImageROIwidthMax();
     int offsetX = getImageROIoffsetX();
 
+    // NOTE: here .GetInc() are not used.. but could be?
     if(width < 16)
         width=16;
     int modVal=width%16;
@@ -1344,6 +1508,7 @@ bool StereoCamera::setImageROIheightEmu(int height) {
     int maxHeight = getImageROIheightMax();
     int offsetY = getImageROIoffsetY();
 
+    // NOTE: here .GetInc() are not used.. but could be?
     if(height < 16)
         height=16;
     int modVal=height%16;
@@ -1375,6 +1540,7 @@ bool StereoCamera::setImageROIoffsetXEmu(int offsetX) {
     int maxWidth = getImageROIwidthMax();;
     int width = getImageROIwidth();;
 
+    // NOTE: here .GetInc() are not used.. but could be?
     if(maxWidth - offsetX < 16)
         offsetX = maxWidth - 16;
     int modVal=offsetX%16;
@@ -1404,6 +1570,7 @@ bool StereoCamera::setImageROIoffsetYEmu(int offsetY) {
     int maxHeight = getImageROIheightMax();
     int height = getImageROIheight();
 
+    // NOTE: here .GetInc() are not used.. but could be?
     if(maxHeight - offsetY < 16)
         offsetY = maxHeight - 16;
     int modVal=offsetY%16;
@@ -1904,7 +2071,7 @@ void StereoCamera::setExposureTimeValue(int value) {
 // Loads the camera settings of the main camera and sets its values to both the main and secondary camera
 // Reads the Basler specific camera setting file format
 // Camera settings are automatically saved in the applications settings directory (Path visible in the about window)
-void StereoCamera::loadMainFromFile(const std::string &filename) {
+void StereoCamera::loadMainFromFile(const QString &filename) {
     /*
 
     bool wasOpen = cameras.IsOpen();
@@ -1935,7 +2102,7 @@ void StereoCamera::loadMainFromFile(const std::string &filename) {
 
 // Saves the main camera settings to file
 // Uses the Basler specific file format
-void StereoCamera::saveMainToFile(const std::string &filename) {
+void StereoCamera::saveMainToFile(const QString &filename) {
     /*
     try {
         CFeaturePersistence::Save(filename, &cameras[0].GetNodeMap());
@@ -2497,6 +2664,10 @@ int StereoCamera::getImageROIoffsetX() {
     return 0;
 }
 
+int StereoCamera::getImageROIoffsetXInc() {
+    return 0;
+}
+
 int StereoCamera::getImageROIoffsetY() {
     /*
     try {
@@ -2517,6 +2688,10 @@ int StereoCamera::getImageROIoffsetY() {
         genericExceptionOccured(e);
     }
     */
+    return 0;
+}
+
+int StereoCamera::getImageROIoffsetYInc() {
     return 0;
 }
 
@@ -2547,6 +2722,10 @@ int StereoCamera::getImageROIwidthMax() {
     return 0;
 }
 
+int StereoCamera::getImageROIwidthInc() {
+    return 0;
+}
+
 // NOTE: Binning affects this
 int StereoCamera::getImageROIheightMax() {
     /*
@@ -2571,6 +2750,10 @@ int StereoCamera::getImageROIheightMax() {
         genericExceptionOccured(e);
     }
      */
+    return 0;
+}
+
+int StereoCamera::getImageROIheightInc() {
     return 0;
 }
 
@@ -2676,9 +2859,14 @@ bool StereoCamera::setBinningVal(int value) {
     // in case of our Basler cameras here, only mode=1,2,4 are only valid values
     if (cameras[0].BinningHorizontal.IsWritable() && cameras[0].BinningVertical.IsWritable() &&
         cameras[1].BinningHorizontal.IsWritable() && cameras[1].BinningVertical.IsWritable()) {
-        // "Enable sensor binning"
-        // "Note: Available on selected camera models only"
-        // camera.BinningSelector.SetValue(BinningSelector_Sensor); // NOTE: found in Basler docs, but no trace of it in Pylon::CBaslerUniversalInstantCamera:: when code tries to compile. What is this?
+
+        // Try enable sensor level binning, to improve max possible FPS
+        if( cameras[0].BinningSelector.IsWritable() && cameras[0].BinningSelector.CanSetValue(BinningSelector_Sensor) &&
+            cameras[1].BinningSelector.IsWritable() && cameras[1].BinningSelector.CanSetValue(BinningSelector_Sensor) ) {
+
+            cameras[0].BinningSelector.TrySetValue(BinningSelector_Sensor);
+            cameras[1].BinningSelector.TrySetValue(BinningSelector_Sensor);
+        }
 
         // Set "binning mode" of camera
         cameras[0].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);

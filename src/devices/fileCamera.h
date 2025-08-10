@@ -124,9 +124,13 @@ public:
     int getImageROIwidth() override;
     int getImageROIheight() override;
     int getImageROIwidthMax() override;
+    int getImageROIwidthInc() override { return 0; };
     int getImageROIheightMax() override;
-    int getImageROIoffsetX() override; 
+    int getImageROIheightInc() override { return 0; };
+    int getImageROIoffsetX() override;
+    int getImageROIoffsetXInc() override { return 0; };
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override { return 0; };
     QRectF getImageROI() override;
 
     bool isTemperatureReadingSupported() override {return false;};

@@ -1013,7 +1013,7 @@ QWidget* MainWindow::activeMdiChild() const {
 }
 
 #ifdef USE_PYLON
-void MainWindow::updateCamerasMenu() {
+void MainWindow::updateSingleCamerasMenu() {
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
     singleCamerasMenu->clear();
@@ -1026,8 +1026,8 @@ void MainWindow::updateCamerasMenu() {
         Pylon::DeviceInfoList_t::const_iterator deviceIt;
         for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
             QAction *cameraAction = singleCamerasMenu->addAction(deviceIt->GetFriendlyName().c_str());
-            qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
-            qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
+            //qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
+            //qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
             cameraAction->setData(deviceIt->GetFriendlyName().c_str());
             //cameraAction->setData(QVariant::fromValue<Pylon::CDeviceInfo>(*deviceIt));
             if (QString(deviceIt->GetModelName().c_str()).toLower().contains("emu")) {
@@ -1038,9 +1038,18 @@ void MainWindow::updateCamerasMenu() {
         QApplication::restoreOverrideCursor();
         return;
     } catch (const GenericException &e) {
+        // These are for the Pylon errors
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
         QMessageBox err(this);
-        err.critical(this, "Device Error", e.GetDescription());
+        err.critical(this, "Device Error", QString("Device error occured, or an exception was raised in the Pylon library.\n\n") + e.GetDescription());
+        QAction *cameraAction = singleCamerasMenu->addAction("Could not retrieve list of devices.");
+        QApplication::restoreOverrideCursor();
+        return;
+    } catch (const std::exception &e) {
+        // These are for any other
+        std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
+        QMessageBox err(this);
+        err.critical(this, "Device Error", QString("Device error occured, or an exception was raised in the Pylon wrapper.\n\n") + e.what());
         QAction *cameraAction = singleCamerasMenu->addAction("Could not retrieve list of devices.");
         QApplication::restoreOverrideCursor();
         return;
@@ -1681,6 +1690,8 @@ void MainWindow::onCameraDisconnectClick() {
 
         disconnect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
         disconnect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
+        disconnect(selectedCamera, SIGNAL (deviceWasReset()), this, SLOT (onDeviceWasReset()));
+        disconnect(selectedCamera, SIGNAL (manualDeviceResetNecessary()), this, SLOT (onManualDeviceResetNecessary()));
     }
 
     pupilDetectionSettingsDialog->onSettingsChange();
@@ -1740,14 +1751,14 @@ void MainWindow::singleCameraSelected(QAction *action) {
     catch (const GenericException &e) {
         std::cerr << "An exception occurred." << std::endl << e.GetDescription() << std::endl;
         QMessageBox err(this);
-        err.critical(this, "Device Error", e.GetDescription());
+        err.critical(this, "Device Error", QString("Device error occured, or an exception was raised in the Pylon wrapper.\n\n") + e.GetDescription());
         return;
     }
 #else
     catch (const std::exception &e) {
         std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
         QMessageBox err(this);
-        err.critical(this, "Device Error", e.what());
+        err.critical(this, "Device Error", QString("Device error occured, or an exception was raised in the camera wrapper.\n\n") + e.what());
         return;
     }
 #endif
@@ -1760,6 +1771,8 @@ void MainWindow::singleCameraSelected(QAction *action) {
 
     connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
     connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
+    connect(selectedCamera, SIGNAL (deviceWasReset()), this, SLOT (onDeviceWasReset()));
+    connect(selectedCamera, SIGNAL (manualDeviceResetNecessary()), this, SLOT (onManualDeviceResetNecessary()));
 
     connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
@@ -1888,6 +1901,8 @@ void MainWindow::stereoCameraSelected() {
 
     connect(selectedCamera, SIGNAL (imagesSkipped()), this, SLOT (onImagesSkipped()));
     connect(selectedCamera, SIGNAL (cameraDeviceRemoved()), this, SLOT (onCameraUnexpectedlyDisconnected()));
+    connect(selectedCamera, SIGNAL (deviceWasReset()), this, SLOT (onDeviceWasReset()));
+    connect(selectedCamera, SIGNAL (manualDeviceResetNecessary()), this, SLOT (onManualDeviceResetNecessary()));
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
@@ -3468,6 +3483,40 @@ void MainWindow::onCameraUnexpectedlyDisconnected() {
     QMessageBox *msgBox = new QMessageBox(this);
     msgBox->setWindowTitle("Camera unexpectedly disconnected");
     msgBox->setText("At least one camera in use was unexpectedly disconnected. Recordings are stopped for saving.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");
+    msgBox->setMinimumSize(330,240);
+    msgBox->setIcon(QMessageBox::Warning);
+    msgBox->setModal(false);
+    msgBox->show();
+
+    onCameraDisconnectClick();
+
+}
+
+void MainWindow::onDeviceWasReset() {
+    if(deviceWasResetMsgBox != nullptr) {
+        return;
+    }
+    deviceWasResetMsgBox = new QMessageBox(this);
+    deviceWasResetMsgBox->setWindowTitle("Camera device was reset");
+    deviceWasResetMsgBox->setText("The camera device encountered an error and had to be reset. If a recording was active, a portion of it was not recorded.\n\nPlease check camera connection and power supply if necessary. If possible, check the camera with the software suite provided by its manufacturer.");
+    deviceWasResetMsgBox->setMinimumSize(330,240);
+    deviceWasResetMsgBox->setIcon(QMessageBox::Warning);
+    deviceWasResetMsgBox->setModal(false);
+    connect(deviceWasResetMsgBox, SIGNAL(accepted()), this, SLOT(onDeviceWasResetMsgClose()));
+    deviceWasResetMsgBox->show();
+}
+
+void MainWindow::onDeviceWasResetMsgClose() {
+    disconnect(deviceWasResetMsgBox, SIGNAL(accepted()), this, SLOT(onDeviceWasResetMsgClose()));
+    deviceWasResetMsgBox->deleteLater();
+    deviceWasResetMsgBox = nullptr;
+}
+
+void MainWindow::onManualDeviceResetNecessary() {
+
+    QMessageBox *msgBox = new QMessageBox(this);
+    msgBox->setWindowTitle("Manual device reset is necessary");
+    msgBox->setText("The camera encountered an unrecoverable error, and it was disconnected. Recordings are stopped for saving.\n\nPlease manually power cycle (cold reset) the camera device.");
     msgBox->setMinimumSize(330,240);
     msgBox->setIcon(QMessageBox::Warning);
     msgBox->setModal(false);

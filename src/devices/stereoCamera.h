@@ -77,6 +77,13 @@ public:
     bool isEmulated();
     double getResultingFrameRateValue();
 
+    // AFAIK it is always supported by Basler cameras.
+    // Prepping is already done properly in the corresponding method performing this auto function.
+    static bool isAutoGainAvailable() { return true; };
+    static bool isAutoExposureAvailable() { return true; };
+
+    bool isBinningAvailable();
+
     int getAcquisitionFPSValue();
     int getAcquisitionFPSMin();
     int getAcquisitionFPSMax();
@@ -88,22 +95,26 @@ public:
     void attachCameras(const QString &friendlyNameMain, const QString &friendlyNameSecondary);
     void open(bool enableHardwareTrigger);
 
-    String_t getLineSource();
+    QString getLineSource();
 
     StereoCameraCalibration *getCameraCalibration();
     QString getCalibrationFilename();
 
-    void loadMainFromFile(const String_t &filename);
-    //void loadSecondaryFromFile(const String_t &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
-    void saveMainToFile(const String_t &filename);
-    //void saveSecondaryToFile(const String_t &filename);
+    void loadMainFromFile(const QString &filename);
+    //void loadSecondaryFromFile(const QString &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
+    void saveMainToFile(const QString &filename);
+    //void saveSecondaryToFile(const QString &filename);
 
     int getImageROIwidth() override; 
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 
+    int getImageROIoffsetXInc() override;
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override;
     int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIwidthInc() override;
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightInc() override;
     QRectF getImageROI() override;
     int getBinningVal();
     std::vector<double> getTemperatures();
@@ -125,7 +136,7 @@ private:
     uint64 cameraSecondaryTime;
     uint64 systemTime;
 
-    String_t lineSource;
+    QString lineSource;
 
     CBaslerUniversalInstantCameraArray cameras;
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
@@ -142,13 +153,15 @@ private:
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
 
+    void enableSensorLevelBinningIfPossible();
+
     void safelyCloseCameras();
 
 public slots:
 
     void setGainValue(double value);
     void setExposureTimeValue(int value);
-    void setLineSource(String_t value);
+    void setLineSource(QString value);
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
     void resynchronizeTime();
@@ -229,17 +242,21 @@ public:
     StereoCameraCalibration *getCameraCalibration();
     QString getCalibrationFilename();
 
-    void loadMainFromFile(const std::string &filename);
-    //void loadSecondaryFromFile(const String_t &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
-    void saveMainToFile(const std::string &filename);
-    //void saveSecondaryToFile(const String_t &filename);
+    void loadMainFromFile(const QString &filename);
+    //void loadSecondaryFromFile(const QString &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
+    void saveMainToFile(const QString &filename);
+    //void saveSecondaryToFile(const QString &filename);
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
     int getImageROIoffsetX() override;
+    int getImageROIoffsetXInc() override;
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override;
     int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIwidthInc() override;
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightInc() override;
     QRectF getImageROI() override;
     int getBinningVal();
     std::vector<double> getTemperatures();
