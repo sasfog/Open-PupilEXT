@@ -104,8 +104,9 @@ set(ALL_SOURCES_TO_ADD
         playbackSynchroniser.h
         subwindows/outputDataRuleDialog.h
         subwindows/outputDataRuleDialog.cpp
-        dataTypes.cpp
-        dataTypes.h
+        pDataTypeEnum.h
+        pDataTypes.cpp
+        pDataTypes.h
         remoteSetupModel.h
         subwindows/sceneImageView.cpp
         subwindows/sceneImageView.h
@@ -149,6 +150,7 @@ set(ALL_LIBRARIES_TO_LINK
         ${CERES_LIBRARIES}
         ${BZip2_LIBRARIES} ########################################################
         ${OpenCV_LIBS}
+        LSL::lsl
         # ${FFMPEG_LIBRARIES}
         opengl32 # works only for windows
         #OpenGL::GL
@@ -169,7 +171,7 @@ else()
     list(APPEND ALL_LIBRARIES_TO_LINK ${aravis_LIBRARIES})
 endif()
 
-message("ALL_LIBRARIES_TO_LINK: ${ALL_LIBRARIES_TO_LINK}")
+message(STATUS "ALL_LIBRARIES_TO_LINK: ${ALL_LIBRARIES_TO_LINK}")
 
 target_link_libraries(
         ${CMAKE_PROJECT_NAME}

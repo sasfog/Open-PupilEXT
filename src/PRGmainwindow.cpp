@@ -380,7 +380,7 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
     //QStringList subStrings = conf.split(',');
     QRegularExpression separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
-    if(subStrings.length() < 3) // HERE WE HAVE 3, AS WE ALSO HAVE THE DATA CONTAINER SETTING
+    if(subStrings.length() < 2)
         return;
 
     if(subStrings[0].isEmpty())
@@ -392,27 +392,32 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
     if(!valid)
         return;
 
-    DataStreamer::DataContainer dataContainer;
-    if(subStrings[2].toUpper() == "CSV")
-        dataContainer = DataStreamer::DataContainer::CSV;
-    else if(subStrings[2].toUpper() == "JSON")
-        dataContainer = DataStreamer::DataContainer::JSON;
-    else if(subStrings[2].toUpper() == "XML")
-        dataContainer = DataStreamer::DataContainer::XML;
-    else if(subStrings[2].toUpper() == "YAML")
-        dataContainer = DataStreamer::DataContainer::YAML;
-    else 
-        return;
-
     p.ipAddress = QHostAddress(ip);
     p.portNumber = port;
 
-    // TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
-    // we could solve this in different ways
-    applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainer);
-//    applicationSettings->setValue("StreamingSettings.UDP.ip", ip);
-//    applicationSettings->setValue("StreamingSettings.UDP.port", port);
+    if(subStrings.length() >= 3 && !subStrings[2].isEmpty()) {
+        DataStreamer::DataContainer dataContainer = DataStreamer::DataContainer::UNDEFINED;
+        if (subStrings[2].toUpper() == "CSV")
+            dataContainer = DataStreamer::DataContainer::CSV;
+        else if (subStrings[2].toUpper() == "JSON")
+            dataContainer = DataStreamer::DataContainer::JSON;
+        else if (subStrings[2].toUpper() == "XML")
+            dataContainer = DataStreamer::DataContainer::XML;
+        else if (subStrings[2].toUpper() == "YAML")
+            dataContainer = DataStreamer::DataContainer::YAML;
 
+        // TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
+        if(dataContainer != DataStreamer::DataContainer::UNDEFINED)
+            applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainer);
+    }
+
+    if(subStrings.length() >= 4 && !subStrings[3].isEmpty()) {
+        bool srok = false;
+        int srcv = subStrings[3].toInt(&srok, 10);
+        if(srok && srcv >= 1 && srcv <= 50) {
+            applicationSettings->setValue("StreamingSettings.UDP.sampleRate", srcv);
+        }
+    }
     streamingSettingsDialog->connectUDP(p);
 }
 void MainWindow::PRGconnectStreamCOM(QString conf) {
@@ -468,18 +473,6 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
     if(!valid)
         return;
 
-    DataStreamer::DataContainer dataContainer;
-    if(subStrings[6].toUpper() == "CSV")
-        dataContainer = DataStreamer::DataContainer::CSV;
-    else if(subStrings[6].toUpper() == "JSON")
-        dataContainer = DataStreamer::DataContainer::JSON;
-    else if(subStrings[6].toUpper() == "XML")
-        dataContainer = DataStreamer::DataContainer::XML;
-    else if(subStrings[6].toUpper() == "YAML")
-        dataContainer = DataStreamer::DataContainer::YAML;
-    else 
-        return;
-
     p.name = portName;
     p.baudRate = baudRate;
     p.stringBaudRate = QString::number(baudRate);
@@ -493,10 +486,61 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
     p.stringFlowControl = QString::number(flowControl);
     p.localEchoEnabled = true; // always on now
 
-    applicationSettings->setValue("StreamingSettings.COM.dataContainer", dataContainer);
+    if(subStrings.length() >= 7 && !subStrings[6].isEmpty()) {
+        DataStreamer::DataContainer dataContainer = DataStreamer::DataContainer::UNDEFINED;
+        if (subStrings[6].toUpper() == "CSV")
+            dataContainer = DataStreamer::DataContainer::CSV;
+        else if (subStrings[6].toUpper() == "JSON")
+            dataContainer = DataStreamer::DataContainer::JSON;
+        else if (subStrings[6].toUpper() == "XML")
+            dataContainer = DataStreamer::DataContainer::XML;
+        else if (subStrings[6].toUpper() == "YAML")
+            dataContainer = DataStreamer::DataContainer::YAML;
 
+        if(dataContainer != DataStreamer::DataContainer::UNDEFINED)
+            applicationSettings->setValue("StreamingSettings.COM.dataContainer", dataContainer);
+    }
+
+    if(subStrings.length() >= 8 && !subStrings[7].isEmpty()) {
+         bool srok = false;
+         int srcv = subStrings[7].toInt(&srok, 10);
+         if(srok && srcv >= 1 && srcv <= 50) {
+             applicationSettings->setValue("StreamingSettings.COM.sampleRate", srcv);
+         }
+    }
     streamingSettingsDialog->connectCOM(p);
 }
+
+void MainWindow::PRGconnectStreamLSL(QString conf) {
+    if(streamingSettingsDialog->isLSLConnected())
+        return;
+
+    conf.replace(" ", "");
+    //QStringList subStrings = conf.split(',');
+    QRegularExpression separator("[,|;|*|&|#|:]");
+    QStringList subStrings = conf.split(separator);
+
+    if(subStrings.size() >= 1 && !subStrings[0].isEmpty()) {
+        DataStreamer::DataContainer dataContainer = DataStreamer::DataContainer::UNDEFINED;
+        if (subStrings[0].toUpper() == "LSL_XDF")
+            dataContainer = DataStreamer::DataContainer::LSL_XDF;
+        else if (subStrings[0].toUpper() == "LSL_V1")
+            dataContainer = DataStreamer::DataContainer::LSL_V1;
+
+        if(dataContainer != DataStreamer::DataContainer::UNDEFINED)
+            applicationSettings->setValue("StreamingSettings.LSL.dataContainer", dataContainer);
+    }
+
+    if(subStrings.length() >= 2 && !subStrings[1].isEmpty()) {
+        bool srok = false;
+        int srcv = subStrings[1].toInt(&srok, 10);
+        if(srok && srcv >= 1 && srcv <= 50) {
+            applicationSettings->setValue("StreamingSettings.LSL.sampleRate", srcv);
+        }
+    }
+    streamingSettingsDialog->connectLSL();
+}
+
 void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
     if(MCUSettingsDialogInst->isConnected())
         return;
@@ -626,6 +670,10 @@ void MainWindow::PRGdisconnectStreamUDP() {
 void MainWindow::PRGdisconnectStreamCOM() {
     if(streamingSettingsDialog->isCOMConnected())
         streamingSettingsDialog->disconnectCOM();
+}
+void MainWindow::PRGdisconnectStreamLSL() {
+    if(streamingSettingsDialog->isLSLConnected())
+        streamingSettingsDialog->disconnectLSL();
 }
 void MainWindow::PRGdisconnectMicrocontroller() {
     if(MCUSettingsDialogInst->isConnected())

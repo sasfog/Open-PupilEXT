@@ -30,6 +30,21 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 */
 
 #include <opencv2/core/types.hpp>
+#include "../pDataTypeEnum.h"
+
+//TODO:
+// After a quite unpleasant journey I realized that if I include ANY Qt-related header in here, compilation will break:
+// \vcpkg_installed\x64-windows\include\oneapi\tbb\profiling.h(229): error C2059: syntax error: ')'
+// \vcpkg_installed\x64-windows\include\oneapi\tbb\profiling.h(229): error C2334: unexpected token(s) preceding '{'; skipping apparent function body
+// \vcpkg_installed\x64-windows\include\oneapi\tbb\profiling.h(231): error C2059: syntax error: 'const'
+// \vcpkg_installed\x64-windows\include\oneapi\tbb\profiling.h(231): error C2334: unexpected token(s) preceding '{'; skipping apparent function body
+// Yet this is the reason there is a separate pDataTypeEnum.h and pDataTypes.h, to let them be included separately.
+// What could we do?
+
+//#include <QtCore/QString>
+//#undef emit
+// ...
+//#define emit Q_EMIT
 
 #define NO_CONFIDENCE -1.0
 
@@ -70,6 +85,7 @@ public:
     float undistortedDiameter;
 
     std::string algorithmName;
+    char eyeIdentity;
 
     void clear() {
         angle = -1.0;
@@ -147,7 +163,40 @@ public:
         float b = 0.5*minorAxis();
         return CV_PI * abs( 3*(a+b) - sqrt( 10*a*b + 3*( pow(a,2) + pow(b,2) ) ) );
     }
-};
 
+    double getPData(PDataType f) const {
+        switch(f) {
+            case PDataType::PUPIL_CENTER_X:
+                return center.x;
+            case PDataType::PUPIL_CENTER_Y:
+                return center.y;
+            case PDataType::PUPIL_MAJOR:
+                return majorAxis();
+            case PDataType::PUPIL_MINOR:
+                return minorAxis();
+            case PDataType::PUPIL_WIDTH:
+                return width();
+            case PDataType::PUPIL_HEIGHT:
+                return height();
+            case PDataType::PUPIL_DIAMETER:
+                return diameter();
+            case PDataType::PUPIL_UNDIST_DIAMETER:
+                return undistortedDiameter;
+            case PDataType::PUPIL_PHYSICAL_DIAMETER:
+                return physicalDiameter;
+            case PDataType::PUPIL_CONFIDENCE:
+                return confidence;
+            case PDataType::PUPIL_OUTLINE_CONFIDENCE:
+                return outline_confidence;
+            case PDataType::PUPIL_CIRCUMFERENCE:
+                return circumference();
+            case PDataType::PUPIL_RATIO:
+                return (double)majorAxis() / minorAxis();
+            case PDataType::PUPIL_ANGLE:
+                return angle;
+        }
+    }
+
+};
 
 #endif //PUPILALGOSIMPLE_PUPIL_H

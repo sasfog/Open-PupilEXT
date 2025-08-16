@@ -1,32 +1,42 @@
 
 #include "eyeDataSerializer.h"
 
-void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dObj, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, const QString& message, double temperature) {
-    dObj.setAttribute("filename", filename); 
-    dObj.setAttribute("timestamp_ms", QString::number(timestamp)); 
-    dObj.setAttribute("algorithm", QString::fromStdString(Pupils[idx].algorithmName)); 
-    dObj.setAttribute("diameter_px", QString::number(Pupils[idx].diameter())); 
-    dObj.setAttribute("undistortedDiameter_px", QString::number(Pupils[idx].undistortedDiameter) ); 
-    dObj.setAttribute("physicalDiameter_mm", QString::number(Pupils[idx].physicalDiameter)); 
-    dObj.setAttribute("width_px", QString::number(Pupils[idx].width())); 
-    dObj.setAttribute("height_px", QString::number(Pupils[idx].height())); 
-    dObj.setAttribute("axisRatio_px", QString::number((double)Pupils[idx].width() / Pupils[idx].height())); 
-    dObj.setAttribute("center_x", QString::number(Pupils[idx].center.x)); 
-    dObj.setAttribute("center_y", QString::number(Pupils[idx].center.y)); 
-    dObj.setAttribute("angle_deg", QString::number(Pupils[idx].angle)); 
-    dObj.setAttribute("circumference_px", QString::number(Pupils[idx].circumference())); 
-    dObj.setAttribute("confidence", QString::number(Pupils[idx].confidence)); 
-    dObj.setAttribute("outlineConfidence", QString::number(Pupils[idx].outline_confidence)); 
+void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dObj, int idx, const std::vector<Pupil> &Pupils, uint &trialNum, const QString& message, double temperature) {
+
+    for(auto v : PDataTypes::dataOutputFields) {
+        QString ds = "";
+        if(!PDataTypes::tyn.at(v).isEmpty()) {
+            ds = "_" + PDataTypes::tyn.at(v);
+        }
+
+        // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+        if(v == PDataType::TIME_RAW_TIMESTAMP)
+            dObj.setAttribute("timestamp_ms", QString::number(timestamp));
+        else
+            dObj.setAttribute(PDataTypes::tyn.at(v) + ds, QString::number(Pupils[idx].getPData(v)));
+    }
+
+    //dObj.setAttribute("timestamp_ms", QString::number(timestamp));
+    ////dObj.setAttribute("algorithm", QString::fromStdString(Pupils[idx].algorithmName));
+    //dObj.setAttribute("diameter_px", QString::number(Pupils[idx].diameter()));
+    //dObj.setAttribute("undistortedDiameter_px", QString::number(Pupils[idx].undistortedDiameter) );
+    //dObj.setAttribute("physicalDiameter_mm", QString::number(Pupils[idx].physicalDiameter));
+    //dObj.setAttribute("width_px", QString::number(Pupils[idx].width()));
+    //dObj.setAttribute("height_px", QString::number(Pupils[idx].height()));
+    //dObj.setAttribute("axisRatio_px", QString::number((double)Pupils[idx].width() / Pupils[idx].height()));
+    //dObj.setAttribute("centerX_px", QString::number(Pupils[idx].center.x));
+    //dObj.setAttribute("centerY_px", QString::number(Pupils[idx].center.y));
+    //dObj.setAttribute("angle_deg", QString::number(Pupils[idx].angle));
+    //dObj.setAttribute("circumference_px", QString::number(Pupils[idx].circumference()));
+    //dObj.setAttribute("confidence", QString::number(Pupils[idx].confidence));
+    //dObj.setAttribute("outlineConfidence", QString::number(Pupils[idx].outline_confidence));
+
     dObj.setAttribute("trial", QString::number(trialNum));
     dObj.setAttribute("message", message);
     dObj.setAttribute("temperature_c", QString::number(temperature));
 }
 
-QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
-    
-    QString filename = "-1";
-    if(!filepath.isEmpty())
-        filename = QFileInfo(filepath).fileName();
+QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
 
     QDomDocument document;
     QDomElement root = document.createElement("EyeData");
@@ -41,47 +51,47 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            pupilObjA = document.createElement("A");
+            pupilObjA = document.createElement({Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].eyeIdentity});
             root.appendChild(pupilObjA);
             viewObjAMain = document.createElement("Main");
-            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
             pupilObjA.appendChild(viewObjAMain);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            pupilObjA = document.createElement("A");
-            pupilObjB = document.createElement("B");
+            pupilObjA = document.createElement({Pupils[SINGLE_IMAGE_TWO_PUPIL_A].eyeIdentity});
+            pupilObjB = document.createElement({Pupils[SINGLE_IMAGE_TWO_PUPIL_B].eyeIdentity});
             root.appendChild(pupilObjA);
             root.appendChild(pupilObjB);
             viewObjAMain = document.createElement("Main");
             viewObjBMain = document.createElement("Main");
-            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, trialNum, message, temperatures[0]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            pupilObjA = document.createElement("A");
+            pupilObjA = document.createElement({Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].eyeIdentity});
             root.appendChild(pupilObjA);
             viewObjAMain = document.createElement("Main");
             viewObjASec = document.createElement("Sec");
-            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, trialNum, message, temperatures[1]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            pupilObjA = document.createElement("A");
-            pupilObjB = document.createElement("B");
+            pupilObjA = document.createElement({Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].eyeIdentity});
+            pupilObjB = document.createElement({Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].eyeIdentity});
             root.appendChild(pupilObjA);
             root.appendChild(pupilObjB);
             viewObjAMain = document.createElement("Main");
             viewObjASec = document.createElement("Sec");
             viewObjBMain = document.createElement("Main");
             viewObjBSec = document.createElement("Sec");
-            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, message, temperatures[1]);
-            populatePupilNodeXML(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeXML(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, trialNum, message, temperatures[1]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);
             pupilObjB.appendChild(viewObjBMain);
@@ -92,8 +102,8 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
         //     root.appendChild(pupilObjA);
         //     viewObjAMain = document.createElement("Main");
         //     viewObjASec = document.createElement("Sec");
-        //     populatePupilNodeXML(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-        //     populatePupilNodeXML(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0], message);
+        //     populatePupilNodeXML(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, temperatures[0], message);
+        //     populatePupilNodeXML(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, trialNum, temperatures[0], message);
         //     pupilObjA.appendChild(viewObjAMain);
         //     pupilObjA.appendChild(viewObjASec);
         //     break;
@@ -106,32 +116,42 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
 }
 
 
-void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &dObj, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, const QString& message, double temperature) {
-    dObj["filename"] = filename; 
-    dObj["timestamp_ms"] = QString::number(timestamp); 
-    dObj["algorithm"] = QString::fromStdString(Pupils[idx].algorithmName); 
-    dObj["diameter_px"] = QString::number(Pupils[idx].diameter()); 
-    dObj["undistortedDiameter_px"] = QString::number(Pupils[idx].undistortedDiameter) ; 
-    dObj["physicalDiameter_mm"] = QString::number(Pupils[idx].physicalDiameter); 
-    dObj["width_px"] = QString::number(Pupils[idx].width()); 
-    dObj["height_px"] = QString::number(Pupils[idx].height()); 
-    dObj["axisRatio_px"] = QString::number((double)Pupils[idx].width() / Pupils[idx].height()); 
-    dObj["center_x"] = QString::number(Pupils[idx].center.x); 
-    dObj["center_y"] = QString::number(Pupils[idx].center.y); 
-    dObj["angle_deg"] = QString::number(Pupils[idx].angle); 
-    dObj["circumference_px"] = QString::number(Pupils[idx].circumference()); 
-    dObj["confidence"] = QString::number(Pupils[idx].confidence); 
-    dObj["outlineConfidence"] = QString::number(Pupils[idx].outline_confidence); 
+void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &dObj, int idx, const std::vector<Pupil> &Pupils, uint &trialNum, const QString& message, double temperature) {
+
+    for(auto v : PDataTypes::dataOutputFields) {
+        QString ds = "";
+        if(!PDataTypes::tyn.at(v).isEmpty()) {
+            ds = "_" + PDataTypes::tyn.at(v);
+        }
+
+        // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+        if(v == PDataType::TIME_RAW_TIMESTAMP)
+            dObj["timestamp_ms"] = QString::number(timestamp);
+        else
+            dObj[PDataTypes::tyn.at(v) + ds] = QString::number(Pupils[idx].getPData(v));
+    }
+
+    //dObj["timestamp_ms"] = QString::number(timestamp);
+    ////dObj["algorithm"] = QString::fromStdString(Pupils[idx].algorithmName);
+    //dObj["diameter_px"] = QString::number(Pupils[idx].diameter());
+    //dObj["undistortedDiameter_px"] = QString::number(Pupils[idx].undistortedDiameter) ;
+    //dObj["physicalDiameter_mm"] = QString::number(Pupils[idx].physicalDiameter);
+    //dObj["width_px"] = QString::number(Pupils[idx].width());
+    //dObj["height_px"] = QString::number(Pupils[idx].height());
+    //dObj["axisRatio_px"] = QString::number((double)Pupils[idx].width() / Pupils[idx].height());
+    //dObj["centerX_px"] = QString::number(Pupils[idx].center.x);
+    //dObj["centerY_px"] = QString::number(Pupils[idx].center.y);
+    //dObj["angle_deg"] = QString::number(Pupils[idx].angle);
+    //dObj["circumference_px"] = QString::number(Pupils[idx].circumference());
+    //dObj["confidence"] = QString::number(Pupils[idx].confidence);
+    //dObj["outlineConfidence"] = QString::number(Pupils[idx].outline_confidence);
+
     dObj["trial"] = QString::number(trialNum);
     dObj["message"] = message;
     dObj["temperature_c"] = QString::number(temperature);
 }
 
-QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
-    
-    QString filename = "-1";
-    if(!filepath.isEmpty())
-        filename = QFileInfo(filepath).fileName();
+QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
 
     QJsonObject root;
     
@@ -144,40 +164,40 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
             pupilObjA["Main"] = viewObjAMain;
-            root["A"] = pupilObjA;
+            root[{Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].eyeIdentity}] = pupilObjA;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, trialNum, message, temperatures[0]);
             pupilObjA["Main"] = viewObjAMain;
-            root["A"] = pupilObjA;
+            root[{Pupils[SINGLE_IMAGE_TWO_PUPIL_A].eyeIdentity}] = pupilObjA;
             pupilObjB["Main"] = viewObjBMain;
-            root["B"] = pupilObjB;
+            root[{Pupils[SINGLE_IMAGE_TWO_PUPIL_B].eyeIdentity}] = pupilObjB;
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, trialNum, message, temperatures[1]);
             pupilObjA["Main"] = viewObjAMain;
             pupilObjA["Sec"] = viewObjASec;
-            root["A"] = pupilObjA;
+            root[{Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].eyeIdentity}] = pupilObjA;
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, message, temperatures[1]);
-            populatePupilNodeJSON(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeJSON(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, trialNum, message, temperatures[1]);
             pupilObjA["Main"] = viewObjAMain;
             pupilObjA["Sec"] = viewObjASec;
-            root["A"] = pupilObjA;
+            root[{Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].eyeIdentity}] = pupilObjA;
             pupilObjB["Main"] = viewObjBMain;
             pupilObjB["Sec"] = viewObjBSec;
-            root["B"] = pupilObjB;
+            root[{Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].eyeIdentity}] = pupilObjB;
             break;
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-        //     populatePupilNodeJSON(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-        //     populatePupilNodeJSON(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0], message);
+        //     populatePupilNodeJSON(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, temperatures[0], message);
+        //     populatePupilNodeJSON(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, trialNum, temperatures[0], message);
         //     pupilObjA["Main"] = viewObjAMain;
         //     pupilObjA["Sec"] = viewObjASec;
         //     root["A"] = pupilObjA;
@@ -194,391 +214,293 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
     return QString(content);
 }
 
-QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDataStyle dataStyle) {
+QString EyeDataSerializer::getHeaderCSV(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, QChar delim, DataWriterDataStyle dataStyle) {
 
     QString result; // TODO: .reserve() ?
 
-    switch(procMode) {
+    //result = result % "timestamp_ms" % delim;
+    //result = result % "algorithm" % delim;
+
+    // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    for(int i = 0; i < eyeIdentities.size(); i++) {
+        for(auto v : PDataTypes::dataOutputFields) {
+            QString ds = "";
+            if(!PDataTypes::tyn.at(v).isEmpty()) {
+                ds = "_" + PDataTypes::tyn.at(v);
+            }
+
+            // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+            if(v == PDataType::TIME_RAW_TIMESTAMP)
+                result = result % "timestamp_ms" % delim;
+            else
+                result = result % PDataTypes::tyn.at(v) % "_" % eyeIdentities[i] % "_" % camIdentities[i] % ds % delim;
+        }
+
+        //result = result % "diameter" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "undistortedDiameter" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "physicalDiameter" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_mm" % delim;
+        //result = result % "width" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "height" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "axisRatio" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
+        //result = result % "centerX" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "centerY" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "angle" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_deg" % delim;
+        //result = result % "circumference" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
+        //result = result % "confidence"  % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
+        //result = result % "outlineConfidence" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
+    }
+
+    result = result % delim % "trial" % delim;
+    result = result % "message" % delim;
+    result = result % "temperature_M_c" % delim;
+    result = result % "temperature_S_c";
+
+    return result;
+}
+
+void EyeDataSerializer::addLSLChannelsInfo_XDF(lsl::stream_info *info,
+                                   const LSL_XDF_Eye lsl_xdf_Eye,
+                                   const LSL_XDF_Camera lsl_xdf_Camera,
+                                   const PDataType lsl_xdf_Diameter,
+                                   const PDataType lsl_xdf_Confidence) {
+
+    lsl::xml_element chns = info->desc().append_child("channels");
+
+    std::string eyeStr = (lsl_xdf_Eye == LSL_XDF_Eye::XDF_RIGHT) ? "right" : "left";
+
+    // TODO NOTE: if the specified eye does not match with the eye identity in case of a one-eye recording,
+    //  data will still be from that one available eye. Inform user?
+
+    //result = result % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName);
+    //result = result % message;
+
+    // common, but not eye dependent... say "both" to eyes ?
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::TIME_RAW_TIMESTAMP).toStdString()).append_child_value("eye", "both")
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::TIME_RAW_TIMESTAMP).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::TIME_RAW_TIMESTAMP).toStdString());
+
+    // specified in GUI
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(lsl_xdf_Diameter).toStdString()).append_child_value("eye", eyeStr)
+            .append_child_value("type", PDataTypes::tytXDF.at(lsl_xdf_Diameter).toStdString()).append_child_value("unit", PDataTypes::tyn.at(lsl_xdf_Diameter).toStdString());
+    // common
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_WIDTH).toStdString()).append_child_value("eye", eyeStr)
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_WIDTH).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_WIDTH).toStdString());
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_HEIGHT).toStdString()).append_child_value("eye", eyeStr)
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_HEIGHT).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_HEIGHT).toStdString());
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("eye", eyeStr)
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_X).toStdString());
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("eye", eyeStr)
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_CENTER_Y).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_Y).toStdString());
+    // specified in GUI
+    chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(lsl_xdf_Confidence).toStdString()).append_child_value("eye", eyeStr)
+            .append_child_value("type", PDataTypes::tytXDF.at(lsl_xdf_Confidence).toStdString()).append_child_value("unit", PDataTypes::tyn.at(lsl_xdf_Confidence).toStdString());
+
+    // //(double)trialNum,
+    // //temperatures[0],
+    // //temperatures[1]
+}
+
+void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, lsl::stream_info *info) {
+
+    lsl::xml_element chns = info->desc().append_child("channels");
+
+    std::string eyeStr = {};
+    std::string camStr = {};
+
+    //chns.append_child("channel").append_child_value("label", "timestamp")
+    //        .append_child_value("type", "timestamp").append_child_value("unit", "ms");
+
+    // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    for(int i = 0; i < eyeIdentities.size(); i++) {
+        eyeStr = (eyeIdentities[i]) ? "right" : "left";
+        camStr = camIdentities[i];
+
+        for(auto v : PDataTypes::dataOutputFields) {
+
+            // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+            if(v == PDataType::TIME_RAW_TIMESTAMP)
+                chns.append_child("channel").append_child_value("label", "timestamp")
+                        .append_child_value("type", "timestamp").append_child_value("unit", "ms");
+            else
+                chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(v).toStdString()).append_child_value("eye", eyeStr)
+                    .append_child_value("type", PDataTypes::tytXDF.at(v).toStdString()).append_child_value("unit", PDataTypes::tyn.at(v).toStdString()).append_child_value("camera", camStr);
+        }
+
+        chns.append_child("channel").append_child_value("label", "diameter").append_child_value("eye", eyeStr)
+                .append_child_value("type", "Diameter").append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "undistortedDiameter").append_child_value("eye", eyeStr)
+                .append_child_value("type", "Diameter").append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "physicalDiameter").append_child_value("eye", eyeStr)
+                .append_child_value("type", "Diameter").append_child_value("unit", "mm").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "width").append_child_value("eye", eyeStr)
+                .append_child_value("type", "DiameterX").append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "height").append_child_value("eye", eyeStr)
+                .append_child_value("type", "DiameterY").append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "axisRatio").append_child_value("eye", eyeStr)
+                .append_child_value("unit", "").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "centerX").append_child_value("eye", eyeStr)
+                .append_child_value("type", "PupilX").append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "centerY").append_child_value("eye", eyeStr)
+                .append_child_value("type", "PupilY").append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "angle").append_child_value("eye", eyeStr)
+                .append_child_value("unit", "rad").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "circumference").append_child_value("eye", eyeStr)
+                .append_child_value("unit", "px").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "confidence").append_child_value("eye", eyeStr)
+                .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
+        chns.append_child("channel").append_child_value("label", "outlineConfidence").append_child_value("eye", eyeStr)
+                .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
+    }
+
+    //"trial"
+    //"message"
+    //"temperature_M_c"
+    //"temperature_S_c"
+}
+
+std::vector<double> EyeDataSerializer::pupilToLSLsample_XDF(
+        quint64 timestamp,
+        int procMode,
+        const std::vector<Pupil> &Pupils,
+        LSL_XDF_Eye lsl_xdf_Eye,
+        LSL_XDF_Camera lsl_xdf_Camera,
+        PDataType lsl_xdf_Diameter,
+        PDataType lsl_xdf_Confidence ) {
+
+    std::vector<double> result = {};
+    int pdx = 0;
+
+    switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % "filename" % delim;
-            }
-            result = result % "timestamp_ms" % delim;
-            result = result % "algorithm" % delim;
-            result = result % "diameter_px" % delim;
-            result = result % "undistortedDiameter_px" % delim;
-            result = result % "physicalDiameter_mm" % delim;
-            result = result % "width_px" % delim;
-            result = result % "height_px" % delim;
-            result = result % "axisRatio" % delim;
-            result = result % "center_x" % delim;
-            result = result % "center_y" % delim;
-            result = result % "angle_deg" % delim;
-            result = result % "circumference_px" % delim;
-            result = result % "confidence" % delim;
-            result = result % "outlineConfidence";
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % "trial" % delim;
-                result = result % "message" % delim;
-                result = result % "temperature_c";
-            }
+            pdx = SINGLE_IMAGE_ONE_PUPIL_MAIN;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % "filename" % delim;
-            }
-            result = result % "timestamp_ms" % delim;
-            result = result % "algorithm" % delim;
-            result = result % "diameterA_px" % delim;
-            result = result % "diameterB_px" % delim;
-            result = result % "undistortedDiameterA_px" % delim;
-            result = result % "undistortedDiameterB_px" % delim;
-            result = result % "physicalDiameterA_mm" % delim;
-            result = result % "physicalDiameterB_mm" % delim; // the different line
-            result = result % "widthA_px" % delim;
-            result = result % "heightA_px" % delim;
-            result = result % "axisRatioA" % delim;
-            result = result % "widthB_px" % delim;
-            result = result % "heightB_px" % delim;
-            result = result % "axisRatioB" % delim;
-            result = result % "centerA_x" % delim;
-            result = result % "centerA_y" % delim;
-            result = result % "centerB_x" % delim;
-            result = result % "centerB_y" % delim;
-            result = result % "angleA_deg" % delim;
-            result = result % "angleB_deg" % delim;
-            result = result % "circumferenceA_px" % delim;
-            result = result % "circumferenceB_px" % delim;
-            result = result % "confidenceA" % delim;
-            result = result % "outlineConfidenceA" % delim;
-            result = result % "confidenceB" % delim;
-            result = result % "outlineConfidenceB";
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % "trial" % delim;
-                result = result % "message" % delim;
-                result = result % "temperature_c";
+            // TODO: yet it hardcodedly assumes that the left eye is eye B
+            if(lsl_xdf_Eye == LSL_XDF_Eye::XDF_RIGHT) {
+                pdx = SINGLE_IMAGE_TWO_PUPIL_A;
+            } else /*if(lsl_xdf_Eye == DataStreamer::LEFT)*/ {
+                pdx = SINGLE_IMAGE_TWO_PUPIL_B;
             }
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % "filename" % delim;
-            }
-            result = result % "timestamp_ms" % delim;
-            result = result % "algorithm" % delim;
-            result = result % "diameterMain_px" % delim;
-            result = result % "diameterSec_px" % delim;
-            result = result % "undistortedDiameterMain_px" % delim;
-            result = result % "undistortedDiameterSec_px" % delim;
-            result = result % "physicalDiameter_mm" % delim;
-            result = result % "widthMain_px" % delim;
-            result = result % "heightMain_px" % delim;
-            result = result % "axisRatioMain" % delim;
-            result = result % "widthSec_px" % delim;
-            result = result % "heightSec_px" % delim;
-            result = result % "axisRatioSec" % delim;
-            result = result % "centerMain_x" % delim;
-            result = result % "centerMain_y" % delim;
-            result = result % "centerSec_x" % delim;
-            result = result % "centerSec_y" % delim;
-            result = result % "angleMain_deg" % delim;
-            result = result % "angleSec_deg" % delim;
-            result = result % "circumferenceMain_px" % delim;
-            result = result % "circumferenceSec_px" % delim;
-            result = result % "confidenceMain" % delim;
-            result = result % "outlineConfidenceMain" % delim;
-            result = result % "confidenceSec" % delim;
-            result = result % "outlineConfidenceSec";
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % "trial" % delim;
-                result = result % "message" % delim;
-                result = result % "temperatureMain_c" % delim;
-                result = result % "temperatureSec_c";
+            if (lsl_xdf_Camera == LSL_XDF_Camera::XDF_MAIN) {
+                pdx = STEREO_IMAGE_ONE_PUPIL_MAIN;
+            } else {
+                pdx = STEREO_IMAGE_ONE_PUPIL_SEC;
             }
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % "filename" % delim;
-            }
-            result = result % "timestamp_ms" % delim;
-            result = result % "algorithm" % delim; //
-            result = result % "diameterAMain_px" % delim;
-            result = result % "diameterASec_px" % delim; //
-            result = result % "diameterBMain_px" % delim;
-            result = result % "diameterBSec_px" % delim; //
-            result = result % "undistortedDiameterAMain_px" % delim;
-            result = result % "undistortedDiameterASec_px" % delim; //
-            result = result % "undistortedDiameterBMain_px" % delim;
-            result = result % "undistortedDiameterBSec_px" % delim; //
-            result = result % "physicalDiameterA_mm" % delim; //
-            result = result % "physicalDiameterB_mm" % delim; //
-            result = result % "widthAMain_px" % delim;
-            result = result % "heightAMain_px" % delim;
-            result = result % "axisRatioAMain" % delim;
-            result = result % "widthASec_px" % delim;
-            result = result % "heightASec_px" % delim;
-            result = result % "axisRatioASec" % delim; //
-            result = result % "widthBMain_px" % delim;
-            result = result % "heightBMain_px" % delim;
-            result = result % "axisRatioBMain" % delim;
-            result = result % "widthBSec_px" % delim;
-            result = result % "heightBSec_px" % delim;
-            result = result % "axisRatioBSec" % delim; //
-            result = result % "centerAMain_x" % delim;
-            result = result % "centerAMain_y" % delim;
-            result = result % "centerASec_x" % delim;
-            result = result % "centerASec_y" % delim; //
-            result = result % "centerBMain_x" % delim;
-            result = result % "centerBMain_y" % delim;
-            result = result % "centerBSec_x" % delim;
-            result = result % "centerBSec_y" % delim; //
-            result = result % "angleAMain_deg" % delim;
-            result = result % "angleASec_deg" % delim; //
-            result = result % "angleBMain_deg" % delim;
-            result = result % "angleBSec_deg" % delim; //
-            result = result % "circumferenceAMain_px" % delim;
-            result = result % "circumferenceASec_px" % delim; //
-            result = result % "circumferenceBMain_px" % delim;
-            result = result % "circumferenceBSec_px" % delim; //
-            result = result % "confidenceAMain" % delim;
-            result = result % "outlineConfidenceAMain" % delim;
-            result = result % "confidenceASec" % delim;
-            result = result % "outlineConfidenceASec" % delim; //
-            result = result % "confidenceBMain" % delim;
-            result = result % "outlineConfidenceBMain" % delim;
-            result = result % "confidenceBSec" % delim;
-            result = result % "outlineConfidenceBSec"; //
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % "trial" % delim; //
-                result = result % "message" % delim;
-                result = result % "temperatureMain_c" % delim;
-                result = result % "temperatureSec_c";
+            // TODO: yet it hardcodedly assumes that the left eye is eye B
+            if(lsl_xdf_Eye == LSL_XDF_Eye::XDF_RIGHT) {
+                if (lsl_xdf_Camera == LSL_XDF_Camera::XDF_MAIN) {
+                    pdx = STEREO_IMAGE_TWO_PUPIL_A_MAIN;
+                } else {
+                    pdx = STEREO_IMAGE_TWO_PUPIL_A_SEC;
+                }
+            } else /*if(lsl_xdf_Eye == DataStreamer::LEFT)*/ {
+                if (lsl_xdf_Camera == LSL_XDF_Camera::XDF_MAIN) {
+                    pdx = STEREO_IMAGE_TWO_PUPIL_B_MAIN;
+                } else {
+                    pdx = STEREO_IMAGE_TWO_PUPIL_B_SEC;
+                }
             }
             break;
-        
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-        //     // NOTE: even though mirr image data comes from one camera, now we have different fields for temperature checks, 
-        //     // no problem, just use the same value
-        
+        //     //break;
+
         default:
-            result = QString("PROCESSING MODE UNDETERMINED");
+            result = {};
     }
+
+    //result = result % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName);
+    //result = result % message;
+
+    // common, but not eye dependent... say "both" to eyes ?
+    result.push_back((double) (timestamp));
+
+    // specified in GUI
+    result.push_back(Pupils[pdx].getPData(lsl_xdf_Diameter));
+    // common
+    result.push_back(Pupils[pdx].getPData(PDataType::PUPIL_WIDTH));
+    result.push_back(Pupils[pdx].getPData(PDataType::PUPIL_HEIGHT));
+    result.push_back(Pupils[pdx].getPData(PDataType::PUPIL_CENTER_X));
+    result.push_back(Pupils[pdx].getPData(PDataType::PUPIL_CENTER_Y));
+    // specified in GUI
+    result.push_back(Pupils[pdx].getPData(lsl_xdf_Confidence));
+
+    //(double) trialNum
+    //temperatures[0],
+    //temperatures[1]
+
+    return result;
+}
+
+std::vector<double> EyeDataSerializer::pupilToLSLsample_V1(quint64 timestamp, const std::vector<Pupil> &Pupils) {
+
+    std::vector<double> result;
+
+    //result.push_back((double)(timestamp));
+
+    // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    for(int i = 0; i < Pupils.size(); i++) {
+        for(auto v : PDataTypes::dataOutputFields) {
+
+            // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+            if(v == PDataType::TIME_RAW_TIMESTAMP)
+                result.push_back((double)(timestamp));
+            else
+                result.push_back(Pupils[i].getPData(v));
+        }
+    }
+
     return result;
 }
 
 // Converts a pupil detection to a string row that is written to file
 // CAUTION: This must exactly reproduce the format defined by the header fields
-QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const QString& message, const std::vector<double> &temperatures) {
-
-    QString filename = "-1";
-    if(!filepath.isEmpty())
-        filename = QFileInfo(filepath).fileName();
+QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const QString& message, const std::vector<double> &temperatures) {
 
     QString result; // TODO: .reserve() ?
 
-    switch((ProcMode)procMode) {
-        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % filename % delim;
-            }
-            result = result % QString::number(timestamp) % delim;
-            result = result % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].diameter()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter)  % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].width()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
-            result = result % QString::number((double)Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].center.x) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].center.y) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].angle) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].circumference()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].confidence) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].outline_confidence);
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result %  delim % QString::number(trialNum) % delim;
-                result = result % message % delim;
-                result = result % QString::number(temperatures[0]);
-            }
-            break;
-        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % filename % delim;
-            }
-            result = result % QString::number(timestamp) % delim;
-            result = result % QString::fromStdString(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].algorithmName) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].diameter()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].diameter()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].undistortedDiameter) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].undistortedDiameter) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].physicalDiameter) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].physicalDiameter) % delim; // HERE ONLY THIS LINE IS THE DIFFERENCE
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].width()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].height()) % delim;
-            result = result % QString::number((double)Pupils[SINGLE_IMAGE_TWO_PUPIL_A].width() / Pupils[SINGLE_IMAGE_TWO_PUPIL_A].height()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].width()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].height()) % delim;
-            result = result % QString::number((double)Pupils[SINGLE_IMAGE_TWO_PUPIL_B].width() / Pupils[SINGLE_IMAGE_TWO_PUPIL_B].height()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].center.x) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].center.y) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].center.x) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].center.y) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].angle) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].angle) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].circumference()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].circumference()) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].confidence) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].outline_confidence) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].confidence) % delim;
-            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].outline_confidence);
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % QString::number(trialNum) % delim;
-                result = result % message % delim;
-                result = result % QString::number(temperatures[0]);
-            }
-            break;
-        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % filename % delim;
-            }
-            result = result % QString::number(timestamp) % delim;
-            result = result % QString::fromStdString(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].algorithmName) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].diameter()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].diameter()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].undistortedDiameter) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].width()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
-            result = result % QString::number((double)Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].width()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].height()) % delim;
-            result = result % QString::number((double)Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].width() / Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].height()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].center.x) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].center.y) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].center.x) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].center.y) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].angle) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].angle) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].circumference()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].circumference()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].outline_confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].outline_confidence);
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % QString::number(trialNum) % delim;
-                result = result % message % delim;
-                result = result % QString::number(temperatures[0]) % delim;
-                result = result % QString::number(temperatures[1]);
-            }
-            break;
-        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
-                result = result % filename % delim;
-            }
-            result = result % QString::number(timestamp) % delim;
-            result = result % QString::fromStdString(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].algorithmName) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].diameter()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].diameter()) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].diameter()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].diameter()) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].undistortedDiameter) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].undistortedDiameter) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].undistortedDiameter) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].undistortedDiameter) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].physicalDiameter) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].physicalDiameter) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].width()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].height()) % delim;
-            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].height()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].width()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].height()) % delim;
-            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].height()) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].width()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].height()) % delim;
-            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].height()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].width()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].height()) % delim;
-            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].height()) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].center.x) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].center.y) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].center.x) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].center.y) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].center.x) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].center.y) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].center.x) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].center.y) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].angle) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].angle) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].angle) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].angle) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].circumference()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].circumference()) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].circumference()) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].circumference()) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].outline_confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].outline_confidence) % delim; //
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].outline_confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].confidence) % delim;
-            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].outline_confidence); //
-            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
-                result = result % delim % QString::number(trialNum) % delim;
-                result = result % message % delim;
-                result = result % QString::number(temperatures[0]) % delim;
-                result = result % QString::number(temperatures[1]);
-            }
-            break;
-        
-        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-        //     return 
-        //         filename + delim + 
-        //         QString::number(timestamp) + delim + 
-        //         QString::fromStdString(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].algorithmName) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].diameter()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].diameter()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].undistortedDiameter) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].width()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-        //         QString::number((double)Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].width()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
-        //         QString::number((double)Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].width() / Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].center.x) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].center.y) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].center.x) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].center.y) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].angle) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].angle) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].circumference()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].circumference()) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].confidence) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].outline_confidence) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].confidence) + delim + 
-        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].outline_confidence) + delim + 
-        //         QString::number(trialNum) + delim +
-        //         QString::number(temperatures[0]) + delim +
-        //         QString::number(temperatures[0])
-        //     ;
-        //     //break;
-        
-        default:
-            result = QString(" ");
+    result = result % QString::number(timestamp);
+    //result = result % delim % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName);
+
+    // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    for(int i = 0; i < Pupils.size(); i++) {
+        for(auto v : PDataTypes::dataOutputFields) {
+
+            // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+            if(v == PDataType::TIME_RAW_TIMESTAMP)
+                result = result % QString::number(timestamp);
+            else
+                result = result % delim % QString::number(Pupils[i].getPData(v));
+        }
     }
+
+    //for(int i = 0; i < Pupils.size(); i++) {
+    //    result = result % delim % QString::number(Pupils[i].diameter());
+    //    result = result % delim % QString::number(Pupils[i].undistortedDiameter);
+    //    result = result % delim % QString::number(Pupils[i].physicalDiameter);
+    //    result = result % delim % QString::number(Pupils[i].width());
+    //    result = result % delim % QString::number(Pupils[i].height());
+    //    result = result % delim % QString::number(((double) Pupils[i].width() / Pupils[i].height()));
+    //    result = result % delim % QString::number(Pupils[i].center.x);
+    //    result = result % delim % QString::number(Pupils[i].center.y);
+    //    result = result % delim % QString::number(Pupils[i].angle);
+    //    result = result % delim % QString::number(Pupils[i].circumference());
+    //    result = result % delim % QString::number(Pupils[i].confidence);
+    //    result = result % delim % QString::number(Pupils[i].outline_confidence);
+    //}
+
+    result = result % delim % QString::number(trialNum);
+    result = result % delim % message;
+    result = result % delim % QString::number(temperatures[0]);
+    result = result % delim % QString::number(temperatures[1]);
+
     return result;
 }
 
 
-QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
-    
-
-    QString filename = "-1";
-    if(!filepath.isEmpty())
-        filename = QFileInfo(filepath).fileName();
+QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
 
     QString obj;
 
@@ -587,53 +509,53 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
 
-            addRowYAML(obj, "A", "", 1, false);
+            addRowYAML(obj, {Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
 
-            addRowYAML(obj, "A", "", 1, false);
+            addRowYAML(obj, {Pupils[SINGLE_IMAGE_TWO_PUPIL_A].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, message, temperatures[0]);
-            addRowYAML(obj, "B", "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[SINGLE_IMAGE_TWO_PUPIL_B].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, trialNum, message, temperatures[0]);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
 
-            addRowYAML(obj, "A", "", 1, false);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            addRowYAML(obj, "A", "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, trialNum, message, temperatures[1]);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
 
-            addRowYAML(obj, "A", "", 1, false);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            addRowYAML(obj, "A", "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, trialNum, message, temperatures[1]);
 
-            addRowYAML(obj, "B", "", 1, false);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
-            addRowYAML(obj, "B", "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, trialNum, message, temperatures[1]);
             break;
             
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
 
         //     addRowYAML(obj, "A", "", 1, false);
         //     addRowYAML(obj, "Main", "", 2, false);
-        //     populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+        //     populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, temperatures[0], message);
         //     addRowYAML(obj, "A", "", 1, false);
         //     addRowYAML(obj, "Sec", "", 2, false);
-        //     populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0], message);
+        //     populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, trialNum, temperatures[0], message);
         //     break;
         
         //default:
@@ -643,24 +565,36 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
     return obj;
 }
 
-void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, ushort depth, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, const QString& message, double temperature) {
+void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, ushort depth, int idx, const std::vector<Pupil> &Pupils, uint &trialNum, const QString& message, double temperature) {
 
     depth+=1;
-    addRowYAML(obj, "filename", filename, depth, true);
-    addRowYAML(obj, "timestamp_ms", QString::number(timestamp), depth, true);
-    addRowYAML(obj, "algorithm", QString::fromStdString(Pupils[idx].algorithmName), depth, true);
-    addRowYAML(obj, "diameter_px", QString::number(Pupils[idx].diameter()), depth, true);
-    addRowYAML(obj, "undistortedDiameter_px", QString::number(Pupils[idx].undistortedDiameter), depth, true);
-    addRowYAML(obj, "physicalDiameter_mm", QString::number(Pupils[idx].physicalDiameter), depth, true);
-    addRowYAML(obj, "width_px", QString::number(Pupils[idx].width()), depth, true);
-    addRowYAML(obj, "height_px", QString::number(Pupils[idx].height()), depth, true);
-    addRowYAML(obj, "axisRatio_px", QString::number((double)Pupils[idx].width() / Pupils[idx].height()), depth, true);
-    addRowYAML(obj, "center_x", QString::number(Pupils[idx].center.x), depth, true);
-    addRowYAML(obj, "center_y", QString::number(Pupils[idx].center.y), depth, true);
-    addRowYAML(obj, "angle_deg", QString::number(Pupils[idx].angle), depth, true);
-    addRowYAML(obj, "circumference_px", QString::number(Pupils[idx].circumference()), depth, true);
-    addRowYAML(obj, "confidence", QString::number(Pupils[idx].confidence), depth, true);
-    addRowYAML(obj, "outlineConfidence", QString::number(Pupils[idx].outline_confidence), depth, true);
+    for(auto v : PDataTypes::dataOutputFields) {
+        QString ds = "";
+        if(!PDataTypes::tyn.at(v).isEmpty()) {
+            ds = "_" + PDataTypes::tyn.at(v);
+        }
+
+        // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
+        if(v == PDataType::TIME_RAW_TIMESTAMP)
+            addRowYAML(obj, PDataTypes::tyn.at(v) + ds, QString::number(timestamp), depth, true);
+        else
+            addRowYAML(obj, PDataTypes::tyn.at(v) + ds, QString::number(Pupils[idx].getPData(v)), depth, true);
+    }
+    //addRowYAML(obj, "timestamp_ms", QString::number(timestamp), depth, true);
+    ////addRowYAML(obj, "algorithm", QString::fromStdString(Pupils[idx].algorithmName), depth, true);
+    //addRowYAML(obj, "diameter_px", QString::number(Pupils[idx].diameter()), depth, true);
+    //addRowYAML(obj, "undistortedDiameter_px", QString::number(Pupils[idx].undistortedDiameter), depth, true);
+    //addRowYAML(obj, "physicalDiameter_mm", QString::number(Pupils[idx].physicalDiameter), depth, true);
+    //addRowYAML(obj, "width_px", QString::number(Pupils[idx].width()), depth, true);
+    //addRowYAML(obj, "height_px", QString::number(Pupils[idx].height()), depth, true);
+    //addRowYAML(obj, "axisRatio_px", QString::number((double)Pupils[idx].width() / Pupils[idx].height()), depth, true);
+    //addRowYAML(obj, "centerX_px", QString::number(Pupils[idx].center.x), depth, true);
+    //addRowYAML(obj, "centerY_px", QString::number(Pupils[idx].center.y), depth, true);
+    //addRowYAML(obj, "angle_deg", QString::number(Pupils[idx].angle), depth, true);
+    //addRowYAML(obj, "circumference_px", QString::number(Pupils[idx].circumference()), depth, true);
+    //addRowYAML(obj, "confidence", QString::number(Pupils[idx].confidence), depth, true);
+    //addRowYAML(obj, "outlineConfidence", QString::number(Pupils[idx].outline_confidence), depth, true);
+
     addRowYAML(obj, "trial", QString::number(trialNum), depth, true);
     addRowYAML(obj, "message", message, depth, true);
     addRowYAML(obj, "temperature_c", QString::number(temperature), depth, true);

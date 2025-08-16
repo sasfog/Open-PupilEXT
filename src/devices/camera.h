@@ -29,7 +29,7 @@ struct CameraImage {
     mutable cv::Mat imgSecondary;
     uint64_t timestamp;
     uint64_t frameNumber; // holds the INDEX of image (not starting from 1)
-    std::string filename;
+    //std::string filename;
 };
 
 Q_DECLARE_METATYPE(CameraImage)

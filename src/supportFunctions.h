@@ -22,11 +22,24 @@
 
 */
 
+// NOTE: Option "BOTH" could also have been here, but then even deeper if/else's
+//  and averaging would be needed ...and even more spaghetti
+enum LSL_XDF_Eye {XDF_LEFT = 1, XDF_RIGHT = 2};
+enum LSL_XDF_Camera {XDF_MAIN = 1, XDF_SECONDARY = 2};
+
 class SupportFunctions : public QObject
 {
     Q_OBJECT
 
 public:
+
+    //static double avgec(double a, double b) {
+    //    if(a == -1.0)
+    //        return b;
+    //    if(b == -1.0)
+    //        return a;
+    //    return (a+b)/2.0;
+    //}
 
     static QVariant toVariantFromWrapped(QString valueInStr, bool *ok) {
         *ok = false;

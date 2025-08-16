@@ -171,6 +171,27 @@ public:
     void startDetection();
     void stopDetection();
 
+    // TODO: MAKE MAP, UNIFY WITH ENUM STYLE OLD INDEX RESOLUTION
+    const std::vector<char> getEyeIdentities() {
+        if(currentProcMode == SINGLE_IMAGE_ONE_PUPIL)
+            return {'X'}; // TODO DEV
+        else if(currentProcMode == SINGLE_IMAGE_TWO_PUPIL)
+            return {'R','L'};
+        else if(currentProcMode == STEREO_IMAGE_ONE_PUPIL)
+            return {'X','X'}; // TODO DEV
+        else if(currentProcMode == STEREO_IMAGE_TWO_PUPIL)
+            return {'R','R','L','L'};
+    };
+    const std::vector<char> getCamIdentities() {
+        if(currentProcMode == SINGLE_IMAGE_ONE_PUPIL)
+            return {'M'};
+        else if(currentProcMode == SINGLE_IMAGE_TWO_PUPIL)
+            return {'M','M'};
+        else if(currentProcMode == STEREO_IMAGE_ONE_PUPIL)
+            return {'M','S'};
+        else if(currentProcMode == STEREO_IMAGE_TWO_PUPIL)
+            return {'M','S','M','S'};
+    };
 
 private:
 
@@ -308,8 +329,8 @@ signals:
 
 //    void processedPlaybackImage(CameraImage mimg);
     void processedImageLowFPS(CameraImage mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
-    void processedPupilData(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
-    void processedPupilDataLowFPS(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
+    void processedPupilData(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils);
+    void processedPupilDataLowFPS(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils);
 
     void onROIPreprocessingChanged(bool state);
 

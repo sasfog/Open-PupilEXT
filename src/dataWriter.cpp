@@ -7,7 +7,7 @@
 // TODO datawriter is receiving pupil signal at the full rate, slowing down the gui thread? move to other thread?
 DataWriter::DataWriter(
     const QString& fileName, 
-    ProcMode procMode,  
+    PupilDetection *pupilDetection,
     RecEventTracker *recEventTracker,
     QObject *parent
     ) : 
@@ -19,17 +19,19 @@ DataWriter::DataWriter(
     delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
-    QString dataStyleStr = applicationSettings->value("dataWriterDataStyle", "PupilEXT-0-1-2").toString();
-    if(dataStyleStr == "PupilEXT-0-1-1")
-        dataStyle = PUPILEXT_V0_1_1;
-    else // if(dataStyleStr == "PupilEXT-0-1-2")
-        dataStyle = PUPILEXT_V0_1_2;
+    QString dataStyleStr = applicationSettings->value("dataWriterDataStyle", "DATASTYLE_V3").toString();
+    //if(dataStyleStr == "PupilEXT-0-1-1")
+    //    dataStyle = PUPILEXT_V0_1_1;
+    //else // if(dataStyleStr == "PupilEXT-0-1-2")
+    //    dataStyle = PUPILEXT_V0_1_2;
+        dataStyle = DATASTYLE_V3;
 
     //delim = delimToUse; // only used if dataFormat=='P'
     qDebug() << "New DataWriter object created.";
 
     // Header definitions of the output file, this must fit the output format in the pupilToRow functions
-    header = EyeDataSerializer::getHeaderCSV(procMode, delim, dataStyle);
+    //header = EyeDataSerializer::getHeaderCSV(procMode, delim, dataStyle);
+    header = EyeDataSerializer::getHeaderCSV(pupilDetection->getEyeIdentities(), pupilDetection->getCamIdentities(), delim, dataStyle);
 
     qDebug() << fileName;
 
@@ -96,7 +98,7 @@ void DataWriter::close() {
 // GB: replacing previous methods for single pupil detection from single or stereo cameras, 
 // as well as adding new capability to write data of other processing modes
 // On new pupil data, write the pupil detection to file in a new row
-void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
+void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils) {
     if (!textStream)
         return;
 
@@ -110,35 +112,7 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
             _message = recEventTracker->getMessage(timestamp).messageString;
             _d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
         }
-        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, dataStyle, _message, _d) << Qt::endl;
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, _trialNumber, delim, dataStyle, _message, _d) << Qt::endl;
     }
 }
-
-// GB NOTE: I found two unreferenced functions here, called writePupilData() and writeStereoPupilData().
-// I tried to actualize their functionality, now manifested in a single function. This however needs different arguments now
-
-// Given a set of pupil detections, the functions writes the complete set to file
-void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, const std::vector<std::vector<Pupil>>& pupilData) {
-
-    if (textStream == nullptr)
-        return;
-
-    int framePos = 0;
-    for(int i=0; i<pupilData.size(); i++) {
-        if (textStream->status() == QTextStream::Ok) {
-            uint trialNumber = 1;
-            QString message = "";
-            std::vector<double> d = {0,0};
-            if(recEventTracker) {
-                recEventTracker->getTrialIncrement(timestamps[i]).trialNumber;
-                message = recEventTracker->getMessage(timestamps[i]).messageString;
-                d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
-            }
-            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, message, d) << Qt::endl;
-        }
-        ++framePos;
-    }
-}
-
-
 

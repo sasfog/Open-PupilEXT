@@ -42,7 +42,7 @@
 #include "recEventTracker.h"
 #include "SVGIconColorAdjuster.h"
 #include "playbackSynchroniser.h"
-#include "dataTypes.h"
+#include "pDataTypes.h"
 #include "subwindows/sceneImageView.h"
 #include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
@@ -354,7 +354,7 @@ private slots:
     void singleCameraSelected(QAction *action);
     void stereoCameraSelected();
 
-    void onCreateGraphPlot(const DataTypes::DataType &value);
+    void onCreateGraphPlot(const PDataType &value);
 
     void dataTableClick();
     void sceneImageViewClick();
@@ -414,6 +414,8 @@ private slots:
     void onStreamingUDPDisconnect();
     void onStreamingCOMConnect();
     void onStreamingCOMDisconnect();
+    void onStreamingLSLConnect();
+    void onStreamingLSLDisconnect();
 
     void onImagesSkipped();
     void onImagesSkippedMsgClose();
@@ -454,12 +456,14 @@ public slots:
     void PRGconnectRemoteCOM(QString conf);
     void PRGconnectStreamUDP(QString conf);
     void PRGconnectStreamCOM(QString conf);
+    void PRGconnectStreamLSL(QString conf);
     void PRGconnectMicrocontrollerUDP(QString conf);
     void PRGconnectMicrocontrollerCOM(QString conf);
     void PRGdisconnectRemoteUDP();
     void PRGdisconnectRemoteCOM();
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
+    void PRGdisconnectStreamLSL();
     void PRGdisconnectMicrocontroller();
 
     void PRGenableHWT(bool state);

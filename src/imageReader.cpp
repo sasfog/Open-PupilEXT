@@ -626,7 +626,7 @@ void ImageReader::runImpl(std::chrono::steady_clock::time_point& startTime, std:
     //cimg.timestamp = startTimestamp;
     cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
     cimg.frameNumber = currentImageIndex; // playbackControlDialog needs it
-    cimg.filename = fileNames[0][currentImageIndex].toStdString();
+    //cimg.filename = fileNames[0][currentImageIndex].toStdString();
     img.release();
 
     /*
@@ -732,7 +732,7 @@ ImageReader::runStereoImpl(std::chrono::steady_clock::time_point &startTime, std
     //cimg.timestamp = startTimestamp;
     cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
     cimg.frameNumber = currentImageIndex;
-    cimg.filename = fileNames[0][currentImageIndex].toStdString();
+    //cimg.filename = fileNames[0][currentImageIndex].toStdString();
     img.release();
     imgSecondary.release();
 

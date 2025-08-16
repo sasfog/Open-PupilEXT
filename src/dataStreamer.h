@@ -17,6 +17,7 @@
 #include <QCoreApplication>
 
 #include "supportFunctions.h"
+#include "pDataTypes.h"
 
 #include <QtXml>
 #include "pupilDetection.h"
@@ -25,6 +26,8 @@
 #include "eyeDataSerializer.h"
 #include "connPoolCOM.h"
 #include "connPoolUDP.h"
+
+#include "lsl_cpp.h"
 
 
 // TODO: make a kind of HTTP "REST API-like" thing with only a few accepted requests, 
@@ -41,11 +44,15 @@ class DataStreamer : public QObject {
 
 public:
 
-    enum DataContainer {CSV = 1, JSON = 2, XML = 3, YAML = 4};
+    // NOTE: LSL does not have one of these, as that is "not" a serialized type of streaming in our context
+    //  it just runs or not, in its own format. Might be configurable later for data style, but yet it has one
+    //  simple style.
+    enum DataContainer {UNDEFINED = 0, CSV = 1, JSON = 2, XML = 3, YAML = 4, LSL_XDF = 5, LSL_V1 = 6};
 
     explicit DataStreamer(
         ConnPoolCOM *connPoolCOM,
         ConnPoolUDP *connPoolUDP,
+        PupilDetection *pupilDetection,
         RecEventTracker *recEventTracker,
         QObject *parent
         ); 
@@ -53,11 +60,13 @@ public:
     void close();
 
 //    void startUDPStreamer(QUdpSocket *socket, QHostAddress ip, quint16 port, DataContainer dataContainer);
-    void startUDPStreamer(int poolIndex, DataContainer dataContainer);
-    void startCOMStreamer(int poolIndex, DataContainer dataContainer);
+    void startUDPStreamer(int poolIndex, int srate, DataContainer dataContainer);
+    void startCOMStreamer(int poolIndex, int srate, DataContainer dataContainer);
+    void startLSLStreamer(int srate, DataContainer dataContainer, ProcMode procMode);
     
     void stopUDPStreamer();
     void stopCOMStreamer();
+    void stopLSLStreamer();
 
     int getNumActiveStreamers();
 
@@ -68,6 +77,10 @@ private:
 
     ConnPoolUDP *connPoolUDP;
     int connPoolUDPIndex = -1;
+
+    lsl::stream_outlet* LSLOutlet = nullptr;
+
+    PupilDetection *pupilDetection;
     
 //    bool UDPStreamingOn = false;
 //    QUdpSocket *UDPsocket;
@@ -76,10 +89,23 @@ private:
 
     DataContainer UDPdataContainer;
     DataContainer COMdataContainer;
+    DataContainer LSLdataContainer;
+
+    QElapsedTimer timerUDP;
+    QElapsedTimer timerCOM;
+    QElapsedTimer timerLSL;
+    int sampleRateDelayUDP;
+    int sampleRateDelayCOM;
+    int sampleRateDelayLSL;
 
     QSettings *applicationSettings;
     QChar delim; 
     RecEventTracker *recEventTracker;
+
+    LSL_XDF_Eye lsl_xdf_Eye = XDF_LEFT;
+    LSL_XDF_Camera lsl_xdf_Camera = XDF_MAIN;
+    PDataType lsl_xdf_Diameter = PDataType::PUPIL_DIAMETER;
+    PDataType lsl_xdf_Confidence = PDataType::PUPIL_CONFIDENCE;
 
     uint _trialNumber = 1;
     QString _message = "";
@@ -87,7 +113,7 @@ private:
 
 public slots:
 
-    void newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename);
+    void newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils);
 
 signals:
     //void underlyingConnectionsClosed(); // TODO: use for safety

@@ -41,6 +41,7 @@ First all provided arguments are sorted to fit in a predefined order, which then
 -startDataRecording
 -connectStreamUDP
 -connectStreamCOM
+-connectStreamLSL
 -startStreaming
 -connectRemoteUDP
 -connectRemoteCOM
@@ -93,7 +94,7 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 
 `-startTracking` - Start pupil tracking. A camera needs to be opened beforehand.
 
-`-setImageOutputPath "<path>"` - Set image recording output path. Make sure you do not use special characters as they may be restricted for use by the operating system in folder names.
+`-setImageOutputPath "<path>"` - Set image recording output path. Make sure you do not use special characters as they may be restricted for use by the operating system in folder names. If a path to a .zip file is specified, a zip archive will be created (or appended to).
 
 `-setImageOutputFormat "<format>"` - Set image recording output format. Format name should be provided: `tiff` or `png` or `bmp` or `jpeg` or `webp` or `pgm`. Cannot be altered while an image recording is going on.
 
@@ -107,7 +108,21 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 
 `-connectStreamUDP "<IP>;<port>"` - Establish connection for pupil data streaming target using a UDP port.
 
+`-connectStreamUDP "<IP>;<port>;<container>"` - Establish connection for pupil data streaming target using a UDP port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`.
+
+`-connectStreamUDP "<IP>;<port>;<container>;<srate>"` - Establish connection for pupil data streaming target using a UDP port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`, at a desired maximal sample rate. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
 `-connectStreamCOM "<port>;<baud>"` - Establish connection for pupil data streaming target using a COM/serial port.
+
+`-connectStreamCOM "<port>;<baud>;<container>"` - Establish connection for pupil data streaming target using a COM/serial port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`.
+
+`-connectStreamCOM "<port>;<baud>;<container>;<srate>"` - Establish connection for pupil data streaming target using a COM/serial port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`, at a desired maximal sample rate. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
+`-connectStreamLSL` - Prepare for streaming pupil data using Lab Streaming Layer (LSL).
+
+`-connectStreamLSL "<container>"` - Prepare for streaming pupil data using Lab Streaming Layer (LSL), in a data container format of either `LSL_XDF`, `LSL_V1`. The former denotes the XDF compliant LSL streaming format (see: https://github.com/sccn/xdf/wiki/Gaze-Meta-Data), while the latter denotes a custom format of PupilEXT that depends on the actual camera configuration.
+
+`-connectStreamLSL "<container>;<srate>"` - Prepare for streaming pupil data using Lab Streaming Layer (LSL), in a data container format of either `LSL_XDF`, `LSL_V1`, at a desired maximal sample rate. The former denotes the XDF compliant LSL streaming format (see: https://github.com/sccn/xdf/wiki/Gaze-Meta-Data), while the latter denotes a custom format of PupilEXT that depends on the actual camera configuration. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
 
 `-startStreaming` - Start data streaming. Streaming target should be available and its port is opened for listening.
 

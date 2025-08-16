@@ -117,9 +117,23 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `CSC udp;<IP>;<port>` - Establish connection for pupil data streaming target using a UDP port.
 
+`CSC udp;<IP>;<port>;<container>` - Establish connection for pupil data streaming target using a UDP port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`.
+
+`CSC udp;<IP>;<port>;<container>;<srate>` - Establish connection for pupil data streaming target using a UDP port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`, at a desired maximal sample rate. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
 `CSC com;<port>;<baud>` - Establish connection for pupil data streaming target using a COM/serial port.
 
-`CSD <interface>` - Disconnect streaming target. Interface type should be provided: `udp` or `com`.
+`CSC com;<port>;<baud>;<container>` - Establish connection for pupil data streaming target using a COM/serial port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`.
+
+`CSC com;<port>;<baud>;<container>;<srate>` - Establish connection for pupil data streaming target using a COM/serial port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`, at a desired maximal sample rate. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
+`CSC lsl` - Prepare for streaming pupil data using Lab Streaming Layer (LSL).
+
+`CSC lsl;<container>` - Prepare for streaming pupil data using Lab Streaming Layer (LSL), in a data container format of either `LSL_XDF`, `LSL_V1`. The former denotes the XDF compliant LSL streaming format (see: https://github.com/sccn/xdf/wiki/Gaze-Meta-Data), while the latter denotes a custom format of PupilEXT that depends on the actual camera configuration.
+
+`CSC lsl;<container>;<srate>` - Prepare for streaming pupil data using Lab Streaming Layer (LSL), in a data container format of either `LSL_XDF`, `LSL_V1`, at a desired maximal sample rate. The former denotes the XDF compliant LSL streaming format (see: https://github.com/sccn/xdf/wiki/Gaze-Meta-Data), while the latter denotes a custom format of PupilEXT that depends on the actual camera configuration. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
+`CSD <interface>` - Disconnect streaming target. Interface type should be provided: `udp` or `com` or `lsl`.
 
 `CMC udp;<IP>;<port>` - Establish connection to the microcontroller unit using a UDP port.
 

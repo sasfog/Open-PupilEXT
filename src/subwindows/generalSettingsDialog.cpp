@@ -71,7 +71,7 @@ void GeneralSettingsDialog::readSettings() {
         dataWriterDelimiter = m_dataWriterDelimiter;
     }
 
-    const QString m_dataWriterDataStyle = applicationSettings->value("dataWriterDataStyle", "PupilEXT-0-1-2").toString();
+    const QString m_dataWriterDataStyle = applicationSettings->value("dataWriterDataStyle", "DATASTYLE_V3").toString();
     if (!m_dataWriterDataStyle.isEmpty()) {
         dataWriterDataStyle = m_dataWriterDataStyle;
     }
@@ -120,10 +120,10 @@ void GeneralSettingsDialog::updateForm() {
         dataWriterDelimiterBox->setCurrentIndex(0);
 //    qDebug() << "Data writer delimiter read as: " << dataWriterDelimiter << "\n";
 
-    if(dataWriterDataStyle == "PupilEXT-0-1-1")
+    //if(dataWriterDataStyle == "PupilEXT-0-1-1")
         dataWriterDataStyleBox->setCurrentIndex(0);
-    else // if(dataWriterDataStyle == "PupilEXT-0-1-2")
-        dataWriterDataStyleBox->setCurrentIndex(1);
+    //else // if(dataWriterDataStyle == "PupilEXT-0-1-2")
+    //    dataWriterDataStyleBox->setCurrentIndex(1);
 
     if(dataWriterDataRule == "ask")
         dataWriterDataRuleBox->setCurrentIndex(0);
@@ -176,9 +176,10 @@ void GeneralSettingsDialog::createForm() {
 
     QLabel *dataWriterDataStyleLabel = new QLabel(tr("Data Style*: "));
     dataWriterDataStyleBox = new QComboBox();
-    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1")); // TODO: remove,
-    dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2")); // TODO add 0.1.3
+    //dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1")); // TODO: remove,
+    dataWriterDataStyleBox->addItem(QString("v3 (PupilEXT v0.1.3)"), QString("DATASTYLE_V3"));
     dataWriterDataStyleBox->setCurrentText(dataWriterDataStyle);
+    dataWriterDataStyleBox->setEnabled(false); // TODO: enable again if another style gets added
     dataOutLayout->addRow(dataWriterDataStyleLabel, dataWriterDataStyleBox);
     QLabel *dataWriterDataStyleWarnLabel = new QLabel(tr("*Older version will not save trial numbering."));
     SupportFunctions::setSmallerLabelFontSize(dataWriterDataStyleWarnLabel);

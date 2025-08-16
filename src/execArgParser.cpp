@@ -164,6 +164,12 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGconnectStreamCOM(execArgs[i].argVals[0].toLower());
         }
+        if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_LSL) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGconnectStreamLSL(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_LSL)) {
+            w->PRGconnectStreamLSL("");
+        }
         if(execArgs[i].argID == getArgIdx(START_STREAMING)) {
             w->PRGstreamStart();
         }

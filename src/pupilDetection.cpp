@@ -77,8 +77,9 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
 
     // Processing speed frame counter
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
-
-    assert( connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>, QString)), frameCounter, SLOT(count())) );
+    assert( connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>)), frameCounter, SLOT(count())) );
+    // DEV
+    //frameCounter->setParentName("pupil detection");
 
     drawTimer.start();
     processingTimer.start();
@@ -344,10 +345,10 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 //            qDebug() << image.frameNumber;
         }
         //qDebug() << "frameNumber left pupilDetection: " << cimg->frameNumber;
-        emit processedPupilDataLowFPS(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
+        emit processedPupilDataLowFPS(image.timestamp, currentProcMode, Pupils);
     }
 
-    emit processedPupilData(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
+    emit processedPupilData(image.timestamp, currentProcMode, Pupils);
 }
 
 // Slot callback for receiving new single camera images that contain two pupils/eyes
@@ -530,9 +531,9 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
         if(camera->getType() == SINGLE_IMAGE_FILE)
                 emit processedImageLowFPS(mimg);
 
-        emit processedPupilDataLowFPS(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
+        emit processedPupilDataLowFPS(cimg.timestamp, currentProcMode, Pupils);
     }
-    emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
+    emit processedPupilData(cimg.timestamp, currentProcMode, Pupils);
 
 }
 
@@ -728,10 +729,10 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
         if(camera->getType() == STEREO_IMAGE_FILE)
                 emit processedImageLowFPS(mimg);
 
-        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
+        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils);
     }
 
-    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils);
 }
 // Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
 // Performs the processing/pupil detection
@@ -1004,10 +1005,10 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
         if(camera->getType() == STEREO_IMAGE_FILE)
                 emit processedImageLowFPS(mimg);
 
-        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
+        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils);
     }
 
-    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils);
 }
 
 // GB: I found this function like this, and did not bother it

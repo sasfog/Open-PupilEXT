@@ -37,15 +37,21 @@ public:
         ConnPoolCOM *connPoolCOM,
         ConnPoolUDP *connPoolUDP,
         PupilDetection *pupilDetection,
-        DataStreamer *dataStreamer,
+        //DataStreamer *dataStreamer,
         QWidget *parent = nullptr);
 
     ~StreamingSettingsDialog() override;
+
+    void saveUDPSettings();
+    void saveCOMSettings();
+    void saveLSLSettings();
+    //void closeEvent(QCloseEvent *);
 
     int getConnPoolUDPIndex();
     int getConnPoolCOMIndex();
     DataStreamer::DataContainer getDataContainerUDP();
     DataStreamer::DataContainer getDataContainerCOM();
+    DataStreamer::DataContainer getDataContainerLSL();
 
 private:
 
@@ -55,17 +61,22 @@ private:
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
 
+    bool LSLconnected = false;
+
     PupilDetection *pupilDetection;
-    DataStreamer *dataStreamer;
+    //DataStreamer *dataStreamer;
 
 
     void createForm();
+    void connectSignals();
 
     QSettings *applicationSettings;
 
+    QLabel *udpSampleRateLabel;
     QLabel *udpIpLabel;
     QLabel *udpPortLabel;
 
+    QSpinBox *udpSampleRateBox;
     IPCtrl *udpIpBox;
     QSpinBox *udpPortBox;
 
@@ -77,9 +88,11 @@ private:
 
     QGroupBox *udpGroup;
     QGroupBox *comGroup;
+    QGroupBox *lslGroup;
 
     QPushButton *refreshButton;
 
+    QLabel *comSampleRateLabel;
     QLabel *comPortLabel;
     QLabel *baudRateLabel;
     QLabel *dataBitsLabel;
@@ -90,6 +103,7 @@ private:
     QComboBox *dataContainerCOMBox;
     QLabel *dataContainerCOMLabel;
 
+    QSpinBox *comSampleRateBox;
     QComboBox *serialPortInfoListBox;
     QComboBox *baudRateBox;
     QComboBox *dataBitsBox;
@@ -97,10 +111,26 @@ private:
     QComboBox *parityBox;
     QComboBox *stopBitsBox;
 
+    QLabel *lslSampleRateLabel;
+    QSpinBox *lslSampleRateBox;
+    QComboBox *dataContainerLSLBox;
+    QLabel *dataContainerLSLLabel;
+
+    QLabel *specXDFeyeLabel;
+    QComboBox *specXDFeyeBox;
+    QLabel *specXDFcameraLabel;
+    QComboBox *specXDFcameraBox;
+    QLabel *specXDFpupDataLabel;
+    QComboBox *specXDFpupDataBox;
+    QLabel *specXDFconfLabel;
+    QComboBox *specXDFconfBox;
+
     QPushButton *connectUDPButton;
     QPushButton *disconnectUDPButton;
     QPushButton *connectCOMButton;
     QPushButton *disconnectCOMButton;
+    QPushButton *connectLSLButton;
+    QPushButton *disconnectLSLButton;
 
     void fillCOMParameters();
 
@@ -120,19 +150,26 @@ public slots:
     bool isAnyConnected();
     bool isUDPConnected();
     bool isCOMConnected();
+    bool isLSLConnected(); // Sounds strange, but this is by far more clean in the coding point of view
 
     void onConnectUDPClick();
     void disconnectUDP();
     void onConnectCOMClick();
     void disconnectCOM();
+    void onConnectLSLClick();
+    void disconnectLSL();
 
     void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
+    void connectLSL();
 
     void setLimitationsWhileConnectedUDP(bool state);  
-    void setLimitationsWhileStreamingUDP(bool state);  
-    void setLimitationsWhileConnectedCOM(bool state);  
-    void setLimitationsWhileStreamingCOM(bool state); 
+    void setLimitationsWhileStreamingUDP(bool state);
+    void setLimitationsWhileConnectedCOM(bool state);
+    void setLimitationsWhileStreamingCOM(bool state);
+    void setLimitationsWhileConnectedLSL(bool state);
+    void setLimitationsWhileStreamingLSL(bool state);
+    void setLimitationsWhileStreamingAny(bool state);
 
     //void setLimitationsWhileStreaming(bool state);
 
@@ -141,6 +178,8 @@ signals:
     void onUDPDisconnect();
     void onCOMConnect();
     void onCOMDisconnect();
+    void onLSLConnect();
+    void onLSLDisconnect();
     //void onConnStateChanged();
 
 };

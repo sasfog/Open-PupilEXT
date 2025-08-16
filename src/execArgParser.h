@@ -69,6 +69,7 @@ private:
         START_DATA_RECORDING,
         CONNECT_STREAM_UDP,
         CONNECT_STREAM_COM,
+        CONNECT_STREAM_LSL,
         START_STREAMING,
         CONNECT_REMOTE_UDP,
         CONNECT_REMOTE_COM
@@ -109,6 +110,7 @@ private:
         {START_DATA_RECORDING, "-startDataRecording", 0},
         {CONNECT_STREAM_UDP, "-connectStreamUDP", 1},
         {CONNECT_STREAM_COM, "-connectStreamCOM", 1},
+        {CONNECT_STREAM_LSL, "-connectStreamLSL", 1},
         {START_STREAMING, "-startStreaming", 0},
         {CONNECT_REMOTE_UDP, "-connectRemoteUDP", 1},
         {CONNECT_REMOTE_COM, "-connectRemoteCOM", 1}

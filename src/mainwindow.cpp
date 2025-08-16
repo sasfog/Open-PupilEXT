@@ -66,7 +66,7 @@ MainWindow::MainWindow():
     MCUSettingsDialogInst->setWindowIcon(cameraSerialConnectionIcon);
     remoteCCDialog = new RemoteCCDialog(connPoolCOM, connPoolUDP, this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter,
     remoteCCDialog->setWindowIcon(remoteCCIcon);
-    streamingSettingsDialog = new StreamingSettingsDialog(connPoolCOM, connPoolUDP, pupilDetectionWorker, dataStreamer, this);
+    streamingSettingsDialog = new StreamingSettingsDialog(connPoolCOM, connPoolUDP, pupilDetectionWorker, this);
     streamingSettingsDialog->setWindowIcon(streamingSettingsIcon);
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
@@ -165,7 +165,9 @@ MainWindow::MainWindow():
     connect(streamingSettingsDialog, SIGNAL (onUDPConnect()), this, SLOT (onStreamingUDPConnect()));
     connect(streamingSettingsDialog, SIGNAL (onUDPDisconnect()), this, SLOT (onStreamingUDPDisconnect()));
     connect(streamingSettingsDialog, SIGNAL (onCOMConnect()), this, SLOT (onStreamingCOMConnect()));
-    connect(streamingSettingsDialog, SIGNAL (onCOMDisconnect()), this, SLOT (onStreamingCOMDisconnect())); 
+    connect(streamingSettingsDialog, SIGNAL (onCOMDisconnect()), this, SLOT (onStreamingCOMDisconnect()));
+    connect(streamingSettingsDialog, SIGNAL (onLSLConnect()), this, SLOT (onStreamingLSLConnect()));
+    connect(streamingSettingsDialog, SIGNAL (onLSLDisconnect()), this, SLOT (onStreamingLSLDisconnect()));
 
     /*
     // if proc mode settings are not interpretable, reset them
@@ -1278,7 +1280,9 @@ void MainWindow::onTrackActClick() {
         trackingOn = true;
 
         recordAct->setEnabled(!dataRecordingOutputTarget.isEmpty());
-        streamAct->setEnabled(streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+
+        // NOTE: streaming can only be enabled if the underlying connection is established, and tracking is on
+        streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
     }
 
     if(stereoCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE)) {
@@ -1297,10 +1301,12 @@ void MainWindow::onStreamClick() {
 
     if(dataStreamer) { // if streaming is on, deactivate streaming
 
-        disconnect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataStreamer, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
+        disconnect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>)), dataStreamer, SLOT (newPupilData(quint64, int, std::vector<Pupil>)));
 
         streamingSettingsDialog->setLimitationsWhileStreamingUDP(false);
         streamingSettingsDialog->setLimitationsWhileStreamingCOM(false);
+        streamingSettingsDialog->setLimitationsWhileStreamingLSL(false);
+        streamingSettingsDialog->setLimitationsWhileStreamingAny(false);
 
         dataStreamer->close(); // TODO check if may terminate writing to early? because of the lag of the event queue in pupildetection
         dataStreamer->deleteLater();
@@ -1312,8 +1318,9 @@ void MainWindow::onStreamClick() {
 
     } else { // Activate streaming
 
-        if(!streamingSettingsDialog->isAnyConnected())
+        if( !streamingSettingsDialog->isAnyConnected() || !trackingOn ) {
             return;
+        }
 
         safelyResetTrialCounter();
         safelyResetMessageRegister();
@@ -1321,20 +1328,35 @@ void MainWindow::onStreamClick() {
         dataStreamer = new DataStreamer(
             connPoolCOM,
             connPoolUDP,
+            pupilDetectionWorker,
             recEventTracker,
             this
             );
         
         if(streamingSettingsDialog->isUDPConnected()) {
-            dataStreamer->startUDPStreamer(streamingSettingsDialog->getConnPoolUDPIndex(), streamingSettingsDialog->getDataContainerUDP());
+            dataStreamer->startUDPStreamer(
+                    streamingSettingsDialog->getConnPoolUDPIndex(),
+                    applicationSettings->value("StreamingSettings.UDP.sampleRate", 30).toInt(),
+                    streamingSettingsDialog->getDataContainerUDP() );
             streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
-        } if(streamingSettingsDialog->isCOMConnected()) {
-            dataStreamer->startCOMStreamer(streamingSettingsDialog->getConnPoolCOMIndex(), streamingSettingsDialog->getDataContainerCOM());
+        }
+        if(streamingSettingsDialog->isCOMConnected()) {
+            dataStreamer->startCOMStreamer(
+                    streamingSettingsDialog->getConnPoolCOMIndex(),
+                    applicationSettings->value("StreamingSettings.COM.sampleRate", 30).toInt(),
+                    streamingSettingsDialog->getDataContainerCOM() );
             streamingSettingsDialog->setLimitationsWhileStreamingCOM(true);
         }
-//        streamingSettingsDialog->setLimitationsWhileStreaming(true);
+        if(streamingSettingsDialog->isLSLConnected()) {
+            dataStreamer->startLSLStreamer(
+                    applicationSettings->value("StreamingSettings.LSL.sampleRate", 30).toInt(),
+                    streamingSettingsDialog->getDataContainerLSL(),
+                    pupilDetectionWorker->getCurrentProcMode() );
+            streamingSettingsDialog->setLimitationsWhileStreamingLSL(true);
+        }
+        streamingSettingsDialog->setLimitationsWhileStreamingAny(true);
 
-        connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataStreamer, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
+        connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>)), dataStreamer, SLOT (newPupilData(quint64, int, std::vector<Pupil>)));
 
         const QIcon streamIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kt-stop-all.svg"), applicationSettings);
         streamAct->setIcon(streamIcon);
@@ -1389,7 +1411,7 @@ void MainWindow::onRecordClick() {
         dataWriter = 
             new DataWriter(
                     dataRecordingOutputTarget,
-                    (ProcMode)pupilDetectionWorker->getCurrentProcMode(),
+                    pupilDetectionWorker,
                     recEventTracker,
                     this);
         if(!dataWriter->isReady()) { // in case we failed to open csv file for writing
@@ -1412,7 +1434,7 @@ void MainWindow::onRecordClick() {
                 pupilDetectionDir.filePath(metadataFileName),
                 selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
 
-        connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
+        connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>)));
 
         const QIcon recordOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kt-stop-all.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordAct->setIcon(recordOnIcon);
@@ -1606,16 +1628,19 @@ void MainWindow::onCameraDisconnectClick() {
         sharpnessWindow = nullptr;
     }
 
-    if (singleCameraChildWidget) {
-        disconnect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
-        singleCameraChildWidget->deleteLater();
-        singleCameraChildWidget = nullptr;
-    }
-    if (stereoCameraChildWidget) {
-        disconnect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
-        stereoCameraChildWidget->deleteLater();
-        stereoCameraChildWidget = nullptr;
-    }
+    //// TODO: are these necessary? Or only an "cameraViewWindow->close();" would be enough?
+    //if (singleCameraChildWidget) {
+    //    disconnect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
+    //    singleCameraChildWidget->deleteLater();
+    //    singleCameraChildWidget = nullptr;
+    //}
+    //if (stereoCameraChildWidget) {
+    //    disconnect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
+    //    stereoCameraChildWidget->deleteLater();
+    //    stereoCameraChildWidget = nullptr;
+    //}
+    cameraViewWindow->close();
+
     if(recEventTracker) {
         disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
         disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
@@ -2014,15 +2039,22 @@ void MainWindow::cameraViewClick() {
 //    }
 
     if(cameraViewWindow && cameraViewWindow->isVisible()) {
+
+        //// TODO: are these necessary? Or only an "cameraViewWindow->close();" would be enough?
+        //if (singleCameraChildWidget) {
+        //    disconnect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
+        //    singleCameraChildWidget->deleteLater();
+        //    singleCameraChildWidget = nullptr;
+        //}
+        //if (stereoCameraChildWidget) {
+        //    disconnect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
+        //    stereoCameraChildWidget->deleteLater();
+        //    stereoCameraChildWidget = nullptr;
+        //}
         cameraViewWindow->close();
 
-        singleCameraChildWidget->deleteLater();
-        singleCameraChildWidget = nullptr;
-        stereoCameraChildWidget->deleteLater();
-        stereoCameraChildWidget = nullptr;
-
-        cameraViewWindow->deleteLater();
-        cameraViewWindow = nullptr;
+        //cameraViewWindow->deleteLater();
+        //cameraViewWindow = nullptr;
     }
 
     RestorableQMdiSubWindow *child;
@@ -2055,8 +2087,10 @@ void MainWindow::cameraViewClick() {
     child->restoreGeometry();
     connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
     connect(child, &RestorableQMdiSubWindow::onCloseSubWindow, this, [this]() {
-        cameraViewWindow->deleteLater();
-        cameraViewWindow=nullptr;
+        if(cameraViewWindow) {
+            cameraViewWindow->deleteLater();
+            cameraViewWindow = nullptr;
+        }
         if(selectedCamera && (
                 selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA ||
                 selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE ||
@@ -2350,15 +2384,15 @@ void MainWindow::loadDataTableWindow() {
     child->setGeometry(QRect(QPoint(0, 0), hint));*/
 
     if(selectedCamera) {
-        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>, QString)), childWidget, SLOT (onPupilData(quint64, int, std::vector<Pupil>, QString)));
+        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>)), childWidget, SLOT (onPupilData(quint64, int, std::vector<Pupil>)));
         //std::cout << "dataTableClick()" << std::endl;
 
         connect(signalPubSubHandler, SIGNAL(cameraFPS(double)), childWidget, SLOT(onCameraFPS(double)));
-        connect(signalPubSubHandler, SIGNAL(cameraFramecount(int)), childWidget, SLOT(onCameraFramecount(int)));
+        assert(connect(signalPubSubHandler, SIGNAL(cameraFramecount(int)), childWidget, SLOT(onCameraFramecount(int))));
     }
 
     connect(pupilDetectionWorker, SIGNAL(fps(double)), childWidget, SLOT(onProcessingFPS(double)));
-    connect(childWidget, SIGNAL(createGraphPlot(DataTypes::DataType)), this, SLOT(onCreateGraphPlot(DataTypes::DataType)));
+    connect(childWidget, SIGNAL(createGraphPlot(PDataType)), this, SLOT(onCreateGraphPlot(PDataType)));
 
     // TODO: make data table window adapt to the change
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), childWidget, SLOT (close()));
@@ -2410,7 +2444,7 @@ void MainWindow::loadSceneImageWindow() {
 
     if(selectedCamera) {
         // connect the output of gaze mapper thread to the scene image window updateView
-//        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>, QString)), childWidget, SLOT (onPupilData(quint64, int, std::vector<Pupil>, QString)));
+//        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>)), childWidget, SLOT (onPupilData(quint64, int, std::vector<Pupil>)));
     }
 
     mdiArea->addSubWindow(child);
@@ -2430,20 +2464,20 @@ void MainWindow::toggleFullscreen() {
     toggleFullscreenAct->setChecked(this->isMaximized());
 }
 
-void MainWindow::onCreateGraphPlot(const DataTypes::DataType &value) {
+void MainWindow::onCreateGraphPlot(const PDataType &value) {
 
     // Do not create duplicates
     QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
     for(auto mdiSubWindow : windows) {
         // NOTE: The .mid(...) is necessary because we systematically name these plots, all of them begins
         // with the same string "Graph Plot: " (12 characters) and continues with the plotted value DataType key name
-//        if(mdiSubWindow->windowTitle() == DataTypes::map.value(value))
-        if(mdiSubWindow->windowTitle().mid(12) == DataTypes::map.value(value))
+//        if(mdiSubWindow->windowTitle() == PDataTypes::map.value(value))
+        if(mdiSubWindow->windowTitle().mid(12) == PDataTypes::tyf.at(value))
             return;
     }
 
     // Now create the Graph Plot window
-    std::cout<<"Created GraphPlot slot: " << DataTypes::map.value(value).toStdString()<<std::endl;
+    std::cout << "Created GraphPlot slot: " << PDataTypes::tyf.at(value).toStdString() << std::endl;
 
     GraphPlot* graphPlot = new GraphPlot(value, pupilDetectionWorker->getCurrentProcMode(), false, this);
     if(selectedCamera->getType() == SINGLE_IMAGE_FILE || selectedCamera->getType() == STEREO_IMAGE_FILE) {
@@ -2452,21 +2486,21 @@ void MainWindow::onCreateGraphPlot(const DataTypes::DataType &value) {
         graphPlot->setKnownTimeZero(dynamic_cast<FileCamera*>(selectedCamera)->getTimestampForFrameNumber(0));
     }
     QWidget *childWidget = graphPlot;
-    auto *child = new RestorableQMdiSubWindow(childWidget, "GraphPlot_" + DataTypes::map.value(value), this);
+    auto *child = new RestorableQMdiSubWindow(childWidget, "GraphPlot_" + PDataTypes::tyf.at(value), this);
     child->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings));
 
     // switch values to connect different slots/signals to GraphPlot and the data
     /*if(value == DataTable::FRAME_NUMBER) {
 
         connect(signalPubSubHandler, SIGNAL (cameraFramecount(int)), childWidget, SLOT (appendData(int)));
-    } else*/ if(value == DataTypes::DataType::CAMERA_FPS) {
+    } else*/ if(value == PDataType::CAMERA_FPS) {
 
         connect(signalPubSubHandler, SIGNAL (cameraFPS(double)), childWidget, SLOT (appendData(double)));
-    } else if(value == DataTypes::DataType::PUPIL_FPS) {
+    } else if(value == PDataType::PUPIL_FPS) {
 
         connect(pupilDetectionWorker, SIGNAL (fps(double)), childWidget, SLOT (appendData(double)));
     } else {
-        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>, QString)), childWidget, SLOT (appendData(quint64, int, std::vector<Pupil>, QString)));
+        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>)), childWidget, SLOT (appendData(quint64, int, std::vector<Pupil>)));
     }
     mdiArea->addSubWindow(child);
     child->show();
@@ -2838,7 +2872,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     // Connects etc.
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
-    connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+    assert(connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int))));
 
     if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (finishedCalibration()), this, SLOT (onCameraCalibrationEnabled()));
@@ -3259,10 +3293,16 @@ void MainWindow::forceResetMessageRegister(const quint64 &timestamp) {
 }
 
 void MainWindow::onStreamingUDPConnect() {
-    if(dataStreamer) {
-        dataStreamer->startUDPStreamer(streamingSettingsDialog->getConnPoolUDPIndex(), streamingSettingsDialog->getDataContainerUDP());
-        streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
-    }
+    // TODO: minek volt ez itt? A streamer elindítása a stream gomb feladata.
+    //  Azt pedig elvégzi vagy a valós kattintás vagy a PRG command, a connectet pedig
+    //  belső signal megoldja a streamingsettingsdialog-on belül. Ez nem kell
+    //if(dataStreamer) {
+    //    dataStreamer->startUDPStreamer(
+    //            streamingSettingsDialog->getConnPoolUDPIndex(),
+    //            applicationSettings->value("StreamingSettings.UDP.sampleRate", 30).toInt(),
+    //            streamingSettingsDialog->getDataContainerUDP() );
+    //    streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
+    //}
     streamAct->setEnabled(trackingOn);
 }
 
@@ -3275,15 +3315,21 @@ void MainWindow::onStreamingUDPDisconnect() {
             streamAct->setEnabled(false);
         }
     }
-    
-    streamAct->setEnabled(streamingSettingsDialog->isAnyConnected());
+
+    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
 }
 
 void MainWindow::onStreamingCOMConnect() {
-    if(dataStreamer) {
-        dataStreamer->startCOMStreamer(streamingSettingsDialog->getConnPoolCOMIndex(), streamingSettingsDialog->getDataContainerCOM());
-        streamingSettingsDialog->setLimitationsWhileStreamingCOM(true);
-    }
+    // TODO: minek volt ez itt? A streamer elindítása a stream gomb feladata.
+    //  Azt pedig elvégzi vagy a valós kattintás vagy a PRG command, a connectet pedig
+    //  belső signal megoldja a streamingsettingsdialog-on belül. Ez nem kell
+    //if(dataStreamer) {
+    //    dataStreamer->startCOMStreamer(
+    //            streamingSettingsDialog->getConnPoolCOMIndex(),
+    //            applicationSettings->value("StreamingSettings.COM.sampleRate", 30).toInt(),
+    //            streamingSettingsDialog->getDataContainerCOM() );
+    //    streamingSettingsDialog->setLimitationsWhileStreamingCOM(true);
+    //}
     streamAct->setEnabled(trackingOn);
 }
 
@@ -3297,7 +3343,35 @@ void MainWindow::onStreamingCOMDisconnect() {
         }
     }
 
-    streamAct->setEnabled(streamingSettingsDialog->isAnyConnected());
+    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+}
+
+void MainWindow::onStreamingLSLConnect() {
+    // TODO: minek volt ez itt? A streamer elindítása a stream gomb feladata.
+    //  Azt pedig elvégzi vagy a valós kattintás vagy a PRG command, a connectet pedig
+    //  belső signal megoldja a streamingsettingsdialog-on belül. Ez nem kell
+    //if(dataStreamer) {
+    //    dataStreamer->startLSLStreamer(
+    //            applicationSettings->value("StreamingSettings.LSL.sampleRate", 30).toInt(),
+    //            streamingSettingsDialog->getDataContainerLSL(),
+    //            pupilDetectionWorker->getCurrentProcMode()
+    //            );
+    //    streamingSettingsDialog->setLimitationsWhileStreamingLSL(true);
+    //}
+    streamAct->setEnabled(trackingOn);
+}
+
+void MainWindow::onStreamingLSLDisconnect() {
+    if(dataStreamer) {
+        dataStreamer->stopLSLStreamer();
+        streamingSettingsDialog->setLimitationsWhileStreamingLSL(false);
+        if(dataStreamer->getNumActiveStreamers() == 0) {
+            onStreamClick(); // close streamer
+            streamAct->setEnabled(false);
+        }
+    }
+
+    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
 }
 
 void MainWindow::onRemoteConnStateChanged() {
@@ -3400,7 +3474,9 @@ void MainWindow::resetStatus(bool isConnect)
 //        subjectsAct->setEnabled(false);
         trackAct->setEnabled(true);
         logFileAct->setEnabled(true);
-        streamAct->setEnabled( streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() );
+
+        // NOTE: streaming can only be enabled if the underlying connection is established, and tracking is on
+        streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
 
 //        cameraSettingsAct->setEnabled(false);
         cameraViewAct->setEnabled(true); // In the View menu

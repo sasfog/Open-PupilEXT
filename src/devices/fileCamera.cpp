@@ -33,14 +33,14 @@ FileCamera::FileCamera(const QString &imageSource, const int &subrecordingNumber
     }
 
     connect(imageReader, SIGNAL(onNewImage(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
-    connect(imageReader, SIGNAL(onNewImage(CameraImage)), frameCounter, SLOT(count()));
+    assert(connect(imageReader, SIGNAL(onNewImage(CameraImage)), frameCounter, SLOT(count())));
     connect(imageReader, SIGNAL(finished()), this, SIGNAL(finished()));
 
     connect(imageReader, SIGNAL(endReached()), this, SIGNAL(endReached()));
     connect(imageReader, SIGNAL(paused()), this, SIGNAL(paused()));
 
-    connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
-    connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
+    assert(connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double))));
+    assert(connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int))));
 
     // Its possible to load existing calibration files for offline pupil measuring
     // CAUTION: calibration file must correspond to the camera with which the offline files were recorded otherwise the calculations are incorrect

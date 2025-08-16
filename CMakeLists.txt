@@ -178,6 +178,7 @@ find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
 find_package(glog CONFIG REQUIRED)
+find_package(LSL CONFIG REQUIRED)
 find_package(Qt6 COMPONENTS Core5Compat Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 if(USE_PYLON)
     find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
@@ -376,9 +377,9 @@ set(QuaZip_LIBRARIES "")
 # -------------------------------------------------------
 
 # Output of initial values -----------------------------------------------
-message("----- Output of ENDING values -----")
-message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
-message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+message(STATUS "----- Output of ENDING values -----")
+message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
 # ------------------------------------------------------------------------
 
@@ -413,7 +414,7 @@ else()
     list(APPEND ALL_INCLUDE_DIRS ${aravis_INCLUDE_DIR})
 endif()
 
-message("ALL_INCLUDE_DIRS: ${ALL_INCLUDE_DIRS}")
+message(STATUS "ALL_INCLUDE_DIRS: ${ALL_INCLUDE_DIRS}")
 
 include_directories(${ALL_INCLUDE_DIRS})
 
