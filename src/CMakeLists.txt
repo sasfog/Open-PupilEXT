@@ -40,7 +40,7 @@ set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATIO
 #)
 #add_definitions(-DGENICAM_NO_AUTO_LINK)
 
-
+# For packaging on Mac, add_executable(PupilEXT MACOSX_BUNDLE main.cpp 
 set(ALL_SOURCES_TO_ADD
         main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
