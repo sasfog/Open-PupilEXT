@@ -42,9 +42,6 @@ public:
 
     ~StreamingSettingsDialog() override;
 
-    void saveUDPSettings();
-    void saveCOMSettings();
-    void saveLSLSettings();
     //void closeEvent(QCloseEvent *);
 
     int getConnPoolUDPIndex();
@@ -116,6 +113,7 @@ private:
     QComboBox *dataContainerLSLBox;
     QLabel *dataContainerLSLLabel;
 
+    QWidget *lslRestrictiveOptionsSectionW;
     QLabel *specXDFeyeLabel;
     QComboBox *specXDFeyeBox;
     QLabel *specXDFcameraLabel;
@@ -162,6 +160,10 @@ public slots:
     void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
     void connectLSL();
+
+    void saveUDPSettings();
+    void saveCOMSettings();
+    void saveLSLSettings();
 
     void setLimitationsWhileConnectedUDP(bool state);  
     void setLimitationsWhileStreamingUDP(bool state);

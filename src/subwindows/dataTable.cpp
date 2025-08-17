@@ -63,18 +63,18 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A"));
-            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B"));
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye R"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye L"));
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
             tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Sec."));
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A Main"));
-            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B Main"));
-            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye A Sec."));
-            tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye B Sec."));
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye R Main"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye R Main"));
+            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye L Sec."));
+            tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye L Sec."));
             break;
     }
 

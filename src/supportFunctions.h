@@ -24,6 +24,7 @@
 
 // NOTE: Option "BOTH" could also have been here, but then even deeper if/else's
 //  and averaging would be needed ...and even more spaghetti
+// TODO: USE OTHER, BROADER-SCOPE ENUMS INSTEAD OF THESE
 enum LSL_XDF_Eye {XDF_LEFT = 1, XDF_RIGHT = 2};
 enum LSL_XDF_Camera {XDF_MAIN = 1, XDF_SECONDARY = 2};
 

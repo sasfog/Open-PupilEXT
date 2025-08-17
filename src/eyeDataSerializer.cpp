@@ -5,8 +5,8 @@ void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dO
 
     for(auto v : PDataTypes::dataOutputFields) {
         QString ds = "";
-        if(!PDataTypes::tyn.at(v).isEmpty()) {
-            ds = "_" + PDataTypes::tyn.at(v);
+        if(!PDataTypes::tyd.at(v).isEmpty()) {
+            ds = "_" + PDataTypes::tyd.at(v);
         }
 
         // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
@@ -33,7 +33,7 @@ void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dO
 
     dObj.setAttribute("trial", QString::number(trialNum));
     dObj.setAttribute("message", message);
-    dObj.setAttribute("temperature_c", QString::number(temperature));
+    dObj.setAttribute("cameraTemperature_c", QString::number(temperature));
 }
 
 QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
@@ -120,8 +120,8 @@ void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &d
 
     for(auto v : PDataTypes::dataOutputFields) {
         QString ds = "";
-        if(!PDataTypes::tyn.at(v).isEmpty()) {
-            ds = "_" + PDataTypes::tyn.at(v);
+        if(!PDataTypes::tyd.at(v).isEmpty()) {
+            ds = "_" + PDataTypes::tyd.at(v);
         }
 
         // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
@@ -148,7 +148,7 @@ void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &d
 
     dObj["trial"] = QString::number(trialNum);
     dObj["message"] = message;
-    dObj["temperature_c"] = QString::number(temperature);
+    dObj["cameraTemperature_c"] = QString::number(temperature);
 }
 
 QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
@@ -225,35 +225,22 @@ QString EyeDataSerializer::getHeaderCSV(const std::vector<char> &eyeIdentities, 
     for(int i = 0; i < eyeIdentities.size(); i++) {
         for(auto v : PDataTypes::dataOutputFields) {
             QString ds = "";
-            if(!PDataTypes::tyn.at(v).isEmpty()) {
-                ds = "_" + PDataTypes::tyn.at(v);
+            if(!PDataTypes::tyd.at(v).isEmpty()) {
+                ds = "_" + PDataTypes::tyd.at(v);
             }
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
             if(v == PDataType::TIME_RAW_TIMESTAMP)
                 result = result % "timestamp_ms" % delim;
             else
-                result = result % PDataTypes::tyn.at(v) % "_" % eyeIdentities[i] % "_" % camIdentities[i] % ds % delim;
+                result = result % PDataTypes::tyn.at(v) % ds % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
         }
-
-        //result = result % "diameter" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "undistortedDiameter" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "physicalDiameter" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_mm" % delim;
-        //result = result % "width" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "height" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "axisRatio" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
-        //result = result % "centerX" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "centerY" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "angle" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_deg" % delim;
-        //result = result % "circumference" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % "_px" % delim;
-        //result = result % "confidence"  % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
-        //result = result % "outlineConfidence" % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
     }
 
-    result = result % delim % "trial" % delim;
+    result = result % "trial" % delim;
     result = result % "message" % delim;
-    result = result % "temperature_M_c" % delim;
-    result = result % "temperature_S_c";
+    result = result % "cameraTemperature_c_M" % delim;
+    result = result % "cameraTemperature_c_S";
 
     return result;
 }
@@ -276,23 +263,23 @@ void EyeDataSerializer::addLSLChannelsInfo_XDF(lsl::stream_info *info,
 
     // common, but not eye dependent... say "both" to eyes ?
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::TIME_RAW_TIMESTAMP).toStdString()).append_child_value("eye", "both")
-            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::TIME_RAW_TIMESTAMP).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::TIME_RAW_TIMESTAMP).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::TIME_RAW_TIMESTAMP).toStdString()).append_child_value("unit", PDataTypes::tyd.at(PDataType::TIME_RAW_TIMESTAMP).toStdString());
 
     // specified in GUI
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(lsl_xdf_Diameter).toStdString()).append_child_value("eye", eyeStr)
-            .append_child_value("type", PDataTypes::tytXDF.at(lsl_xdf_Diameter).toStdString()).append_child_value("unit", PDataTypes::tyn.at(lsl_xdf_Diameter).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(lsl_xdf_Diameter).toStdString()).append_child_value("unit", PDataTypes::tyd.at(lsl_xdf_Diameter).toStdString());
     // common
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_WIDTH).toStdString()).append_child_value("eye", eyeStr)
-            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_WIDTH).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_WIDTH).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_WIDTH).toStdString()).append_child_value("unit", PDataTypes::tyd.at(PDataType::PUPIL_WIDTH).toStdString());
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_HEIGHT).toStdString()).append_child_value("eye", eyeStr)
-            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_HEIGHT).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_HEIGHT).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_HEIGHT).toStdString()).append_child_value("unit", PDataTypes::tyd.at(PDataType::PUPIL_HEIGHT).toStdString());
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("eye", eyeStr)
-            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_X).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("unit", PDataTypes::tyd.at(PDataType::PUPIL_CENTER_X).toStdString());
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_X).toStdString()).append_child_value("eye", eyeStr)
-            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_CENTER_Y).toStdString()).append_child_value("unit", PDataTypes::tyn.at(PDataType::PUPIL_CENTER_Y).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(PDataType::PUPIL_CENTER_Y).toStdString()).append_child_value("unit", PDataTypes::tyd.at(PDataType::PUPIL_CENTER_Y).toStdString());
     // specified in GUI
     chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(lsl_xdf_Confidence).toStdString()).append_child_value("eye", eyeStr)
-            .append_child_value("type", PDataTypes::tytXDF.at(lsl_xdf_Confidence).toStdString()).append_child_value("unit", PDataTypes::tyn.at(lsl_xdf_Confidence).toStdString());
+            .append_child_value("type", PDataTypes::tytXDF.at(lsl_xdf_Confidence).toStdString()).append_child_value("unit", PDataTypes::tyd.at(lsl_xdf_Confidence).toStdString());
 
     // //(double)trialNum,
     // //temperatures[0],
@@ -322,39 +309,39 @@ void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<char> &eyeIdenti
                         .append_child_value("type", "timestamp").append_child_value("unit", "ms");
             else
                 chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(v).toStdString()).append_child_value("eye", eyeStr)
-                    .append_child_value("type", PDataTypes::tytXDF.at(v).toStdString()).append_child_value("unit", PDataTypes::tyn.at(v).toStdString()).append_child_value("camera", camStr);
+                    .append_child_value("type", PDataTypes::tytXDF.at(v).toStdString()).append_child_value("unit", PDataTypes::tyd.at(v).toStdString()).append_child_value("camera", camStr);
         }
 
-        chns.append_child("channel").append_child_value("label", "diameter").append_child_value("eye", eyeStr)
-                .append_child_value("type", "Diameter").append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "undistortedDiameter").append_child_value("eye", eyeStr)
-                .append_child_value("type", "Diameter").append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "physicalDiameter").append_child_value("eye", eyeStr)
-                .append_child_value("type", "Diameter").append_child_value("unit", "mm").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "width").append_child_value("eye", eyeStr)
-                .append_child_value("type", "DiameterX").append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "height").append_child_value("eye", eyeStr)
-                .append_child_value("type", "DiameterY").append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "axisRatio").append_child_value("eye", eyeStr)
-                .append_child_value("unit", "").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "centerX").append_child_value("eye", eyeStr)
-                .append_child_value("type", "PupilX").append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "centerY").append_child_value("eye", eyeStr)
-                .append_child_value("type", "PupilY").append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "angle").append_child_value("eye", eyeStr)
-                .append_child_value("unit", "rad").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "circumference").append_child_value("eye", eyeStr)
-                .append_child_value("unit", "px").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "confidence").append_child_value("eye", eyeStr)
-                .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
-        chns.append_child("channel").append_child_value("label", "outlineConfidence").append_child_value("eye", eyeStr)
-                .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "diameter").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "Diameter").append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "undistortedDiameter").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "Diameter").append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "physicalDiameter").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "Diameter").append_child_value("unit", "mm").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "width").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "DiameterX").append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "height").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "DiameterY").append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "axisRatio").append_child_value("eye", eyeStr)
+        //        .append_child_value("unit", "").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "centerX").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "PupilX").append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "centerY").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "PupilY").append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "angle").append_child_value("eye", eyeStr)
+        //        .append_child_value("unit", "rad").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "circumference").append_child_value("eye", eyeStr)
+        //        .append_child_value("unit", "px").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "confidence").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
+        //chns.append_child("channel").append_child_value("label", "outlineConfidence").append_child_value("eye", eyeStr)
+        //        .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
     }
 
     //"trial"
     //"message"
-    //"temperature_M_c"
-    //"temperature_S_c"
+    //"cameraTemperature_M_c"
+    //"cameraTemperature_S_c"
 }
 
 std::vector<double> EyeDataSerializer::pupilToLSLsample_XDF(
@@ -570,8 +557,8 @@ void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, 
     depth+=1;
     for(auto v : PDataTypes::dataOutputFields) {
         QString ds = "";
-        if(!PDataTypes::tyn.at(v).isEmpty()) {
-            ds = "_" + PDataTypes::tyn.at(v);
+        if(!PDataTypes::tyd.at(v).isEmpty()) {
+            ds = "_" + PDataTypes::tyd.at(v);
         }
 
         // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
@@ -597,7 +584,7 @@ void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, 
 
     addRowYAML(obj, "trial", QString::number(trialNum), depth, true);
     addRowYAML(obj, "message", message, depth, true);
-    addRowYAML(obj, "temperature_c", QString::number(temperature), depth, true);
+    addRowYAML(obj, "cameraTemperature_c", QString::number(temperature), depth, true);
 }
 
 void EyeDataSerializer::addRowYAML(QString &obj, QString key, QString value, ushort depth, bool isLeaf) {

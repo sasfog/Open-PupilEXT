@@ -222,13 +222,18 @@ void StreamingSettingsDialog::createForm() {
     dataContainerLSLBox->setCurrentIndex(0);
     lslLayout->addRow(dataContainerLSLLabel, dataContainerLSLBox);
 
+
+    lslRestrictiveOptionsSectionW = new QWidget();
+    QFormLayout *lslRestrictiveOptionsSection = new QFormLayout();
+    lslRestrictiveOptionsSection->setContentsMargins(0,0,0,0);
+
     specXDFeyeLabel = new QLabel(tr("Prefer eye:"));
     specXDFeyeBox = new QComboBox();
     //specXDFeyeBox->setFixedWidth(200);
     specXDFeyeBox->addItem(tr("Left"), LSL_XDF_Eye::XDF_LEFT);
     specXDFeyeBox->addItem(tr("Right"), LSL_XDF_Eye::XDF_RIGHT);
     specXDFeyeBox->setCurrentIndex(0);
-    lslLayout->addRow(specXDFeyeLabel, specXDFeyeBox);
+    lslRestrictiveOptionsSection->addRow(specXDFeyeLabel, specXDFeyeBox);
 
     specXDFcameraLabel = new QLabel(tr("Prefer camera:"));
     specXDFcameraBox = new QComboBox();
@@ -236,7 +241,7 @@ void StreamingSettingsDialog::createForm() {
     specXDFcameraBox->addItem(tr("Main"), LSL_XDF_Camera::XDF_MAIN);
     specXDFcameraBox->addItem(tr("Secondary"), LSL_XDF_Camera::XDF_SECONDARY);
     specXDFcameraBox->setCurrentIndex(0);
-    lslLayout->addRow(specXDFcameraLabel, specXDFcameraBox);
+    lslRestrictiveOptionsSection->addRow(specXDFcameraLabel, specXDFcameraBox);
 
     specXDFpupDataLabel = new QLabel(tr("Pupil data:"));
     specXDFpupDataBox = new QComboBox();
@@ -245,7 +250,7 @@ void StreamingSettingsDialog::createForm() {
     specXDFpupDataBox->addItem(tr("Undistorted dia. [px]"), PDataType::PUPIL_UNDIST_DIAMETER);
     specXDFpupDataBox->addItem(tr("Physical dia. [mm]"), PDataType::PUPIL_PHYSICAL_DIAMETER);
     specXDFpupDataBox->setCurrentIndex(0);
-    lslLayout->addRow(specXDFpupDataLabel, specXDFpupDataBox);
+    lslRestrictiveOptionsSection->addRow(specXDFpupDataLabel, specXDFpupDataBox);
 
     specXDFconfLabel = new QLabel(tr("Confidence:"));
     specXDFconfBox = new QComboBox();
@@ -253,7 +258,10 @@ void StreamingSettingsDialog::createForm() {
     specXDFconfBox->addItem(tr("Confidence"), PDataType::PUPIL_CONFIDENCE);
     specXDFconfBox->addItem(tr("Outline conf."), PDataType::PUPIL_OUTLINE_CONFIDENCE);
     specXDFconfBox->setCurrentIndex(0);
-    lslLayout->addRow(specXDFconfLabel, specXDFconfBox);
+    lslRestrictiveOptionsSection->addRow(specXDFconfLabel, specXDFconfBox);
+
+    lslRestrictiveOptionsSectionW->setLayout(lslRestrictiveOptionsSection);
+    lslLayout->addRow(lslRestrictiveOptionsSectionW);
 
     QWidget *widgetsRow3 = new QWidget();
     QHBoxLayout *LSLbuttonsLayout = new QHBoxLayout();
@@ -292,25 +300,25 @@ void StreamingSettingsDialog::createForm() {
 }
 
 void StreamingSettingsDialog::connectSignals() {
-    connect(udpIpBox, SIGNAL(signalTextChanged()), this, SLOT(saveUDPSettings()));
-    connect(udpPortBox, SIGNAL(valueChanged()), this, SLOT(saveUDPSettings()));
-    connect(dataContainerUDPBox, SIGNAL(currentIndexChanged()), this, SLOT(saveUDPSettings()));
-    connect(udpSampleRateBox, SIGNAL(valueChanged()), this, SLOT(saveUDPSettings()));
+    connect(udpIpBox, SIGNAL(signalTextChanged(QLineEdit)), this, SLOT(saveUDPSettings()));
+    connect(udpPortBox, SIGNAL(valueChanged(int)), this, SLOT(saveUDPSettings()));
+    connect(dataContainerUDPBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveUDPSettings()));
+    connect(udpSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveUDPSettings()));
 
-    connect(baudRateBox, SIGNAL(currentIndexChanged()), this, SLOT(saveCOMSettings()));
-    connect(dataBitsBox, SIGNAL(currentIndexChanged()), this, SLOT(saveCOMSettings()));
-    connect(parityBox, SIGNAL(currentIndexChanged()), this, SLOT(saveCOMSettings()));
-    connect(stopBitsBox, SIGNAL(currentIndexChanged()), this, SLOT(saveCOMSettings()));
-    connect(flowControlBox, SIGNAL(currentIndexChanged()), this, SLOT(saveCOMSettings()));
-    connect(dataContainerCOMBox, SIGNAL(currentIndexChanged()), this, SLOT(saveCOMSettings()));
-    connect(comSampleRateBox, SIGNAL(valueChanged()), this, SLOT(saveCOMSettings()));
+    connect(baudRateBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(dataBitsBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(parityBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(stopBitsBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(flowControlBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(dataContainerCOMBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(comSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveCOMSettings()));
 
-    connect(dataContainerLSLBox, SIGNAL(currentIndexChanged()), this, SLOT(saveLSLSettings()));
-    connect(specXDFeyeBox, SIGNAL(currentIndexChanged()), this, SLOT(saveLSLSettings()));
-    connect(specXDFcameraBox, SIGNAL(currentIndexChanged()), this, SLOT(saveLSLSettings()));
-    connect(specXDFpupDataBox, SIGNAL(currentIndexChanged()), this, SLOT(saveLSLSettings()));
-    connect(specXDFconfBox, SIGNAL(currentIndexChanged()), this, SLOT(saveLSLSettings()));
-    connect(lslSampleRateBox, SIGNAL(valueChanged()), this, SLOT(saveLSLSettings()));
+    connect(dataContainerLSLBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFeyeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFcameraBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFpupDataBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFconfBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(lslSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveLSLSettings()));
 
     connect(connectUDPButton, SIGNAL(clicked()), this, SLOT(onConnectUDPClick()));
     connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(disconnectUDP()));
@@ -618,15 +626,9 @@ void StreamingSettingsDialog::loadSettings() {
     specXDFconfBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.confidence", "Confidence").toString());
     lslSampleRateBox->setValue(applicationSettings->value("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value()).toInt());
 
-    bool isStrictXDFSelected = (dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF);
-    specXDFeyeLabel->setHidden(!isStrictXDFSelected);
-    specXDFeyeBox->setHidden(!isStrictXDFSelected);
-    specXDFcameraLabel->setHidden(!isStrictXDFSelected);
-    specXDFcameraBox->setHidden(!isStrictXDFSelected);
-    specXDFpupDataLabel->setHidden(!isStrictXDFSelected);
-    specXDFpupDataBox->setHidden(!isStrictXDFSelected);
-    specXDFconfLabel->setHidden(!isStrictXDFSelected);
-    specXDFconfBox->setHidden(!isStrictXDFSelected);
+    lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
+
+    this->update();
 
     updateSettings();
 }
@@ -663,15 +665,7 @@ void StreamingSettingsDialog::saveLSLSettings() {
 
     std::cout << dataContainerLSLBox->currentData().toString().toStdString() << std::endl;
 
-    bool isStrictXDFSelected = (dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF);
-    specXDFeyeLabel->setHidden(!isStrictXDFSelected);
-    specXDFeyeBox->setHidden(!isStrictXDFSelected);
-    specXDFcameraLabel->setHidden(!isStrictXDFSelected);
-    specXDFcameraBox->setHidden(!isStrictXDFSelected);
-    specXDFpupDataLabel->setHidden(!isStrictXDFSelected);
-    specXDFpupDataBox->setHidden(!isStrictXDFSelected);
-    specXDFconfLabel->setHidden(!isStrictXDFSelected);
-    specXDFconfBox->setHidden(!isStrictXDFSelected);
+    lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
 
     // TODO: LEHET VALAMI PÁROSTÁS KELL MÉG EHHEZ AZ ENUMOK MIATT
     applicationSettings->setValue("StreamingSettings.LSL.eye", specXDFeyeBox->currentText());
@@ -681,6 +675,8 @@ void StreamingSettingsDialog::saveLSLSettings() {
 
     applicationSettings->setValue("StreamingSettings.LSL.dataContainer", dataContainerLSLBox->currentText());
     applicationSettings->setValue("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value());
+
+    this->update();
 }
 
 /*

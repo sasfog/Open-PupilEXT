@@ -21,7 +21,6 @@
 #include "../../pupilDetection.h"
 
 enum ViewMode {FIT = 0, FULL = 1, ZOOM = 2};
-
 enum ColorFill {NO_FILL = 0, CONFIDENCE = 1, OUTLINE_CONFIDENCE = 2};
 
 /**

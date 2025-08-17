@@ -1602,6 +1602,7 @@ void MainWindow::onCameraDisconnectClick() {
 
     QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
     for(auto mdiSubWindow : windows) {
+        // NOTE: cameraViewWindow->close(); happens here already, with its cleanup call, done in an onClose lambda
         mdiSubWindow->close();
         mdiSubWindow->deleteLater();
     }
@@ -1619,27 +1620,12 @@ void MainWindow::onCameraDisconnectClick() {
     }
     destroyCamTempMonitor();
 
-    if (cameraViewWindow) {
-        cameraViewWindow->deleteLater();
-        cameraViewWindow = nullptr;
-    }
+    // Todo: is this necesary? All closes happen already a few lines above. Although this pointer does not delete itself, etc.
+    //  employ a similar solution to what there is already for the camera view window?
     if (sharpnessWindow) {
         sharpnessWindow->deleteLater();
         sharpnessWindow = nullptr;
     }
-
-    //// TODO: are these necessary? Or only an "cameraViewWindow->close();" would be enough?
-    //if (singleCameraChildWidget) {
-    //    disconnect(singleCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
-    //    singleCameraChildWidget->deleteLater();
-    //    singleCameraChildWidget = nullptr;
-    //}
-    //if (stereoCameraChildWidget) {
-    //    disconnect(stereoCameraChildWidget, SIGNAL (doingPupilDetectionROIediting(bool)), pupilDetectionSettingsDialog, SLOT (onDisableProcModeSelector(bool)));
-    //    stereoCameraChildWidget->deleteLater();
-    //    stereoCameraChildWidget = nullptr;
-    //}
-    cameraViewWindow->close();
 
     if(recEventTracker) {
         disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
