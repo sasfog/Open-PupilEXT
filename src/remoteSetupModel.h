@@ -62,7 +62,8 @@ public:
     explicit RemoteSetupModel(QString jsonFile, QtOpenGLViewer* GLViewer, QObject *parent = 0) : QObject(parent){
         bool success = rep->load(jsonFile);
         if(!success) {
-            success = rep->load("default.json"); // TODO, in resources
+            //success = rep->load(":/default.json"); // TODO, in resources
+            // TODO !!
         }
 
         if(!success)

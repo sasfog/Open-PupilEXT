@@ -1,0 +1,141 @@
+{
+  "H3DModel": "",
+  "Components": {
+    "Head": {
+      "Components": {
+        "Eyeball1": {
+          "NominalDiameter__mm": 24.0,
+          "AnatomicalPosition": "left",
+          "Dim": "QVector3D(24, 24, 24)",
+          "Loc": "QVector3D(-30, 224, 580)",
+          "Rot": "QVector3D(0.0, 0.0, 0.0)"
+        },
+        "Eyeball2": {
+          "NominalDiameter__mm": 24.0,
+          "AnatomicalPosition": "right",
+          "Dim": "QVector3D(24, 24, 24)",
+          "Loc": "QVector3D(30, 224, 580)",
+          "Rot": "QVector3D(0.0, 0.0, 0.0)"
+        },
+        "CVTarget": {
+          "OuterRingDiameter__mm": 10,
+          "Dim": "QVector3D(10, 10, 1)",
+          "Loc": "QVector3D(0, 254, 575)",
+          "Rot": "QVector3D(0.0, 0.0, 0.0)"
+        }
+      }
+    },
+    "CameraUnit": {
+      "Components": {
+        "Camera": {
+          "ComponentVendor": "Basler",
+          "ComponentType": "acA1300-200um",
+          "ComponentProductFamily": "Ace",
+          "ComponentSerialNumber": "TEST",
+          "LensMountType": "C-mount",
+          "SensorToShoulderDistance__mm": 17.526,
+          "DataInterfaceType": "USB3",
+          "OperatingCurrent__ma": 0,
+          "OperatingVoltage__v": 5.0,
+          "CameraConnectorPins": "QList<CameraConnectorPin>(0,0,0,0,0,0)",
+          "CameraConnectorType": "M8 6 pin female",
+          "DefaultFramerate": 160,
+          "Dim": "QVector3D(29.0, 29.0, 48.0)",
+          "Loc": "QVector3D(15.0, 5.0, 10.0)",
+          "Rot": "QVector3D(-15, 0, 0)",
+          "Components": {
+            "Sensor": {
+              "ComponentVendor": "Sony",
+              "ComponentType": "IMX 392",
+              "ResolutionX__px": 1920,
+              "ResolutionY__px": 1200,
+              "PixelSize__um": "3.4f",
+              "IsMonochrome": true,
+              "SensorTechnology": "CMOS",
+              "EffectiveSizeX__mm": 0,
+              "EffectiveSizeY__mm": 0,
+              "EffectiveDiagonal__mm": 0,
+              "Format": "1/2\"",
+              "AspectRatio": 0,
+              "Dim": "QVector3D(6.528, 4.080, 1.0)",
+              "Loc": "QVector3D(15.0, 5.0, 16.375)",
+              "Rot": "QVector3D(-15, 0, 0)"
+            }
+          }
+        },
+        "Lens": {
+          "ComponentVendor": "Ricoh",
+          "ComponentType": "FL-CC2514-2M",
+          "SuggestedSensorSizeRating": "1/2\"",
+          "IsVarifocal": false,
+          "FocalDistanceMin__mm": 25.0,
+          "FocalDistanceMax__mm": 25.0,
+          "FocalDistanceActual__mm": 25.0,
+          "FocusingDistanceMin__mm": 0,
+          "FocusingDistanceMax__mm": 0,
+          "FocusingDistanceActual__mm": 0,
+          "FValueMin": 16.0,
+          "FValueMax": 1.4,
+          "FValueActual": 1.4,
+          "ShoulderToFirstSurfaceDistance__mm": 42,
+          "OuterDiameter__mm": 36,
+          "FrontFilterDiameter__mm": 35,
+          "Dim": "QVector3D(35, 35, 42)",
+          "Loc": "QVector3D(15.0, 5.0, 55.0)",
+          "Rot": "QVector3D(-15, 0, 0)"
+        },
+        "Filter": {
+          "ComponentVendor": "TEST",
+          "ComponentType": "TEST",
+          "MountingType": "Screw-on",
+          "OpticalBehaviour": "Lowpass",
+          "Principle": "Absorption",
+          "LowpassCuton__nm": 720,
+          "HighpassCutoff__nm": 0,
+          "FilterDiameter__mm": 35,
+          "Dim": "QVector3D(35, 35, 2)",
+          "Loc": "QVector3D(15.0, 5.0, 77.0)",
+          "Rot": "QVector3D(-15, 0, 0)"
+        }
+      }
+    },
+    "IlluminatorUnit": {
+      "Components": {
+        "IlluminatorComponent": {
+          "AtomicComponentVendor": "ams Osram",
+          "AtomicComponentType": "SFH 4717",
+          "NumberOfAtomicComponents": 4,
+          "RadiationAngle": 50,
+          "EmissionCentroid__nm": 850,
+          "OperatingCurrentMin__ma": 0,
+          "OperatingCurrentMax__ma": 0,
+          "OperatingCurrentActual__ma": 0,
+          "OperatingVoltageActual__v": 0,
+          "OperatingTemperatureActual__c": 0,
+          "DriverIsConstantCurrent": true,
+          "DriverIsVariable": false,
+          "Dim": "QVector3D(40.0, 40.0, 2.0)",
+          "Loc": "QVector3D(115.0, 5.0, 10.0)",
+          "Rot": "QVector3D(-15, -10, 0)"
+        }
+      }
+    },
+    "ScreenUnit": {
+      "Components": {
+        "ScreenComponent": {
+          "PhysicalSizeX__mm": 400,
+          "PhysicalSizeY__mm": 320,
+          "ResolutionX__px": 1280,
+          "ResolutionY__px": 1024,
+          "PhysicalSizeDiagonal__in": 0,
+          "AspectRatio": 0,
+          "DPI": 0,
+          "DPMM": 0,
+          "Dim": "QVector3D(400.0, 320.0, 5.0)",
+          "Loc": "QVector3D(15.0, 214.0, 10.0)",
+          "Rot": "QVector3D(0.0, 0.0, 0.0)"
+        }
+      }
+    }
+  }
+}

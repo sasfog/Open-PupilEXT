@@ -87,5 +87,8 @@
         <file>icons/Breeze/actions/22/appointment-new.svg</file>
         <file>icons/Breeze/actions/22/archive-extract.svg</file>
 
+        <file>example.json</file>
+        <file>H3DModel.json</file>
+
     </qresource>
 </RCC>

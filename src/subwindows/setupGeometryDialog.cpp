@@ -162,7 +162,8 @@ void SetupGeometryDialog::createForm() {
     QTreeView *setupModelTree = new QTreeView();
      */
 
-    setupModel = new RemoteSetupModel("H3DModel.json", qtOpenGlViewer);
+    // ":/" prefix needed, as the file is accessed from the Qt resources
+    setupModel = new RemoteSetupModel(":/H3DModel.json", qtOpenGlViewer);
 
     //QJsonModel * model1 = new QJsonModel;
     setupModelTree = new QTreeView;
