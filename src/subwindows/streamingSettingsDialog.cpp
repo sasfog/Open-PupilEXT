@@ -214,6 +214,8 @@ void StreamingSettingsDialog::createForm() {
     lslGroup = new QGroupBox("LSL");
     QFormLayout *lslLayout = new QFormLayout;
 
+#ifdef USE_LSL
+
     dataContainerLSLLabel = new QLabel(tr("Data container:"));
     dataContainerLSLBox = new QComboBox();
     //dataContainerLSLBox->setFixedWidth(200);
@@ -282,8 +284,16 @@ void StreamingSettingsDialog::createForm() {
     lslSampleRateBox->setValue(30);
     lslLayout->addRow(lslSampleRateLabel, lslSampleRateBox);
 
+#else
+    QLabel *notUsingLSLLabel = new QLabel(tr("This build does not offer LSL functionality.\nIt might not be supported on your current OS version or architecture."));
+    SupportFunctions::setSmallerLabelFontSize(notUsingLSLLabel);
+    lslLayout->addWidget(notUsingLSLLabel);
+    lslGroup->setEnabled(false);
+#endif
+
     lslGroup->setLayout(lslLayout);
     mainLayoutInnerCol2->addWidget(lslGroup);
+
 
     QLabel *sampleRateInfoLabel = new QLabel(tr("Defining a low sample rate limit only decimates eye data if that is\ngenerated at a faster rate, and importantly no interpolation is performed."));
     SupportFunctions::setSmallerLabelFontSize(sampleRateInfoLabel);
@@ -313,19 +323,22 @@ void StreamingSettingsDialog::connectSignals() {
     connect(dataContainerCOMBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
     connect(comSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveCOMSettings()));
 
+#ifdef USE_LSL
     connect(dataContainerLSLBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(specXDFeyeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(specXDFcameraBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(specXDFpupDataBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(specXDFconfBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(lslSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveLSLSettings()));
+    //
+    connect(connectLSLButton, SIGNAL(clicked()), this, SLOT(onConnectLSLClick()));
+    connect(disconnectLSLButton, SIGNAL(clicked()), this, SLOT(disconnectLSL()));
+#endif
 
     connect(connectUDPButton, SIGNAL(clicked()), this, SLOT(onConnectUDPClick()));
     connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(disconnectUDP()));
     connect(connectCOMButton, SIGNAL(clicked()), this, SLOT(onConnectCOMClick()));
     connect(disconnectCOMButton, SIGNAL(clicked()), this, SLOT(disconnectCOM()));
-    connect(connectLSLButton, SIGNAL(clicked()), this, SLOT(onConnectLSLClick()));
-    connect(disconnectLSLButton, SIGNAL(clicked()), this, SLOT(disconnectLSL()));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(updateCOMDevices()));
 }
 
@@ -454,6 +467,7 @@ void StreamingSettingsDialog::disconnectCOM() {
     //emit onConnStateChanged();
 }
 
+#ifdef USE_LSL
 void StreamingSettingsDialog::connectLSL() {
 
     setLimitationsWhileConnectedLSL(true);
@@ -498,6 +512,51 @@ void StreamingSettingsDialog::disconnectLSL() {
     //emit onConnStateChanged();
 }
 
+bool StreamingSettingsDialog::isLSLConnected() {
+    return LSLconnected;
+}
+
+void StreamingSettingsDialog::saveLSLSettings() {
+
+    std::cout << dataContainerLSLBox->currentData().toString().toStdString() << std::endl;
+
+    lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
+
+    // TODO: LEHET VALAMI PÁROSTÁS KELL MÉG EHHEZ AZ ENUMOK MIATT
+    applicationSettings->setValue("StreamingSettings.LSL.eye", specXDFeyeBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.camera", specXDFcameraBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.pupilData", specXDFpupDataBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.confidence", specXDFconfBox->currentText());
+
+    applicationSettings->setValue("StreamingSettings.LSL.dataContainer", dataContainerLSLBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value());
+
+    this->update();
+}
+
+DataStreamer::DataContainer StreamingSettingsDialog::getDataContainerLSL() {
+    DataStreamer::DataContainer cn = static_cast<DataStreamer::DataContainer>(
+            dataContainerLSLBox->itemData(dataContainerLSLBox->currentIndex()).toInt());
+    return cn;
+}
+
+void StreamingSettingsDialog::setLimitationsWhileConnectedLSL(bool state) {
+
+    connectLSLButton->setDisabled(state);
+    disconnectLSLButton->setDisabled(!state);
+
+    // empty, but may be populated later
+}
+
+void StreamingSettingsDialog::setLimitationsWhileStreamingLSL(bool state) {
+
+    dataContainerLSLBox->setDisabled(state);
+    dataContainerLSLLabel->setDisabled(state);
+    lslSampleRateBox->setDisabled(state);
+    lslSampleRateLabel->setDisabled(state);
+}
+#endif
+
 void StreamingSettingsDialog::fillCOMParameters() {
     baudRateBox->addItem(QStringLiteral("9600"), QSerialPort::Baud9600);
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
@@ -530,7 +589,11 @@ void StreamingSettingsDialog::fillCOMParameters() {
 }
 
 bool StreamingSettingsDialog::isAnyConnected() {
-    return (isUDPConnected() || isCOMConnected() || isLSLConnected());
+    return (isUDPConnected() || isCOMConnected()
+#ifdef USE_LSL
+        || isLSLConnected()
+#endif
+        );
 }
 
 bool StreamingSettingsDialog::isUDPConnected() {
@@ -547,10 +610,6 @@ bool StreamingSettingsDialog::isCOMConnected() {
         return false;
     else
         return true;
-}
-
-bool StreamingSettingsDialog::isLSLConnected() {
-    return LSLconnected;
 }
 
 // Update current settings with the configuration from the form
@@ -611,6 +670,7 @@ void StreamingSettingsDialog::loadSettings() {
     dataContainerCOMBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataContainer", dataContainerCOMBox->itemText(0)).toString());
     comSampleRateBox->setValue(applicationSettings->value("StreamingSettings.COM.sampleRate", comSampleRateBox->value()).toInt());
 
+#ifdef USE_LSL
     // TODO: így menjen az XDF cuccok beállítása
     //  és a hide/show is a GUI elemeiken
     //  és a Notepad++-ban aktuális dolgok még asap
@@ -627,6 +687,7 @@ void StreamingSettingsDialog::loadSettings() {
     lslSampleRateBox->setValue(applicationSettings->value("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value()).toInt());
 
     lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
+#endif
 
     this->update();
 
@@ -637,7 +698,9 @@ void StreamingSettingsDialog::saveSettings() {
 
     saveUDPSettings();
     saveCOMSettings();
+#ifdef USE_LSL
     saveLSLSettings();
+#endif
 }
 
 void StreamingSettingsDialog::saveUDPSettings() {
@@ -659,24 +722,6 @@ void StreamingSettingsDialog::saveCOMSettings() {
     applicationSettings->setValue("StreamingSettings.COM.flowControl", flowControlBox->currentText());
     //applicationSettings->setValue("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked());
     applicationSettings->setValue("StreamingSettings.COM.sampleRate", comSampleRateBox->value());
-}
-
-void StreamingSettingsDialog::saveLSLSettings() {
-
-    std::cout << dataContainerLSLBox->currentData().toString().toStdString() << std::endl;
-
-    lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
-
-    // TODO: LEHET VALAMI PÁROSTÁS KELL MÉG EHHEZ AZ ENUMOK MIATT
-    applicationSettings->setValue("StreamingSettings.LSL.eye", specXDFeyeBox->currentText());
-    applicationSettings->setValue("StreamingSettings.LSL.camera", specXDFcameraBox->currentText());
-    applicationSettings->setValue("StreamingSettings.LSL.pupilData", specXDFpupDataBox->currentText());
-    applicationSettings->setValue("StreamingSettings.LSL.confidence", specXDFconfBox->currentText());
-
-    applicationSettings->setValue("StreamingSettings.LSL.dataContainer", dataContainerLSLBox->currentText());
-    applicationSettings->setValue("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value());
-
-    this->update();
 }
 
 /*
@@ -720,12 +765,6 @@ DataStreamer::DataContainer StreamingSettingsDialog::getDataContainerCOM() {
     return cn;
 }
 
-DataStreamer::DataContainer StreamingSettingsDialog::getDataContainerLSL() {
-    DataStreamer::DataContainer cn = static_cast<DataStreamer::DataContainer>(
-            dataContainerLSLBox->itemData(dataContainerLSLBox->currentIndex()).toInt());
-    return cn;
-}
-
 void StreamingSettingsDialog::setLimitationsWhileConnectedUDP(bool state) {  
 
     udpIpLabel->setDisabled(state);
@@ -760,14 +799,6 @@ void StreamingSettingsDialog::setLimitationsWhileConnectedCOM(bool state) {
     disconnectCOMButton->setDisabled(!state);
 }
 
-void StreamingSettingsDialog::setLimitationsWhileConnectedLSL(bool state) {
-
-    connectLSLButton->setDisabled(state);
-    disconnectLSLButton->setDisabled(!state);
-
-    // empty, but may be populated later
-}
-
 void StreamingSettingsDialog::setLimitationsWhileStreamingUDP(bool state) {
 
     dataContainerUDPBox->setDisabled(state);
@@ -785,20 +816,16 @@ void StreamingSettingsDialog::setLimitationsWhileStreamingCOM(bool state) {
     comSampleRateLabel->setDisabled(state);
 }
 
-void StreamingSettingsDialog::setLimitationsWhileStreamingLSL(bool state) {
 
-    dataContainerLSLBox->setDisabled(state);
-    dataContainerLSLLabel->setDisabled(state);
-    lslSampleRateBox->setDisabled(state);
-    lslSampleRateLabel->setDisabled(state);
-}
 
 // Only to grey out "Connect" buttons while streaming is On (no matter which are On)
 void StreamingSettingsDialog::setLimitationsWhileStreamingAny(bool state) {
 
     connectUDPButton->setDisabled(state || isUDPConnected());
     connectCOMButton->setDisabled(state || isCOMConnected());
+#ifdef USE_LSL
     connectLSLButton->setDisabled(state || isLSLConnected());
+#endif
 }
 
 /*

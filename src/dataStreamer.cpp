@@ -22,10 +22,12 @@ DataStreamer::DataStreamer(
     delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
+#ifdef USE_LSL
     lsl_xdf_Eye = (LSL_XDF_Eye)applicationSettings->value("StreamingSettings.LSL.eye", LSL_XDF_Eye::XDF_LEFT).toInt();
     lsl_xdf_Camera = (LSL_XDF_Camera)applicationSettings->value("StreamingSettings.LSL.camera", LSL_XDF_Camera::XDF_MAIN).toInt();
     lsl_xdf_Diameter = (PDataType)applicationSettings->value("StreamingSettings.LSL.pupilData", PDataType::PUPIL_DIAMETER).toInt();
     lsl_xdf_Confidence = (PDataType)applicationSettings->value("StreamingSettings.LSL.confidence", PDataType::PUPIL_CONFIDENCE).toInt();
+#endif
 }
 
 void DataStreamer::startUDPStreamer(int poolIndex, int srate, DataContainer dataContainer) {
@@ -46,6 +48,7 @@ void DataStreamer::startCOMStreamer(int poolIndex, int srate, DataContainer data
     timerCOM.start();
 }
 
+#ifdef USE_LSL
 void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, ProcMode procMode) {
 
     LSLdataContainer = dataContainer;
@@ -147,6 +150,16 @@ void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, Proc
     sampleRateDelayLSL = 1000 / srate;
     timerLSL.start();
 }
+
+void DataStreamer::stopLSLStreamer() {
+
+    // TODO
+    delete LSLOutlet;
+    LSLOutlet = nullptr;
+
+    qDebug() << "Stopping LSL streaming";
+}
+#endif
     
 void DataStreamer::stopUDPStreamer() {
     connPoolUDPIndex = -1;
@@ -158,15 +171,6 @@ void DataStreamer::stopCOMStreamer() {
     connPoolCOMIndex = -1;
     COMdataContainer = DataStreamer::CSV;
     qDebug() << "Stopping COM streaming";
-}
-
-void DataStreamer::stopLSLStreamer() {
-
-    // TODO
-    delete LSLOutlet;
-    LSLOutlet = nullptr;
-
-    qDebug() << "Stopping LSL streaming";
 }
 
 // On new pupil data, stream it
@@ -211,6 +215,7 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
         timerCOM.start();
         anyUsed = true;
     }
+#ifdef USE_LSL
     if(LSLOutlet != nullptr &&
        timerLSL.elapsed() >= sampleRateDelayLSL) {
 
@@ -233,13 +238,16 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
         timerLSL.start();
         anyUsed = true;
     }
+#endif
 
     if(!anyUsed) { // This is just for extra safety
         qDebug() << "Streamers are not in use, stopping all.";
         //emit underlyingConnectionsClosed();
         stopUDPStreamer();
         stopCOMStreamer();
+#ifdef USE_LSL
         stopLSLStreamer();
+#endif
     }
 }
 
@@ -251,6 +259,7 @@ int DataStreamer::getNumActiveStreamers() {
     if(connPoolCOMIndex >= 0 && connPoolCOM->getInstance(connPoolCOMIndex) != nullptr) {
         num++;
     }
+// TODO ADD LSL
     return num;
 }
 
@@ -260,6 +269,8 @@ DataStreamer::~DataStreamer() {
 
 // Close the files, filestreams, etc
 void DataStreamer::close() {
+
+// TODO ADD LSL
     
     /*
     if(streamingMethod == StreamingMethod::COM && serialPort != nullptr && serialPort->isOpen()) 

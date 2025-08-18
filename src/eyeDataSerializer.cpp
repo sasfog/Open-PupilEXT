@@ -245,6 +245,7 @@ QString EyeDataSerializer::getHeaderCSV(const std::vector<char> &eyeIdentities, 
     return result;
 }
 
+#ifdef USE_LSL
 void EyeDataSerializer::addLSLChannelsInfo_XDF(lsl::stream_info *info,
                                    const LSL_XDF_Eye lsl_xdf_Eye,
                                    const LSL_XDF_Camera lsl_xdf_Camera,
@@ -441,6 +442,7 @@ std::vector<double> EyeDataSerializer::pupilToLSLsample_V1(quint64 timestamp, co
 
     return result;
 }
+#endif
 
 // Converts a pupil detection to a string row that is written to file
 // CAUTION: This must exactly reproduce the format defined by the header fields

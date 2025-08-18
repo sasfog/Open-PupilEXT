@@ -27,8 +27,9 @@
 #include "connPoolCOM.h"
 #include "connPoolUDP.h"
 
+#ifdef USE_LSL
 #include "lsl_cpp.h"
-
+#endif
 
 // TODO: make a kind of HTTP "REST API-like" thing with only a few accepted requests, 
 // returning e.g. the last read pupil data? Could be fun :)
@@ -62,11 +63,14 @@ public:
 //    void startUDPStreamer(QUdpSocket *socket, QHostAddress ip, quint16 port, DataContainer dataContainer);
     void startUDPStreamer(int poolIndex, int srate, DataContainer dataContainer);
     void startCOMStreamer(int poolIndex, int srate, DataContainer dataContainer);
-    void startLSLStreamer(int srate, DataContainer dataContainer, ProcMode procMode);
     
     void stopUDPStreamer();
     void stopCOMStreamer();
+
+#ifdef USE_LSL
+    void startLSLStreamer(int srate, DataContainer dataContainer, ProcMode procMode);
     void stopLSLStreamer();
+#endif
 
     int getNumActiveStreamers();
 
@@ -78,7 +82,16 @@ private:
     ConnPoolUDP *connPoolUDP;
     int connPoolUDPIndex = -1;
 
+#ifdef USE_LSL
     lsl::stream_outlet* LSLOutlet = nullptr;
+    DataContainer LSLdataContainer;
+    QElapsedTimer timerLSL;
+    int sampleRateDelayLSL;
+    LSL_XDF_Eye lsl_xdf_Eye = XDF_LEFT;
+    LSL_XDF_Camera lsl_xdf_Camera = XDF_MAIN;
+    PDataType lsl_xdf_Diameter = PDataType::PUPIL_DIAMETER;
+    PDataType lsl_xdf_Confidence = PDataType::PUPIL_CONFIDENCE;
+#endif
 
     PupilDetection *pupilDetection;
     
@@ -89,23 +102,16 @@ private:
 
     DataContainer UDPdataContainer;
     DataContainer COMdataContainer;
-    DataContainer LSLdataContainer;
 
     QElapsedTimer timerUDP;
     QElapsedTimer timerCOM;
-    QElapsedTimer timerLSL;
     int sampleRateDelayUDP;
     int sampleRateDelayCOM;
-    int sampleRateDelayLSL;
 
     QSettings *applicationSettings;
     QChar delim; 
     RecEventTracker *recEventTracker;
 
-    LSL_XDF_Eye lsl_xdf_Eye = XDF_LEFT;
-    LSL_XDF_Camera lsl_xdf_Camera = XDF_MAIN;
-    PDataType lsl_xdf_Diameter = PDataType::PUPIL_DIAMETER;
-    PDataType lsl_xdf_Confidence = PDataType::PUPIL_CONFIDENCE;
 
     uint _trialNumber = 1;
     QString _message = "";

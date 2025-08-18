@@ -48,7 +48,9 @@ public:
     int getConnPoolCOMIndex();
     DataStreamer::DataContainer getDataContainerUDP();
     DataStreamer::DataContainer getDataContainerCOM();
+#ifdef USE_LSL
     DataStreamer::DataContainer getDataContainerLSL();
+#endif
 
 private:
 
@@ -57,8 +59,6 @@ private:
 
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
-
-    bool LSLconnected = false;
 
     PupilDetection *pupilDetection;
     //DataStreamer *dataStreamer;
@@ -85,7 +85,6 @@ private:
 
     QGroupBox *udpGroup;
     QGroupBox *comGroup;
-    QGroupBox *lslGroup;
 
     QPushButton *refreshButton;
 
@@ -108,6 +107,11 @@ private:
     QComboBox *parityBox;
     QComboBox *stopBitsBox;
 
+    // NOTE leave it here, it holds a note for the user
+    QGroupBox *lslGroup;
+#ifdef USE_LSL
+    bool LSLconnected = false;
+
     QLabel *lslSampleRateLabel;
     QSpinBox *lslSampleRateBox;
     QComboBox *dataContainerLSLBox;
@@ -123,12 +127,14 @@ private:
     QLabel *specXDFconfLabel;
     QComboBox *specXDFconfBox;
 
+    QPushButton *connectLSLButton;
+    QPushButton *disconnectLSLButton;
+#endif
+
     QPushButton *connectUDPButton;
     QPushButton *disconnectUDPButton;
     QPushButton *connectCOMButton;
     QPushButton *disconnectCOMButton;
-    QPushButton *connectLSLButton;
-    QPushButton *disconnectLSLButton;
 
     void fillCOMParameters();
 
@@ -148,29 +154,32 @@ public slots:
     bool isAnyConnected();
     bool isUDPConnected();
     bool isCOMConnected();
+
+#ifdef USE_LSL
     bool isLSLConnected(); // Sounds strange, but this is by far more clean in the coding point of view
+    void onConnectLSLClick();
+    void disconnectLSL();
+    void connectLSL();
+    void saveLSLSettings();
+    void setLimitationsWhileConnectedLSL(bool state);
+    void setLimitationsWhileStreamingLSL(bool state);
+#endif
 
     void onConnectUDPClick();
     void disconnectUDP();
     void onConnectCOMClick();
     void disconnectCOM();
-    void onConnectLSLClick();
-    void disconnectLSL();
 
     void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
-    void connectLSL();
 
     void saveUDPSettings();
     void saveCOMSettings();
-    void saveLSLSettings();
 
     void setLimitationsWhileConnectedUDP(bool state);  
     void setLimitationsWhileStreamingUDP(bool state);
     void setLimitationsWhileConnectedCOM(bool state);
     void setLimitationsWhileStreamingCOM(bool state);
-    void setLimitationsWhileConnectedLSL(bool state);
-    void setLimitationsWhileStreamingLSL(bool state);
     void setLimitationsWhileStreamingAny(bool state);
 
     //void setLimitationsWhileStreaming(bool state);
@@ -180,8 +189,10 @@ signals:
     void onUDPDisconnect();
     void onCOMConnect();
     void onCOMDisconnect();
+#ifdef USE_LSL
     void onLSLConnect();
     void onLSLDisconnect();
+#endif
     //void onConnStateChanged();
 
 };

@@ -32,8 +32,13 @@ project(PupilEXT)
 #set(USE_PYLON TRUE)
 set(USE_PYLON FALSE)
 
-# On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
-#set(CMAKE_CXX_STANDARD 17)
+set(USE_LSL FALSE)
+
+if(NOT (MSVC OR WIN32))
+    # On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
+    # Also on Apple when we use clang of Xcode?
+    set(CMAKE_CXX_STANDARD 17)
+endif()
 
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
@@ -48,6 +53,20 @@ set(SPII_BUILD_MODE_VAR TRUE)
 # Provide the user name for your system, which is used to find the Qt6_DIR on Mac and Win
 set(QT_VERSION 6.8.3)
 
+if(APPLE)
+    ##set(CMAKE_GENERATOR_PLATFORM x86_64)
+    #set(CMAKE_GENERATOR_PLATFORM arm64)
+
+    ##set(CMAKE_OSX_ARCHITECTURES x86_64)
+    set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "" FORCE)
+
+    # IMPORTANT: workaround for the problem that ceres wont build (link) for apple arm64
+    #  We need to manually navigate to 3rdparty/vcpkg/ports/ceres/portfile.cmake, and add:
+    #  OPTIONS
+    #      -DCERES_NO_ACCELERATE_SPARSE=ON
+    #  and then rebuild vcpkg packages with ./vcpkg install command from a terminal window opened in 3rdparty/vcpkg
+    #  then building again the project should succeed on apple silicon (arm64) as well.
+endif()
 
 ###################### # DEV TEST: ?? newer cmake will not assume OFF, so we need to tell them
 ######################set(BUILD_SHARED_LIBS OFF)
@@ -92,10 +111,17 @@ if(APPLE)
         set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/aravis-specific)
     endif()
 
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64")
-    set(Qt6_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt6")
+    # older Qt with Mac Intel 64 (x64-osx)
+    #set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64")
+    #set(Qt6_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt6")
+    #set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
+    # newer Qt with Mac M2 (arm64-osx)
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/macos")
+    set(Qt6_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/macos/lib/cmake/Qt6")
+    #set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "") # TRY INTEL TARGET?
+    set(VCPKG_TARGET_TRIPLET arm64-osx CACHE STRING "")
+    #set(VCPKG_TARGET_TRIPLET x86_64 CACHE STRING "")
 
-    set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
 
     if(USE_PYLON)
@@ -179,6 +205,7 @@ find_package(Ceres CONFIG REQUIRED)
 find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
 find_package(glog CONFIG REQUIRED)
 find_package(LSL CONFIG REQUIRED)
+    find_package(LibXml2 CONFIG REQUIRED) # DEV, APPLE
 find_package(Qt6 COMPONENTS Core5Compat Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 if(USE_PYLON)
     find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
@@ -368,6 +395,10 @@ if(NOT USE_PYLON)
             aravis-0.8
             PATHS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
     message(STATUS "Aravis (aravis-0.8) lib location: ${aravis_LIBRARIES}")
+
+    message("glib cflags: ${glib_CFLAGS}")
+    message("glib libraries location: ${glib_LIBRARIES}")
+    message("glib link libraries location: ${glib_LINK_LIBRARIES}")
 endif()
 
 message(STATUS "--------------------- QuaZip not found will be installed (automatic) ---------------------")

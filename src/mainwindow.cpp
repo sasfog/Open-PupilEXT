@@ -166,8 +166,10 @@ MainWindow::MainWindow():
     connect(streamingSettingsDialog, SIGNAL (onUDPDisconnect()), this, SLOT (onStreamingUDPDisconnect()));
     connect(streamingSettingsDialog, SIGNAL (onCOMConnect()), this, SLOT (onStreamingCOMConnect()));
     connect(streamingSettingsDialog, SIGNAL (onCOMDisconnect()), this, SLOT (onStreamingCOMDisconnect()));
+#ifdef USE_LSL
     connect(streamingSettingsDialog, SIGNAL (onLSLConnect()), this, SLOT (onStreamingLSLConnect()));
     connect(streamingSettingsDialog, SIGNAL (onLSLDisconnect()), this, SLOT (onStreamingLSLDisconnect()));
+#endif
 
     /*
     // if proc mode settings are not interpretable, reset them
@@ -1305,7 +1307,9 @@ void MainWindow::onStreamClick() {
 
         streamingSettingsDialog->setLimitationsWhileStreamingUDP(false);
         streamingSettingsDialog->setLimitationsWhileStreamingCOM(false);
+#ifdef USE_LSL
         streamingSettingsDialog->setLimitationsWhileStreamingLSL(false);
+#endif
         streamingSettingsDialog->setLimitationsWhileStreamingAny(false);
 
         dataStreamer->close(); // TODO check if may terminate writing to early? because of the lag of the event queue in pupildetection
@@ -1347,6 +1351,7 @@ void MainWindow::onStreamClick() {
                     streamingSettingsDialog->getDataContainerCOM() );
             streamingSettingsDialog->setLimitationsWhileStreamingCOM(true);
         }
+#ifdef USE_LSL
         if(streamingSettingsDialog->isLSLConnected()) {
             dataStreamer->startLSLStreamer(
                     applicationSettings->value("StreamingSettings.LSL.sampleRate", 30).toInt(),
@@ -1354,6 +1359,7 @@ void MainWindow::onStreamClick() {
                     pupilDetectionWorker->getCurrentProcMode() );
             streamingSettingsDialog->setLimitationsWhileStreamingLSL(true);
         }
+#endif
         streamingSettingsDialog->setLimitationsWhileStreamingAny(true);
 
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>)), dataStreamer, SLOT (newPupilData(quint64, int, std::vector<Pupil>)));
@@ -3332,6 +3338,7 @@ void MainWindow::onStreamingCOMDisconnect() {
     streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
 }
 
+#ifdef USE_LSL
 void MainWindow::onStreamingLSLConnect() {
     // TODO: minek volt ez itt? A streamer elindítása a stream gomb feladata.
     //  Azt pedig elvégzi vagy a valós kattintás vagy a PRG command, a connectet pedig
@@ -3359,6 +3366,7 @@ void MainWindow::onStreamingLSLDisconnect() {
 
     streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
 }
+#endif
 
 void MainWindow::onRemoteConnStateChanged() {
     if(remoteCCDialog->isAnyConnected()) {

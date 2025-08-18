@@ -40,7 +40,6 @@ set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATIO
 #)
 #add_definitions(-DGENICAM_NO_AUTO_LINK)
 
-# For packaging on Mac, add_executable(PupilEXT MACOSX_BUNDLE main.cpp 
 set(ALL_SOURCES_TO_ADD
         main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
@@ -129,11 +128,18 @@ if(USE_PYLON)
 endif()
 
 # For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp ...
-add_executable(PupilEXT ${ALL_SOURCES_TO_ADD})
+if(APPLE)
+    add_executable(PupilEXT MACOSX_BUNDLE ${ALL_SOURCES_TO_ADD})
+else()
+    add_executable(PupilEXT ${ALL_SOURCES_TO_ADD})
+endif()
 
 # Let this variable be there in preprocessor code to use ifdef-endif
 if(USE_PYLON)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE USE_PYLON)
+endif()
+if(USE_LSL)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE USE_LSL)
 endif()
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
@@ -150,11 +156,20 @@ set(ALL_LIBRARIES_TO_LINK
         ${CERES_LIBRARIES}
         ${BZip2_LIBRARIES} ########################################################
         ${OpenCV_LIBS}
-        LSL::lsl
         # ${FFMPEG_LIBRARIES}
-        opengl32 # works only for windows
+        #opengl32 # works only for windows
         #OpenGL::GL
 )
+
+if(MSVC OR WIN32)
+    list(APPEND ALL_LIBRARIES_TO_LINK opengl32)
+else()
+    list(APPEND ALL_LIBRARIES_TO_LINK OpenGL::GL)
+endif()
+
+if(USE_LSL)
+    list(APPEND ALL_LIBRARIES_TO_LINK LSL::lsl)
+endif()
 
 if(SPII_BUILD_FOUND)
     list(APPEND ALL_LIBRARIES_TO_LINK ${spii_LIBRARIES})
@@ -167,8 +182,44 @@ if(USE_PYLON)
     list(APPEND ALL_LIBRARIES_TO_LINK ${PYLON_LIBRARIES})
     #list(APPEND ALL_LIBRARIES_TO_LINK PylonRelease)
 else()
-    list(APPEND ALL_LIBRARIES_TO_LINK ${glib_LIBRARIES})
+    # If we use pkg-config (on apple or linux) then the glib_LIBRARIES variable only contains logical names,
+    #  and not direct paths to the needed .a or .o files for linking, as instead, we need to use the
+    #  glib_LINK_LIBRARIES variable, that has proper content. Even if we do not use pkg-config, I specified
+    #  the scripts to create this named variable, in Findglib.cmake
+    if(MSVC OR WIN32)
+        list(APPEND ALL_LIBRARIES_TO_LINK ${glib_LIBRARIES})
+    else()
+        list(APPEND ALL_LIBRARIES_TO_LINK ${glib_LINK_LIBRARIES})
+    endif()
+
     list(APPEND ALL_LIBRARIES_TO_LINK ${aravis_LIBRARIES})
+    if(APPLE)
+        list(APPEND ALL_LIBRARIES_TO_LINK LibXml2::LibXml2)
+        list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/libusb-1.0.a")
+        list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/libpcre2-8.a")
+        list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/libintl.a")
+        list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/libffi.a")
+        #list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/lib/libspii.dylib")
+        list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/cmake-build-debug/lib/libspii.dylib")
+        #list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/lib/libmeschach.a") ## ?
+        list(APPEND ALL_LIBRARIES_TO_LINK "${PROJECT_SOURCE_DIR}/cmake-build-debug/lib/libmeschach.a")
+
+        # IMPORTANT NOTE:
+        #  I have spent half a day with this, until I figured out that this simple addition will resolve the issue.
+        #  DETAILS: On Apple Silicon (arm64) when using aravis, and hence using glib, the libgio-2.0 library will
+        #  fail to link, as some functions are not found that are referenced in gthreadedresolver.c.o. These functions
+        #  are called _res_9_* but not _res_*. According to all sources I have found on internet, the latter ones
+        #  should be (only) available on amd64, but the former are not. In the gthreadedresolver.c source, or anz other
+        #  gio library source, I have found no mentioning (redefinition, etc) of _res_* with _res_9_*, however
+        #  the problem persisted even after any clean rebuild attempt. I have glib on the build/host machine,
+        #  which in the cellar has mentions the _res_9_* functions, so it might have been the case that
+        #  (meson inside) vcpkg silently decided to use pkg-config to hook-in the libs instead of compiling them,
+        #  or whatever might have happened. In the end I could not find the reason why the _res_9_* references are in
+        #  there. However, adding the link below solved the case (for now). I leave this comment here to help
+        #  anybody who stumbles upon this (or a similar) problem in future.
+        #  Ὦ ξεῖν', ἀγγέλλειν Λακεδαιμονίοις ὅτι τῇδε κείμεθα, τοῖς κείνων ῥήμασι πειθόμενοι.
+        list(APPEND ALL_LIBRARIES_TO_LINK "-lresolv")
+    endif()
 endif()
 
 message(STATUS "ALL_LIBRARIES_TO_LINK: ${ALL_LIBRARIES_TO_LINK}")

@@ -511,6 +511,7 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
     streamingSettingsDialog->connectCOM(p);
 }
 
+#ifdef USE_LSL
 void MainWindow::PRGconnectStreamLSL(QString conf) {
     if(streamingSettingsDialog->isLSLConnected())
         return;
@@ -540,6 +541,7 @@ void MainWindow::PRGconnectStreamLSL(QString conf) {
     }
     streamingSettingsDialog->connectLSL();
 }
+#endif
 
 void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
     if(MCUSettingsDialogInst->isConnected())
@@ -671,10 +673,12 @@ void MainWindow::PRGdisconnectStreamCOM() {
     if(streamingSettingsDialog->isCOMConnected())
         streamingSettingsDialog->disconnectCOM();
 }
+#ifdef USE_LSL
 void MainWindow::PRGdisconnectStreamLSL() {
     if(streamingSettingsDialog->isLSLConnected())
         streamingSettingsDialog->disconnectLSL();
 }
+#endif
 void MainWindow::PRGdisconnectMicrocontroller() {
     if(MCUSettingsDialogInst->isConnected())
         MCUSettingsDialogInst->doDisconnect();

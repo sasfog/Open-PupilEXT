@@ -23,7 +23,9 @@
 
 #include <QStringBuilder>
 
+#ifdef USE_LSL
 #include "lsl_cpp.h"
+#endif
 
 /**
     
@@ -36,6 +38,7 @@ class EyeDataSerializer : public QObject {
 public:
 
     static QString getHeaderCSV(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, QChar delim, DataWriterDataStyle dataStyle);
+#ifdef USE_LSL
     static void addLSLChannelsInfo_XDF(lsl::stream_info *info,
                                                    const LSL_XDF_Eye lsl_xdf_Eye,
                                                    const LSL_XDF_Camera lsl_xdf_Camera,
@@ -51,7 +54,7 @@ public:
                                                     const PDataType lsl_xdf_Diameter,
                                                     const PDataType lsl_xdf_Confidence);
     static std::vector<double> pupilToLSLsample_V1(quint64 timestamp, const std::vector<Pupil> &Pupils);
-
+#endif
     static QString pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const QString& message, const std::vector<double> &temperatures);
     static QString pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures);
     static QString pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, uint trialNum, const QString& message, const std::vector<double> &temperatures);

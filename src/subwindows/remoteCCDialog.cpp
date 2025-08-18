@@ -614,17 +614,21 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                     w->PRGconnectStreamUDP(str.mid(8, str.length()-8));
                 else if(str.size()>8 && str.mid(4,3).toLower() == "com")
                     w->PRGconnectStreamCOM(str.mid(8, str.length()-8).toUpper());
+#ifdef USE_LSL
                 else if(str.size()>8 && str.mid(4,3).toLower() == "lsl") // if no configuration string is supplied
                     w->PRGconnectStreamLSL(str.mid(8, str.length()-8).toUpper());
                 else if(str.mid(4,3).toLower() == "lsl") // if a configuration string is supplied (data container and desired srate)
                     w->PRGconnectStreamLSL("");
+#endif
             } else if(str.size()>=6 && str[2].toLower() == 'd') {
                 if(str.mid(4,3).toLower() == "udp")
                     w->PRGdisconnectStreamUDP();
                 else if(str.size()>=6 && str.mid(4,3).toLower() == "com")
                     w->PRGdisconnectStreamCOM();
+#ifdef USE_LSL
                 else if(str.size()>=6 && str.mid(4,3).toLower() == "lsl")
                     w->PRGdisconnectStreamLSL();
+#endif
             }
         } else if(str[1].toLower() == 'm') { // for Microcontroller ("camera serial") connection
             if(str[2].toLower() == 'c' ) {

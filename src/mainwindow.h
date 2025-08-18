@@ -414,8 +414,10 @@ private slots:
     void onStreamingUDPDisconnect();
     void onStreamingCOMConnect();
     void onStreamingCOMDisconnect();
+#ifdef USE_LSL
     void onStreamingLSLConnect();
     void onStreamingLSLDisconnect();
+#endif
 
     void onImagesSkipped();
     void onImagesSkippedMsgClose();
@@ -456,15 +458,17 @@ public slots:
     void PRGconnectRemoteCOM(QString conf);
     void PRGconnectStreamUDP(QString conf);
     void PRGconnectStreamCOM(QString conf);
-    void PRGconnectStreamLSL(QString conf);
     void PRGconnectMicrocontrollerUDP(QString conf);
     void PRGconnectMicrocontrollerCOM(QString conf);
     void PRGdisconnectRemoteUDP();
     void PRGdisconnectRemoteCOM();
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
-    void PRGdisconnectStreamLSL();
     void PRGdisconnectMicrocontroller();
+#ifdef USE_LSL
+    void PRGdisconnectStreamLSL();
+    void PRGconnectStreamLSL(QString conf);
+#endif
 
     void PRGenableHWT(bool state);
     void PRGstartHWT();

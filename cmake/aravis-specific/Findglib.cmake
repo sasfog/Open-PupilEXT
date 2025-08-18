@@ -6,6 +6,52 @@
 
 if(APPLE)
 
+    # # assuming we have it via pkg-config
+    # find_package(PkgConfig)
+    # pkg_check_modules(glib REQUIRED glib-2.0)
+    #
+    # if(glib_INCLUDE_DIRS AND glib_LIBRARIES)
+    #     set(glib_FOUND TRUE)
+    # endif()
+
+    set(glib_LIB_SEARCH_PATH "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/")
+
+    find_library(glib_gio_LIBRARY
+            NAMES libgio-2.0.a
+            PATHS ${glib_LIB_SEARCH_PATH})
+    find_library(glib_girepository_LIBRARY
+            NAMES libgirepository-2.0.a
+            PATHS ${glib_LIB_SEARCH_PATH})
+    find_library(glib_glib_LIBRARY
+            NAMES libglib-2.0.a
+            PATHS ${glib_LIB_SEARCH_PATH})
+    find_library(glib_gmodule_LIBRARY
+            NAMES libgmodule-2.0.a
+            PATHS ${glib_LIB_SEARCH_PATH})
+    find_library(glib_gobject_LIBRARY
+            NAMES libgobject-2.0.a
+            PATHS ${glib_LIB_SEARCH_PATH})
+    find_library(glib_gthread_LIBRARY
+            NAMES libgthread-2.0.a
+            PATHS ${glib_LIB_SEARCH_PATH})
+
+    list(APPEND glib_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/glib-2.0")
+    # One .h file is in this strange location, likely due to vcpkg, but yet we include from there as well
+    list(APPEND glib_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/glib-2.0/include")
+
+    ##message(STATUS "Glib (glib-2.0) libs location: ${glib_LIBRARIES}")
+
+    list(APPEND glib_LINK_LIBRARIES ${glib_gio_LIBRARY})
+    list(APPEND glib_LINK_LIBRARIES ${glib_girepository_LIBRARY})
+    list(APPEND glib_LINK_LIBRARIES ${glib_glib_LIBRARY})
+    list(APPEND glib_LINK_LIBRARIES ${glib_gmodule_LIBRARY})
+    list(APPEND glib_LINK_LIBRARIES ${glib_gobject_LIBRARY})
+    list(APPEND glib_LINK_LIBRARIES ${glib_gthread_LIBRARY})
+
+    if(glib_INCLUDE_DIRS AND glib_LINK_LIBRARIES)
+        set(glib_FOUND TRUE)
+    endif()
+
 elseif(MSVC)
 
     # TODO: include paths
