@@ -21,7 +21,7 @@
 // DEV
 #include <QOpenGLDebugLogger>
 
-#ifdef DEBUG
+#ifdef QT_DEBUG
 #include <iostream>
 #include <QDebug>
 #endif

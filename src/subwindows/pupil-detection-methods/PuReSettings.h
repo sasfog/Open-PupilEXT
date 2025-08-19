@@ -75,7 +75,7 @@ public:
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel);
 
-#if _DEBUG
+#ifdef QT_DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);

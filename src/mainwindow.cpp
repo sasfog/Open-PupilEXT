@@ -254,7 +254,7 @@ void MainWindow::createActions() {
     cameraViewAct->setEnabled(false);
     dataTableAct->setEnabled(false);
 
-#if _DEBUG
+#ifdef QT_DEBUG
     sceneImageViewAct = viewMenu->addAction(sceneImageViewIcon, tr("Scene Image View Window"), this, &MainWindow::sceneImageViewClick);
 #endif
 
@@ -267,7 +267,7 @@ void MainWindow::createActions() {
     QMenu *settingsMenu = menuBar()->addMenu(tr("Settings"));
     settingsMenu->addAction(cameraSerialConnectionIcon, tr("Microcontroller Connection"), MCUSettingsDialogInst, &MCUSettingsDialog::show);
     settingsMenu->addAction(pupilDetectionSettingsIcon, tr("Pupil Detection"), pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
-#if _DEBUG
+#ifdef QT_DEBUG
     settingsMenu->addAction(setupGeometryIcon, tr("Setup Geometry"), setupGeometryDialog, &SetupGeometryDialog::show);
 #endif
     settingsMenu->addAction(remoteCCIcon, tr("Remote Control Connection"), remoteCCDialog, &RemoteCCDialog::show);

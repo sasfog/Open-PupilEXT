@@ -79,7 +79,7 @@ public:
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(infoLabel);
 
-#if _DEBUG
+#ifdef QT_DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
