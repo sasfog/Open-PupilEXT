@@ -30,7 +30,7 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
 #ifdef Q_OS_WIN // Q_OS_MACOS
     setMinimumSize(500, 650);
 #else
-    setMinimumSize(500, 720);
+    setMinimumSize(500, 740);
 #endif
 
     setWindowTitle(QString("[%1] Camera Settings").arg(camera->getFriendlyName()));

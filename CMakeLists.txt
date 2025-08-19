@@ -29,8 +29,8 @@ cmake_minimum_required(VERSION 3.9)
 project(PupilEXT)
 
 # Use Pylon or Aravis
-#set(USE_PYLON TRUE)
-set(USE_PYLON FALSE)
+set(USE_PYLON TRUE)
+#set(USE_PYLON FALSE)
 
 if(NOT (MSVC OR WIN32))
     # On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
@@ -53,6 +53,7 @@ set(QT_VERSION 6.8.3)
 
 if(APPLE)
     # If LSL is not supported or does not build
+    #set(USE_LSL TRUE)
     set(USE_LSL FALSE)
 
     ##set(CMAKE_GENERATOR_PLATFORM x86_64)
@@ -67,6 +68,22 @@ if(APPLE)
     #      -DCERES_NO_ACCELERATE_SPARSE=ON
     #  and then rebuild vcpkg packages with ./vcpkg install command from a terminal window opened in 3rdparty/vcpkg
     #  then building again the project should succeed on apple silicon (arm64) as well.
+
+    # // TODO:
+    # //  CMake Warning at 3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake:600 (_add_executable):
+    # //    Cannot generate a safe runtime search path for target PupilEXT because
+    # //    there is a cycle in the constraint graph:
+    # //
+    # //      dir 0 is [/Users/kerekperec/pupilext-dev-mac/Open-PupilEXT/cmake-build-release/lib]
+    # //        dir 3 must precede it due to runtime library [libspii.dylib]
+    # //      dir 1 is [/Users/kerekperec/pupilext-dev-mac/Open-PupilEXT/cmake-build-release/3rdparty/QuaZip/quazip]
+    # //      dir 2 is [/Users/kerekperec/Qt/6.8.3/macos/lib]
+    # //      dir 3 is [/Users/kerekperec/pupilext-dev-mac/Open-PupilEXT/cmake-build-debug/lib]
+    # //        dir 0 must precede it due to runtime library [libspii.dylib]
+    # //
+    # //    Some of these libraries may not be found correctly.
+    # //  Call Stack (most recent call first):
+    # //    src/CMakeLists.txt:132 (add_executable)
 endif()
 
 ###################### # DEV TEST: ?? newer cmake will not assume OFF, so we need to tell them

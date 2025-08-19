@@ -34,8 +34,10 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     setLayout(layout);
 
     tableContextMenu = new QMenu(this);
+    QAction *tcmAct = new QAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings),"Plot Value", this);
+    tcmAct->setIconVisibleInMenu(true);
     // Caution when adding new actions to this menu, the handler onContextMenuClick depends on the plot value action to be the first
-    tableContextMenu->addAction(new QAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings),"Plot Value", this));
+    tableContextMenu->addAction(tcmAct);
     connect(tableContextMenu, SIGNAL(triggered(QAction*)), this, SLOT(onContextMenuClick(QAction*)));
 
     // TODO: make this menu for header items too (bit complicated), and for each row (cell) make a contextmenu too

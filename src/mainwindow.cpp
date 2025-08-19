@@ -234,12 +234,14 @@ void MainWindow::createActions() {
     // Note: made global to let is get disabled/enabled, whether there is already an opened directory or not
     fileOpenAct = fileMenu->addAction(tr("Open Image Recording"), this, &MainWindow::onOpenImageDirectory);
     fileOpenAct->setIcon(fileOpenIcon);
+    fileOpenAct->setIconVisibleInMenu(true);
     fileOpenAct->setStatusTip(tr("Open Image Directory for Playback. Single and Stereo Mode supported."));
     fileMenu->addAction(fileOpenAct);
     fileMenu->addSeparator();
 
     QAction *exitAct = fileMenu->addAction(tr("E&xit"), qApp, &QApplication::closeAllWindows);
     exitAct->setShortcuts(QKeySequence::Quit);
+    exitAct->setIconVisibleInMenu(true);
     exitAct->setStatusTip(tr("Exit the application"));
     fileMenu->addAction(exitAct);
 
@@ -249,29 +251,60 @@ void MainWindow::createActions() {
     // formerly the camera view and data table windows were openable from there
 //    QMenu *addWindowsMenu = viewMenu->addMenu(tr("Windows"));
 
-    cameraViewAct = viewMenu->addAction(singleCameraIcon, tr("Camera View Window"), this, &MainWindow::cameraViewClick);
-    dataTableAct = viewMenu->addAction(dataTableIcon, tr("Data Table Window"), this, &MainWindow::dataTableClick);
+    cameraViewAct = new QAction(singleCameraIcon, tr("Camera View Window"));
+    connect(cameraViewAct, SIGNAL(triggered()), this, SLOT(cameraViewClick()));
+    cameraViewAct->setIconVisibleInMenu(true);
+    viewMenu->addAction(cameraViewAct);
+    //
+    dataTableAct = new QAction(dataTableIcon, tr("Data Table Window"));
+    connect(dataTableAct, SIGNAL(triggered()), this, SLOT(dataTableClick()));
+    dataTableAct->setIconVisibleInMenu(true);
+    viewMenu->addAction(dataTableAct);
+    //
     cameraViewAct->setEnabled(false);
     dataTableAct->setEnabled(false);
 
 #ifdef QT_DEBUG
-    sceneImageViewAct = viewMenu->addAction(sceneImageViewIcon, tr("Scene Image View Window"), this, &MainWindow::sceneImageViewClick);
+    sceneImageViewAct = new QAction(sceneImageViewIcon, tr("Scene Image View Window"));
+    connect(sceneImageViewAct, SIGNAL(triggered()), this, SLOT(sceneImageViewClick()));
+    sceneImageViewAct->setIconVisibleInMenu(true);
+    viewMenu->addAction(sceneImageViewAct);
 #endif
 
     viewMenu->addSeparator();
     toggleFullscreenAct = viewMenu->addAction(tr("Toggle Fullscreen"), this, &MainWindow::toggleFullscreen);
+    toggleFullscreenAct->setIconVisibleInMenu(true);
     toggleFullscreenAct->setCheckable(true);
     toggleFullscreenAct->setChecked(this->isMaximized());
     //viewMenu->addAction(tr("Switch layout direction"), this, &MainWindow::switchLayoutDirection);
 
     QMenu *settingsMenu = menuBar()->addMenu(tr("Settings"));
-    settingsMenu->addAction(cameraSerialConnectionIcon, tr("Microcontroller Connection"), MCUSettingsDialogInst, &MCUSettingsDialog::show);
-    settingsMenu->addAction(pupilDetectionSettingsIcon, tr("Pupil Detection"), pupilDetectionSettingsDialog, &PupilDetectionSettingsDialog::show);
+    QAction *cameraSerialConnectionAct = new QAction(cameraSerialConnectionIcon, tr("Microcontroller Connection"));
+    cameraSerialConnectionAct->setIconVisibleInMenu(true);
+    connect(cameraSerialConnectionAct, SIGNAL(triggered()), MCUSettingsDialogInst, SLOT(show()));
+    settingsMenu->addAction(cameraSerialConnectionAct);
+    //
+    QAction *pupilDetectionSettingsAct = new QAction(pupilDetectionSettingsIcon, tr("Pupil Detection"));
+    pupilDetectionSettingsAct->setIconVisibleInMenu(true);
+    connect(pupilDetectionSettingsAct, SIGNAL(triggered()), pupilDetectionSettingsDialog, SLOT(show()));
+    settingsMenu->addAction(pupilDetectionSettingsAct);
+    //
 #ifdef QT_DEBUG
-    settingsMenu->addAction(setupGeometryIcon, tr("Setup Geometry"), setupGeometryDialog, &SetupGeometryDialog::show);
+    QAction *setupGeometryAct = new QAction(setupGeometryIcon, tr("Setup Geometry"));
+    setupGeometryAct->setIconVisibleInMenu(true);
+    connect(setupGeometryAct, SIGNAL(triggered()), setupGeometryDialog, SLOT(show()));
+    settingsMenu->addAction(setupGeometryAct);
+    //
 #endif
-    settingsMenu->addAction(remoteCCIcon, tr("Remote Control Connection"), remoteCCDialog, &RemoteCCDialog::show);
-    settingsMenu->addAction(generalSettingsIcon, tr("General Settings"), generalSettingsDialog, &GeneralSettingsDialog::show);
+    QAction *remoteCCAct = new QAction(remoteCCIcon, tr("Remote Control Connection"));
+    remoteCCAct->setIconVisibleInMenu(true);
+    connect(remoteCCAct, SIGNAL(triggered()), remoteCCDialog, SLOT(show()));
+    settingsMenu->addAction(remoteCCAct);
+    //
+    QAction *settingsAct = new QAction(generalSettingsIcon, tr("General Settings"));
+    connect(settingsAct, SIGNAL(triggered()), generalSettingsDialog, SLOT(show()));
+    settingsAct->setIconVisibleInMenu(true);
+    settingsMenu->addAction(settingsAct);
 
     windowMenu = menuBar()->addMenu(tr("Windows"));
     connect(windowMenu, &QMenu::aboutToShow, this, &MainWindow::updateWindowMenu);
@@ -281,17 +314,21 @@ void MainWindow::createActions() {
     QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
     QAction *userGuideAct = helpMenu->addAction(tr("Open User Guide"), this, &MainWindow::userGuide);
     userGuideAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/22/question.svg",applicationSettings));
+    userGuideAct->setIconVisibleInMenu(true);
     userGuideAct->setStatusTip(tr("Show a brief user guide"));
     helpMenu->addSeparator();
     QAction *openSourceAct = helpMenu->addAction(tr("Show Open Source Licenses"), this, &MainWindow::openSourceDialog);
     openSourceAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/license.svg",applicationSettings));
+    openSourceAct->setIconVisibleInMenu(true);
     openSourceAct->setStatusTip(tr("Show the application's open source usages."));
     QAction *aboutAct = helpMenu->addAction(tr("About"), this, &MainWindow::about);
     aboutAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/help-about.svg",applicationSettings));
+    aboutAct->setIconVisibleInMenu(true);
     aboutAct->setStatusTip(tr("Show the application's About box"));
     helpMenu->addSeparator();
     QAction *clearPersistenceAct = helpMenu->addAction(tr("Reset application settings"), this, &MainWindow::offerResetApplicationSettings);
     clearPersistenceAct->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(":/icons/Breeze/actions/16/edit-clear-history.svg",applicationSettings));
+    clearPersistenceAct->setIconVisibleInMenu(true);
     clearPersistenceAct->setStatusTip(tr("Reset all application settings to factory defaults"));
 
     toolBar = new QToolBar(); // addToolBar(tr("Toolbar"));
@@ -304,6 +341,7 @@ void MainWindow::createActions() {
     addToolBar(Qt::LeftToolBarArea, toolBar); // Add the toolbar to the window, on the left side initially
 
     cameraAct = new QAction(singleCameraIcon, tr("Camera"), this);
+    cameraAct->setIconVisibleInMenu(true);
     cameraAct->setStatusTip(tr("Connect to camera(s)."));
     cameraMenu = new QMenu(this);
 
@@ -320,10 +358,14 @@ void MainWindow::createActions() {
 
     QWidgetAction *bact1 = new QWidgetAction(cameraMenu);
     bact1->setCheckable(false);
+    bact1->setIconVisibleInMenu(true);
     bact1->setDefaultWidget(cameraInfoWidget);
     cameraMenu->addAction(bact1);
 
-    singleCamerasMenu = cameraMenu->addMenu(singleCameraIcon, tr("&Single Camera"));
+    singleCamerasMenu = new QMenu(tr("&Single Camera"));
+    singleCamerasMenu->setIcon(singleCameraIcon);
+    //singleCamerasMenu->setIconVisibleInMenu(true); // TODO: does not exist, but there is no other waz to set this on macos.. what now?
+    cameraMenu->addMenu(singleCamerasMenu);
     updateSingleCamerasMenu();
     connect(singleCamerasMenu, SIGNAL(triggered(QAction *)), this, SLOT(singleCameraSelected(QAction *)));
     connect(singleCamerasMenu, SIGNAL(aboutToShow()), this, SLOT(updateSingleCamerasMenu()));
@@ -333,7 +375,8 @@ void MainWindow::createActions() {
     MouseLeaveCatchFilter *mlcf2 = new MouseLeaveCatchFilter(this);
     cameraMenu->installEventFilter(mlcf2);
 
-    cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
+    QAction *stereoCameraAct = cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
+    stereoCameraAct->setIconVisibleInMenu(true);
 
     // updateBaslerCamerasMenu // Rather just check upon each new menu opening: this is just more convenient (see above)
 //    cameraMenu->addSeparator();
@@ -350,6 +393,7 @@ void MainWindow::createActions() {
 
     QWidgetAction *wact1 = new QWidgetAction(cameraMenu);
     wact1->setCheckable(false);
+    wact1->setIconVisibleInMenu(true);
     wact1->setDefaultWidget(webcamInfoWidget);
     cameraMenu->addAction(wact1);
 
@@ -373,6 +417,7 @@ void MainWindow::createActions() {
 
     QWidgetAction *wact2 = new QWidgetAction(cameraMenu);
     wact2->setCheckable(false);
+    wact2->setIconVisibleInMenu(true);
     wact2->setDefaultWidget(webcamDeviceWidget);
     cameraMenu->addAction(wact2);
 
@@ -390,6 +435,7 @@ void MainWindow::createActions() {
 
     const QIcon disconnectIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/network-disconnect.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     cameraActDisconnectAct = new QAction(disconnectIcon, tr("Disconnect"), this);
+    cameraActDisconnectAct->setIconVisibleInMenu(true);
     //trackAct->setShortcuts(QKeySequence::New);
     cameraActDisconnectAct->setStatusTip(tr("Disconnect camera."));
     connect(cameraActDisconnectAct, &QAction::triggered, this, &MainWindow::onCameraDisconnectClick);
@@ -398,6 +444,7 @@ void MainWindow::createActions() {
     toolBar->addAction(cameraActDisconnectAct);
 
     cameraSettingsAct = new QAction(cameraSettingsIcon1, tr("Camera Settings"), this);
+    cameraSettingsAct->setIconVisibleInMenu(true);
     //trackAct->setShortcuts(QKeySequence::New);
     cameraSettingsAct->setStatusTip(tr("Camera settings."));
     connect(cameraSettingsAct, &QAction::triggered, this, &MainWindow::onCameraSettingsClick);
@@ -410,6 +457,7 @@ void MainWindow::createActions() {
 
     const QIcon forceResetTrialIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/equals1b.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     forceResetTrialAct = new QAction(forceResetTrialIcon, tr("Force reset trial counter"), this);
+    forceResetTrialAct->setIconVisibleInMenu(true);
     forceResetTrialAct->setEnabled(false);
     //connect(forceResetTrialAct, &QAction::triggered, this, &MainWindow::forceResetTrialCounter);
     connect(forceResetTrialAct, SIGNAL(triggered()), this, SLOT(forceResetTrialCounter()));
@@ -417,6 +465,7 @@ void MainWindow::createActions() {
 
     const QIcon manualIncTrialIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/plus1b.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     manualIncTrialAct = new QAction(manualIncTrialIcon, tr("Manually increment trial counter"), this);
+    manualIncTrialAct->setIconVisibleInMenu(true);
     manualIncTrialAct->setEnabled(false);
     connect(manualIncTrialAct, SIGNAL(triggered()), this, SLOT(incrementTrialCounter()));
     settingsMenu->addAction(manualIncTrialAct);
@@ -425,6 +474,7 @@ void MainWindow::createActions() {
 
     const QIcon forceResetMessageIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/messageEmpty.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     forceResetMessageAct = new QAction(forceResetMessageIcon, tr("Force reset message register"), this);
+    forceResetMessageAct->setIconVisibleInMenu(true);
     forceResetMessageAct->setEnabled(false);
     //connect(forceResetMessageAct, &QAction::triggered, this, &MainWindow::forceResetMessageRegister);
     connect(forceResetMessageAct, SIGNAL(triggered()), this, SLOT(forceResetMessageRegister()));
@@ -497,12 +547,15 @@ void MainWindow::createActions() {
     outputDirectoryAct->setDisabled(true);
     */
     imageRecordingOutputAct = new QAction(fileOpenIcon, tr("Image Recording Output"), this);
+    imageRecordingOutputAct->setIconVisibleInMenu(true);
     imageRecordingOutputAct->setStatusTip(tr("Set where the images should be recorded."));
     QMenu* imageRecordingOutputMenu = new QMenu(this);
 
-    imageRecordingOutputMenu->addAction(fileOpenIcon, tr("Directory"), this, &MainWindow::imageRecordingOutputDirectorySelected);
+    QAction *iaAct = imageRecordingOutputMenu->addAction(fileOpenIcon, tr("Directory"), this, &MainWindow::imageRecordingOutputDirectorySelected);
+    iaAct->setIconVisibleInMenu(true);
     //imageRecordingOutputMenu->addSeparator();
-    imageRecordingOutputMenu->addAction(archiveIcon, tr("Zip archive"), this, &MainWindow::imageRecordingOutputZipSelected);
+    QAction *izAct = imageRecordingOutputMenu->addAction(archiveIcon, tr("Zip archive"), this, &MainWindow::imageRecordingOutputZipSelected);
+    izAct->setIconVisibleInMenu(true);
 
     imageRecordingOutputAct->setMenu(imageRecordingOutputMenu);
     connect(imageRecordingOutputAct, &QAction::triggered, this, &MainWindow::onImageRecordingOutputClick);
@@ -1030,7 +1083,7 @@ void MainWindow::updateSingleCamerasMenu() {
         Pylon::DeviceInfoList_t::const_iterator deviceIt;
         for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
 
-            QString = QString::fromStdString(deviceIt->GetFriendlyName().c_str());
+            QString friendlyName = QString::fromStdString(deviceIt->GetFriendlyName().c_str());
 
             // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
             bool sameAlreadyFound = false;
@@ -1043,7 +1096,7 @@ void MainWindow::updateSingleCamerasMenu() {
             if(sameAlreadyFound)
                 continue;
 
-            QAction *cameraAction = singleCamerasMenu->addAction();
+            QAction *cameraAction = singleCamerasMenu->addAction(friendlyName);
             //qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
             //qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
             cameraAction->setData(friendlyName);
@@ -1051,6 +1104,7 @@ void MainWindow::updateSingleCamerasMenu() {
             if (QString(deviceIt->GetModelName().c_str()).toLower().contains("emu")) {
                 cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(
                         QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
+                cameraAction->setIconVisibleInMenu(true);
             }
         }
         QApplication::restoreOverrideCursor();
@@ -1141,6 +1195,7 @@ void MainWindow::updateSingleCamerasMenu() {
             if(QString(arv_get_device_id(i)).toLower().contains("emu")) {
                 cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(
                         QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
+                cameraAction->setIconVisibleInMenu(true);
             }
         }
         QApplication::restoreOverrideCursor();

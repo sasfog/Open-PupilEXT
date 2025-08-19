@@ -191,29 +191,34 @@ void GraphPlot::contextMenuRequest(QPoint pos) {
     QMenu *menu = new QMenu(this);
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
-    menu->addAction("Clear", this, SLOT(clearClick()));
+    QAction *clearAct = menu->addAction("Clear", this, SLOT(clearClick()));
+    clearAct->setIconVisibleInMenu(true);
     menu->addSeparator();
 
     QAction *autoScaleAct = menu->addAction("Auto scroll X, auto scale Y");
     autoScaleAct->setCheckable(true);
+    autoScaleAct->setIconVisibleInMenu(true);
     autoScaleAct->setChecked(currentInteractionMode == AUTO_SCROLL_X_AUTO_SCALE_Y);
     // Note: the line below must happen here, not to trigger a toggled event with setChecked
     connect(autoScaleAct, &QAction::toggled, [this]() { setInteractionMode(AUTO_SCROLL_X_AUTO_SCALE_Y); });
 
     QAction *yinteractionAct = menu->addAction("Auto scroll X, manual scale Y");
     yinteractionAct->setCheckable(true);
+    yinteractionAct->setIconVisibleInMenu(true);
     yinteractionAct->setChecked(currentInteractionMode == AUTO_SCROLL_X_MANUAL_SCALE_Y);
     // Note: the line below must happen here, not to trigger a toggled event with setChecked
     connect(yinteractionAct, &QAction::toggled, [this]() { setInteractionMode(AUTO_SCROLL_X_MANUAL_SCALE_Y); });
 
     QAction *interactionAct = menu->addAction("Manual scale and scroll X and Y");
     interactionAct->setCheckable(true);
+    interactionAct->setIconVisibleInMenu(true);
     interactionAct->setChecked(currentInteractionMode == MANUAL_SCALE_SCROLL_X_Y);
     // Note: the line below must happen here, not to trigger a toggled event with setChecked
     connect(interactionAct, &QAction::toggled, [this]() { setInteractionMode(MANUAL_SCALE_SCROLL_X_Y); });
 
     QAction *i4Act = menu->addAction("Auto scroll X, fixed scale Y");
     i4Act->setCheckable(true);
+    i4Act->setIconVisibleInMenu(true);
     i4Act->setChecked(currentInteractionMode == AUTO_SCROLL_X_FIXED_SCALE_Y);
     // Note: the line below must happen here, not to trigger a toggled event with setChecked
     connect(i4Act, &QAction::toggled, [this]() { setInteractionMode(AUTO_SCROLL_X_FIXED_SCALE_Y); });

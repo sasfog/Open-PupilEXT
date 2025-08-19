@@ -542,30 +542,26 @@ void StereoCameraSettingsDialog::updateDevicesBox() {
         std::merge(lstDevices.begin(), lstDevices.end(), lstDevicesGigE.begin(), lstDevicesGigE.end(), std::back_inserter(allDevices));
     }
 #else
-    // ...
 
-    // // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
-    //            bool sameAlreadyFound = false;
-    //            for(auto eal : singleCamerasMenu->actions()) {
-    //                if(eal->text() == friendlyName) {
-    //                    sameAlreadyFound = true;
-    //                    break;
-    //                }
-    //            }
-    //            if(sameAlreadyFound)
-    //                continue;
+    // ...
+    // also remove duplicates
+
 #endif
 
     if(!allDevices.empty()) {
         for(auto const &device: allDevices) {
 #ifdef USE_PYLON
 
-            QString = QString::fromStdString(device->GetFriendlyName().c_str());
+            QString friendlyName = QString::fromStdString(device.GetFriendlyName().c_str());
 
             // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
             bool sameAlreadyFound = false;
-            for(auto eal : mainCameraBox->items()) {
-                if(eal->text() == friendlyName) {
+            QStringList existingItems;
+            for (int iix = 0; iix < mainCameraBox->count(); iix++) {
+                existingItems << mainCameraBox->itemText(iix);
+            }
+            for(auto eal : existingItems) {
+                if(eal == friendlyName) {
                     sameAlreadyFound = true;
                     break;
                 }

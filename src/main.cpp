@@ -78,6 +78,8 @@ int main(int argc, char *argv[])
 
             QApplication a(argc, argv);
 
+            // TODO: request camera permission. Unfortunately the official example code on Qt website is broken and I do not know how to fix it
+
             // Changing this may change the settings path thus not loading old application settings!
             QCoreApplication::setOrganizationName("FGLT");
             QCoreApplication::setApplicationName("PupilEXT");
