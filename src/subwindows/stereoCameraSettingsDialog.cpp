@@ -28,7 +28,7 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
     }
 
 #ifdef Q_OS_WIN // Q_OS_MACOS
-    setMinimumSize(500, 700);
+    setMinimumSize(500, 720);
 #else
     setMinimumSize(500, 870);
 #endif
@@ -543,13 +543,38 @@ void StereoCameraSettingsDialog::updateDevicesBox() {
     }
 #else
     // ...
+
+    // // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
+    //            bool sameAlreadyFound = false;
+    //            for(auto eal : singleCamerasMenu->actions()) {
+    //                if(eal->text() == friendlyName) {
+    //                    sameAlreadyFound = true;
+    //                    break;
+    //                }
+    //            }
+    //            if(sameAlreadyFound)
+    //                continue;
 #endif
 
     if(!allDevices.empty()) {
         for(auto const &device: allDevices) {
 #ifdef USE_PYLON
-            mainCameraBox->addItem(device.GetFriendlyName().c_str(), QVariant::fromValue<Pylon::CDeviceInfo>(device));
-            secondaryCameraBox->addItem(device.GetFriendlyName().c_str(), QVariant::fromValue<Pylon::CDeviceInfo>(device));
+
+            QString = QString::fromStdString(device->GetFriendlyName().c_str());
+
+            // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
+            bool sameAlreadyFound = false;
+            for(auto eal : mainCameraBox->items()) {
+                if(eal->text() == friendlyName) {
+                    sameAlreadyFound = true;
+                    break;
+                }
+            }
+            if(sameAlreadyFound)
+                continue;
+
+            mainCameraBox->addItem(friendlyName, QVariant::fromValue<Pylon::CDeviceInfo>(device));
+            secondaryCameraBox->addItem(friendlyName, QVariant::fromValue<Pylon::CDeviceInfo>(device));
 #else
             // ...
 #endif

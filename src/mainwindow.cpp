@@ -1029,10 +1029,24 @@ void MainWindow::updateSingleCamerasMenu() {
         }
         Pylon::DeviceInfoList_t::const_iterator deviceIt;
         for (deviceIt = allDevices.begin(); deviceIt != allDevices.end(); ++deviceIt) {
-            QAction *cameraAction = singleCamerasMenu->addAction(deviceIt->GetFriendlyName().c_str());
+
+            QString = QString::fromStdString(deviceIt->GetFriendlyName().c_str());
+
+            // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
+            bool sameAlreadyFound = false;
+            for(auto eal : singleCamerasMenu->actions()) {
+                if(eal->text() == friendlyName) {
+                    sameAlreadyFound = true;
+                    break;
+                }
+            }
+            if(sameAlreadyFound)
+                continue;
+
+            QAction *cameraAction = singleCamerasMenu->addAction();
             //qDebug() << "---------------------------------" << QString(deviceIt->GetFriendlyName().c_str());
             //qDebug() << "---------------------------------" << QString(deviceIt->GetFullName().c_str());
-            cameraAction->setData(deviceIt->GetFriendlyName().c_str());
+            cameraAction->setData(friendlyName);
             //cameraAction->setData(QVariant::fromValue<Pylon::CDeviceInfo>(*deviceIt));
             if (QString(deviceIt->GetModelName().c_str()).toLower().contains("emu")) {
                 cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(
@@ -1107,6 +1121,17 @@ void MainWindow::updateSingleCamerasMenu() {
                     QString(arv_get_device_vendor(i)) + " " +
                     QString(arv_get_device_model(i)) + " (" +
                     QString(arv_get_device_serial_nbr(i)) + ")";
+
+            // In some cases, for GigE on Apple specifically, devices might appear twice. This is a workaround.
+            bool sameAlreadyFound = false;
+            for(auto eal : singleCamerasMenu->actions()) {
+                if(eal->text() == friendlyName) {
+                    sameAlreadyFound = true;
+                    break;
+                }
+            }
+            if(sameAlreadyFound)
+                continue;
 
             QAction *cameraAction = singleCamerasMenu->addAction(friendlyName);
             qDebug() << "--------------------------------- friendly name: " << friendlyName;
