@@ -73,6 +73,8 @@ int main(int argc, char *argv[])
             QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
             QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
             QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+            // On MacOS it is set by default, but on Windows not. Unset both to coherently display menu icons
+            QApplication::setAttribute(Qt::AA_DontShowIconsInMenus, false);
 
             QApplication a(argc, argv);
 
