@@ -52,9 +52,9 @@ set(SPII_BUILD_MODE_VAR TRUE)
 set(QT_VERSION 6.8.3)
 
 if(APPLE)
-    # If LSL is not supported or does not build
-    #set(USE_LSL TRUE)
-    set(USE_LSL FALSE)
+    # NOTE: should be able to build now :)
+    set(USE_LSL TRUE)
+    #set(USE_LSL FALSE)
 
     ##set(CMAKE_GENERATOR_PLATFORM x86_64)
     #set(CMAKE_GENERATOR_PLATFORM arm64)
@@ -222,8 +222,16 @@ find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
 find_package(glog CONFIG REQUIRED)
-find_package(LSL CONFIG REQUIRED)
-    find_package(LibXml2 CONFIG REQUIRED) # DEV, APPLE
+if(USE_LSL)
+    if(APPLE)
+        # On Apple: LSL will seek for pugixml, asio, and boost, but wont find them for some reason, so before find_package(LSL... we do this
+        find_package(pugixml CONFIG REQUIRED)
+        find_package(asio CONFIG REQUIRED)
+        find_package(Boost CONFIG REQUIRED)
+    endif()
+    find_package(LSL CONFIG REQUIRED)
+endif()
+find_package(LibXml2 CONFIG REQUIRED) # DEV, APPLE
 find_package(Qt6 COMPONENTS Core5Compat Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml OpenGL REQUIRED) # OpenGL
 if(USE_PYLON)
     find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/

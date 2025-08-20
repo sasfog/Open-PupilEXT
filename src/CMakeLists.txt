@@ -30,11 +30,11 @@ set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATIO
 #        string(REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
 #    endforeach()
 #endif()
-#set_target_properties(PupilEXT PROPERTIES LINK_OPTIONS
+#set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINK_OPTIONS
 #        -nodefaultlib:GCBase_MDd_VC141_v3_1_Basler_pylon_v3.lib
 #        -nodefaultlib:GenApi_MDd_VC141_v3_1_Basler_pylon_v3.lib
 #)
-#target_link_options(PupilEXT PRIVATE
+#target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
 #        "/NODEFAULTLIB:GCBase_MDd_VC141_v3_1_Basler_pylon_v3.lib"
 #        "/NODEFAULTLIB:GenApi_MDd_VC141_v3_1_Basler_pylon_v3.lib"
 #)
@@ -127,11 +127,11 @@ if(USE_PYLON)
     list(APPEND ALL_SOURCES_TO_ADD devices/hardwareTriggerConfiguration.h)
 endif()
 
-# For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp ...
+# For packaging add the following code - add_executable(${CMAKE_PROJECT_NAME} MACOSX_BUNDLE main.cpp ...
 if(APPLE)
-    add_executable(PupilEXT MACOSX_BUNDLE ${ALL_SOURCES_TO_ADD})
+    add_executable(${CMAKE_PROJECT_NAME} MACOSX_BUNDLE ${ALL_SOURCES_TO_ADD})
 else()
-    add_executable(PupilEXT ${ALL_SOURCES_TO_ADD})
+    add_executable(${CMAKE_PROJECT_NAME} ${ALL_SOURCES_TO_ADD})
 endif()
 
 # Let this variable be there in preprocessor code to use ifdef-endif
@@ -143,7 +143,7 @@ if(USE_LSL)
 endif()
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
-#set_property(TARGET PupilEXT PROPERTY CXX_STANDARD 17)
+#set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 #set(CMAKE_CXX_STANDARD 17)
 
 set(ALL_LIBRARIES_TO_LINK
@@ -231,7 +231,7 @@ target_link_libraries(
 )
 
 
-##################### target_link_directories(PupilEXT PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)
+##################### target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)
 
 
 # add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
@@ -301,3 +301,78 @@ install(PROGRAMS "$<TARGET_FILE:Qt6::OpenGL>" DESTINATION "${CMAKE_CURRENT_BINAR
 install(PROGRAMS "$<TARGET_FILE:TBB::tbb>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 #install(PROGRAMS "$<TARGET_FILE:opencv_world>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
+# Only this will produce a portable build that can be installed on any compliant target machine, not only the build/host one
+# TODO: MORE UNIVERSAL CHECK FOR BUILD TYPE. THIS MIGHT NOT ALWAYS WORK.
+if(APPLE AND (CMAKE_BUILD_TYPE STREQUAL "Release"))
+#if(APPLE)
+    #set(APP_NAME ${CMAKE_PROJECT_NAME})
+    set(APP_BUNDLE "$<TARGET_BUNDLE_DIR:${CMAKE_PROJECT_NAME}>")
+    set(APP_EXECUTABLE "${APP_BUNDLE}/Contents/MacOS/${CMAKE_PROJECT_NAME}")
+    set(FRAMEWORKS_DIR "${APP_BUNDLE}/Contents/Frameworks")
+    set(QUAZIP_PATH "${PROJECT_SOURCE_DIR}/3rdparty/QuaZip/quazip/libquazip1-qt6.1.5.0.dylib")
+    set(SPII_PATH "${PROJECT_SOURCE_DIR}/lib/libspii.dylib")
+    #set(PYLON_FRAMEWORK_PATH "/Library/Frameworks/pylon.framework")
+    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+            COMMAND ${Qt6_DIR}/../../../bin/macdeployqt "${APP_BUNDLE}" -verbose=1
+            COMMENT "Running macdeployqt..."
+    )
+    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+            # Supposedly already created by macdeployqt
+    #        COMMAND ${CMAKE_COMMAND} -E make_directory "${FRAMEWORKS_DIR}"
+
+            # Copy libquazip - should be there yet
+    #        COMMAND ${CMAKE_COMMAND} -E copy "${QUAZIP_PATH}" "${FRAMEWORKS_DIR}/"
+            # Fix install name for libquazip
+            COMMAND install_name_tool -change @rpath/libquazip1-qt6.1.5.0.dylib
+            @executable_path/../Frameworks/libquazip1-qt6.1.5.0.dylib
+            "${APP_EXECUTABLE}"
+
+            # Copy libspii - should be there yet
+    #        COMMAND ${CMAKE_COMMAND} -E copy "${SPII_PATH}" "${FRAMEWORKS_DIR}/"
+            # Fix install name for libspii
+            COMMAND install_name_tool -change @rpath/libspii.dylib
+            @executable_path/../Frameworks/libspii.dylib
+            "${APP_EXECUTABLE}"
+
+            # Copy pylon.framework (whole framework directory)
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${PYLON_HOME}" "${FRAMEWORKS_DIR}/pylon.framework"
+            # Fix install name for pylon
+            COMMAND install_name_tool -change @rpath/pylon.framework/Versions/A/pylon
+            @executable_path/../Frameworks/pylon.framework/Versions/A/pylon
+            "${APP_EXECUTABLE}"
+            COMMENT "Bundling third-party dependencies into .app file"
+    )
+
+#
+#    set(PYLON_FRAMEWORK_ORIG "/Library/Frameworks/pylon.framework") # Where Pylon is installed
+#    set(PYLON_FRAMEWORK_DEST "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.app/Contents/Frameworks/pylon.framework")
+#
+#    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+#            #COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.app/Contents/Frameworks"
+#            COMMAND ${CMAKE_COMMAND} -E make_directory ${PYLON_FRAMEWORK_DEST}
+#            COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYLON_FRAMEWORK_ORIG} ${PYLON_FRAMEWORK_DEST}
+#    )
+#
+#    set(FRAMEWORK_LIB_DIR "${PYLON_FRAMEWORK_DEST}/Versions/A/Libraries")
+#    file(GLOB_RECURSE PYLON_DYLIBS "${FRAMEWORK_LIB_DIR}/*.dylib")
+#    foreach(dylib ${PYLON_DYLIBS})
+#        get_filename_component(dylib_name "${dylib}" NAME)
+#        set(new_id "@rpath/pylon.framework/Versions/A/Libraries/${dylib_name}")
+#        add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+#                COMMAND install_name_tool -id "${new_id}" "${dylib}"
+#                COMMENT "Fixing install_name for ${dylib_name}"
+#        )
+#    endforeach()
+#
+#    foreach(dylib ${PYLON_DYLIBS})
+#        get_filename_component(dylib_name "${dylib}" NAME)
+#        set(old_path "/Library/Frameworks/pylon.framework/Versions/A/Libraries/${dylib_name}")
+#        set(new_path "@executable_path/../Frameworks/pylon.framework/Versions/A/Libraries/${dylib_name}")
+#
+#        add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+#                COMMAND install_name_tool -change "${old_path}" "${new_path}" "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.app/Contents/MacOS/${CMAKE_PROJECT_NAME}"
+#                COMMENT "Rewriting ${old_path} to ${new_path} in app binary"
+#        )
+#    endforeach()
+
+endif()
