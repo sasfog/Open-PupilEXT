@@ -88,7 +88,13 @@ Cannot upgrade vcpkg, git says head detached.
 
 SOLUTION:
 
-Use git checkout to the exact commit hash that you find in your downloaded PupilEXT project vcpkg.json, mentioned as the builtin-baseline. And then run the bootstrap-vcpkg script in 3rdparty/vcpkg directory.
+When in a terminal window inside 3rdparty/vcpkg directory, use git checkout to the exact commit hash that you find in your downloaded PupilEXT project vcpkg.json, mentioned as the builtin-baseline, e.g.: `git checkout b509a07261b982f35c663bf638aae5f77877d207`
+
+And then run the bootstrap-vcpkg script in 3rdparty/vcpkg directory:
+`./bootstrap-vcpkg.sh`
+
+And then install the dependencies on that vcpkg state:
+`./vcpkg install`
 
 ---
 ---
