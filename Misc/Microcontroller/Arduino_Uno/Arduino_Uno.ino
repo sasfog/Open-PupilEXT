@@ -8,6 +8,7 @@
 
 #define LED_PIN LED_BUILTIN
 #define TRIGGER_PIN 9 
+#define TRIGGER_PIN_2 8 
 
 // NOTE: Example serial command to the board: <TX30000X500000>
 // This will set the time between rising and falling edges (= half period) to 500000 microseconds = 500 ms,
@@ -97,11 +98,13 @@ void setup() {
 
   pinMode(LED_PIN, OUTPUT);
   pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(TRIGGER_PIN_2, OUTPUT);
 
   Serial.begin(SERIAL_BAUD_RATE);
   
   digitalWrite(LED_PIN, LOW);
   digitalWrite(TRIGGER_PIN, LOW);
+  digitalWrite(TRIGGER_PIN_2, LOW);
   LEDTicksCount = 0;
   
   Serial.print("Program started! \n");
@@ -112,11 +115,13 @@ void makeTick() {
 
   if(RisingOrFalling) {
     digitalWrite(TRIGGER_PIN, HIGH);
+    digitalWrite(TRIGGER_PIN_2, HIGH);
     digitalWrite(LED_PIN, HIGH);
     LEDTicksCount++;
     RisingOrFalling = false;
   } else {
     digitalWrite(TRIGGER_PIN, LOW);
+    digitalWrite(TRIGGER_PIN_2, LOW);
     digitalWrite(LED_PIN, LOW);
     //LEDTicksCount++;
     RisingOrFalling = true;
