@@ -30,6 +30,7 @@ public:
     bool getMetaSnapshotsEnabled() const;
     bool getSaveOfflineEventLog() const;
     bool getAlwaysOnTop() const;
+    bool getAdminWarning() const;
 
     bool getIgnoreFrameSkip() const;
 
@@ -81,6 +82,7 @@ private:
     bool metaSnapshotsEnabled;
     bool saveOfflineEventLog;
     bool alwaysOnTop;
+    bool adminWarning;
 
     bool ignoreFrameSkip;
 
@@ -96,6 +98,7 @@ private:
     QCheckBox *metaSnapshotBox;
     QCheckBox *saveOfflineEventLogBox;
     QCheckBox *alwaysOnTopBox;
+    QCheckBox *adminWarningBox;
 
     QCheckBox *ignoreFrameSkipBox;
 
@@ -123,6 +126,7 @@ public slots:
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
     void setAlwaysOnTop(int m_state);
+    void setAdminWarning(int m_state);
 
     void setIgnoreFrameSkip(int m_state);
 

@@ -47,6 +47,8 @@
 #include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
 #include "subwindows/openZipChoiceDialog.h"
+#include "subwindows/threeChoiceDialog.h"
+#include "adminPrivileges.h"
 
 #ifdef USE_PYLON
 #include <pylon/TlFactory.h>

@@ -1,13 +1,11 @@
 #include "mainwindow.h"
 #include <QApplication>
-
 #include <QSettings>
+#include "execArgParser.h"
 
 #ifdef USE_PYLON
 #include <pylon/PylonIncludes.h>
 #endif
-
-#include "execArgParser.h"
 
 // Stream operator for custom types needed to save those types to QTs application settings structure
 #ifndef QT_NO_DATASTREAM

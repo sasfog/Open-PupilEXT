@@ -13,7 +13,7 @@
 #include <QRectF>
 #include <QVector3D>
 #include <QColor>
-#include "subwindows/outputDataRuleDialog.h"
+#include "subwindows/twoChoiceCheckboxDialog.h"
 #include <opencv2/core/mat.hpp>
 
 /**
@@ -308,7 +308,15 @@ public:
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
         if(exists && hasContent && imageWriterDataRule == "ask") {
-            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output archive already exists", parent);
+            TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
+                    "Image output archive already exists",
+                    "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
+                    "Append to existing",
+                    "Keep existing and save new as well",
+                    "Remember this choice",
+                    QSize(450,150),
+                    true,
+                    parent);
             dialog->setModal(true);
             // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
@@ -316,13 +324,13 @@ public:
                 auto resp = dialog->getResponse();
                 bool rememberChoice = dialog->getRememberChoice();
 
-                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
                     imageWriterDataRule = "append";
-                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
+                } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2)*/ {
                     imageWriterDataRule = "new";
                 }
 
-                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                if((resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1 || resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) && rememberChoice) {
                     applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
                 }
             }
@@ -390,7 +398,15 @@ public:
 //            outputDirectory.mkdir(".");
             QDir().mkpath(directory);
         } else if(hasContent && imageWriterDataRule == "ask") {
-            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
+            TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
+                    "Image output folder already exists",
+                    "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
+                    "Append to existing",
+                    "Keep existing and save new as well",
+                    "Remember this choice",
+                    QSize(450,150),
+                    true,
+                    parent);
             dialog->setModal(true);
             // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
@@ -398,13 +414,13 @@ public:
                 auto resp = dialog->getResponse();
                 bool rememberChoice = dialog->getRememberChoice();
 
-                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
                     imageWriterDataRule = "append";
-                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
+                } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2)*/ {
                     imageWriterDataRule = "new";
                 }
 
-                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                if((resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1 || resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) && rememberChoice) {
                     applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
                 }
             }
@@ -458,7 +474,15 @@ public:
         bool hasContent = dataFile.size() != 0;
 
         if(exists && hasContent && dataWriterDataRule == "ask") {
-            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Data recording output file already exists", parent);
+            TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
+                    "Data recording output file already exists",
+                    "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
+                    "Append to existing",
+                    "Keep existing and save new as well",
+                    "Remember this choice",
+                    QSize(450,150),
+                    true,
+                    parent);
             dialog->setModal(true);
             // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
@@ -466,13 +490,13 @@ public:
                 auto resp = dialog->getResponse();
                 bool rememberChoice = dialog->getRememberChoice();
 
-                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
                     dataWriterDataRule = "append";
-                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
+                } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2)*/ {
                     dataWriterDataRule = "new";
                 }
 
-                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                if((resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1 || resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) && rememberChoice) {
                     applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
                 }
             }

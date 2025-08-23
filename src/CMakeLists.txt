@@ -101,8 +101,9 @@ set(ALL_SOURCES_TO_ADD
         subwindows/custom-widgets/camImageRegionsWidget.h subwindows/custom-widgets/camImageRegionsWidget.cpp
         playbackSynchroniser.cpp
         playbackSynchroniser.h
-        subwindows/outputDataRuleDialog.h
-        subwindows/outputDataRuleDialog.cpp
+        subwindows/twoChoiceCheckboxDialog.h
+        subwindows/threeChoiceDialog.h
+        adminPrivileges.h
         pDataTypeEnum.h
         pDataTypes.cpp
         pDataTypes.h

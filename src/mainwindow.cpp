@@ -53,6 +53,43 @@ MainWindow::MainWindow():
                           applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
     loadIcons();
+
+    if(!AdminPrivileges::isRunningAsAdmin() && SupportFunctions::readBoolFromQSettings("adminWarning", true, applicationSettings)) {
+        ThreeChoiceDialog *dialog = new ThreeChoiceDialog(
+                "Application was started without administrator privileges",
+                "PupilEXT detected that it was started without administrator privileges. It is however best advised to run the application with these elevated privileges. Would you like to try restart the application with privileges requested?",
+                "Restart",
+                "Dismiss",
+                "Always dismiss",
+                QSize(450,150),
+                this);
+        dialog->setModal(true);
+        // dialog->raise();
+        if(dialog->exec() == QDialog::Accepted)
+        {
+            auto resp = dialog->getResponse();
+
+            if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
+                // Try restart with privileges
+                if(AdminPrivileges::restartAsAdmin(QCoreApplication::arguments())) {
+                    //qApp->quit();
+                    //qApp->exit();
+                    //QCoreApplication::exit(0);
+                    std::exit(0); // only this one surely exits right then
+                    //return;
+                } else {
+                    // Could not start new instance with elevated privileges
+                    // ...
+                }
+            } else if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) {
+                // Do nothing
+                // ...
+            } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_3)*/ {
+                applicationSettings->setValue("adminWarning", false);
+            }
+        }
+    }
+
     if(SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings)) {
         this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
         //show();

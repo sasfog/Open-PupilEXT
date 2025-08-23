@@ -19,8 +19,9 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         //dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    //this->setMinimumSize(200, 330); 
-    this->setMinimumSize(380, 580);
+    ////this->setMinimumSize(200, 330);
+    //this->setMinimumSize(380, 580);
+    this->setMinimumSize(380, 600);
     this->setWindowTitle("Settings");
 
     readSettings();
@@ -43,6 +44,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
     connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
+    connect(adminWarningBox, SIGNAL(stateChanged(int)), this, SLOT(setAdminWarning(int)));
 
     connect(ignoreFrameSkipBox, SIGNAL(stateChanged(int)), this, SLOT(setIgnoreFrameSkip(int)));
 
@@ -84,6 +86,7 @@ void GeneralSettingsDialog::readSettings() {
     metaSnapshotsEnabled = SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings);
     saveOfflineEventLog = SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings);
     alwaysOnTop = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
+    adminWarning = SupportFunctions::readBoolFromQSettings("adminWarning", true, applicationSettings);
 
     ignoreFrameSkip = SupportFunctions::readBoolFromQSettings("ignoreFrameSkipWarnings", false, applicationSettings);
 
@@ -137,6 +140,7 @@ void GeneralSettingsDialog::updateForm() {
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
     saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
     alwaysOnTopBox->setChecked(alwaysOnTop);
+    adminWarningBox->setChecked(adminWarning);
 
     ignoreFrameSkipBox->setChecked(ignoreFrameSkip);
 }
@@ -155,6 +159,7 @@ void GeneralSettingsDialog::saveSettings() {
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
     applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
     applicationSettings->setValue("alwaysOnTop", alwaysOnTop );
+    applicationSettings->setValue("adminWarning", adminWarning );
     applicationSettings->setValue("ignoreFrameSkipWarnings", ignoreFrameSkip );
 }
 
@@ -309,6 +314,10 @@ void GeneralSettingsDialog::createForm() {
     alwaysOnTopBox->setChecked(getAlwaysOnTop());
     appearanceLayout->addRow(alwaysOnTopBox);
 
+    adminWarningBox = new QCheckBox("Show warning on startup if admin privileges missing");
+    adminWarningBox->setChecked(getAdminWarning());
+    appearanceLayout->addRow(adminWarningBox);
+
     appearanceGroup->setLayout(appearanceLayout);
     mainLayout->addWidget(appearanceGroup);
 
@@ -400,6 +409,9 @@ bool GeneralSettingsDialog::getSaveOfflineEventLog() const {
 bool GeneralSettingsDialog::getAlwaysOnTop() const {
     return alwaysOnTop;
 }
+bool GeneralSettingsDialog::getAdminWarning() const {
+    return adminWarning;
+}
 bool GeneralSettingsDialog::getIgnoreFrameSkip() const {
     return ignoreFrameSkip;
 }
@@ -427,6 +439,9 @@ void GeneralSettingsDialog::setSaveOfflineEventLog(int m_state) {
 }
 void GeneralSettingsDialog::setAlwaysOnTop(int m_state) {
     alwaysOnTop = (bool) m_state;
+}
+void GeneralSettingsDialog::setAdminWarning(int m_state) {
+    adminWarning = (bool) m_state;
 }
 void GeneralSettingsDialog::setIgnoreFrameSkip(int m_state) {
     ignoreFrameSkip = (bool) m_state;
