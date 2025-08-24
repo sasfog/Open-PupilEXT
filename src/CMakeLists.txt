@@ -424,10 +424,11 @@ if(UNIX)
 
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
         # LINUX
-        # TODO: The resulting .deb file is still not working
+        # TODO: The resulting .deb file is still not working. Dependencies not packed well.
         # TODO: The AppImage is probably not correct either,
         #  and its upstream metadata (PupilEXT.appdata.xml) is not incorporated yet.
         #  A mockup of that file is already there however, in the project root folder
+        # TODO: add Aravis or Pylon as designator strings to the resulting deployment file name
         # TODO: MORE UNIVERSAL CHECK FOR BUILD TYPE "Release". THIS MIGHT NOT ALWAYS WORK.
 
         # Ensure packaging dir exists
@@ -469,8 +470,10 @@ if(UNIX)
                 --icon-file "${CMAKE_SOURCE_DIR}/icon.png"
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
+
+        # Important: the "linux" string must not be in the file name, AppImage creators asked
         add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-                COMMAND appimagetool "${CMAKE_BINARY_DIR}/AppDir" "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}-${PUPILEXT_VERSION}-Linux-x86_64.AppImage"
+                COMMAND appimagetool "${CMAKE_BINARY_DIR}/AppDir" "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}-${PUPILEXT_VERSION}-x86_64.AppImage"
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
     endif()
