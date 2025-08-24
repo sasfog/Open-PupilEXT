@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @author Moritz Lode, Gabor Benyei, Attila Boncser
+    @author Gabor Benyei
 */
 
 #include <QtWidgets/QDialog>
@@ -12,10 +12,6 @@
 #include <QtWidgets/QPushButton>
 #include <QtCore/QSettings>
 #include "../imageReader.h"
-
-/**
-    General settings window (dialog) containing all general settings of the pupilext software
-*/
 
 class OpenZipChoiceDialog : public QDialog {
     Q_OBJECT

@@ -1,8 +1,10 @@
 #pragma once
 
 /**
-    @author Gabor Benyei, Attila Boncser
+    @author Gabor Benyei
 */
+
+// UNDER CONSTRUCTION
 
 #include <QSettings>
 #include <QDialog>

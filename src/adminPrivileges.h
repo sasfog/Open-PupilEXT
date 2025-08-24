@@ -1,5 +1,9 @@
 #pragma once
 
+/**
+    @author Gabor Benyei
+*/
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <shellapi.h>

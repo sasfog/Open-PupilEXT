@@ -1,5 +1,9 @@
 #pragma once
 
+/**
+    @author Gabor Benyei
+*/
+
 enum PDataType {
     TIME_RAW_TIMESTAMP,
     P_TIME,

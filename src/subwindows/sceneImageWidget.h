@@ -1,8 +1,10 @@
 #pragma once
 
 /**
-    Under construction
+    @author Gabor Benyei
 */
+
+// UNDER CONSTRUCTION
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QGraphicsScene>

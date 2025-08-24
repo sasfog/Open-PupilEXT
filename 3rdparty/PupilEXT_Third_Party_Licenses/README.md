@@ -15,10 +15,14 @@ PupilEXT integrates several open source libraries. This document provides a list
 * [Swirski3D](#Swirski3D)
 
 **List of Software Libraries**
+* [Aravis](#Aravis)
+* [bzip2](#bzip2)
 * [QT](#QT)
 * [QCustomPlot](#QCustomPlot)
+* [QuaZip](#QuaZip)
 * [OpenCV](#OpenCV)
 * [Glog](#Glog)
+* [liblsl](#liblsl)
 * [Boost](#Boost)
 * [Ceres-Solver](#Ceres-Solver)
 * [Eigen](#Eigen)
@@ -47,6 +51,12 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 ## List of Software Libraries
 
+
+<a id="Aravis" href="https://github.com/AravisProject/aravis"><b>Aravis</b></a> is a glib/gobject based library for video acquisition using Genicam cameras. It currently implements the gigabit ethernet and USB3 protocols used by industrial cameras. (License: LGPL-2.1)
+
+<a id="bzip2" href="https://github.com/opencor/bzip2/tree/master"><b>bzip2</b></a> is a program and library for
+lossless, block-sorting data compression. In this project, it is used by QuaZip to access zipped image recordings. ([License](https://github.com/opencor/bzip2/blob/master/LICENSE))
+
 <a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
@@ -55,13 +65,17 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 <a id="Glog" href="https://github.com/google/glog"><b>Glog</b></a> is a library for logging. ([License](https://github.com/google/glog/blob/master/COPYING))
 
+<a id="liblsl" href="https://github.com/sccn/liblsl"><b>liblsl</b></a> a.k.a. the lab streaming layer is a simple all-in-one approach to streaming experiment data between applications in a lab, e.g. instrument time series, event markers, audio, and so on. In this project it is used for streaming eye data. ([License](https://github.com/sccn/liblsl/blob/dev/LICENSE))
+
 <a id="Boost" href="https://www.boost.org"><b>Boost</b></a> is a set of various C++ libraries for processing tasks. ([License](https://www.boost.org/users/license.html))
 
-<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is a optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
+<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is an optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
 
 <a id="Eigen" href="https://eigen.tuxfamily.org/index.php?title=Main_Page#License"><b>Eigen</b></a> is a library for linear algebra. ([License](https://eigen.tuxfamily.org/index.php?title=Main_Page#License))
 
 <a id="Spii" href="https://github.com/PetterS/spii"><b>Spii</b></a> is a library for optimisation. ([License](https://github.com/PetterS/spii/blob/master/LICENSE))
+
+<a id="QuaZip" href="https://github.com/stachenov/quazip"><b>QuaZip</b></a> is is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package (AKA Minizip) using Qt library. ([License](https://github.com/stachenov/quazip/blob/master/COPYING))
 
 <a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
 

@@ -1,5 +1,9 @@
 #pragma once
 
+/**
+    @author Gabor Benyei
+*/
+
 #include <QtWidgets>
 #include <QDialog>
 #include <QCheckBox>
