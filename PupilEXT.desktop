@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=PupilEXT
+Exec=PupilEXT
+Icon=icon
+Comment=PupilEXT open-source pupillometry platform
+Categories=AudioVideo;Video;ImageProcessing;Science;
+Keywords=pupillometry;eyetracking;pupilext;
+Terminal=false

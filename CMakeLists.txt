@@ -27,6 +27,7 @@ endif()
 #cmake_minimum_required(VERSION 3.16)
 cmake_minimum_required(VERSION 3.9)
 project(PupilEXT)
+set(PUPILEXT_VERSION "0.1.3")
 
 # Use Pylon or Aravis
 set(USE_PYLON TRUE)

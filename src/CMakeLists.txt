@@ -343,7 +343,7 @@ if(MSVC)
             COMMENT "Embedding custom manifest.")
 endif()
 
-if(Q_OS_UNIX)
+if(UNIX)
     # LINUX OR APPLE
 
     if(APPLE AND (CMAKE_BUILD_TYPE STREQUAL "Release"))
@@ -424,20 +424,36 @@ if(Q_OS_UNIX)
 
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
         # LINUX
+        # TODO: The resulting .deb file is still not working
+        # TODO: The AppImage is probably not correct either,
+        #  and its upstream metadata (PupilEXT.appdata.xml) is not incorporated yet.
+        #  A mockup of that file is already there however, in the project root folder
         # TODO: MORE UNIVERSAL CHECK FOR BUILD TYPE "Release". THIS MIGHT NOT ALWAYS WORK.
 
+        # Ensure packaging dir exists
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/AppDir)
+
+        # Post-build step: run linuxdeploy
+        add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+                COMMAND linuxdeploy
+                --appdir ${CMAKE_BINARY_DIR}/AppDir
+                --executable $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+                --desktop-file ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}.desktop
+                --icon-file ${CMAKE_SOURCE_DIR}/icon.png
+                COMMENT "Bundling dependencies with linuxdeploy")
+
         install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin)
-        install(FILES ${CMAKE_SOURCE_DIR}/packaging/${CMAKE_PROJECT_NAME}.desktop DESTINATION share/applications)
+        install(FILES ${CMAKE_SOURCE_DIR}/PupilEXT.desktop DESTINATION share/applications)
         install(FILES ${CMAKE_SOURCE_DIR}/icon.png DESTINATION share/icons/hicolor/256x256/apps)
 
         include(InstallRequiredSystemLibraries)
 
         set(CPACK_GENERATOR "DEB")
-        set(CPACK_PACKAGE_NAME "pupilext")
+        set(CPACK_PACKAGE_NAME "PupilEXT")
         set(CPACK_PACKAGE_VENDOR "The PupilEXT Community")
         set(CPACK_PACKAGE_CONTACT "benyeig@edu.bme.hu")
-        set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "PupilEXT open-source pupillometry platform")
-        set(CPACK_PACKAGE_VERSION "0.1.3")
+        set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "PupilEXT is a free, open-source, cross-platform software to conduct pupillometry research. It can access image streams from various camera devices, and perform pupil tracking on the images either live or offline. Importantly, the software has a streaming feature to allow for human-computer interface research. PupilEXT relies on Qt, and is intended for non-profit research and educational use.")
+        set(CPACK_PACKAGE_VERSION ${PUPILEXT_VERSION})
         set(CPACK_PACKAGE_RELEASE 3)
         set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/openPupil/Open-PupilEXT/tree/Experimental-Community-Version")
         set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Gabor Benyei")
@@ -445,9 +461,17 @@ if(Q_OS_UNIX)
         set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
         include(CPack)
 
-        add_custom_target(deb
-                COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
-                DEPENDS ${CMAKE_PROJECT_NAME}
+        add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+                COMMAND linuxdeploy
+                --appdir "${CMAKE_BINARY_DIR}/AppDir"
+                --executable "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
+                --desktop-file "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}.desktop"
+                --icon-file "${CMAKE_SOURCE_DIR}/icon.png"
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        )
+        add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+                COMMAND appimagetool "${CMAKE_BINARY_DIR}/AppDir" "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}-${PUPILEXT_VERSION}-Linux-x86_64.AppImage"
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
     endif()
 
