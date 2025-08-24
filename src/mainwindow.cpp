@@ -934,7 +934,9 @@ void MainWindow::openSourceDialog() {
             "Glog Library, License: <a href=\"https://github.com/google/glog/blob/master/COPYING\">Glog License</a><br><br>"
             "liblsl Library, License: <a href=\"https://github.com/sccn/liblsl/blob/dev/LICENSE\">liblsl License</a><br><br>"
             "QCustomPLot Library, License: <a href=\"https://www.gnu.org/licenses/gpl-3.0.txt\">GPL 3</a><br><br>"
+            "QJsonModel, License: <a href=\"https://github.com/dridk/QJsonModel/blob/master/LICENSE\">MIT</a><br><br>"
             "QuaZip Library, License: <a href=\"https://github.com/stachenov/quazip/blob/master/COPYING\">QuaZip License</a><br><br>"
+            "QtOpenGLViewer, License: <a href=\"https://github.com/marcel-goldschen-ohm/QtOpenGLViewer/blob/master/LICENSE\">MIT</a><br><br>"
             "Breeze Icon Theme, License: <a href=\"https://www.gnu.org/licenses/lgpl-3.0.txt\">LGPL v3</a><br><br>");
 
     scroll->setWidget(label);

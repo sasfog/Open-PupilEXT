@@ -19,7 +19,9 @@ PupilEXT integrates several open source libraries. This document provides a list
 * [bzip2](#bzip2)
 * [QT](#QT)
 * [QCustomPlot](#QCustomPlot)
+* [QJsonModel](#QJsonModel)
 * [QuaZip](#QuaZip)
+* [QtOpenGLViewer](#QtOpenGLViewer)
 * [OpenCV](#OpenCV)
 * [Glog](#Glog)
 * [liblsl](#liblsl)
@@ -59,8 +61,6 @@ lossless, block-sorting data compression. In this project, it is used by QuaZip 
 
 <a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
-<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
-
 <a id="OpenCV" href="https://opencv.org/"><b>OpenCV</b></a> is a highly optimized computer vision library with focus on real-time applications. In this repository it is used for image manipulation and plotting of ellipse pupil detections. (License: Apache 2 / BSD)
 
 <a id="Glog" href="https://github.com/google/glog"><b>Glog</b></a> is a library for logging. ([License](https://github.com/google/glog/blob/master/COPYING))
@@ -75,7 +75,13 @@ lossless, block-sorting data compression. In this project, it is used by QuaZip 
 
 <a id="Spii" href="https://github.com/PetterS/spii"><b>Spii</b></a> is a library for optimisation. ([License](https://github.com/PetterS/spii/blob/master/LICENSE))
 
+<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+
+<a id="QJsonModel" href="https://github.com/dridk/QJsonModel"><b>QJsonModel</b></a> is a JSON tree model class for Qt6/C++17 based on QAbstractItemModel. (License: MIT)
+
 <a id="QuaZip" href="https://github.com/stachenov/quazip"><b>QuaZip</b></a> is is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package (AKA Minizip) using Qt library. ([License](https://github.com/stachenov/quazip/blob/master/COPYING))
+
+<a id="QtOpenGLViewer" href="https://github.com/marcel-goldschen-ohm/QtOpenGLViewer"><b>QtOpenGLViewer</b></a> is a simple 3D/2D OpenGL viewer with mouse rotation, pan, zoom and some object selection. The code portions in this project have been partly modified by Gábor Bényei, otherwise it is the work of the original author. (License: MIT)
 
 <a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
 
