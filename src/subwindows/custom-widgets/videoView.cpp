@@ -23,12 +23,15 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     selectionColorCorrect2(selectionColor2),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
+    graphicsView->setRenderHint(QPainter::Antialiasing, true);
 
     roi1GraphicsView = new QGraphicsView(graphicsView);
+    roi1GraphicsView->setRenderHint(QPainter::Antialiasing, true);
     roi1GraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     roi1GraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     if(usingDoubleROI) {
         roi2GraphicsView = new QGraphicsView(graphicsView);
+        roi2GraphicsView->setRenderHint(QPainter::Antialiasing, true);
         roi2GraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         roi2GraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
@@ -932,6 +935,7 @@ void VideoView::setDoubleROI(bool state) {
         // initiate double ROI
 
         roi2GraphicsView = new QGraphicsView(graphicsView);
+        roi2GraphicsView->setRenderHint(QPainter::Antialiasing, true);
         roi2GraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         roi2GraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         //const float wImg = 640;

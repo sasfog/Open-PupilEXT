@@ -33,14 +33,14 @@ enum ProcMode {
 
 enum PupilVecIdx {
     SINGLE_IMAGE_ONE_PUPIL_MAIN = 0,
-    SINGLE_IMAGE_TWO_PUPIL_A = 0,
-    SINGLE_IMAGE_TWO_PUPIL_B = 1,
+    SINGLE_IMAGE_TWO_PUPIL_R = 0,
+    SINGLE_IMAGE_TWO_PUPIL_L = 1,
     STEREO_IMAGE_ONE_PUPIL_MAIN = 0,
     STEREO_IMAGE_ONE_PUPIL_SEC = 1,
-    STEREO_IMAGE_TWO_PUPIL_A_MAIN = 0,
-    STEREO_IMAGE_TWO_PUPIL_A_SEC = 1,
-    STEREO_IMAGE_TWO_PUPIL_B_MAIN = 2,
-    STEREO_IMAGE_TWO_PUPIL_B_SEC = 3,
+    STEREO_IMAGE_TWO_PUPIL_R_MAIN = 0,
+    STEREO_IMAGE_TWO_PUPIL_R_SEC = 1,
+    STEREO_IMAGE_TWO_PUPIL_L_MAIN = 2,
+    STEREO_IMAGE_TWO_PUPIL_L_SEC = 3,
     MIRR_IMAGE_ONE_PUPIL_MAIN = 0,
     MIRR_IMAGE_ONE_PUPIL_SEC = 1
 };
@@ -172,17 +172,19 @@ public:
     void stopDetection();
 
     // TODO: MAKE MAP, UNIFY WITH ENUM STYLE OLD INDEX RESOLUTION
-    const std::vector<char> getEyeIdentities() {
+    const std::vector<QChar> getEyeIdentities() {
+        //std::cout << "-------------- single eye identity: " << QString(singleEyeIdentity).toStdString() << std::endl;
+
         if(currentProcMode == SINGLE_IMAGE_ONE_PUPIL)
-            return {'X'}; // TODO DEV
+            return {singleEyeIdentity};
         else if(currentProcMode == SINGLE_IMAGE_TWO_PUPIL)
             return {'R','L'};
         else if(currentProcMode == STEREO_IMAGE_ONE_PUPIL)
-            return {'X','X'}; // TODO DEV
+            return {singleEyeIdentity,singleEyeIdentity};
         else if(currentProcMode == STEREO_IMAGE_TWO_PUPIL)
             return {'R','R','L','L'};
     };
-    const std::vector<char> getCamIdentities() {
+    const std::vector<QChar> getCamIdentities() {
         if(currentProcMode == SINGLE_IMAGE_ONE_PUPIL)
             return {'M'};
         else if(currentProcMode == SINGLE_IMAGE_TWO_PUPIL)
@@ -191,6 +193,10 @@ public:
             return {'M','S'};
         else if(currentProcMode == STEREO_IMAGE_TWO_PUPIL)
             return {'M','S','M','S'};
+    };
+    void setSingleEyeIdentity(QChar identity) {
+        singleEyeIdentity = identity;
+        //std::cout << "-------------- set single eye identity to " << QString(identity).toStdString() << std::endl;
     };
 
 private:
@@ -206,6 +212,7 @@ private:
     FrameRateCounter *frameCounter;
 
     ProcMode currentProcMode;
+    QChar singleEyeIdentity = 'X';
 
     std::vector<PupilDetectionMethod*> pupilDetectionMethods1;
     std::vector<PupilDetectionMethod*> pupilDetectionMethods2;
@@ -213,18 +220,18 @@ private:
     std::vector<PupilDetectionMethod*> pupilDetectionMethods4;
     
     // NOTE:
-    // in case of e.g.: ROIstereoImageTwoPupilA1
+    // in case of e.g.: ROIstereoImageTwoPupilR1
     // the NUMBER in the end denotes the different VIEWPOINTS of the same pupil
     // the LETTER denotes different EYES
     cv::Rect ROIsingleImageOnePupil; // formerly cv::Rect ROI;
-    cv::Rect ROIsingleImageTwoPupilA;
-    cv::Rect ROIsingleImageTwoPupilB;
+    cv::Rect ROIsingleImageTwoPupilR;
+    cv::Rect ROIsingleImageTwoPupilL;
     cv::Rect ROIstereoImageOnePupil1; // formerly cv::Rect ROI;
     cv::Rect ROIstereoImageOnePupil2; // formerly cv::Rect ROISecondary;
-    cv::Rect ROIstereoImageTwoPupilA1;
-    cv::Rect ROIstereoImageTwoPupilA2;
-    cv::Rect ROIstereoImageTwoPupilB1;
-    cv::Rect ROIstereoImageTwoPupilB2;
+    cv::Rect ROIstereoImageTwoPupilR1;
+    cv::Rect ROIstereoImageTwoPupilR2;
+    cv::Rect ROIstereoImageTwoPupilL1;
+    cv::Rect ROIstereoImageTwoPupilL2;
     cv::Rect ROImirrImageOnePupil1;
     cv::Rect ROImirrImageOnePupil2;
 
@@ -298,26 +305,26 @@ public slots:
     void setCurrentProcMode(int val);
     
     QRect getROIsingleImageOnePupil();
-    QRect getROIsingleImageTwoPupilA();
-    QRect getROIsingleImageTwoPupilB();
+    QRect getROIsingleImageTwoPupilR();
+    QRect getROIsingleImageTwoPupilL();
     QRect getROIstereoImageOnePupil1();
     QRect getROIstereoImageOnePupil2();
-    QRect getROIstereoImageTwoPupilA1();
-    QRect getROIstereoImageTwoPupilA2();
-    QRect getROIstereoImageTwoPupilB1();
-    QRect getROIstereoImageTwoPupilB2();
+    QRect getROIstereoImageTwoPupilR1();
+    QRect getROIstereoImageTwoPupilR2();
+    QRect getROIstereoImageTwoPupilL1();
+    QRect getROIstereoImageTwoPupilL2();
     QRect getROImirrImageOnePupil1();
     QRect getROImirrImageOnePupil2();
     
     void setROIsingleImageOnePupil(QRectF roi); // formerly void setROI(QRectF roi);
-    void setROIsingleImageTwoPupilA(QRectF roi);
-    void setROIsingleImageTwoPupilB(QRectF roi);
+    void setROIsingleImageTwoPupilR(QRectF roi);
+    void setROIsingleImageTwoPupilL(QRectF roi);
     void setROIstereoImageOnePupil1(QRectF roi); // formerly void setROI(QRectF roi);
     void setROIstereoImageOnePupil2(QRectF roi); // formerly void setSecondaryROI(QRectF roi);
-    void setROIstereoImageTwoPupilA1(QRectF roi);
-    void setROIstereoImageTwoPupilA2(QRectF roi);
-    void setROIstereoImageTwoPupilB1(QRectF roi);
-    void setROIstereoImageTwoPupilB2(QRectF roi);
+    void setROIstereoImageTwoPupilR1(QRectF roi);
+    void setROIstereoImageTwoPupilR2(QRectF roi);
+    void setROIstereoImageTwoPupilL1(QRectF roi);
+    void setROIstereoImageTwoPupilL2(QRectF roi);
     void setROImirrImageOnePupil1(QRectF roi);
     void setROImirrImageOnePupil2(QRectF roi);
 

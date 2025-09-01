@@ -11,7 +11,7 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QPushButton>
 #include <QtCore/QSettings>
-#include "../imageReader.h"
+#include "../data-io/imageReader.h"
 
 class OpenZipChoiceDialog : public QDialog {
     Q_OBJECT

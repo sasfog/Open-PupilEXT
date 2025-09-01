@@ -6,7 +6,7 @@
 
 #include <QCoreApplication>
 #include <QtCore/qdir.h>
-#include "devices/camera.h"
+#include "../devices/camera.h"
 #include "quazip/quazip.h"
 #include "quazip/quazipfile.h"
 

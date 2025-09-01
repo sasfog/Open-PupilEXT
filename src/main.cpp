@@ -92,10 +92,10 @@ int main(int argc, char *argv[])
             Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
 #endif
 
+            // DEV: COMMENT IN PROD
 //            // Test exec args:
 //            int argcT = 14;
 //            char* argvT[16];
-//
 //            argvT[0] = (char*)"blabla";
 //            argvT[1] = (char*)"-setAcquisitionTriggeringMode";
 //            argvT[2] = (char*)"S";
@@ -106,13 +106,13 @@ int main(int argc, char *argv[])
 //            argvT[7] = (char*)"-setSoftwareTriggeringFramerate";
 //            argvT[8] = (char*)"50";
 //            argvT[9] = (char*)"-openSingleCamera";
-//            argvT[10] = (char*)"Basler acA1300-60gm (22385468)";
+//            argvT[10] = (char*)"Basler puA1280-54um (22536841)";
+// //            argvT[10] = (char*)"Basler acA1300-60gm (22385468)";
 //            argvT[11] = (char*)"-connectRemoteUDP";
 //            argvT[12] = (char*)"0.0.0.0:6900";
 //            argvT[13] = (char*)"-setImageOutputFormat";
 //            argvT[14] = (char*)"jpeg";
 //            argvT[15] = nullptr;
-//
 //            //char *argvT[] = {, , };
 //            ExecArgParser* execArgParser = new ExecArgParser(argcT, argvT);
 

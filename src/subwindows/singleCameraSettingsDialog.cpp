@@ -209,8 +209,11 @@ void SingleCameraSettingsDialog::createForm() {
     binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
     binningBox->addItem(QString("1 (no binning)"));
-    binningBox->addItem(QString("2"));
-    binningBox->addItem(QString("4"));
+    int binningMax = camera->getBinningMax();
+    if(binningMax >= 2)
+        binningBox->addItem(QString("2"));
+    if(binningMax >= 4)
+        binningBox->addItem(QString("4"));
     binningBox->setMinimumWidth(140);
     imageROIlayoutRow5->addWidget(binningLabel);
     imageROIlayoutRow5->addWidget(binningBox);
@@ -721,6 +724,7 @@ void SingleCameraSettingsDialog::loadSettings() {
             tempidx = 1;
         else if (lastUsedBinningVal == 4)
             tempidx = 2;
+        tempidx = std::min(tempidx, binningBox->count()-1); // To prevent reference to nonexistent item, for any case
         binningBox->setCurrentIndex(tempidx);
     } else {
         lastUsedBinningVal = 1;
@@ -853,6 +857,13 @@ void SingleCameraSettingsDialog::updateImageROISettingsValues() {
     imageROIoffsetYInputBox->setValue(offsetY);
 
     emit onImageROIChanged(QRect(offsetX, offsetY, width, height));
+}
+
+void SingleCameraSettingsDialog::setBinningValue(int value) {
+    if(value==2 && binningBox->count()>=2)
+        binningBox->setCurrentIndex(1);
+    else if(value>=3 && binningBox->count()>=3)
+        binningBox->setCurrentIndex(2);
 }
 
 void SingleCameraSettingsDialog::onBinningModeChange(int index) {

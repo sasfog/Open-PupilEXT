@@ -13,13 +13,13 @@
 #include <QSettings>
 #include <QCoreApplication>
 
-#include "supportFunctions.h"
+#include "../supportFunctions.h"
 
 #include <QtXml>
-#include "pupilDetection.h"
+#include "../pupilDetection.h"
 #include "dataWriter.h"
 
-#include "pDataTypes.h" // DEV
+#include "../pDataTypes.h" // DEV
 
 #include <QStringBuilder>
 
@@ -37,14 +37,14 @@ class EyeDataSerializer : public QObject {
 
 public:
 
-    static QString getHeaderCSV(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, QChar delim, DataWriterDataStyle dataStyle);
+    static QString getHeaderCSV(const std::vector<QChar> &eyeIdentities, const std::vector<QChar> &camIdentities, QChar delim, DataWriterDataStyle dataStyle);
 #ifdef USE_LSL
     static void addLSLChannelsInfo_XDF(lsl::stream_info *info,
                                                    const LSL_XDF_Eye lsl_xdf_Eye,
                                                    const LSL_XDF_Camera lsl_xdf_Camera,
                                                    const PDataType lsl_xdf_Diameter,
                                                    const PDataType lsl_xdf_Confidence);
-    static void addLSLChannelsInfo_V1(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, lsl::stream_info *info);
+    static void addLSLChannelsInfo_V1(const std::vector<QChar> &eyeIdentities, const std::vector<QChar> &camIdentities, lsl::stream_info *info);
 
     static std::vector<double> pupilToLSLsample_XDF(quint64 timestamp,
                                                     int procMode,

@@ -129,6 +129,7 @@ public slots:
 
     void setExposureTimeValue(int value);
     void setGainValue(double value);
+    void setBinningValue(int value);
 
     void updateForms();
 

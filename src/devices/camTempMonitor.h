@@ -11,10 +11,10 @@
 #include <QCoreApplication>
 #include <QThread>
 //#include "devices/Camera.h"
-#include "devices/singleCamera.h"
-#include "devices/stereoCamera.h"
-#include "supportFunctions.h"
-#include "recEventTracker.h"
+#include "singleCamera.h"
+#include "stereoCamera.h"
+#include "../supportFunctions.h"
+#include "../recEventTracker.h"
 
 Q_DECLARE_METATYPE(std::vector<double>)
 

@@ -64,6 +64,7 @@ private:
     QGroupBox *procModeGroup;
     QLabel *procModeInfoLabel;
     QComboBox *procModeBox;
+    QComboBox *singleEyeIdentityBox;
 
     ProcMode lastKnownProcMode = ProcMode::UNDETERMINED;
 
@@ -86,6 +87,7 @@ private slots:
     void onProcModeSelection(int idx);
     void updateProcModeEnabled();
     void updateProcModeCompatibility();
+    //void onSingleEyeIdentitySelection(int idx);
 
 public slots:
 
@@ -94,5 +96,6 @@ public slots:
 
 signals:
     void pupilDetectionProcModeChanged(int val);
+    void pupilDetectionSingleEyeIdentityChanged(QChar val); // TODO: not yet used. Could be important later
 
 };

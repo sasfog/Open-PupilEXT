@@ -69,6 +69,18 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
             QFile f(fPathAndName);
             if (!f.open(QIODevice::ReadOnly)) {
                 std::cout << "Could not open XML file. Check file availability or file access permission.";
+
+                fPathAndName = suggestedXmlsLocation + '/' + "offline-event-log.xml";
+                qDebug() << "Trying again with expected offline event log fPathAndName = " << fPathAndName;
+                if( QFileInfo(fPathAndName).exists() ) {
+                    QFile g(fPathAndName);
+                    if (!g.open(QIODevice::ReadOnly)) {
+                        std::cout << "Could not open XML file. Check file availability or file access permission.";
+                    } else {
+                        offlineEventLogContent = g.readAll();
+                    }
+                }
+
             } else {
                 offlineEventLogContent = f.readAll();
             }
@@ -79,6 +91,18 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
             QFile f(fPathAndName);
             if (!f.open(QIODevice::ReadOnly)) {
                 std::cout << "Could not open XML file. Check file availability or file access permission.";
+
+                fPathAndName = suggestedXmlsLocation + '/' + "imagerec-meta.xml";
+                qDebug() << "Trying again with expected image rec meta snapshot fPathAndName = " << fPathAndName;
+                if( QFileInfo(fPathAndName).exists() ) {
+                    QFile g(fPathAndName);
+                    if (!g.open(QIODevice::ReadOnly)) {
+                        std::cout << "Could not open XML file. Check file availability or file access permission.";
+                    } else {
+                        metaSnapshotContent = g.readAll();
+                    }
+                }
+
             } else {
                 metaSnapshotContent = f.readAll();
             }
@@ -369,14 +393,14 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
     }
 
     // Step 4: retrieve rec event log and meta snapshot
-    auto offlineEventLogsFound = fileNameCandidates.filter(QRegularExpression("offline_event_log.xml$"));
+    auto offlineEventLogsFound = fileNameCandidates.filter(QRegularExpression("(offline_event_log.xml|offline-event-log.xml)$"));
     if(!offlineEventLogsFound.empty()) {
         zS_offlineEventLogPathAndName = offlineEventLogsFound[0];
         qDebug() << "zS_offlineEventLogPathAndName = " << zS_offlineEventLogPathAndName;
     } else {
         qDebug() << "zS_offlineEventLogPathAndName not found";
     }
-    auto metaSnapshotsFound = fileNameCandidates.filter(QRegularExpression("imagerec_meta.xml$"));
+    auto metaSnapshotsFound = fileNameCandidates.filter(QRegularExpression("(imagerec_meta.xml|imagerec-meta.xml)$"));
     if(!metaSnapshotsFound.empty()) {
         zS_metaSnapshotPathAndName = metaSnapshotsFound[0];
         qDebug() << "zS_metaSnapshotPathAndName = " << zS_metaSnapshotPathAndName;
@@ -401,14 +425,14 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
 
     QString fPathAndName;
     //
-    fPathAndName = suggestedXmlsLocation + '/' + "offline_event_log.xml";
+    fPathAndName = zS_offlineEventLogPathAndName; //suggestedXmlsLocation + '/' + "offline_event_log.xml";
     qDebug() << "Expected offline event log fPathAndName = " << fPathAndName;
     imageSourceZip->setCurrentFile(fPathAndName);
     imageSourceZipInnerFile->open(QIODevice::ReadOnly);
     offlineEventLogContent = QString(imageSourceZipInnerFile->readAll());
     imageSourceZipInnerFile->close();
     //
-    fPathAndName = suggestedXmlsLocation + '/' + "imagerec_meta.xml";
+    fPathAndName = zS_metaSnapshotPathAndName; //suggestedXmlsLocation + '/' + "imagerec_meta.xml";
     qDebug() << "Expected image rec meta snapshot fPathAndName = " << fPathAndName;
     imageSourceZip->setCurrentFile(fPathAndName);
     imageSourceZipInnerFile->open(QIODevice::ReadOnly);

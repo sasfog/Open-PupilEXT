@@ -33,6 +33,9 @@ set(PUPILEXT_VERSION "0.1.3")
 set(USE_PYLON TRUE)
 #set(USE_PYLON FALSE)
 
+set(USE_LSL TRUE)
+#set(USE_LSL FALSE)
+
 if(NOT (MSVC OR WIN32))
     # On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
     # Also on Apple when we use clang of Xcode?
@@ -54,7 +57,6 @@ set(QT_VERSION 6.8.3)
 
 if(APPLE)
     # NOTE: should be able to build now :)
-    set(USE_LSL TRUE)
     #set(USE_LSL FALSE)
 
     ##set(CMAKE_GENERATOR_PLATFORM x86_64)

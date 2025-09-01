@@ -585,9 +585,15 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             if(!ok || (ok && val <= 0))
                 return;
             w->PRGsetExposure(val);
-        } else if(str[1].toLower() == 'g' && str.size()>=4) { // set gain
+        } else if(str[1].toLower() == 'b' && str.size()>=4) { // set binning
             bool ok;
             int val = str.mid(3, str.length()-3).toDouble(&ok);
+            if(!ok || (ok && val <= 0))
+                return;
+            w->PRGsetBinning(val);
+        } else if(str[1].toLower() == 'g' && str.size()>=4) { // set gain
+            bool ok;
+            double val = str.mid(3, str.length()-3).toDouble(&ok);
             if(!ok || (ok && val <= 0))
                 return;
             w->PRGsetGain(val);

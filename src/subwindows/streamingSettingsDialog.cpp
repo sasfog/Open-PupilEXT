@@ -275,6 +275,13 @@ void StreamingSettingsDialog::createForm() {
     lslLayout->addWidget(widgetsRow3);
     disconnectLSLButton->setEnabled(false);
 
+    // TODO: disallow empty string?
+    LSLSourceIDLabel = new QLabel(tr("Source ID:"));
+    LSLSourceIDBox = new QLineEdit();
+    //LSLSourceIDBox->setText(SupportFunctions::makeUniqueLSLSourceID());
+    //LSLSourceIDBox->setFixedWidth(200);
+    lslLayout->addRow(LSLSourceIDLabel, LSLSourceIDBox);
+
     // TODO: ADD LINE?
     lslSampleRateLabel = new QLabel(tr("Sample rate limit:"));
     lslSampleRateBox = new QSpinBox();
@@ -329,6 +336,7 @@ void StreamingSettingsDialog::connectSignals() {
     connect(specXDFcameraBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(specXDFpupDataBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
     connect(specXDFconfBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(LSLSourceIDBox, SIGNAL(textChanged(const QString &)), this, SLOT(saveLSLSettings()));
     connect(lslSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveLSLSettings()));
     //
     connect(connectLSLButton, SIGNAL(clicked()), this, SLOT(onConnectLSLClick()));
@@ -518,6 +526,12 @@ bool StreamingSettingsDialog::isLSLConnected() {
 
 void StreamingSettingsDialog::saveLSLSettings() {
 
+    if(LSLSourceIDBox->text().isEmpty()) {
+        LSLSourceIDBox->blockSignals(true);
+        LSLSourceIDBox->setText(SupportFunctions::makeUniqueLSLSourceID());
+        LSLSourceIDBox->blockSignals(false);
+    }
+
     std::cout << dataContainerLSLBox->currentData().toString().toStdString() << std::endl;
 
     lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
@@ -529,6 +543,7 @@ void StreamingSettingsDialog::saveLSLSettings() {
     applicationSettings->setValue("StreamingSettings.LSL.confidence", specXDFconfBox->currentText());
 
     applicationSettings->setValue("StreamingSettings.LSL.dataContainer", dataContainerLSLBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.sourceID", LSLSourceIDBox->text());
     applicationSettings->setValue("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value());
 
     this->update();
@@ -554,6 +569,8 @@ void StreamingSettingsDialog::setLimitationsWhileStreamingLSL(bool state) {
     dataContainerLSLLabel->setDisabled(state);
     lslSampleRateBox->setDisabled(state);
     lslSampleRateLabel->setDisabled(state);
+    LSLSourceIDLabel->setDisabled(state);
+    LSLSourceIDBox->setDisabled(state);
 }
 #endif
 
@@ -684,6 +701,7 @@ void StreamingSettingsDialog::loadSettings() {
     specXDFcameraBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.camera", "Main").toString());
     specXDFpupDataBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.pupilData", "Diameter [px]").toString());
     specXDFconfBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.confidence", "Confidence").toString());
+    LSLSourceIDBox->setText(applicationSettings->value("StreamingSettings.LSL.sourceID", SupportFunctions::makeUniqueLSLSourceID()).toString());
     lslSampleRateBox->setValue(applicationSettings->value("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value()).toInt());
 
     lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));

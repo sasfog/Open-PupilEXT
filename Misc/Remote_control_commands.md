@@ -159,4 +159,6 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `IE <value>` - Set exposure in microseconds, any positive floating point number is accepted
 
+`IB <value>` - Set binning, any integer number of 1,2,4 accepted, and will be set according to camera capabilities
+
 `IG <value>` - Set gain, any floating point number is accepted, minimum `0.0`

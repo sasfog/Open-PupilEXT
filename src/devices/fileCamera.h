@@ -6,7 +6,7 @@
 
 #include "camera.h"
 #include "../frameRateCounter.h"
-#include "../imageReader.h"
+#include "../data-io/imageReader.h"
 #include "../stereoCameraCalibration.h"
 
 //#include "../offlineEventLogReader.h"

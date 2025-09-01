@@ -209,21 +209,21 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL], 0);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_A], 0);
-            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_B], 1);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_R], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_L], 1);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN], 0);
             setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC], 1);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN], 1);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC], 2);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC], 3);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_R_MAIN], 0);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_L_MAIN], 1);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_R_SEC], 2);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_L_SEC], 3);
             break;
     }
 

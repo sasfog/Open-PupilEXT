@@ -297,15 +297,15 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjAMain = document.createElement("Main");
             viewObjBMain = document.createElement("Main");
             
-            viewObjAMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilA().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilA().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilA().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilA().height()); 
+            viewObjAMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilR().x());
+            viewObjAMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilR().y());
+            viewObjAMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilR().width());
+            viewObjAMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilR().height());
 
-            viewObjBMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilB().x()); 
-            viewObjBMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilB().y()); 
-            viewObjBMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilB().width()); 
-            viewObjBMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilB().height()); 
+            viewObjBMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilL().x());
+            viewObjBMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilL().y());
+            viewObjBMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilL().width());
+            viewObjBMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilL().height());
 
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
@@ -358,25 +358,25 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjBMain = document.createElement("Main");
             viewObjBSec = document.createElement("Sec");
             
-            viewObjAMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilA1().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilA1().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilA1().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilA1().height()); 
+            viewObjAMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilR1().x());
+            viewObjAMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilR1().y());
+            viewObjAMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilR1().width());
+            viewObjAMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilR1().height());
 
-            viewObjASec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilA2().x()); 
-            viewObjASec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilA2().y()); 
-            viewObjASec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilA2().width()); 
-            viewObjASec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilA2().height()); 
+            viewObjASec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilR2().x());
+            viewObjASec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilR2().y());
+            viewObjASec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilR2().width());
+            viewObjASec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilR2().height());
 
-            viewObjBMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilB1().x()); 
-            viewObjBMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilB1().y()); 
-            viewObjBMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilB1().width()); 
-            viewObjBMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilB1().height()); 
+            viewObjBMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilL1().x());
+            viewObjBMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilL1().y());
+            viewObjBMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilL1().width());
+            viewObjBMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilL1().height());
 
-            viewObjBSec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilB2().x()); 
-            viewObjBSec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilB2().y()); 
-            viewObjBSec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilB2().width()); 
-            viewObjBSec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilB2().height()); 
+            viewObjBSec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilL2().x());
+            viewObjBSec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilL2().y());
+            viewObjBSec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilL2().width());
+            viewObjBSec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilL2().height());
 
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);

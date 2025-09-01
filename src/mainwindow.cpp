@@ -415,6 +415,11 @@ void MainWindow::createActions() {
     QAction *stereoCameraAct = cameraMenu->addAction(stereoCameraIcon, tr("Stereo Camera"), this, &MainWindow::stereoCameraSelected);
     stereoCameraAct->setIconVisibleInMenu(true);
 
+    // DEV: yet stereo support is only for Pylon
+#ifndef USE_PYLON
+    stereoCameraAct->setEnabled(false);
+#endif
+
     // updateBaslerCamerasMenu // Rather just check upon each new menu opening: this is just more convenient (see above)
 //    cameraMenu->addSeparator();
 //    cameraMenu->addAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/refactor.svg"), applicationSettings), tr("Refresh Devices"), this, &MainWindow::updateBaslerCamerasMenu);
@@ -897,6 +902,9 @@ void MainWindow::userGuide() {
 
 void MainWindow::openSourceDialog() {
 
+    // TODO: Show this automated somehow. This list should be kapt at one place at one time, not in
+    //  two different files, and also this source file! (the .md, the .html, and this .cpp)
+
     QDialog *dialog = new QDialog(this);
     dialog->resize(500, 300);
     dialog->setWindowTitle("Open Source Contributions and Licenses");
@@ -1362,12 +1370,12 @@ void MainWindow::onTrackActClick() {
                 pupilDetectionWorker->setROIsingleImageOnePupil(SupportFunctions::calculateRoiD(initRoi, roi1D, roi1R));
                 }
         } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-            QRectF roiA = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.discrete", QRectF()).toRectF();
-            QRectF roiB = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.discrete", QRectF()).toRectF();
+            QRectF roiA = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilR.discrete", QRectF()).toRectF();
+            QRectF roiB = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilL.discrete", QRectF()).toRectF();
             if(!roiA.isEmpty())
-                pupilDetectionWorker->setROIsingleImageTwoPupilA(roiA);
+                pupilDetectionWorker->setROIsingleImageTwoPupilR(roiA);
             if(!roiB.isEmpty())
-                pupilDetectionWorker->setROIsingleImageTwoPupilB(roiB);
+                pupilDetectionWorker->setROIsingleImageTwoPupilL(roiB);
         } else if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             QRectF roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.discrete", QRectF()).toRectF();
             QRectF roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.discrete", QRectF()).toRectF();
@@ -1376,18 +1384,18 @@ void MainWindow::onTrackActClick() {
             if(!roiSecondary1.isEmpty())
                 pupilDetectionWorker->setROIstereoImageOnePupil2(roiSecondary1);
         } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-            QRectF roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA1.discrete", QRectF()).toRectF();
-            QRectF roiMain2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.discrete", QRectF()).toRectF();
-            QRectF roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA2.discrete", QRectF()).toRectF();
-            QRectF roiSecondary2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.discrete", QRectF()).toRectF();
+            QRectF roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilR1.discrete", QRectF()).toRectF();
+            QRectF roiMain2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilL1.discrete", QRectF()).toRectF();
+            QRectF roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilR2.discrete", QRectF()).toRectF();
+            QRectF roiSecondary2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilL2.discrete", QRectF()).toRectF();
             if(!roiMain1.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilA1(roiMain1);
+                pupilDetectionWorker->setROIstereoImageTwoPupilR1(roiMain1);
             if(!roiMain2.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilB1(roiMain2);
+                pupilDetectionWorker->setROIstereoImageTwoPupilL1(roiMain2);
             if(!roiSecondary1.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilA2(roiSecondary1);
+                pupilDetectionWorker->setROIstereoImageTwoPupilR2(roiSecondary1);
             if(!roiSecondary2.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilB2(roiSecondary2);
+                pupilDetectionWorker->setROIstereoImageTwoPupilL2(roiSecondary2);
         // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
         //     QRectF roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.discrete", QRectF()).toRectF();
         //     QRectF roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.discrete", QRectF()).toRectF();
@@ -1898,14 +1906,13 @@ void MainWindow::singleCameraSelected(QAction *action) {
         err.critical(this, "Device Error", QString("Device error occured, or an exception was raised in the Pylon wrapper.\n\n") + e.GetDescription());
         return;
     }
-#else
+#endif
     catch (const std::exception &e) {
         std::cerr << "An exception occurred." << std::endl << e.what() << std::endl;
         QMessageBox err(this);
         err.critical(this, "Device Error", QString("Device error occured, or an exception was raised in the camera wrapper.\n\n") + e.what());
         return;
     }
-#endif
 
     //safelyResetTrialCounter();
     //safelyResetMessageRegister();

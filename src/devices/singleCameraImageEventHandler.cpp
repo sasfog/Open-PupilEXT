@@ -193,21 +193,18 @@ void SingleCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
             }
 
             //qDebug() << "Acquired " << arv_buffer_get_image_width(buffer) << "x" << arv_buffer_get_image_height(buffer) << " buffer";
-
             img = cv::Mat(
                     cv::Size(arv_buffer_get_image_width(buffer), arv_buffer_get_image_height(buffer)),
                     CV_8U, (uint8_t *)arv_buffer_get_data(buffer, &buffer_size));
-
-            // GIGE WORKING
             result.img = img.clone(); // must be copied to keep data content
-
-            // Can come here as image is cloned
-            arv_stream_push_buffer(callbackData->stream, buffer);
-            callbackData->counter++;
 
             // cameraTime describes the acquisition start in camera time, systemTime the acquisition start in system time
             timeStamp = arv_buffer_get_system_timestamp(buffer);
             timeStamp = ((timeStamp-((SingleCameraImageEventHandler*)callbackData->emitter)->cameraTime) / 1000000) + ((SingleCameraImageEventHandler*)callbackData->emitter)->systemTime;
+
+            // Can come here as image is cloned
+            arv_stream_push_buffer(callbackData->stream, buffer);
+            callbackData->counter++;
 
             //chrono_time  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             //qDebug() <<

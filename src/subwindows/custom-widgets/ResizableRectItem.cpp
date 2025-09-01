@@ -171,6 +171,7 @@ void ResizableRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 {
     QGraphicsRectItem::paint(painter, option, widget);
 //    qDebug() << "painter brush: " << painter->brush().color().toRgb();
+    painter->setRenderHint(QPainter::Antialiasing, true);
 
     // We draw the inner-rect after main rect.
     // Drawing order matters if alpha-transparency is used.

@@ -265,8 +265,11 @@ void StereoCameraSettingsDialog::createForm() {
     binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
     binningBox->addItem(QString("1 (no binning)"));
-    binningBox->addItem(QString("2"));
-    binningBox->addItem(QString("4"));
+    int binningMax = camera->getBinningMax();
+    if(binningMax >= 2)
+        binningBox->addItem(QString("2"));
+    if(binningMax >= 4)
+        binningBox->addItem(QString("4"));
     binningBox->setMinimumWidth(140);
     imageROIlayoutRow5->addWidget(binningLabel);
     imageROIlayoutRow5->addWidget(binningBox);
@@ -909,6 +912,7 @@ void StereoCameraSettingsDialog::loadSettings() {
         tempidx = 1;
     else if(lastUsedBinningVal==4)
         tempidx = 2;
+    tempidx = std::min(tempidx, binningBox->count()-1); // To prevent reference to nonexistent item, for any case
     binningBox->setCurrentIndex(tempidx);
 
     imageROIwidthInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIwidth", 0 ).toInt());
@@ -971,9 +975,9 @@ void StereoCameraSettingsDialog::saveSettings() {
 
 
 void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {    
-    if (camera->isEmulated())
-        camera->setImageROIwidthEmu(val);
-    else
+    //if (camera->isEmulated())
+    //    camera->setImageROIwidthEmu(val);
+    //else
         camera->setImageROIwidth(val);
     // NOTE: qt will not consider the programmatic change of the value as a user event to handle
     updateImageROISettingsMax();
@@ -983,9 +987,9 @@ void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {
 }
 
 void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
-    if (camera->isEmulated())
-        camera->setImageROIheightEmu(val);
-    else
+    //if (camera->isEmulated())
+    //    camera->setImageROIheightEmu(val);
+    //else
         camera->setImageROIheight(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
@@ -994,9 +998,9 @@ void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
 }
 
 void StereoCameraSettingsDialog::onSetImageROIoffsetX(int val) {
-    if (camera->isEmulated())
-        camera->setImageROIoffsetXEmu(val);
-    else    
+    //if (camera->isEmulated())
+    //    camera->setImageROIoffsetXEmu(val);
+    //else
         camera->setImageROIoffsetX(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
@@ -1004,10 +1008,10 @@ void StereoCameraSettingsDialog::onSetImageROIoffsetX(int val) {
 }
 
 void StereoCameraSettingsDialog::onSetImageROIoffsetY(int val) {    
-    if (camera->isEmulated())
-        camera->setImageROIoffsetYEmu(val);
-    else   
-    camera->setImageROIoffsetY(val);
+    //if (camera->isEmulated())
+    //    camera->setImageROIoffsetYEmu(val);
+    //else
+        camera->setImageROIoffsetY(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
@@ -1059,6 +1063,13 @@ void StereoCameraSettingsDialog::updateImageROISettingsValues() {
     imageROIoffsetYInputBox->setValue(offsetY);
 
     emit onImageROIChanged(QRect(offsetX, offsetY, width, height));
+}
+
+void StereoCameraSettingsDialog::setBinningValue(int value) {
+    if(value==2 && binningBox->count()>=2)
+        binningBox->setCurrentIndex(1);
+    else if(value>=3 && binningBox->count()>=3)
+        binningBox->setCurrentIndex(2);
 }
 
 void StereoCameraSettingsDialog::onBinningModeChange(int index) {

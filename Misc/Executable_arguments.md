@@ -28,6 +28,7 @@ First all provided arguments are sorted to fit in a predefined order, which then
 -startHardwareTriggering
 -setSoftwareTriggeringFramerateLimitingEnabled
 -setSoftwareTriggeringFramerateLimit
+-setBinning
 -setGain
 -setPDAlgorithm
 -setPDUsingROI
@@ -151,5 +152,7 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 `-setSoftwareTriggeringFramerateLimit "<value>"` - Set software triggering framerate limit, any >=1 positive integer number is accepted
 
 `-setExposureTimeMicrosec "<value>"` - Set exposure in microseconds, any positive floating point number is accepted
+
+`-setBinning "<value>"` - Set binning, any integer number of 1,2,4 accepted, and will be set according to camera capabilities
 
 `-setGain "<value>"` - Set gain, any floating point number is accepted, minimum `0.0`

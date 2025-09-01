@@ -70,7 +70,7 @@ list(APPEND ALL_SOURCES_TO_ADD
         mainwindow.cpp
         supportFunctions.h
         subwindows/MCUSettingsDialog.cpp subwindows/MCUSettingsDialog.h
-        dataWriter.cpp dataWriter.h
+        data-io/dataWriter.cpp data-io/dataWriter.h
         signalPubSubHandler.h
         subwindows/gettingStartedWizard.cpp subwindows/gettingStartedWizard.h
         pupil-detection-methods/Pupil.h pupil-detection-methods/PupilDetectionMethod.h
@@ -91,6 +91,7 @@ list(APPEND ALL_SOURCES_TO_ADD
         subwindows/custom-widgets/videoView.cpp subwindows/custom-widgets/videoView.h
         subwindows/imageGraphicsItem.h
         devices/camera.h
+        devices/arvStreamCallbackData.h
         devices/singleCamera.cpp devices/singleCamera.h
         devices/singleCameraImageEventHandler.cpp devices/singleCameraImageEventHandler.h
         frameRateCounter.h
@@ -102,16 +103,16 @@ list(APPEND ALL_SOURCES_TO_ADD
         subwindows/pupil-detection-methods/PupilMethodSetting.h
         subwindows/pupil-detection-methods/PuReSettings.h subwindows/pupil-detection-methods/ElSeSettings.h
         subwindows/pupil-detection-methods/ExCuSeSettings.h subwindows/pupil-detection-methods/StarburstSettings.h subwindows/pupil-detection-methods/Swirski2DSettings.h
-        subwindows/pupil-detection-methods/PuReSTSettings.h imageWriter.cpp imageWriter.h imageReader.cpp imageReader.h
+        subwindows/pupil-detection-methods/PuReSTSettings.h data-io/imageWriter.cpp data-io/imageWriter.h data-io/imageReader.cpp data-io/imageReader.h
         devices/fileCamera.h devices/fileCamera.cpp subwindows/custom-widgets/ResizableRectItem.cpp subwindows/custom-widgets/ResizableRectItem.h
         subwindows/stereoCameraSettingsDialog.cpp subwindows/stereoCameraSettingsDialog.h
         devices/stereoCameraImageEventHandler.cpp devices/stereoCameraImageEventHandler.h
         subwindows/stereoCameraCalibrationView.h subwindows/stereoCameraCalibrationView.cpp
         stereoCameraCalibration.h stereoCameraCalibration.cpp cameraFrameRateCounter.h subwindows/generalSettingsDialog.cpp subwindows/generalSettingsDialog.h subwindows/stereoFileCameraCalibrationView.cpp subwindows/stereoFileCameraCalibrationView.h
-        execArgParser.h execArgParser.cpp eyeDataSerializer.h eyeDataSerializer.cpp camTempMonitor.h camTempMonitor.cpp dataStreamer.h dataStreamer.cpp metaSnapshotOrganizer.h metaSnapshotOrganizer.cpp
+        execArgParser.h execArgParser.cpp data-io/eyeDataSerializer.h data-io/eyeDataSerializer.cpp devices/camTempMonitor.h devices/camTempMonitor.cpp data-io/dataStreamer.h data-io/dataStreamer.cpp metaSnapshotOrganizer.h metaSnapshotOrganizer.cpp
         devices/singleWebcam.h devices/singleWebcam.cpp devices/singleWebcamImageEventHandler.h devices/singleWebcamImageEventHandler.cpp
         subwindows/singleWebcamSettingsDialog.h subwindows/singleWebcamSettingsDialog.cpp
-        connPoolCOM.h connPoolUDP.h PRGmainwindow.cpp
+        data-io/connPoolCOM.h data-io/connPoolUDP.h PRGmainwindow.cpp
         recEventTracker.h recEventTracker.cpp
         subwindows/streamingSettingsDialog.h subwindows/streamingSettingsDialog.cpp
         subwindows/singleWebcamCalibrationView.h subwindows/singleWebcamCalibrationView.cpp
@@ -157,7 +158,13 @@ endif()
 if(APPLE)
     add_executable(${CMAKE_PROJECT_NAME} MACOSX_BUNDLE ${ALL_SOURCES_TO_ADD})
 elseif(MSVC OR WIN32)
-    add_executable(${CMAKE_PROJECT_NAME} WIN32 ${ALL_SOURCES_TO_ADD})
+    # Building with the WIN32 mentioned, the console window in the background, will be hidden
+    # TODO: better check for build type, this might be wrong
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_executable(${CMAKE_PROJECT_NAME} WIN32 ${ALL_SOURCES_TO_ADD})
+    else()
+        add_executable(${CMAKE_PROJECT_NAME} ${ALL_SOURCES_TO_ADD})
+    endif()
 else()
     add_executable(${CMAKE_PROJECT_NAME} ${ALL_SOURCES_TO_ADD})
 endif()

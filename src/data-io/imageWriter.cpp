@@ -4,7 +4,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <QtCore/qthreadpool.h>
 #include "imageWriter.h"
-#include "supportFunctions.h"
+#include "../supportFunctions.h"
 
 // Creates a new image writer that outputs images in the given directory
 // If stereo is true, a stereo directory structure is created in the given directory

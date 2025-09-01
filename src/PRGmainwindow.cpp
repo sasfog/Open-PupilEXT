@@ -226,7 +226,7 @@ void MainWindow::PRGsetGlobalDelimiter(const QString &str) {
 }
 
 void MainWindow::PRGsetImageOutputFormat(QString format) {
-    if(imageWriter)
+    if(recordImagesOn)
         return;
 
     format.replace(".", "");
@@ -236,6 +236,10 @@ void MainWindow::PRGsetImageOutputFormat(QString format) {
         else if(format=="jpg")
             format="jpeg";
         applicationSettings->setValue("imageWriterFormat.chosenFormat", format);
+
+        // workaround yet
+        if(generalSettingsDialog)
+            generalSettingsDialog->readSettings();
     }
 }
 
@@ -772,5 +776,15 @@ void MainWindow::PRGsetGain(double value) {
         singleCameraSettingsDialog->setGainValue(value);
     else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setGainValue(value);
+}
+void MainWindow::PRGsetBinning(int value) {
+    if( !selectedCamera ||
+        (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA) ||
+        trackingOn || recordOn || recordImagesOn)
+        return;
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA && dynamic_cast<SingleCamera*>(selectedCamera)->isBinningAvailable())
+        singleCameraSettingsDialog->setBinningValue(value);
+    else if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA && dynamic_cast<StereoCamera*>(selectedCamera)->isBinningAvailable())
+        stereoCameraSettingsDialog->setBinningValue(value);
 }
 

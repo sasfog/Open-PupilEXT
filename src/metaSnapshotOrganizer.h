@@ -7,8 +7,8 @@
 #include <ctime>
 
 #include "pupilDetection.h"
-#include "imageWriter.h"
-#include "dataWriter.h"
+#include "data-io/imageWriter.h"
+#include "data-io/dataWriter.h"
 #include "devices/singleCamera.h"
 #include "devices/stereoCamera.h"
 #include "devices/fileCamera.h"

@@ -7,13 +7,13 @@
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
-#include "pupil-detection-methods/Pupil.h"
+#include "../pupil-detection-methods/Pupil.h"
 
-#include "recEventTracker.h"
+#include "../recEventTracker.h"
 #include <QSettings>
 #include <QCoreApplication>
 
-#include "pupilDetection.h"
+#include "../pupilDetection.h"
 
 // BG NOTE: must come here due to eyeDataSerializer.h and this dataWriter.h including each other. Compiler has to know the enum before looking at the other one
 enum DataWriterDataStyle {

@@ -6,7 +6,7 @@
 
 #include <QtCore/QObject>
 #include <QtGui/QtGui>
-#include "devices/camera.h"
+#include "../devices/camera.h"
 #include <vector>
 #include <algorithm>
 #include "quazip/quazip.h"

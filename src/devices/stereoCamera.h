@@ -117,6 +117,7 @@ public:
     int getImageROIheightInc() override;
     QRectF getImageROI() override;
     int getBinningVal();
+    int getBinningMax();
     std::vector<double> getTemperatures();
 
     bool isTemperatureReadingSupported() override;
@@ -172,10 +173,10 @@ public slots:
     bool setImageROIoffsetX(int offsetX);
     bool setImageROIoffsetY(int offsetY);
 
-    bool setImageROIwidthEmu(int width);
-    bool setImageROIheightEmu(int height);
-    bool setImageROIoffsetXEmu(int offsetX);
-    bool setImageROIoffsetYEmu(int offsetY);
+    //bool setImageROIwidthEmu(int width);
+    //bool setImageROIheightEmu(int height);
+    //bool setImageROIoffsetXEmu(int offsetX);
+    //bool setImageROIoffsetYEmu(int offsetY);
 
 signals:
 
@@ -188,13 +189,11 @@ signals:
 
 #else
 
-// has to happen, because aravis includes glib-2.0, and there the definition "signals" is clashing with the Qt definition
-//#undef signals
+// NOTE: has to happen, because aravis includes glib-2.0, and there
+//  the definition "signals" is clashing with the Qt definition
 #undef signals
-//#define QT_NO_SIGNALS_SLOTS_KEYWORDS 1
 #include <arv.h>
 #define signals Q_SIGNALS
-//Q_SIGNALS
 
 class StereoCamera : public Camera {
 Q_OBJECT
@@ -214,6 +213,8 @@ public:
     void stopGrabbing() override;
 
     std::vector<QString> getFriendlyNames();
+    // TODO: getfullnames?
+    // TODO: getdeviceids?
 
     void autoGainOnce();
     void autoExposureOnce();
@@ -225,6 +226,13 @@ public:
     bool isEnabledAcquisitionFrameRate();
     bool isEmulated();
     double getResultingFrameRateValue();
+
+    // TODO DEV !!!
+    bool isAutoGainAvailable();
+    bool isAutoExposureAvailable();
+
+    bool isBinningAvailable();
+    // TODO END
 
     int getAcquisitionFPSValue();
     int getAcquisitionFPSMin();
@@ -243,9 +251,7 @@ public:
     QString getCalibrationFilename();
 
     void loadMainFromFile(const QString &filename);
-    //void loadSecondaryFromFile(const QString &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
     void saveMainToFile(const QString &filename);
-    //void saveSecondaryToFile(const QString &filename);
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
@@ -259,11 +265,17 @@ public:
     int getImageROIheightInc() override;
     QRectF getImageROI() override;
     int getBinningVal();
+    int getBinningMax();
     std::vector<double> getTemperatures();
 
     bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
+
+    // TODO
+    void wrappedErrorOccured(GError *error);
+    // TODO
+    void manualResetDevice() {}; // needed for GigE devices, that can get stuck in an error state sometimes
 
 private:
 
@@ -277,25 +289,33 @@ private:
 
     QString lineSource;
 
+    bool isGrabbingV = false;
+
     //CBaslerUniversalInstantCameraArray cameras;
     std::vector<ArvCamera*> cameras;
-    /*
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
-    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
-    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
-     */
-    CameraFrameRateCounter *frameCounter;
+//    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
+//    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
+//    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
+//    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
+    ArvStreamCallbackData callbackData;
 
+    void resizeStreamBuffer();
+
+    CameraFrameRateCounter *frameCounter;
     StereoCameraCalibration *cameraCalibration;
     QThread *calibrationThread;
 
     void synchronizeTime();
     void loadCalibrationFile();
-    void genericExceptionOccured(const std::exception &e);
 
-    void safelyCloseCameras();
+    void enableSensorLevelBinningIfPossible();
+
+    void genericExceptionOccured(const std::exception &e, const GError &lastAravisError);
+    void genericExceptionOccured(const std::exception &e, bool deviceRemoved = false);
+
+    // TODO
+//    void safelyCloseCameras();
 
 public slots:
 
@@ -312,10 +332,10 @@ public slots:
     bool setImageROIoffsetX(int offsetX);
     bool setImageROIoffsetY(int offsetY);
 
-    bool setImageROIwidthEmu(int width);
-    bool setImageROIheightEmu(int height);
-    bool setImageROIoffsetXEmu(int offsetX);
-    bool setImageROIoffsetYEmu(int offsetY);
+    //bool setImageROIwidthEmu(int width);
+    //bool setImageROIheightEmu(int height);
+    //bool setImageROIoffsetXEmu(int offsetX);
+    //bool setImageROIoffsetYEmu(int offsetY);
 
 signals:
 
@@ -323,6 +343,9 @@ signals:
     void framecount(int framecount);
     void cameraDeviceRemoved();
     void imagesSkipped();
+
+    void deviceWasReset();
+    void manualDeviceResetNecessary();
 
 };
 

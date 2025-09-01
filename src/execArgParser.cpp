@@ -125,6 +125,9 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMIT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetSWTframerate(execArgs[i].argVals[0].toInt());
         }
+        if(execArgs[i].argID == getArgIdx(SET_BINNING) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetBinning(execArgs[i].argVals[0].toInt());
+        }
         if(execArgs[i].argID == getArgIdx(SET_GAIN) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetGain(execArgs[i].argVals[0].toDouble());
         }

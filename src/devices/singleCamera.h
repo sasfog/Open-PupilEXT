@@ -73,10 +73,8 @@ public:
     bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
-    // AFAIK it is always supported by Basler cameras.
-    // Prepping is already done properly in the corresponding method performing this auto function.
-    static bool isAutoGainAvailable() { return true; };
-    static bool isAutoExposureAvailable() { return true; };
+    bool isAutoGainAvailable();
+    bool isAutoExposureAvailable();
 
     bool isBinningAvailable();
 
@@ -109,6 +107,7 @@ public:
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
     int getImageROIheightInc() override;
     int getBinningVal();
+    int getBinningMax();
     double getTemperature();
     bool isGrabbing() override;
 
@@ -193,7 +192,7 @@ signals:
 //  in the release version, and the linker will automatically assume to continue with looking for the debug
 //  version. It even happens in the add_executable call of cmake, however the error itself only materializes
 //  during the target_link_libraries call later.
-//   Experienced on windows 64 build system, or windows 64 target system,
+//   Experienced on windows 64 build system, for windows 64 target system,
 //   using MSVC 2019, on CLion with the vcpkg toolchain file configured.
 
 // TODO: hardware trigger configuration, to accept input on line source chosen.
@@ -253,7 +252,6 @@ public:
     bool isHardwareTriggerEnabled();
 
     CameraCalibration* getCameraCalibration();
-
     QString getCalibrationFilename();
 
     void loadFromFile(const QString &filename);
@@ -271,6 +269,7 @@ public:
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
     int getImageROIheightInc() override;
     int getBinningVal();
+    int getBinningMax();
     double getTemperature();
 
     bool isTemperatureReadingSupported() override;

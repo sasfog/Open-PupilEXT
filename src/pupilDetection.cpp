@@ -35,33 +35,33 @@ void PupilDetection::populateWithMethods(std::vector<PupilDetectionMethod*> &vec
 // Creates a new pupil detection worker which include all pupil detection algorithms
 // Should be run on a seperate thread
 PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent) : QObject(parent),
-                                                  camera(nullptr),
-                                                  frameCounter(new FrameRateCounter(parent)),
-                                                  useOutlineConfidence(true),
-                                                  useROIPreProcessing(false),
-                                                  useImageUndistort(false),
-                                                  usePupilUndistort(false),
-                                                  trackingOn(false),
-                                                  calibrated(false),
+                                                                                                                                      camera(nullptr),
+                                                                                                                                      frameCounter(new FrameRateCounter(parent)),
+                                                                                                                                      useOutlineConfidence(true),
+                                                                                                                                      useROIPreProcessing(false),
+                                                                                                                                      useImageUndistort(false),
+                                                                                                                                      usePupilUndistort(false),
+                                                                                                                                      trackingOn(false),
+                                                                                                                                      calibrated(false),
                                                   //showROI(true),
                                                   //showPupilCenter(false),
                                                   autoParamEnabled(false),
-                                                  currentConfigLabel("Default"),
-                                                  currentProcMode(ProcMode::UNDETERMINED),
-                                                  ROIsingleImageOnePupil(),
-                                                  ROIsingleImageTwoPupilA(),
-                                                  ROIsingleImageTwoPupilB(),
-                                                  ROIstereoImageOnePupil1(),
-                                                  ROIstereoImageOnePupil2(),
-                                                  ROIstereoImageTwoPupilA1(),
-                                                  ROIstereoImageTwoPupilA2(),
-                                                  ROIstereoImageTwoPupilB1(),
-                                                  ROIstereoImageTwoPupilB2(),
-                                                  ROImirrImageOnePupil1(),
-                                                  ROImirrImageOnePupil2(),
-                                                  imageMutex(imageMutex),
-                                                  imagePublished(imagePublished),
-                                                  imageProcessed(imageProcessed)
+                                                                                                                                      currentConfigLabel("Default"),
+                                                                                                                                      currentProcMode(ProcMode::UNDETERMINED),
+                                                                                                                                      ROIsingleImageOnePupil(),
+                                                                                                                                      ROIsingleImageTwoPupilR(),
+                                                                                                                                      ROIsingleImageTwoPupilL(),
+                                                                                                                                      ROIstereoImageOnePupil1(),
+                                                                                                                                      ROIstereoImageOnePupil2(),
+                                                                                                                                      ROIstereoImageTwoPupilR1(),
+                                                                                                                                      ROIstereoImageTwoPupilR2(),
+                                                                                                                                      ROIstereoImageTwoPupilL1(),
+                                                                                                                                      ROIstereoImageTwoPupilL2(),
+                                                                                                                                      ROImirrImageOnePupil1(),
+                                                                                                                                      ROImirrImageOnePupil2(),
+                                                                                                                                      imageMutex(imageMutex),
+                                                                                                                                      imagePublished(imagePublished),
+                                                                                                                                      imageProcessed(imageProcessed)
                                                   {
 
     drawDelay = 33; // ~30fps
@@ -190,6 +190,11 @@ void PupilDetection::setAlgorithm(QString method) {
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
 void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
+
+    // Can sometimes weirdly happen, when closing camera. TODO
+    if(!camera)
+        return;
+
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewSingleImageForOnePupilImpl(cimg);
@@ -356,6 +361,11 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
 void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
+
+    // Can sometimes weirdly happen, when closing camera. TODO
+    if(!camera)
+        return;
+
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewSingleImageForTwoPupilImpl(cimg);
@@ -405,17 +415,17 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
     cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
     cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
 
-    if(useROIPreProcessing && !ROIsingleImageTwoPupilA.empty() && roiA != ROIsingleImageTwoPupilA && ROIsingleImageTwoPupilA.width<=bwFrameA.cols && ROIsingleImageTwoPupilA.height<=bwFrameA.rows) {
-        roiA = ROIsingleImageTwoPupilA;
-        bwFrameA = bwFrameA(ROIsingleImageTwoPupilA);
+    if(useROIPreProcessing && !ROIsingleImageTwoPupilR.empty() && roiA != ROIsingleImageTwoPupilR && ROIsingleImageTwoPupilR.width <= bwFrameA.cols && ROIsingleImageTwoPupilR.height <= bwFrameA.rows) {
+        roiA = ROIsingleImageTwoPupilR;
+        bwFrameA = bwFrameA(ROIsingleImageTwoPupilR);
     } else if(autoParamEnabled && autoParamScheduled)
-        ROIsingleImageTwoPupilA = roiA;
+        ROIsingleImageTwoPupilR = roiA;
 
-    if(useROIPreProcessing && !ROIsingleImageTwoPupilB.empty() && roiB != ROIsingleImageTwoPupilB && ROIsingleImageTwoPupilB.width<=bwFrameB.cols && ROIsingleImageTwoPupilB.height<=bwFrameB.rows) {
-        roiB = ROIsingleImageTwoPupilB;
-        bwFrameB = bwFrameB(ROIsingleImageTwoPupilB);
+    if(useROIPreProcessing && !ROIsingleImageTwoPupilL.empty() && roiB != ROIsingleImageTwoPupilL && ROIsingleImageTwoPupilL.width <= bwFrameB.cols && ROIsingleImageTwoPupilL.height <= bwFrameB.rows) {
+        roiB = ROIsingleImageTwoPupilL;
+        bwFrameB = bwFrameB(ROIsingleImageTwoPupilL);
     } else if(autoParamEnabled && autoParamScheduled)
-        ROIsingleImageTwoPupilB = roiB;
+        ROIsingleImageTwoPupilL = roiB;
 
     if(autoParamEnabled && autoParamScheduled) {
         performAutoParam();
@@ -517,8 +527,8 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
         std::vector<cv::Rect> ROIs;
         if(useROIPreProcessing) {
-            ROIs.push_back(ROIsingleImageTwoPupilA);
-            ROIs.push_back(ROIsingleImageTwoPupilB);
+            ROIs.push_back(ROIsingleImageTwoPupilR);
+            ROIs.push_back(ROIsingleImageTwoPupilL);
         } else {
             ROIs.push_back(roiA);
             ROIs.push_back(roiB);
@@ -542,6 +552,10 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
 void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
+
+    // Can sometimes weirdly happen, when closing camera. TODO
+    if(!camera)
+        return;
 
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
@@ -740,6 +754,10 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
 // Depending on the configuration, performs undistortion on the pupil detections
 void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
 
+    // Can sometimes weirdly happen, when closing camera. TODO
+    if(!camera)
+        return;
+
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewStereoImageForTwoPupilImpl(simg);
@@ -783,29 +801,29 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     cv::Rect roiB1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Rect roiB2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilA1.empty() && roiA1 != ROIstereoImageTwoPupilA1 && ROIstereoImageTwoPupilA1.width<=bwFrameA1.cols && ROIstereoImageTwoPupilA1.height<=bwFrameA1.rows) {
-        roiA1 = ROIstereoImageTwoPupilA1;
-        bwFrameA1 = bwFrameA1(ROIstereoImageTwoPupilA1);
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilR1.empty() && roiA1 != ROIstereoImageTwoPupilR1 && ROIstereoImageTwoPupilR1.width <= bwFrameA1.cols && ROIstereoImageTwoPupilR1.height <= bwFrameA1.rows) {
+        roiA1 = ROIstereoImageTwoPupilR1;
+        bwFrameA1 = bwFrameA1(ROIstereoImageTwoPupilR1);
     } else if(autoParamEnabled && autoParamScheduled)
-        ROIstereoImageTwoPupilA1 = roiA1;
+        ROIstereoImageTwoPupilR1 = roiA1;
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilA2.empty() && roiA2 != ROIstereoImageTwoPupilA2 && ROIstereoImageTwoPupilA2.width<=bwFrameA2.cols && ROIstereoImageTwoPupilA2.height<=bwFrameA2.rows) {
-        roiA2 = ROIstereoImageTwoPupilA2;
-        bwFrameA2 = bwFrameA2(ROIstereoImageTwoPupilA2);
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilR2.empty() && roiA2 != ROIstereoImageTwoPupilR2 && ROIstereoImageTwoPupilR2.width <= bwFrameA2.cols && ROIstereoImageTwoPupilR2.height <= bwFrameA2.rows) {
+        roiA2 = ROIstereoImageTwoPupilR2;
+        bwFrameA2 = bwFrameA2(ROIstereoImageTwoPupilR2);
     } else if(autoParamEnabled && autoParamScheduled)
-        ROIstereoImageTwoPupilA2 = roiA2;
+        ROIstereoImageTwoPupilR2 = roiA2;
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilB1.empty() && roiB1 != ROIstereoImageTwoPupilB1 && ROIstereoImageTwoPupilB1.width<=bwFrameB1.cols && ROIstereoImageTwoPupilB1.height<=bwFrameB1.rows) {
-        roiB1 = ROIstereoImageTwoPupilB1;
-        bwFrameB1 = bwFrameB1(ROIstereoImageTwoPupilB1);
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilL1.empty() && roiB1 != ROIstereoImageTwoPupilL1 && ROIstereoImageTwoPupilL1.width <= bwFrameB1.cols && ROIstereoImageTwoPupilL1.height <= bwFrameB1.rows) {
+        roiB1 = ROIstereoImageTwoPupilL1;
+        bwFrameB1 = bwFrameB1(ROIstereoImageTwoPupilL1);
     } else if(autoParamEnabled && autoParamScheduled)
-        ROIstereoImageTwoPupilB1 = roiB1;
+        ROIstereoImageTwoPupilL1 = roiB1;
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilB2.empty() && roiB2 != ROIstereoImageTwoPupilB2 && ROIstereoImageTwoPupilB2.width<=bwFrameB2.cols && ROIstereoImageTwoPupilB2.height<=bwFrameB2.rows) {
-        roiB2 = ROIstereoImageTwoPupilB2;
-        bwFrameB2 = bwFrameB2(ROIstereoImageTwoPupilB2);
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilL2.empty() && roiB2 != ROIstereoImageTwoPupilL2 && ROIstereoImageTwoPupilL2.width <= bwFrameB2.cols && ROIstereoImageTwoPupilL2.height <= bwFrameB2.rows) {
+        roiB2 = ROIstereoImageTwoPupilL2;
+        bwFrameB2 = bwFrameB2(ROIstereoImageTwoPupilL2);
     } else if(autoParamEnabled && autoParamScheduled)
-        ROIstereoImageTwoPupilB2 = roiB2;
+        ROIstereoImageTwoPupilL2 = roiB2;
 
     if(autoParamEnabled && autoParamScheduled) {
         performAutoParam();
@@ -988,10 +1006,10 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
 
         std::vector<cv::Rect> ROIs;
         if(useROIPreProcessing) {
-            ROIs.push_back(ROIstereoImageTwoPupilA1);
-            ROIs.push_back(ROIstereoImageTwoPupilA2);
-            ROIs.push_back(ROIstereoImageTwoPupilB1);
-            ROIs.push_back(ROIstereoImageTwoPupilB2);
+            ROIs.push_back(ROIstereoImageTwoPupilR1);
+            ROIs.push_back(ROIstereoImageTwoPupilR2);
+            ROIs.push_back(ROIstereoImageTwoPupilL1);
+            ROIs.push_back(ROIstereoImageTwoPupilL2);
         } else {
             ROIs.push_back(roiA1);
             ROIs.push_back(roiA2);
@@ -1049,11 +1067,11 @@ bool PupilDetection::isTrackingOn() {
 QRect PupilDetection::getROIsingleImageOnePupil() {
     return QRect(ROIsingleImageOnePupil.x, ROIsingleImageOnePupil.y, ROIsingleImageOnePupil.width, ROIsingleImageOnePupil.height);
 }
-QRect PupilDetection::getROIsingleImageTwoPupilA() {
-    return QRect(ROIsingleImageTwoPupilA.x, ROIsingleImageTwoPupilA.y, ROIsingleImageTwoPupilA.width, ROIsingleImageTwoPupilA.height);
+QRect PupilDetection::getROIsingleImageTwoPupilR() {
+    return QRect(ROIsingleImageTwoPupilR.x, ROIsingleImageTwoPupilR.y, ROIsingleImageTwoPupilR.width, ROIsingleImageTwoPupilR.height);
 }
-QRect PupilDetection::getROIsingleImageTwoPupilB() {
-    return QRect(ROIsingleImageTwoPupilB.x, ROIsingleImageTwoPupilB.y, ROIsingleImageTwoPupilB.width, ROIsingleImageTwoPupilB.height);
+QRect PupilDetection::getROIsingleImageTwoPupilL() {
+    return QRect(ROIsingleImageTwoPupilL.x, ROIsingleImageTwoPupilL.y, ROIsingleImageTwoPupilL.width, ROIsingleImageTwoPupilL.height);
 }
 QRect PupilDetection::getROIstereoImageOnePupil1() {
     return QRect(ROIstereoImageOnePupil1.x, ROIstereoImageOnePupil1.y, ROIstereoImageOnePupil1.width, ROIstereoImageOnePupil1.height);
@@ -1061,17 +1079,17 @@ QRect PupilDetection::getROIstereoImageOnePupil1() {
 QRect PupilDetection::getROIstereoImageOnePupil2() {
     return QRect(ROIstereoImageOnePupil2.x, ROIstereoImageOnePupil2.y, ROIstereoImageOnePupil2.width, ROIstereoImageOnePupil2.height);
 }
-QRect PupilDetection::getROIstereoImageTwoPupilA1() {
-    return QRect(ROIstereoImageTwoPupilA1.x, ROIstereoImageTwoPupilA1.y, ROIstereoImageTwoPupilA1.width, ROIstereoImageTwoPupilA1.height);
+QRect PupilDetection::getROIstereoImageTwoPupilR1() {
+    return QRect(ROIstereoImageTwoPupilR1.x, ROIstereoImageTwoPupilR1.y, ROIstereoImageTwoPupilR1.width, ROIstereoImageTwoPupilR1.height);
 }
-QRect PupilDetection::getROIstereoImageTwoPupilA2() {
-    return QRect(ROIstereoImageTwoPupilA2.x, ROIstereoImageTwoPupilA2.y, ROIstereoImageTwoPupilA2.width, ROIstereoImageTwoPupilA2.height);
+QRect PupilDetection::getROIstereoImageTwoPupilR2() {
+    return QRect(ROIstereoImageTwoPupilR2.x, ROIstereoImageTwoPupilR2.y, ROIstereoImageTwoPupilR2.width, ROIstereoImageTwoPupilR2.height);
 }
-QRect PupilDetection::getROIstereoImageTwoPupilB1() {
-    return QRect(ROIstereoImageTwoPupilB1.x, ROIstereoImageTwoPupilB1.y, ROIstereoImageTwoPupilB1.width, ROIstereoImageTwoPupilB1.height);
+QRect PupilDetection::getROIstereoImageTwoPupilL1() {
+    return QRect(ROIstereoImageTwoPupilL1.x, ROIstereoImageTwoPupilL1.y, ROIstereoImageTwoPupilL1.width, ROIstereoImageTwoPupilL1.height);
 }
-QRect PupilDetection::getROIstereoImageTwoPupilB2() {
-    return QRect(ROIstereoImageTwoPupilB2.x, ROIstereoImageTwoPupilB2.y, ROIstereoImageTwoPupilB2.width, ROIstereoImageTwoPupilB2.height);
+QRect PupilDetection::getROIstereoImageTwoPupilL2() {
+    return QRect(ROIstereoImageTwoPupilL2.x, ROIstereoImageTwoPupilL2.y, ROIstereoImageTwoPupilL2.width, ROIstereoImageTwoPupilL2.height);
 }
 QRect PupilDetection::getROImirrImageOnePupil1() {
     return QRect(ROImirrImageOnePupil1.x, ROImirrImageOnePupil1.y, ROImirrImageOnePupil1.width, ROImirrImageOnePupil1.height);
@@ -1084,13 +1102,13 @@ void PupilDetection::setROIsingleImageOnePupil(QRectF roi) {
     if(!roi.isEmpty())
         ROIsingleImageOnePupil = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIsingleImageTwoPupilA(QRectF roi) {
+void PupilDetection::setROIsingleImageTwoPupilR(QRectF roi) {
     if(!roi.isEmpty())
-        ROIsingleImageTwoPupilA = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+        ROIsingleImageTwoPupilR = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIsingleImageTwoPupilB(QRectF roi) {
+void PupilDetection::setROIsingleImageTwoPupilL(QRectF roi) {
     if(!roi.isEmpty())
-        ROIsingleImageTwoPupilB = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+        ROIsingleImageTwoPupilL = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
 void PupilDetection::setROIstereoImageOnePupil1(QRectF roi) {
     if(!roi.isEmpty())
@@ -1100,21 +1118,21 @@ void PupilDetection::setROIstereoImageOnePupil2(QRectF roi) {
     if(!roi.isEmpty())
         ROIstereoImageOnePupil2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIstereoImageTwoPupilA1(QRectF roi) {
+void PupilDetection::setROIstereoImageTwoPupilR1(QRectF roi) {
     if(!roi.isEmpty())
-        ROIstereoImageTwoPupilA1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+        ROIstereoImageTwoPupilR1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIstereoImageTwoPupilA2(QRectF roi) {
+void PupilDetection::setROIstereoImageTwoPupilR2(QRectF roi) {
     if(!roi.isEmpty())
-        ROIstereoImageTwoPupilA2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+        ROIstereoImageTwoPupilR2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIstereoImageTwoPupilB1(QRectF roi) {
+void PupilDetection::setROIstereoImageTwoPupilL1(QRectF roi) {
     if(!roi.isEmpty())
-        ROIstereoImageTwoPupilB1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+        ROIstereoImageTwoPupilL1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIstereoImageTwoPupilB2(QRectF roi) {
+void PupilDetection::setROIstereoImageTwoPupilL2(QRectF roi) {
     if(!roi.isEmpty())
-        ROIstereoImageTwoPupilB2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+        ROIstereoImageTwoPupilL2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
 void PupilDetection::setROImirrImageOnePupil1(QRectF roi) {
     if(!roi.isEmpty())
@@ -1183,8 +1201,8 @@ void PupilDetection::performAutoParam() {
         case SINGLE_IMAGE_TWO_PUPIL:
             algInstances.push_back(getCurrentMethod1());
             algInstances.push_back(getCurrentMethod2());
-            rois.push_back(ROIsingleImageTwoPupilA);
-            rois.push_back(ROIsingleImageTwoPupilB);
+            rois.push_back(ROIsingleImageTwoPupilR);
+            rois.push_back(ROIsingleImageTwoPupilL);
             break;
         case STEREO_IMAGE_ONE_PUPIL:
             algInstances.push_back(getCurrentMethod1());
@@ -1197,10 +1215,10 @@ void PupilDetection::performAutoParam() {
             algInstances.push_back(getCurrentMethod2());
             algInstances.push_back(getCurrentMethod3());
             algInstances.push_back(getCurrentMethod4());
-            rois.push_back(ROIstereoImageTwoPupilA1);
-            rois.push_back(ROIstereoImageTwoPupilA2);
-            rois.push_back(ROIstereoImageTwoPupilB1);
-            rois.push_back(ROIstereoImageTwoPupilB2);
+            rois.push_back(ROIstereoImageTwoPupilR1);
+            rois.push_back(ROIstereoImageTwoPupilR2);
+            rois.push_back(ROIstereoImageTwoPupilL1);
+            rois.push_back(ROIstereoImageTwoPupilL2);
             break;
         default:
             return;

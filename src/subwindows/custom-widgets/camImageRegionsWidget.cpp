@@ -9,7 +9,6 @@ CamImageRegionsWidget::CamImageRegionsWidget(QWidget *parent) :
 
     setLayout(vlayout);
     setFrameStyle(2);
-
     
     penWidgetBorder.setStyle(Qt::DashLine);
     penImageAcqROI1.setStyle(Qt::DashLine);
@@ -135,6 +134,7 @@ void CamImageRegionsWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
     updatePenColors();
 

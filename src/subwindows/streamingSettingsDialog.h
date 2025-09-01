@@ -15,11 +15,11 @@
 #include <QSerialPortInfo>
 
 #include "custom-widgets/IPCtrl.h"
-#include "../connPoolCOM.h"
-#include "../connPoolUDP.h"
+#include "../data-io/connPoolCOM.h"
+#include "../data-io/connPoolUDP.h"
 
 #include "../pupilDetection.h"
-#include "../dataStreamer.h"
+#include "../data-io/dataStreamer.h"
 
 /**
     In this dialog the user can specify the means of streaming pupil detection output to another machine.
@@ -126,6 +126,9 @@ private:
     QComboBox *specXDFpupDataBox;
     QLabel *specXDFconfLabel;
     QComboBox *specXDFconfBox;
+
+    QLabel *LSLSourceIDLabel;
+    QLineEdit *LSLSourceIDBox;
 
     QPushButton *connectLSLButton;
     QPushButton *disconnectLSLButton;

@@ -16,13 +16,13 @@
 #include <QSettings>
 #include <QCoreApplication>
 
-#include "supportFunctions.h"
-#include "pDataTypes.h"
+#include "../supportFunctions.h"
+#include "../pDataTypes.h"
 
 #include <QtXml>
-#include "pupilDetection.h"
+#include "../pupilDetection.h"
 
-#include "recEventTracker.h"
+#include "../recEventTracker.h"
 #include "eyeDataSerializer.h"
 #include "connPoolCOM.h"
 #include "connPoolUDP.h"

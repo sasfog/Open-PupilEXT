@@ -58,14 +58,14 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             pupilObjA.appendChild(viewObjAMain);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            pupilObjA = document.createElement({Pupils[SINGLE_IMAGE_TWO_PUPIL_A].eyeIdentity});
-            pupilObjB = document.createElement({Pupils[SINGLE_IMAGE_TWO_PUPIL_B].eyeIdentity});
+            pupilObjA = document.createElement({Pupils[SINGLE_IMAGE_TWO_PUPIL_R].eyeIdentity});
+            pupilObjB = document.createElement({Pupils[SINGLE_IMAGE_TWO_PUPIL_L].eyeIdentity});
             root.appendChild(pupilObjA);
             root.appendChild(pupilObjB);
             viewObjAMain = document.createElement("Main");
             viewObjBMain = document.createElement("Main");
-            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_R, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_L, Pupils, trialNum, message, temperatures[0]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
             break;
@@ -80,18 +80,18 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             pupilObjA.appendChild(viewObjASec);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            pupilObjA = document.createElement({Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].eyeIdentity});
-            pupilObjB = document.createElement({Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].eyeIdentity});
+            pupilObjA = document.createElement({Pupils[STEREO_IMAGE_TWO_PUPIL_R_MAIN].eyeIdentity});
+            pupilObjB = document.createElement({Pupils[STEREO_IMAGE_TWO_PUPIL_L_MAIN].eyeIdentity});
             root.appendChild(pupilObjA);
             root.appendChild(pupilObjB);
             viewObjAMain = document.createElement("Main");
             viewObjASec = document.createElement("Sec");
             viewObjBMain = document.createElement("Main");
             viewObjBSec = document.createElement("Sec");
-            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, trialNum, message, temperatures[1]);
-            populatePupilNodeXML(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, trialNum, message, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_R_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_R_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeXML(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_L_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_L_SEC, Pupils, trialNum, message, temperatures[1]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);
             pupilObjB.appendChild(viewObjBMain);
@@ -169,12 +169,12 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
             root[{Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].eyeIdentity}] = pupilObjA;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_R, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_L, Pupils, trialNum, message, temperatures[0]);
             pupilObjA["Main"] = viewObjAMain;
-            root[{Pupils[SINGLE_IMAGE_TWO_PUPIL_A].eyeIdentity}] = pupilObjA;
+            root[{Pupils[SINGLE_IMAGE_TWO_PUPIL_R].eyeIdentity}] = pupilObjA;
             pupilObjB["Main"] = viewObjBMain;
-            root[{Pupils[SINGLE_IMAGE_TWO_PUPIL_B].eyeIdentity}] = pupilObjB;
+            root[{Pupils[SINGLE_IMAGE_TWO_PUPIL_L].eyeIdentity}] = pupilObjB;
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, message, temperatures[0]);
@@ -184,16 +184,16 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
             root[{Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].eyeIdentity}] = pupilObjA;
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, trialNum, message, temperatures[1]);
-            populatePupilNodeJSON(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, trialNum, message, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_R_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_R_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeJSON(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_L_MAIN, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_L_SEC, Pupils, trialNum, message, temperatures[1]);
             pupilObjA["Main"] = viewObjAMain;
             pupilObjA["Sec"] = viewObjASec;
-            root[{Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].eyeIdentity}] = pupilObjA;
+            root[{Pupils[STEREO_IMAGE_TWO_PUPIL_R_MAIN].eyeIdentity}] = pupilObjA;
             pupilObjB["Main"] = viewObjBMain;
             pupilObjB["Sec"] = viewObjBSec;
-            root[{Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].eyeIdentity}] = pupilObjB;
+            root[{Pupils[STEREO_IMAGE_TWO_PUPIL_L_MAIN].eyeIdentity}] = pupilObjB;
             break;
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         //     populatePupilNodeJSON(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, trialNum, temperatures[0], message);
@@ -214,7 +214,7 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
     return QString(content);
 }
 
-QString EyeDataSerializer::getHeaderCSV(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, QChar delim, DataWriterDataStyle dataStyle) {
+QString EyeDataSerializer::getHeaderCSV(const std::vector<QChar> &eyeIdentities, const std::vector<QChar> &camIdentities, QChar delim, DataWriterDataStyle dataStyle) {
 
     QString result; // TODO: .reserve() ?
 
@@ -287,7 +287,7 @@ void EyeDataSerializer::addLSLChannelsInfo_XDF(lsl::stream_info *info,
     // //temperatures[1]
 }
 
-void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<char> &eyeIdentities, const std::vector<char> &camIdentities, lsl::stream_info *info) {
+void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<QChar> &eyeIdentities, const std::vector<QChar> &camIdentities, lsl::stream_info *info) {
 
     lsl::xml_element chns = info->desc().append_child("channels");
 
@@ -299,8 +299,12 @@ void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<char> &eyeIdenti
 
     // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
     for(int i = 0; i < eyeIdentities.size(); i++) {
-        eyeStr = (eyeIdentities[i]) ? "right" : "left";
-        camStr = camIdentities[i];
+        eyeStr = "both";
+        if(eyeIdentities[i] == 'R')
+            eyeStr = "right";
+        else if(eyeIdentities[i] == 'L')
+            eyeStr = "left";
+        camStr = QString(camIdentities[i]).toStdString();
 
         for(auto v : PDataTypes::dataOutputFields) {
 
@@ -364,9 +368,9 @@ std::vector<double> EyeDataSerializer::pupilToLSLsample_XDF(
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
             // TODO: yet it hardcodedly assumes that the left eye is eye B
             if(lsl_xdf_Eye == LSL_XDF_Eye::XDF_RIGHT) {
-                pdx = SINGLE_IMAGE_TWO_PUPIL_A;
+                pdx = SINGLE_IMAGE_TWO_PUPIL_R;
             } else /*if(lsl_xdf_Eye == DataStreamer::LEFT)*/ {
-                pdx = SINGLE_IMAGE_TWO_PUPIL_B;
+                pdx = SINGLE_IMAGE_TWO_PUPIL_L;
             }
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
@@ -380,15 +384,15 @@ std::vector<double> EyeDataSerializer::pupilToLSLsample_XDF(
             // TODO: yet it hardcodedly assumes that the left eye is eye B
             if(lsl_xdf_Eye == LSL_XDF_Eye::XDF_RIGHT) {
                 if (lsl_xdf_Camera == LSL_XDF_Camera::XDF_MAIN) {
-                    pdx = STEREO_IMAGE_TWO_PUPIL_A_MAIN;
+                    pdx = STEREO_IMAGE_TWO_PUPIL_R_MAIN;
                 } else {
-                    pdx = STEREO_IMAGE_TWO_PUPIL_A_SEC;
+                    pdx = STEREO_IMAGE_TWO_PUPIL_R_SEC;
                 }
             } else /*if(lsl_xdf_Eye == DataStreamer::LEFT)*/ {
                 if (lsl_xdf_Camera == LSL_XDF_Camera::XDF_MAIN) {
-                    pdx = STEREO_IMAGE_TWO_PUPIL_B_MAIN;
+                    pdx = STEREO_IMAGE_TWO_PUPIL_L_MAIN;
                 } else {
-                    pdx = STEREO_IMAGE_TWO_PUPIL_B_SEC;
+                    pdx = STEREO_IMAGE_TWO_PUPIL_L_SEC;
                 }
             }
             break;
@@ -504,12 +508,12 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
 
-            addRowYAML(obj, {Pupils[SINGLE_IMAGE_TWO_PUPIL_A].eyeIdentity}, "", 1, false);
+            addRowYAML(obj, {Pupils[SINGLE_IMAGE_TWO_PUPIL_R].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, trialNum, message, temperatures[0]);
-            addRowYAML(obj, {Pupils[SINGLE_IMAGE_TWO_PUPIL_B].eyeIdentity}, "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_R, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[SINGLE_IMAGE_TWO_PUPIL_L].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, trialNum, message, temperatures[0]);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_L, Pupils, trialNum, message, temperatures[0]);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
 
@@ -522,19 +526,19 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
 
-            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].eyeIdentity}, "", 1, false);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_R_MAIN].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, trialNum, message, temperatures[0]);
-            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].eyeIdentity}, "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_R_MAIN, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_R_SEC].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_R_SEC, Pupils, trialNum, message, temperatures[1]);
 
-            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].eyeIdentity}, "", 1, false);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_L_MAIN].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, trialNum, message, temperatures[0]);
-            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].eyeIdentity}, "", 1, false);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_L_MAIN, Pupils, trialNum, message, temperatures[0]);
+            addRowYAML(obj, {Pupils[STEREO_IMAGE_TWO_PUPIL_L_SEC].eyeIdentity}, "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, trialNum, message, temperatures[1]);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_L_SEC, Pupils, trialNum, message, temperatures[1]);
             break;
             
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:

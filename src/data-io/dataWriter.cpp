@@ -2,7 +2,7 @@
 #include <QtCore/qfileinfo.h>
 #include <QMessageBox>
 #include "dataWriter.h"
-#include "supportFunctions.h"
+#include "../supportFunctions.h"
 
 // TODO datawriter is receiving pupil signal at the full rate, slowing down the gui thread? move to other thread?
 DataWriter::DataWriter(

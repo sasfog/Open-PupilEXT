@@ -293,7 +293,7 @@ void GraphPlot::saveYaxisSettings() {
 }
 
 // Sets Y axis label of the graph plot according to the current plot value
-// TODO: update for the data types map use
+// TODO: update for the data types map use. Also store min/max values in map
 void GraphPlot::setupPlotAxis() {
 
     if(plotDataKey == PDataType::TIME_RAW_TIMESTAMP) {
@@ -509,21 +509,21 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0, m_timestamp);
+            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL], 0, m_timestamp);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_A], 0, m_timestamp);
-            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_B], 1, m_timestamp);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_R], 0, m_timestamp);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_L], 1, m_timestamp);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN], 0, m_timestamp);
             setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC], 1, m_timestamp);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0, m_timestamp);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN], 1, m_timestamp);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC], 2, m_timestamp);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC], 3, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_R_MAIN], 0, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_L_MAIN], 1, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_R_SEC], 2, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_L_SEC], 3, m_timestamp);
             break;
     }
 //    // add data

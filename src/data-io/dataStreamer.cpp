@@ -92,9 +92,27 @@ void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, Proc
         throw std::runtime_error("Data Container undetermined at LSL streaming start");
     }
 
+    std::string sourceId = "";
+    if(true) {
+        sourceId = applicationSettings->value("StreamingSettings.LSL.sourceID", "PupilEXT-SOURCE-ID").toString().toStdString();
+    } else {
+        sourceId = std::string(name) += type;
+    }
 
     lsl::stream_info *info = new lsl::stream_info(
-            name, type, n_channels, srate, lsl::cf_double64, std::string(name) += type);
+            name,
+            type,
+            n_channels,
+            srate,
+            lsl::cf_double64,
+            sourceId );
+    // lsl::stream_info *info2 = new lsl::stream_info(
+    //         const std::basic_string<char, std::char_traits<char>, std::allocator<char>> &name,
+    //         const std::basic_string<char, std::char_traits<char>, std::allocator<char>> &type,
+    //         int32_t channel_count = 1,
+    //         double nominal_srate = IRREGULAR_RATE,
+    //         channel_format_t channel_format = cf_float32,
+    //         const std::basic_string<char, std::char_traits<char>, std::allocator<char>> &source_id = std::string());
 
     // TODO:
     //  add some description fields
@@ -144,6 +162,7 @@ void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, Proc
     LSLOutlet = new lsl::stream_outlet(*info, 0, max_buffered);
 
 //    std::vector<float> sample(n_channels, 0.0);
+    std::cout << LSLOutlet->info().as_xml() << std::endl;
 
 
     qDebug() << "Now starting LSL streaming";

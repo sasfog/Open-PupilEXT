@@ -11,8 +11,8 @@
 #include "subwindows/pupilDetectionSettingsDialog.h"
 #include "subwindows/setupGeometryDialog.h"
 #include "subwindows/singleCameraView.h"
-#include "dataWriter.h"
-#include "imageWriter.h"
+#include "data-io/dataWriter.h"
+#include "data-io/imageWriter.h"
 #include "subwindows/generalSettingsDialog.h"
 #include "subwindows/subjectSelectionDialog.h"
 #include "subwindows/stereoCameraSettingsDialog.h"
@@ -24,13 +24,13 @@
 
 #include "supportFunctions.h"
 #include "metaSnapshotOrganizer.h"
-#include "dataStreamer.h"
-#include "camTempMonitor.h"
+#include "data-io/dataStreamer.h"
+#include "devices/camTempMonitor.h"
 #include "subwindows/imagePlaybackControlDialog.h"
 #include "subwindows/remoteCCDialog.h"
 #include "subwindows/streamingSettingsDialog.h"
-#include "connPoolCOM.h"
-#include "connPoolUDP.h"
+#include "data-io/connPoolCOM.h"
+#include "data-io/connPoolUDP.h"
 #include "devices/singleWebcam.h"
 #include "subwindows/singleWebcamSettingsDialog.h"
 #include "subwindows/singleWebcamCalibrationView.h"
@@ -483,6 +483,7 @@ public slots:
 
     void PRGsetExposure(int value);
     void PRGsetGain(double value);
+    void PRGsetBinning(int value);
 
     void onImageWriterFailed();
     void onImageWriterFailedMsgClose();

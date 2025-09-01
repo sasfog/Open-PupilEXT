@@ -64,6 +64,47 @@ signals:
 
 #else
 
-    // ...
+#include "./arvStreamCallbackData.h"
+
+// NOTE: has to happen, because aravis includes glib-2.0, and there
+//  the definition "signals" is clashing with the Qt definition
+#undef signals
+#include <arv.h>
+#include <arvbuffer.h>
+#define signals Q_SIGNALS
+
+class StereoCameraImageEventHandler : public QObject {
+Q_OBJECT
+
+public:
+
+    explicit StereoCameraImageEventHandler(QObject* parent=0);
+
+    ~StereoCameraImageEventHandler() override;
+
+    void setTimeSynchronization(uint64 m_mainCameraTime, uint64 m_secondaryCameraTime, uint64 m_systemTime);
+
+    static void stream_callback(void *user_data, ArvStreamCallbackType type, ArvBuffer *buffer);
+
+    // TODO: ASK TISA, ki lehet e szervezni ezt nemstatikus másik methodba ami már erre a példányra szól, és közben nincs semmi overheadje
+    //void OnImageGrabbed(uint64 timestamp, ArvBuffer *buffer);
+
+    void dropAllPending();
+
+private:
+
+    QMutex mutex;
+
+    uint64 cameraTime[2] = {0, 0};
+    uint64 systemTime;
+
+    CameraImage stereoImage;
+
+signals:
+
+    void onNewGrabResult(CameraImage grabResult);
+    void imagesSkipped();
+
+};
 
 #endif

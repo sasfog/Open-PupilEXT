@@ -42,6 +42,21 @@ public:
     //    return (a+b)/2.0;
     //}
 
+    static QString makeUniqueLSLSourceID() {
+        QString bs = qgetenv("USER");
+        if (bs.isEmpty())
+            bs = qgetenv("USERNAME");
+
+        QString sourceID = "PupilEXT";
+        if (!bs.isEmpty()) {
+            QString temp = QString::number(qHash(bs));
+            sourceID.append("-" + temp.mid(temp.length()-7, 6));
+        } else
+            sourceID.append("-123456");
+
+        return sourceID;
+    }
+
     static QVariant toVariantFromWrapped(QString valueInStr, bool *ok) {
         *ok = false;
         valueInStr = valueInStr.replace(" ","");
