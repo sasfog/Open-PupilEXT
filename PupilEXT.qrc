@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
+        <file>3rdparty/models/brisque_model_live.yml</file>
+        <file>3rdparty/models/brisque_range_live.yml</file>
+
         <file alias="index.theme">icons/Breeze/index.theme</file>
         <file>icon.svg</file>
         <file>icons/Breeze/devices/22/camera-video.svg</file>
@@ -86,6 +89,7 @@
 
         <file>icons/Breeze/actions/22/appointment-new.svg</file>
         <file>icons/Breeze/actions/22/archive-extract.svg</file>
+        <file>icons/Breeze/actions/22/kdenlive-add-clip.svg</file>
 
         <file>example.json</file>
         <file>H3DModel.json</file>

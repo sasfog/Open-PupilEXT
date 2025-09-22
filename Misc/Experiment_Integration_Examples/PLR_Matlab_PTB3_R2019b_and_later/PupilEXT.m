@@ -238,6 +238,15 @@ classdef PupilEXT
           end
       end
       
+      function setComputeBRISQUE(obj, state)
+          if ~obj.Enabled, return, end
+          if state
+            obj.sendRaw('PB true');
+          else
+            obj.sendRaw('PB false');
+          end
+      end
+      
       function connectRemoteControlUDP(obj, ipAddress, portNumber)
           if ~obj.Enabled, return, end
           obj.sendRaw(['CRC udp;' ipAddress ';' num2str(portNumber)]);

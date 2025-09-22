@@ -48,8 +48,9 @@ private:
     QPushButton *applyCloseButton;
     
     QComboBox *algorithmBox;
-    QCheckBox *outlineConfidenceBox;
     QCheckBox *roiPreprocessingBox;
+    QCheckBox *outlineConfidenceBox;
+    QCheckBox *computeBRISQUEBox;
     QCheckBox *pupilUndistortionBox;
     QCheckBox *imageUndistortionBox;
 

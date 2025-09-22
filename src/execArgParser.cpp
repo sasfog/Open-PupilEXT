@@ -140,6 +140,9 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(SET_PD_COMPUTE_OUTLINE_CONF) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetPupilDetectionCompOutlineConf(execArgs[i].argVals[0].toLower());
         }
+        if(execArgs[i].argID == getArgIdx(SET_PD_COMPUTE_BRISQUE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetPupilDetectionCompBRISQUE(execArgs[i].argVals[0].toLower());
+        }
         if(execArgs[i].argID == getArgIdx(START_TRACKING)) {
             w->PRGtrackStart();
         }

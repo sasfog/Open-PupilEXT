@@ -75,7 +75,7 @@ public:
 
     bool isEnabledAcquisitionFrameRate();
     bool isEmulated();
-    double getResultingFrameRateValue();
+    double getResultingFrameRateValue() override;
 
     // AFAIK it is always supported by Basler cameras.
     // Prepping is already done properly in the corresponding method performing this auto function.
@@ -225,7 +225,7 @@ public:
 
     bool isEnabledAcquisitionFrameRate();
     bool isEmulated();
-    double getResultingFrameRateValue();
+    double getResultingFrameRateValue() override;
 
     // TODO DEV !!!
     bool isAutoGainAvailable();

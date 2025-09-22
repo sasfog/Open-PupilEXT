@@ -58,7 +58,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             numCols=4;
             break;
     }
-    tableModel = new QStandardItemModel(18, numCols, this);
+    tableModel = new QStandardItemModel(PDataTypes::dataTableRows.size(), numCols, this);
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
@@ -209,7 +209,7 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN], 0);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
             setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_R], 0);

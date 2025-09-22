@@ -21,7 +21,12 @@ if(MSVC)
     # Force /MT for the entire project
     #set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     # or force /MD (make and use DLLs)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        # TODO: MORE UNIVERSAL CHECK FOR BUILD TYPE. THIS MIGHT NOT ALWAYS WORK.
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>DLL")
+    endif()
 endif()
 
 #cmake_minimum_required(VERSION 3.16)
@@ -54,6 +59,10 @@ set(SPII_BUILD_MODE_VAR TRUE)
 
 # Provide the user name for your system, which is used to find the Qt6_DIR on Mac and Win
 set(QT_VERSION 6.8.3)
+
+# DEV
+#add_definitions(-DVCPKG_OVERLAY_PORTS "3rdparty/vcpkg-overlay-ports")
+#set(BUILD_opencv_quality ON CACHE BOOL "" FORCE)
 
 if(APPLE)
     # NOTE: should be able to build now :)
@@ -224,6 +233,8 @@ find_package(OpenCV CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(BZip2 REQUIRED) # DOES NOT HAVE CONFIG.CMAKE FILE
+find_package(FFMPEG REQUIRED COMPONENTS AVCODEC AVFORMAT AVUTIL SWSCALE) # For directly operating ffmpeg. OpenCV does not expose the wrapped ffmpeg too much
+#find_package(FFMPEG REQUIRED) # For directly operating ffmpeg. OpenCV does not expose the wrapped ffmpeg too much
 find_package(glog CONFIG REQUIRED)
 if(USE_LSL)
     if(APPLE)
@@ -465,6 +476,11 @@ set(ALL_INCLUDE_DIRS
         ${CERES_INCLUDE_DIRS}
         #        ${GLOG_INCLUDE_DIRS} #########################
         ${BZip2_INCLUDE_DIRS} ########################################################
+        #${FFMPEG_INCLUDE_DIRS}
+        FFMPEG::AVCODEC
+        FFMPEG::AVFORMAT
+        FFMPEG::AVUTIL
+        FFMPEG::SWSCALE
         "singleeyefitter")
 
 if(USE_PYLON)
@@ -507,6 +523,7 @@ message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
 message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}")
 #message(STATUS " GLOG_INCLUDE_DIRS: ${GLOG_INCLUDE_DIRS}")
 message(STATUS " BZip2_INCLUDE_DIRS: ${BZip2_INCLUDE_DIRS}") ########################################################
+message(STATUS " FFMPEG_INCLUDE_DIRS: ${BZip2_INCLUDE_DIRS}")
 if(USE_PYLON)
 message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}")
 else()

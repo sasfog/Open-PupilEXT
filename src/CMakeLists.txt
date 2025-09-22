@@ -190,8 +190,10 @@ set(ALL_LIBRARIES_TO_LINK
         #Boost::boost
         ${CERES_LIBRARIES}
         ${BZip2_LIBRARIES} ########################################################
+
+        ${FFMPEG_LIBRARIES}
+
         ${OpenCV_LIBS}
-        # ${FFMPEG_LIBRARIES}
         #opengl32 # works only for windows
         #OpenGL::GL
 )
@@ -244,7 +246,7 @@ else()
         #  DETAILS: On Apple Silicon (arm64) when using aravis, and hence using glib, the libgio-2.0 library will
         #  fail to link, as some functions are not found that are referenced in gthreadedresolver.c.o. These functions
         #  are called _res_9_* but not _res_*. According to all sources I have found on internet, the latter ones
-        #  should be (only) available on amd64, but the former are not. In the gthreadedresolver.c source, or anz other
+        #  should be (only) available on amd64, but the former are not. In the gthreadedresolver.c source, or any other
         #  gio library source, I have found no mentioning (redefinition, etc) of _res_* with _res_9_*, however
         #  the problem persisted even after any clean rebuild attempt. I have glib on the build/host machine,
         #  which in the cellar has mentions the _res_9_* functions, so it might have been the case that
@@ -262,15 +264,17 @@ message(STATUS "ALL_LIBRARIES_TO_LINK: ${ALL_LIBRARIES_TO_LINK}")
 ## restrict MSVC from embedding the automatic default manifest file
 #    add_link_options(/MANIFESTUAC:NO)
 
+
+##################### target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)
+
+# DEV
+target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
+
 target_link_libraries(
         ${CMAKE_PROJECT_NAME}
         PRIVATE
         ${ALL_LIBRARIES_TO_LINK}
 )
-
-
-##################### target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib)
-
 
 # add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 
@@ -283,8 +287,12 @@ else()
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -pedantic)
 endif()
 
-install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION "${PROJECT_SOURCE_DIR}/bin/debug" CONFIGURATIONS Debug)
-install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION "${PROJECT_SOURCE_DIR}/bin/release" CONFIGURATIONS Release)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # TODO: MORE UNIVERSAL CHECK FOR BUILD TYPE. THIS MIGHT NOT ALWAYS WORK.
+    install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION "${PROJECT_SOURCE_DIR}/bin/debug" CONFIGURATIONS Debug)
+else()
+    install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION "${PROJECT_SOURCE_DIR}/bin/release" CONFIGURATIONS Release)
+endif()
 
 install(PROGRAMS ${__location_release} DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 

@@ -23,12 +23,6 @@ public:
     explicit GeneralSettingsDialog(QWidget *parent = nullptr);
     ~GeneralSettingsDialog() override;
 
-//    QString getImageWriterFormat() const;
-//    QString getImageWriterDataRule() const;
-//    QString getDataWriterDataRule() const;
-//    QString getDataWriterDataStyle() const;
-    bool getMetaSnapshotsEnabled() const;
-    bool getSaveOfflineEventLog() const;
     bool getAlwaysOnTop() const;
     bool getAdminWarning() const;
 
@@ -39,9 +33,11 @@ private:
     QSettings *applicationSettings;
 
     QGroupBox *dataWriterGroup;
-    QGroupBox *imageWriterGroup;
-    QString imageWriterFormat;
-    QString imageWriterDataRule;
+    QGroupBox *iwImageSeqGroup;
+    QGroupBox *iwVideoGroup;
+    QString iwImageSeqFormat;
+    QString iwVideoCodec;
+    QString iwImageSeqDataRule;
 
     QGroupBox *gazeTrackingGroup;
     // Determine ground truth by aggregating data before acceptance
@@ -60,27 +56,47 @@ private:
 
 
 
-    QWidget *formatPngCompressionWidget;
-    QComboBox *formatPngCompressionBox;
-    QWidget *formatJpegQualityWidget;
-    QSpinBox *formatJpegQualityBox;
+    QWidget *iwImageSeqPngCompressionWidget;
+    QComboBox *iwImageSeqPngCompressionBox;
+    QWidget *iwImageSeqJpegQualityWidget;
+    QSpinBox *iwImageSeqJpegQualityBox;
     QWidget *formatWebpQualityWidget;
-    QSpinBox *formatWebpQualityBox;
+    QSpinBox *iwImageSeqWebpQualityBox;
 
-    int imageWriterFormatPngCompression;
-    int imageWriterFormatJpegQuality;
-    int imageWriterFormatWebpQuality;
+    // TODO: other settings for other codecs ?
+    //QWidget *iwVideoPngCompressionWidget;
+    //QComboBox *iwVideoPngCompressionBox;
+    QWidget *iwVideoMJpegQualityWidget;
+    QSpinBox *iwVideoMJpegQualityBox;
+    QWidget *iwVideoMPEG4QualityWidget;
+    QSpinBox *iwVideoMPEG4QualityBox;
+    QWidget *iwVideoProResQualityWidget;
+    QSpinBox *iwVideoProResQualityBox;
+    QWidget *iwVideoFFV1CoderWidget;
+    QComboBox *iwVideoFFV1CoderBox;
+    QWidget *iwVideoFFV1ContextWidget;
+    QComboBox *iwVideoFFV1ContextBox;
+
+    int iwImageSeqPngCompression;
+    int iwImageSeqJpegQuality;
+    int iwImageSeqWebpQuality;
+
+    //int iwVideoPngCompression;
+    int iwVideoMJpegQuality;
+    int iwVideoMPEG4Quality;
+    int iwVideoProResQuality;
+    int iwVideoFFV1Coder;
+    int iwVideoFFV1Context;
 
     QPushButton *applyButton;
     QPushButton *cancelButton;
 
-    QComboBox *imageWriterFormatBox;
-    QComboBox *imageWriterDataRuleBox;
+    QComboBox *iwImageSeqFormatBox;
+    QComboBox *iwVideoCodecBox;
+    QComboBox *iwImageSeqDataRuleBox;
     QSpinBox *playbackSpeedInputBox;
     QCheckBox *playbackLoopBox;
 
-    bool metaSnapshotsEnabled;
-    bool saveOfflineEventLog;
     bool alwaysOnTop;
     bool adminWarning;
 
@@ -95,8 +111,6 @@ private:
 
     int darkAdaptMode;
     QComboBox *darkAdaptBox;
-    QCheckBox *metaSnapshotBox;
-    QCheckBox *saveOfflineEventLogBox;
     QCheckBox *alwaysOnTopBox;
     QCheckBox *adminWarningBox;
 
@@ -111,28 +125,31 @@ public slots:
     void open() override;
     void apply();
     void cancel();
-    void onImageWriterFormatChange(int index);
+    void onImageWriterImageSequenceFormatChange(int index);
     void onImageWriterDataRuleChange(int index);
     void readSettings();
-//    void setImageWriterFormat(const QString &imageWriterFormat);
-//    void setImageWriterDataRule(const QString &imageWriterDataRule);
-//    void setDataWriterDataRule(const QString &dataWriterDataRule);
-//    void setDataWriterDataStyle(const QString &m_dataWriterDataStyle);
 
     void onDataWriterDelimiterChange(int index);
     void onDataWriterDataStyleChange(int index);
     void onDataWriterDataRuleChange(int index);
     void onDarkAdaptChange(int index);
-    void setMetaSnapshotEnabled(int m_state);
-    void setSaveOfflineEventLog(int m_state);
     void setAlwaysOnTop(int m_state);
     void setAdminWarning(int m_state);
 
     void setIgnoreFrameSkip(int m_state);
 
-    void onImageWriterFormatPngCompressionChange(int index);
-    void onImageWriterFormatJpegQualityChange(int value);
-    void onImageWriterFormatWebpQualityChange(int value);
+    void onImageWriterImageSequencePngCompressionChange(int index);
+    void onImageWriterImageSequenceJpegQualityChange(int value);
+    void onImageWriterImageSequenceWebpQualityChange(int value);
+
+    void onImageWriterVideoCodecChange(int index);
+
+    //void onImageWriterVideoPngCompressionChange(int index);
+    void onImageWriterVideoMJpegQualityChange(int value);
+    void onImageWriterVideoMPEG4QualityChange(int value);
+    void onImageWriterVideoProResQualityChange(int value);
+    void onImageWriterVideoFFV1CoderChange(int index);
+    void onImageWriterVideoFFV1ContextChange(int index);
 
     void setLimitationsWhileImageWriting(bool state);
     void setLimitationsWhileDataWriting(bool state);

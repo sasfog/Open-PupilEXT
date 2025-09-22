@@ -23,6 +23,7 @@ PupilEXT integrates several open source libraries. This document provides a list
 * [QuaZip](#QuaZip)
 * [QtOpenGLViewer](#QtOpenGLViewer)
 * [OpenCV](#OpenCV)
+* [FFmpeg](#FFmpeg)
 * [Glog](#Glog)
 * [liblsl](#liblsl)
 * [Boost](#Boost)
@@ -62,6 +63,8 @@ lossless, block-sorting data compression. In this project, it is used by QuaZip 
 <a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="OpenCV" href="https://opencv.org/"><b>OpenCV</b></a> is a highly optimized computer vision library with focus on real-time applications. In this repository it is used for image manipulation and plotting of ellipse pupil detections. (License: Apache 2 / BSD)
+
+<a id="FFmpeg" href="https://ffmpeg.org/"><b>FFmpeg</b></a> is a collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata. (License: LGPL v2.1)
 
 <a id="Glog" href="https://github.com/google/glog"><b>Glog</b></a> is a library for logging. ([License](https://github.com/google/glog/blob/master/COPYING))
 

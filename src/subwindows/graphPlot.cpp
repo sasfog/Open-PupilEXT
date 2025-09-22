@@ -363,6 +363,14 @@ void GraphPlot::setupPlotAxis() {
         customPlot->yAxis->setLabel("Pupil physical diameter [mm]");
         yAxisLimitLowT = 1.0;
         yAxisLimitHighT = 9.0;
+    } else if(plotDataKey == PDataType::PUPIL_BRISQUE_FULL_IMAGE) {
+        customPlot->yAxis->setLabel("BRISQUE of full image [-]");
+        yAxisLimitLowT = 0.0;
+        yAxisLimitHighT = 100.0;
+    } else if(plotDataKey == PDataType::PUPIL_BRISQUE_PD_ROI) {
+        customPlot->yAxis->setLabel("BRISQUE of PD ROI [-]");
+        yAxisLimitLowT = 0.0;
+        yAxisLimitHighT = 100.0;
     } else {
         yAxisLimitLowT = -2000.0;
         yAxisLimitHighT = 65000.0;
@@ -509,7 +517,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL], 0, m_timestamp);
+            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN], 0, m_timestamp);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
             setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_R], 0, m_timestamp);

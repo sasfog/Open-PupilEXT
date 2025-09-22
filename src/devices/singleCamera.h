@@ -71,7 +71,7 @@ public:
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
     bool isEmulated();
-    double getResultingFrameRateValue(); // ResultingFrameRate
+    double getResultingFrameRateValue() override; // ResultingFrameRate
 
     bool isAutoGainAvailable();
     bool isAutoExposureAvailable();
@@ -233,7 +233,7 @@ public:
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
     bool isEmulated();
-    double getResultingFrameRateValue(); // ResultingFrameRate
+    double getResultingFrameRateValue() override; // ResultingFrameRate
 
     bool isAutoGainAvailable();
     bool isAutoExposureAvailable();

@@ -48,6 +48,7 @@ pupilEXT.forceResetTrialCounter();
 pupilEXT.setPupilDetectionAlgorithm('ElSe');
 pupilEXT.setUsingROIAreaSelection(true);
 pupilEXT.setComputeOutlineConfidence(true);
+pupilEXT.setComputeBRISQUE(true);
 pupilEXT.connectRemoteControlUDP('192.168.40.3', 6900);
 pupilEXT.connectRemoteControlCOM('COM1', 115200);
 pupilEXT.disconnectRemoteControlUDP();

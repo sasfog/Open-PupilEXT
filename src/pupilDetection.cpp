@@ -34,35 +34,36 @@ void PupilDetection::populateWithMethods(std::vector<PupilDetectionMethod*> &vec
 
 // Creates a new pupil detection worker which include all pupil detection algorithms
 // Should be run on a seperate thread
-PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent) : QObject(parent),
-                                                                                                                                      camera(nullptr),
-                                                                                                                                      frameCounter(new FrameRateCounter(parent)),
-                                                                                                                                      useOutlineConfidence(true),
-                                                                                                                                      useROIPreProcessing(false),
-                                                                                                                                      useImageUndistort(false),
-                                                                                                                                      usePupilUndistort(false),
-                                                                                                                                      trackingOn(false),
-                                                                                                                                      calibrated(false),
-                                                  //showROI(true),
-                                                  //showPupilCenter(false),
-                                                  autoParamEnabled(false),
-                                                                                                                                      currentConfigLabel("Default"),
-                                                                                                                                      currentProcMode(ProcMode::UNDETERMINED),
-                                                                                                                                      ROIsingleImageOnePupil(),
-                                                                                                                                      ROIsingleImageTwoPupilR(),
-                                                                                                                                      ROIsingleImageTwoPupilL(),
-                                                                                                                                      ROIstereoImageOnePupil1(),
-                                                                                                                                      ROIstereoImageOnePupil2(),
-                                                                                                                                      ROIstereoImageTwoPupilR1(),
-                                                                                                                                      ROIstereoImageTwoPupilR2(),
-                                                                                                                                      ROIstereoImageTwoPupilL1(),
-                                                                                                                                      ROIstereoImageTwoPupilL2(),
-                                                                                                                                      ROImirrImageOnePupil1(),
-                                                                                                                                      ROImirrImageOnePupil2(),
-                                                                                                                                      imageMutex(imageMutex),
-                                                                                                                                      imagePublished(imagePublished),
-                                                                                                                                      imageProcessed(imageProcessed)
-                                                  {
+PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent) :
+    QObject(parent),
+    camera(nullptr),
+    frameCounter(new FrameRateCounter(parent)),
+    useOutlineConfidence(true),
+    useROIPreProcessing(false),
+    useImageUndistort(false),
+    usePupilUndistort(false),
+    trackingOn(false),
+    calibrated(false),
+    //showROI(true),
+    //showPupilCenter(false),
+    autoParamEnabled(false),
+    currentConfigLabel("Default"),
+    currentProcMode(ProcMode::UNDETERMINED),
+    ROIsingleImageOnePupil(),
+    ROIsingleImageTwoPupilR(),
+    ROIsingleImageTwoPupilL(),
+    ROIstereoImageOnePupil1(),
+    ROIstereoImageOnePupil2(),
+    ROIstereoImageTwoPupilR1(),
+    ROIstereoImageTwoPupilR2(),
+    ROIstereoImageTwoPupilL1(),
+    ROIstereoImageTwoPupilL2(),
+    ROImirrImageOnePupil1(),
+    ROImirrImageOnePupil2(),
+    imageMutex(imageMutex),
+    imagePublished(imagePublished),
+    imageProcessed(imageProcessed)
+    {
 
     drawDelay = 33; // ~30fps
 
@@ -88,6 +89,37 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
 }
 
 PupilDetection::~PupilDetection() {
+    brisque.release();
+    //BRISQUEModel.release();
+    //brisque = nullptr;
+}
+
+void PupilDetection::enableComputeBRISQUE(bool state) {
+    if(state) {
+        computeBRISQUEEnabled = true;
+
+        if(!brisque || brisque.empty()) {
+            // init BRISQUE
+            QFile fileBRISQUEModel(BRISQUEModelFileNameRES);
+            fileBRISQUEModel.open(QIODevice::ReadOnly | QIODevice::Text);
+            cv::FileStorage fsBRISQUEModel(fileBRISQUEModel.readAll().constData(),
+                                           cv::FileStorage::READ | cv::FileStorage::MEMORY);
+            cv::Ptr<cv::ml::SVM> BRISQUEModel = cv::ml::SVM::create();
+            BRISQUEModel->read(fsBRISQUEModel.getFirstTopLevelNode());
+            //
+            QFile fileBRISQUERange(BRISQUERangeFileNameRES);
+            fileBRISQUERange.open(QIODevice::ReadOnly | QIODevice::Text);
+            cv::FileStorage fsBRISQUERange(fileBRISQUERange.readAll().constData(),
+                                           cv::FileStorage::READ | cv::FileStorage::MEMORY);
+            cv::Mat BRISQUERange;
+            fsBRISQUERange["range"] >> BRISQUERange;
+            //
+            brisque = cv::quality::QualityBRISQUE::create(BRISQUEModel, BRISQUERange);
+            //brisque = cv::quality::QualityBRISQUE::create("./brisque_model_live.yml", "./brisque_range_live.yml");
+        }
+    } else {
+        computeBRISQUEEnabled = false;
+    }
 }
 
 // Attaches a camera to the pupil detection process
@@ -125,9 +157,7 @@ void PupilDetection::setCamera(Camera *m_camera) {
     }
 }
 
-// Starts the algorithm by connecting the camera image signals to the processing callbacks
-// GB: now the distinction between stereo/single modes is made using procMode enum
-void PupilDetection::startDetection() {
+void PupilDetection::startTracking() {
 
     // TODO: check if ROIs are set ?
 
@@ -142,13 +172,10 @@ void PupilDetection::startDetection() {
     }
 }
 
-// Stops the pupil detection by disconnecting the signals of new images to the processing
-// GB: now the distinction between stereo/single modes is made using procMode enum
-void PupilDetection::stopDetection() {
+void PupilDetection::stopTracking() {
 
     if(camera && trackingOn) {
         trackingOn = false;
-
 
         emit processingFinished();
         imageProcessed->wakeAll();
@@ -251,6 +278,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
         autoParamScheduled = false;
     }
 
+    // TODO: REMOVE. ALREADY DONE BEFORE
     if (bwFrame.channels() > 1) {
         cv::cvtColor(bwFrame, bwFrame, cv::COLOR_BGR2GRAY);
     }
@@ -288,6 +316,13 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
     }
 
     pupil.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
+
+    if(computeBRISQUEEnabled) {
+        pupil.BRISQUEFullImage = brisque->compute(image.img)[0];
+        pupil.BRISQUEPDROI = brisque->compute(bwFrame)[0];
+        //pupil.BRISQUEPDInternal = ...;
+        //std::cout << "BRISQUE SCORE: " << score[0] << std::endl;
+    }
 
     std::vector<Pupil> Pupils;
     Pupils.push_back(pupil);
@@ -499,6 +534,15 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
     // TODO: ? Implement basic pythagorean px-mm mapping
 
+    if(computeBRISQUEEnabled) {
+        pupilA.BRISQUEFullImage = brisque->compute(cimg.img)[0];
+        pupilA.BRISQUEPDROI = brisque->compute(bwFrameA)[0];
+        pupilB.BRISQUEFullImage = pupilA.BRISQUEFullImage;
+        pupilB.BRISQUEPDROI = brisque->compute(bwFrameB)[0];
+        //pupil.BRISQUEPDInternal = ...;
+        // std::cout << "BRISQUE SCORE: " << score[0] << std::endl;
+    }
+
     std::vector<Pupil> Pupils;
     Pupils.push_back(pupilA);
     Pupils.push_back(pupilB);
@@ -543,6 +587,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
         emit processedPupilDataLowFPS(cimg.timestamp, currentProcMode, Pupils);
     }
+
     emit processedPupilData(cimg.timestamp, currentProcMode, Pupils);
 
 }
@@ -707,6 +752,15 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
         pupil.physicalDiameter = static_cast<float>(cv::norm(worldPoints[0] - worldPoints[1]));
         pupilSecondary.physicalDiameter = pupil.physicalDiameter;
         //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+    }
+
+    if(computeBRISQUEEnabled) {
+        pupil.BRISQUEFullImage = brisque->compute(simg.img)[0];
+        pupil.BRISQUEPDROI = brisque->compute(bwFrame)[0];
+        pupilSecondary.BRISQUEFullImage = brisque->compute(simg.imgSecondary)[0];
+        pupilSecondary.BRISQUEPDROI = brisque->compute(bwFrameSecondary)[0];
+        //pupil.BRISQUEPDInternal = ...;
+        //std::cout << "BRISQUE SCORE: " << score[0] << std::endl;
     }
 
     std::vector<Pupil> Pupils;
@@ -982,6 +1036,19 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
         pupilB1.physicalDiameter = static_cast<float>(cv::norm(worldPointsB[0] - worldPointsB[1]));
         pupilB2.physicalDiameter = pupilB1.physicalDiameter;
         //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+    }
+
+    if(computeBRISQUEEnabled) {
+        pupilA1.BRISQUEFullImage = brisque->compute(simg.img)[0];
+        pupilA1.BRISQUEPDROI = brisque->compute(bwFrameA1)[0];
+        pupilA2.BRISQUEFullImage = brisque->compute(simg.imgSecondary)[0];
+        pupilA2.BRISQUEPDROI = brisque->compute(bwFrameA2)[0];
+        pupilB1.BRISQUEFullImage = brisque->compute(simg.img)[0];
+        pupilB1.BRISQUEPDROI = brisque->compute(bwFrameB1)[0];
+        pupilB2.BRISQUEFullImage = brisque->compute(simg.imgSecondary)[0];
+        pupilB2.BRISQUEPDROI = brisque->compute(bwFrameB2)[0];
+        //pupil.BRISQUEPDInternal = ...;
+        //std::cout << "BRISQUE SCORE: " << score[0] << std::endl;
     }
 
     std::vector<Pupil> Pupils;

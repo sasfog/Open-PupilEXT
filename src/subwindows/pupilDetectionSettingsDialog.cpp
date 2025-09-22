@@ -149,7 +149,7 @@ void PupilDetectionSettingsDialog::createForm() {
 
     QFormLayout *optionsLayout = new QFormLayout();
 
-    QLabel *roiPreprocessingLabel = new QLabel(tr("Use ROI Area Selection:"));
+    QLabel *roiPreprocessingLabel = new QLabel(tr("Use PD ROI Area Selection:"));
     roiPreprocessingBox = new QCheckBox();
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
     optionsLayout->addRow(roiPreprocessingLabel, roiPreprocessingBox);
@@ -158,6 +158,12 @@ void PupilDetectionSettingsDialog::createForm() {
     outlineConfidenceBox = new QCheckBox();
     outlineConfidenceBox->setChecked(pupilDetection->isOutlineConfidenceEnabled());
     optionsLayout->addRow(outlineConfidenceLabel, outlineConfidenceBox);
+
+    QLabel *computeBRISQUELabel = new QLabel(tr("Compute BRISQUE Score (slow):"));
+    computeBRISQUEBox = new QCheckBox();
+    //computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
+    computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
+    optionsLayout->addRow(computeBRISQUELabel, computeBRISQUEBox);
 
 
     QLabel *pupilSizeUndistortionLabel = new QLabel(tr("Undistort individual pupil size (fast) [<a href=\"http://mock.link\">?</a>]:"));
@@ -271,6 +277,7 @@ void PupilDetectionSettingsDialog::updateForm() {
     algorithmBox->setCurrentText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
     outlineConfidenceBox->setChecked(pupilDetection->isOutlineConfidenceEnabled());
+    computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
 
     pupilUndistortionBox->setChecked(pupilDetection->isPupilUndistortionEnabled());
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
@@ -340,8 +347,9 @@ void PupilDetectionSettingsDialog::loadSettings() {
     pupilDetection->setAlgorithm(applicationSettings->value("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText()).toString());
 //    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked(), applicationSettings));
 //    pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked(), applicationSettings));
-    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", true, applicationSettings));
     pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", true, applicationSettings));
+    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", true, applicationSettings));
+    pupilDetection->enableComputeBRISQUE(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.computeBRISQUE", false, applicationSettings));
     pupilDetection->enablePupilUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked(), applicationSettings));
     pupilDetection->enableImageUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked(), applicationSettings));
 
@@ -365,8 +373,9 @@ void PupilDetectionSettingsDialog::saveUniversalSettings() {
     }
 
     applicationSettings->setValue("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText());
-    applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked());
+    applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked());
+    applicationSettings->setValue("PupilDetectionSettingsDialog.computeBRISQUE", computeBRISQUEBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked());
 }
@@ -470,8 +479,9 @@ void PupilDetectionSettingsDialog::applyButtonClick() {
     }
 
     pupilDetection->setAlgorithm(algorithmBox->currentText());
-    pupilDetection->enableOutlineConfidence(outlineConfidenceBox->isChecked());
     pupilDetection->enableROIPreProcessing(roiPreprocessingBox->isChecked());
+    pupilDetection->enableOutlineConfidence(outlineConfidenceBox->isChecked());
+    pupilDetection->enableComputeBRISQUE(computeBRISQUEBox->isChecked());
     pupilDetection->enablePupilUndistortion(pupilUndistortionBox->isChecked());
     pupilDetection->enableImageUndistortion(imageUndistortionBox->isChecked());
 

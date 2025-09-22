@@ -54,19 +54,60 @@ class Pupil : public cv::RotatedRect {
 public:
 
     Pupil(const RotatedRect &outline, const float &confidence) :
-            RotatedRect(outline), confidence(confidence), outline_confidence(NO_CONFIDENCE), eyelid(0), physicalDiameter(-1.0), undistortedDiameter(-1.0), algorithmName("") {
+            RotatedRect(outline),
+            confidence(confidence),
+            outline_confidence(NO_CONFIDENCE),
+            eyelid(0),
+            physicalDiameter(-1.0),
+            undistortedDiameter(-1.0),
+            algorithmName(""),
+            eyeIdentity('X'),
+            BRISQUEFullImage(-1.0),
+            BRISQUEPDROI(-1.0) {
     }
 
-    Pupil(const RotatedRect &outline, const float &confidence, const float &outline_confidence, const float &eyelid, const float &physicalDiameter, const float &undistortedDiameter) :
-            RotatedRect(outline), confidence(confidence), outline_confidence(outline_confidence), eyelid(eyelid), physicalDiameter(physicalDiameter), undistortedDiameter(undistortedDiameter), algorithmName("") {
+    Pupil(const RotatedRect &outline,
+          const float &confidence,
+          const float &outline_confidence,
+          const float &eyelid,
+          const float &physicalDiameter,
+          const float &undistortedDiameter) :
+            RotatedRect(outline),
+            confidence(confidence),
+            outline_confidence(outline_confidence),
+            eyelid(eyelid),
+            physicalDiameter(physicalDiameter),
+            undistortedDiameter(undistortedDiameter),
+            algorithmName(""),
+            eyeIdentity('X'),
+            BRISQUEFullImage(-1.0),
+            BRISQUEPDROI(-1.0) {
     }
 
     Pupil(const Pupil &other) :
-            RotatedRect(other), confidence(other.confidence), outline_confidence(other.outline_confidence), eyelid(other.eyelid), physicalDiameter(other.physicalDiameter), undistortedDiameter(other.undistortedDiameter), algorithmName(other.algorithmName) {
+            RotatedRect(other),
+            confidence(other.confidence),
+            outline_confidence(other.outline_confidence),
+            eyelid(other.eyelid),
+            physicalDiameter(other.physicalDiameter),
+            undistortedDiameter(other.undistortedDiameter),
+            algorithmName(other.algorithmName),
+            eyeIdentity(other.eyeIdentity),
+            BRISQUEFullImage(other.BRISQUEFullImage),
+            BRISQUEPDROI(other.BRISQUEPDROI) {
     }
 
     Pupil(const RotatedRect &outline) :
-            RotatedRect(outline), confidence(NO_CONFIDENCE), outline_confidence(NO_CONFIDENCE), eyelid(0), physicalDiameter(-1.0), undistortedDiameter(-1.0), algorithmName("") {
+            RotatedRect(outline),
+            confidence(NO_CONFIDENCE),
+            outline_confidence(NO_CONFIDENCE),
+            eyelid(0),
+            physicalDiameter(-1.0),
+            undistortedDiameter(-1.0),
+            algorithmName(""),
+            eyeIdentity('X'),
+            BRISQUEFullImage(-1.0),
+            BRISQUEPDROI(-1.0) {
     }
 
     Pupil() {
@@ -87,6 +128,10 @@ public:
     std::string algorithmName;
     char eyeIdentity;
 
+    float BRISQUEFullImage;
+    float BRISQUEPDROI;
+    //float BRISQUEPDInternal;
+
     void clear() {
         angle = -1.0;
         center = { -1.0, -1.0 };
@@ -97,6 +142,12 @@ public:
         physicalDiameter=-1.0;
         undistortedDiameter=-1.0;
         algorithmName="";
+        eyeIdentity='X';
+        BRISQUEFullImage=-1.0;
+        BRISQUEPDROI=-1.0;
+        //BRISQUEPDInternal=-1.0;
+
+        // IMPORTANT: if you add anything new, be sure to update the object copy method, and constructors too
     }
 
     void resize(const float &xf, const float &yf) {
@@ -194,6 +245,12 @@ public:
                 return (double)majorAxis() / minorAxis();
             case PDataType::PUPIL_ANGLE:
                 return angle;
+            case PDataType::PUPIL_BRISQUE_FULL_IMAGE:
+                return BRISQUEFullImage;
+            case PDataType::PUPIL_BRISQUE_PD_ROI:
+                return BRISQUEPDROI;
+            //case PDataType::PUPIL_BRISQUE_PD_Internal:
+            //    return BRISQUEPDInternal;
         }
     }
 

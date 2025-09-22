@@ -6,11 +6,20 @@
 
 #include <QtCore/QObject>
 #include <QtGui/QtGui>
+#include <QtXml>
 #include "../devices/camera.h"
 #include <vector>
 #include <algorithm>
 #include "quazip/quazip.h"
 #include "quazip/quazipfile.h"
+
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/opt.h>
+#include <libswscale/swscale.h>
+//#include <libavcodec/version.h>
+}
 
 enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
 
@@ -44,13 +53,15 @@ public:
         IMSTATUS_OK,
         IMSTATUS_ERROR,
         IMSTATUS_ZIP_INDECISIVE,
-        IMSTATUS_ZIP_UNOPENABLE
+        IMSTATUS_ZIP_UNOPENABLE,
+        IMSTATUS_VIDEO_UNOPENABLE
     };
 
     enum ImageReaderSource {
         IMSOURCE_UNDETERMINED,
         IMSOURCE_DIRECTORY,
-        IMSOURCE_ZIP
+        IMSOURCE_ZIP,
+        IMSOURCE_VIDEO
     };
 
     struct ZipMultiInfo {
@@ -147,7 +158,52 @@ public:
     uint64_t getRecordingDuration() {
         return acqTimestamps[acqTimestamps.size()-1] - acqTimestamps[0];
     }
-    void seekToFrame(int frameNumber) {
+    void seekInVideoStream(int frameNumber, bool seekBackwards) {
+
+        // NOTE: under current circumstances, it seems that this is ALWAYS the case, as we use no keyframes.
+        // Although for any non-scientific grade recording we might want to be able to handle for educative
+        // reasons, where there are keyframes, this might be useful still.
+   //     int avSeekFlag = AVSEEK_FLAG_BACKWARD;
+   ////     int avSeekFlag = 0;
+   ////     if(seekBackwards)
+   ////         avSeekFlag &= AVSEEK_FLAG_BACKWARD;
+
+        // NOTE: We have to seek by timestamp, not frame. Safer anyhow.
+        //  Since the timebase is deliberately the finest we can get, and FPS is not sure,
+        //  we need the lookup table of frame numbers for that.
+
+        // IMPORTANT: we need to subtract the first timestamp always, as they were rebased upon
+        //  encoding due to possible codec requirements, to always start at 0 at the first frame.
+
+        // TODO: STEREO?
+        // TODO: separate function?
+
+        auto ueueue = getTimestampForFrameNumber(frameNumber) - acqTimestamps[0];
+
+        int ret = 0;
+
+        ret += av_seek_frame(fmt_ctx, videoStreamIndices[0],
+                                getTimestampForFrameNumber(frameNumber) - acqTimestamps[0],
+                                AVSEEK_FLAG_BACKWARD);
+        if(stereoMode) {
+            ret += av_seek_frame(fmt_ctx, videoStreamIndices[1],
+                                 getTimestampForFrameNumber(frameNumber) - acqTimestamps[0],
+                                 AVSEEK_FLAG_BACKWARD);
+        }
+        //int ret = av_seek_frame(fmt_ctx, videoStreamIndices[0],
+        //                        getTimestampForFrameNumber(frameNumber) - acqTimestamps[0],
+        //                        0);
+        if (ret < 0) {
+            qDebug() << "Seek failed:" << ret;
+        }
+        avcodec_flush_buffers(vctx);
+    }
+    void seekToFrame(int frameNumber, bool seekBackwards) {
+
+        if(imageReaderSource == IMSOURCE_VIDEO) {
+            seekInVideoStream(frameNumber, seekBackwards);
+        }
+
         if(frameNumber<0)
             frameNumber=0;
         currentImageIndex = frameNumber;
@@ -191,6 +247,8 @@ private:
     QVector<QStringList> fileNames {QStringList(), QStringList()};
 
     const QString zipSuffix = "zip";
+    const QString videoSuffix = "mkv";
+    int currentFrameInfoFileVersion = 1;
 
 
     uint64 startTimestamp;
@@ -220,11 +278,43 @@ private:
 
     QString offlineEventLogContent;
     QString metaSnapshotContent;
+    QString frameInfoFileContent;
+
+    std::vector<int> videoStreamIndices = {};
+    AVFormatContext* fmt_ctx = nullptr;
+    AVPixelFormat foundPixelFormat = AVPixelFormat::AV_PIX_FMT_NONE;
+    const AVCodec* vcodec = nullptr;
+    AVCodecContext* vctx = nullptr;
+    AVPacket *pkt = nullptr;
+    AVFrame *frame = nullptr;
+    AVFrame *grayFrame = nullptr;
+    SwsContext *swsCtx = nullptr; // yet we have one, and use only one for one recording opened
+
+    void createSwsCtxAndPrepareGrayFrame() {
+        if (foundImageWidth <= 0)
+            foundImageWidth = frame->width;
+        if (foundImageHeight <= 0)
+            foundImageHeight = frame->height;
+        if(foundPixelFormat == AVPixelFormat::AV_PIX_FMT_NONE)
+            foundPixelFormat = (AVPixelFormat) frame->format;
+
+        swsCtx = sws_getContext(
+                foundImageWidth, foundImageHeight, foundPixelFormat,
+                foundImageWidth, foundImageHeight, AV_PIX_FMT_GRAY8,
+                SWS_BILINEAR, nullptr, nullptr, nullptr
+        );
+
+        grayFrame->format = AV_PIX_FMT_GRAY8;
+        grayFrame->width  = frame->width;
+        grayFrame->height = frame->height;
+        av_frame_get_buffer(grayFrame, 32);
+    };
 
     void exploreZip(const QString &imageSource, const int &subrecordingNumber);
     QString findMostFrequentExtension(const QStringList &fileNameCandidates);
     QStringList purgeFileNamesVector(QStringList fileNameCandidates);
     std::vector<quint64> extractAcqTimestamps(const QStringList &fileNameCandidates);
+    std::vector<quint64> extractAcqTimestampsFromFrameInfoFile(const QString &content);
 
     bool quickReadImageSingle(cv::Mat &img, const int &imageIndex);
     bool quickReadImageStereo(cv::Mat &img, cv::Mat &imgSecondary, const int &imageIndex);

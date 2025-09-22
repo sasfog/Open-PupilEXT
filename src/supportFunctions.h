@@ -287,20 +287,22 @@ public:
         return workCopy;
     };
 
-    static QString prepareOutputZipDirForImageWriter(QString filePathAndname, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
+    static QString prepareOutputFileDirForImageWriter(QString filePathAndname, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
         if(filePathAndname.isEmpty()) {
             return filePathAndname;
         }
 
+        // TODO: use QFileInfo method
         QString fileName = filePathAndname.mid(filePathAndname.lastIndexOf("/")+1, filePathAndname.length()-(filePathAndname.lastIndexOf("/")));
-        QString containingDirectory = filePathAndname.mid(0, filePathAndname.lastIndexOf("/"));
+        //QString containingDirectory = filePathAndname.mid(0, filePathAndname.lastIndexOf("/"));
 
+        QString suffix = QFileInfo(filePathAndname).suffix();
         // bool changedGiven = false;
         QString changedPath;
         bool newNodeCreated = false;
-        bool pathWriteable = SupportFunctions::preparePath(containingDirectory, changedGiven, changedPath, newNodeCreated);
+        bool pathWriteable = SupportFunctions::preparePath(QFileInfo(filePathAndname).absolutePath(), changedGiven, changedPath, newNodeCreated);
         if(!pathWriteable) {
             // TODO: Throw exception?
             changedGiven = true;
@@ -317,12 +319,33 @@ public:
             filePathAndname = changedPath + "/" + fileName;
         }
 
+        //QStringList fileNamesInThatFolder = QFileInfo(filePathAndname).dir().entryList(QDir::Files | QDir::NoDotAndDotDot); // (QDir::AllEntries | QDir::NoDotAndDotDot)
+        //auto offlineEventLogsFound = fileNamesInThatFolder.filter(QRegularExpression("_Run\\d+$"));
+
+        // If it ends with a _RunI<number>, chop that part,
+        //  but only chop if anything remains.
+        QRegularExpression rgp("_RunI\\d+$");
+        QString fileNameBase = fileName.mid(0, fileName.lastIndexOf("."));
+        auto hhhh = rgp.match(fileNameBase).hasMatch();
+        auto iiii = fileNameBase.lastIndexOf("_");
+        if(rgp.match(fileNameBase).hasMatch() && fileNameBase.lastIndexOf("_") != 0 ) {
+            fileNameBase = fileNameBase.mid(0, fileNameBase.lastIndexOf("_"));
+            fileName = fileNameBase + "." + suffix;
+            filePathAndname = QFileInfo(filePathAndname).absolutePath() + "/" + fileName;
+        }
+
         // QDir outputDirectory = QDir(directory);
         bool exists = QFile(filePathAndname).exists();
-        bool hasContent = QFile(filePathAndname).size() > 0;
+
+        // IMPORTANT: We do not check for content if there is a file at the location. Reasons:
+        //  - Each recording attempt should be taken as a separate recording for clarity, even if the last result was empty.
+        //  - Video writing can only happen into a new file, appending is not supported. This means that deleting any existing
+        //   empty files shoudl also happen here (or if the user does not have privileges to do so, its handling should
+        //   also happen here). To get around all this headache, just treat empty recordings as existing ones.
+        //bool hasContent = QFile(filePathAndname).size() > 0;
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
-        if(exists && hasContent && imageWriterDataRule == "ask") {
+        if(exists && /*hasContent &&*/ imageWriterDataRule == "ask" && suffix != "mkv") {
             TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
                     "Image output archive already exists",
                     "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
@@ -351,7 +374,7 @@ public:
             }
         }
 
-        if(exists && hasContent && imageWriterDataRule == "new") {
+        if(exists && /*hasContent &&*/ (imageWriterDataRule == "new" ||  suffix == "mkv")) {
             bool nameInvented = false;
             int nameIter = 1;
             QString tryBase = filePathAndname.chopped(4);
@@ -360,7 +383,7 @@ public:
             while(!nameInvented) {
                 nameIter++;
 //                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
-                filePathAndname = tryBase + "_RunI" + QString::number(nameIter) + ".zip";
+                filePathAndname = tryBase + "_RunI" + QString::number(nameIter) + "." + suffix;
 //                nameInvented = !outputDirectory.exists();
                 nameInvented = !QFile(filePathAndname).exists();
                 if(nameIter >=65000)
@@ -372,21 +395,22 @@ public:
         return filePathAndname;
     };
 
-    static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
+    static QString prepareOutputDirForImageWriter(QString destination, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
-        if(directory.isEmpty()) {
-            return directory;
+        if(destination.isEmpty()) {
+            return destination;
         }
 
-        if(directory[directory.length()-1] == '/') {
-            directory.chop(1);
+        if(destination[destination.length()-1] == '/') {
+            destination.chop(1);
         }
 
         // bool changedGiven = false;
         QString changedPath;
         bool newNodeCreated = false;
-        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath, newNodeCreated);
+        bool pathWriteable = SupportFunctions::preparePath(destination, changedGiven, changedPath, newNodeCreated);
+
         if(!pathWriteable) {
             // TODO: Throw exception?
             changedGiven = true;
@@ -400,18 +424,24 @@ public:
             msgBox->setModal(false);
             msgBox->show();
 
-            directory = changedPath;
+            destination = changedPath;
+        }
+
+        // If it ends with a _RunI<number>, chop that part,
+        //  but only chop if anything remains.
+        QRegularExpression rgp("_RunI\\d+$");
+        if(rgp.match(destination).hasMatch() && destination.lastIndexOf("/")+1 < destination.lastIndexOf("_") ) {
+            destination = destination.mid(0, destination.lastIndexOf("_"));
         }
 
         // QDir outputDirectory = QDir(directory);
-        bool exists = QDir(directory).exists();
-        bool hasContent = !QDir(directory).isEmpty();
-
+        bool exists = QDir(destination).exists();
+        bool hasContent = !QDir(destination).isEmpty();
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
         if(!exists) {
 // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //            outputDirectory.mkdir(".");
-            QDir().mkpath(directory);
+            QDir().mkpath(destination);
         } else if(hasContent && imageWriterDataRule == "ask") {
             TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
                     "Image output folder already exists",
@@ -444,25 +474,25 @@ public:
         if(exists && hasContent && imageWriterDataRule == "new") {
             bool nameInvented = false;
             int nameIter = 1;
-            QString tryBase = directory;
+            QString tryBase = destination;
             tryBase = SupportFunctions::stripIfInventedName(tryBase);
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
 //                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
-                directory = tryBase + "_RunI" + QString::number(nameIter);
+                destination = tryBase + "_RunI" + QString::number(nameIter);
 //                nameInvented = !outputDirectory.exists();
-                nameInvented = !QDir(directory).exists();
+                nameInvented = !QDir(destination).exists();
                 if(nameIter >=65000)
-                    directory = tryBase + "_TooManyRunsI";
+                    destination = tryBase + "_TooManyRunsI";
             }
             // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //            outputDirectory.mkdir(".");
-            QDir().mkpath(directory);
+            QDir().mkpath(destination);
         }
         //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
 //        return outputDirectory.absolutePath();
-        return directory;
+        return destination;
     };
 
     static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
@@ -752,7 +782,7 @@ public:
     // ultimately causing any state to be read as true
     static bool readBoolFromQSettings(QString keyString, bool defaultState, QSettings *applicationSettings) {
         const QByteArray readData = applicationSettings->value(keyString, QString::number((int)defaultState)).toByteArray();
-        //std::cout << m_metaSnapshotsEnabled.toStdString() << std::endl; //
+
         if (readData.isEmpty()) {
             return defaultState;
         }

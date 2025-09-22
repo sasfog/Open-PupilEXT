@@ -259,7 +259,7 @@ void SingleWebcam::loadCalibrationFile() {
     }
 }
 
-int SingleWebcam::getFPSValue() {
+double SingleWebcam::getResultingFrameRateValue() {
     return grabberDummy->getFPSValue();
 }
 

@@ -109,6 +109,8 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `PO <state>` - Compute Additional Outline Confidence. Either `true` or `false`.
 
+`PB <state>` - Compute BRISQUE Score. Might make proccessing significantly slower. Either `true` or `false`.
+
 `CRC udp;<IP>;<port>` - Establish connection (start listening) for remote control using a UDP port.
 
 `CRC com;<port>;<baud>` - Establish connection (start listening) for remote control using a COM/serial port.

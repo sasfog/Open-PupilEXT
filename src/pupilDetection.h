@@ -13,6 +13,8 @@
 #include "stereoCameraCalibration.h"
 #include "devices/singleWebcam.h"
 
+#include <opencv2/quality/qualitybrisque.hpp>
+
 Q_DECLARE_METATYPE(Pupil)
 Q_DECLARE_METATYPE(cv::Rect)
 Q_DECLARE_METATYPE(std::vector<Pupil>)
@@ -78,6 +80,10 @@ public:
 
     void enableOutlineConfidence(bool value) {
         useOutlineConfidence = value;
+    }
+
+    bool isComputeBRISQUEEnabled() {
+        return computeBRISQUEEnabled;
     }
 
     void enableROIPreProcessing(bool value) {
@@ -168,8 +174,8 @@ public:
         return false;
     }
 
-    void startDetection();
-    void stopDetection();
+    void startTracking();
+    void stopTracking();
 
     // TODO: MAKE MAP, UNIFY WITH ENUM STYLE OLD INDEX RESOLUTION
     const std::vector<QChar> getEyeIdentities() {
@@ -218,7 +224,11 @@ private:
     std::vector<PupilDetectionMethod*> pupilDetectionMethods2;
     std::vector<PupilDetectionMethod*> pupilDetectionMethods3;
     std::vector<PupilDetectionMethod*> pupilDetectionMethods4;
-    
+
+    QString BRISQUEModelFileNameRES = ":/3rdparty/models/brisque_model_live.yml";
+    QString BRISQUERangeFileNameRES = ":/3rdparty/models/brisque_range_live.yml";
+    cv::Ptr<cv::quality::QualityBRISQUE> brisque;
+
     // NOTE:
     // in case of e.g.: ROIstereoImageTwoPupilR1
     // the NUMBER in the end denotes the different VIEWPOINTS of the same pupil
@@ -247,8 +257,9 @@ private:
 
     bool calibrated;
     bool trackingOn;
-    bool useOutlineConfidence;
     bool useROIPreProcessing;
+    bool useOutlineConfidence;
+    bool computeBRISQUEEnabled;
     bool usePupilUndistort;
     bool useImageUndistort;
     //bool showROI;
@@ -283,6 +294,8 @@ private:
     void configureCameraConnection(bool connectOrDisconnect);
 
 public slots:
+
+    void enableComputeBRISQUE(bool state);
 
     void setAlgorithm(QString method);
     void setConfigLabel(QString config);

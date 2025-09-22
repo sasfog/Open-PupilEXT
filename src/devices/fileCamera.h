@@ -99,8 +99,8 @@ public:
     uint64_t getRecordingDuration() {
         return imageReader->getRecordingDuration();
     }
-    void seekToFrame(int frameNumber) {
-        imageReader->seekToFrame(frameNumber);
+    void seekToFrame(int frameNumber, bool seekBackwards) {
+        imageReader->seekToFrame(frameNumber, seekBackwards);
     }
     /*uint64_t getLastCommissionedTimestamp() {
         return imageReader->getLastCommissionedTimestamp();
@@ -132,6 +132,8 @@ public:
     int getImageROIoffsetY() override;
     int getImageROIoffsetYInc() override { return 0; };
     QRectF getImageROI() override;
+
+    double getResultingFrameRateValue() override {return getPlaybackSpeed();};
 
     bool isTemperatureReadingSupported() override {return false;};
 

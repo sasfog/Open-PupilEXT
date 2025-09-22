@@ -276,27 +276,27 @@ void RecEventTracker::writeOfflineEventLog(uint64 timestampFrom, uint64 timestam
 
 QString RecEventTracker::generateOfflineEventLogContent(uint64 timestampFrom, uint64 timestampTo, QString foundEventLogContent) {
 
-    bool existing = !foundEventLogContent.isEmpty();
+    bool couldOpenExisting = !foundEventLogContent.isEmpty();
 
     QByteArray textContent;
 
     QDomDocument document;
     QDomElement root;
     bool existingRead = false;
-    if(existing) {
+    if(couldOpenExisting) {
         QString errorString;
         int errorLine;
         int errorColumn;
-        //existing = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
-        existing = document.setContent(foundEventLogContent, false, &errorString, &errorLine, &errorColumn);
-        if (!existing) {
+        //couldOpenExisting = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
+        couldOpenExisting = document.setContent(foundEventLogContent, false, &errorString, &errorLine, &errorColumn);
+        if (!couldOpenExisting) {
             qDebug() << errorLine;
             qDebug() << errorColumn;
             qDebug() << errorString;
         }
     }
 
-    if(existing) {
+    if(couldOpenExisting) {
         root = document.firstChildElement();
         QString temp_str = root.attribute("Version", "");
         foundEventLogVersion = 1;

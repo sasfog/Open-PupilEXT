@@ -127,7 +127,7 @@ void SingleWebcamSettingsDialog::accept() {
 }
 
 void SingleWebcamSettingsDialog::loadSettings() {
-    fpsInputBox->setValue(applicationSettings->value("SingleWebcamSettingsDialog.fps", singleWebcam->getFPSValue()).toInt());
+    fpsInputBox->setValue(applicationSettings->value("SingleWebcamSettingsDialog.fps", singleWebcam->getResultingFrameRateValue()).toInt());
     singleWebcam->setFPSValue(fpsInputBox->value());
 
     brightnessInputBox->setValue(applicationSettings->value("SingleWebcamSettingsDialog.brightness", singleWebcam->getBrightnessValue()).toDouble());

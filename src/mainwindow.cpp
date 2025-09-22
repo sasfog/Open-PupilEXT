@@ -262,6 +262,7 @@ void MainWindow::loadIcons() {
     dataTableIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/table.svg"), applicationSettings);
     sceneImageViewIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-preview.svg"), applicationSettings);
     archiveIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/archive-extract.svg"), applicationSettings);
+    videoFileIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/kdenlive-add-clip.svg"), applicationSettings);
 }
 
 void MainWindow::createActions() {
@@ -598,6 +599,11 @@ void MainWindow::createActions() {
     //imageRecordingOutputMenu->addSeparator();
     QAction *izAct = imageRecordingOutputMenu->addAction(archiveIcon, tr("Zip archive"), this, &MainWindow::imageRecordingOutputZipSelected);
     izAct->setIconVisibleInMenu(true);
+    //imageRecordingOutputMenu->addSeparator();
+#ifdef QT_DEBUG
+    QAction *ivAct = imageRecordingOutputMenu->addAction(videoFileIcon, tr("Video file"), this, &MainWindow::imageRecordingOutputVideoSelected);
+    ivAct->setIconVisibleInMenu(true);
+#endif
 
     imageRecordingOutputAct->setMenu(imageRecordingOutputMenu);
     connect(imageRecordingOutputAct, &QAction::triggered, this, &MainWindow::onImageRecordingOutputClick);
@@ -936,6 +942,7 @@ void MainWindow::openSourceDialog() {
             "Eigen Library, License: <a href=\"https://eigen.tuxfamily.org/index.php?title=Main_Page#License\">MPL2</a><br><br>"
             "Qt Framework, License: <a href=\"https://www.gnu.org/licenses/lgpl-3.0.txt\">LGPL v3</a><br><br>"
             "OpenCV Library, License: <a href=\"https://opencv.org/license/\">BSD 3-Clause</a><br><br>"
+            "FFmpeg Library, License: <a href=\"https://github.com/FFmpeg/FFmpeg/blob/master/COPYING.LGPLv2.1\">LGPL v2.1</a><br><br>"
             "spii Library, License: <a href=\"https://github.com/PetterS/spii/blob/master/LICENSE\">BSD 2-Clause</a><br><br>"
             "TBB Library, License: <a href=\"https://www.apache.org/licenses/LICENSE-2.0.txt\">Apache 2.0</a><br><br>"
             "Gflags Library, License: <a href=\"https://opencv.org/license/\">BSD 3-Clause</a><br><br>"
@@ -1028,9 +1035,69 @@ void MainWindow::imageRecordingOutputZipSelected() {
     if(dialog.selectedFiles().empty())
         return;
 
+    auto bbbb = dialog.selectedNameFilter();
+
     QString selectedFilePathAndName = dialog.selectedFiles()[0];
-    if(!selectedFilePathAndName.endsWith(".zip"))
+    if(!selectedFilePathAndName.endsWith(".zip") && dialog.selectedNameFilter().contains(".zip"))
         selectedFilePathAndName.append(".zip");
+    // TODO: Also pre-check if location can be written
+    // TODO: At this point we can beautify the given save file name. Change strange characters in it, etc.
+
+    imageRecordingOutputTarget = selectedFilePathAndName;
+
+    qDebug() << QFileInfo(imageRecordingOutputTarget).dir().path();
+    setRecentImageWritingDirectory(QFileInfo(imageRecordingOutputTarget).dir().path());
+//    std::cout << recentPath.toStdString() << std::endl;
+    currentStatusMessageLabel->setText("Image rec. target archive: " + SupportFunctions::shortenStringForDisplay(imageRecordingOutputTarget, 100));
+    currentStatusMessageLabel->setToolTip(imageRecordingOutputTarget);
+
+    recordImagesAct->setDisabled(false);
+}
+
+void MainWindow::imageRecordingOutputVideoSelected() {
+
+    QString filters("Matroska Video Format (*.mkv)");
+
+    // NOTE: The file name will be considered the recording (or participant) name
+    // TODO: remember last/default path !!
+    QFileDialog dialog(0, "Save file", recentImageWritingDirectory, filters);
+    //dialog.selectNameFilter(defaultFilter);
+
+    dialog.setOptions(QFileDialog::DontResolveSymlinks);
+
+    // just in case it was erroneously left enabled from before
+    if(imageRecordingOutputTarget.isEmpty()) {
+        recordImagesAct->setDisabled(true);
+    }
+
+    // Yeah its weird and all, but works perfectly, and the user can easily escape with a cancel button
+    videoSelecRetry:
+    if(!dialog.exec())
+        return;
+
+    if(dialog.selectedFiles().empty())
+        return;
+
+    QString selectedFilePathAndName = dialog.selectedFiles()[0];
+
+    if(QFile(selectedFilePathAndName).exists()) {
+        QMessageBox *msgBox = new QMessageBox(this);
+        msgBox->setWindowTitle("Existing file selected");
+        msgBox->setText("You selected an already existing video file. In case of video recordings, appending to existing ones is not supported. Please specify a video target file that does not yet exist.");
+        msgBox->setMinimumSize(330,240);
+        msgBox->setIcon(QMessageBox::Warning);
+        //msgBox->setModal(false);
+        //msgBox->show();
+        msgBox->setModal(true); // needs user to hit OK before showing directory selection dialog again
+        msgBox->exec();
+
+        goto videoSelecRetry;
+    }
+
+    // TODO: make this less spacey, and make proper
+
+    if(!selectedFilePathAndName.endsWith(".mkv") && dialog.selectedNameFilter().contains(".mkv"))
+        selectedFilePathAndName.append(".mkv");
     // TODO: Also pre-check if location can be written
     // TODO: At this point we can beautify the given save file name. Change strange characters in it, etc.
 
@@ -1310,7 +1377,7 @@ void MainWindow::onTrackActClick() {
 
     if(trackingOn) {
         // Deactivate tracking
-        pupilDetectionWorker->stopDetection();
+        pupilDetectionWorker->stopTracking();
 
         if(pupilDetectionSettingsDialog) {
             //pupilDetectionSettingsDialog->updateProcModeEnabled();
@@ -1406,7 +1473,11 @@ void MainWindow::onTrackActClick() {
         }
         // NOTE: This needs to be called AFTER all pupil detection ROIs are loaded and set in the current
         // pupilDetection instance, otherwise autoParam will not be done
-        pupilDetectionWorker->startDetection();
+
+        //if(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.computeBRISQUE", true, applicationSettings));
+        //pupilDetectionWorker->enableComputeBRISQUE();
+
+        pupilDetectionWorker->startTracking();
         if(pupilDetectionSettingsDialog) {
             //again, because we need updateProcModeEnabled() private method to be evoked by onSettingsChange in pupilDetectionSettingsDialog
             pupilDetectionSettingsDialog->onSettingsChange();
@@ -1570,10 +1641,9 @@ void MainWindow::onRecordClick() {
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
-        if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings))
-            MetaSnapshotOrganizer::writeSnapshotFile(
-                pupilDetectionDir.filePath(metadataFileName),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
+        MetaSnapshotOrganizer::writeSnapshotFile(
+            pupilDetectionDir.filePath(metadataFileName),
+            selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
 
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>)));
 
@@ -1612,12 +1682,10 @@ void MainWindow::onRecordImageClick() {
 //        imageWriter->attemptToStop();
 
         QString foundEventLogContent = imageWriter->getFoundOfflineEventLogContent();
-        if(SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings)) {
-            imageWriter->writeOfflineEventLog(recEventTracker->generateOfflineEventLogContent(
+        imageWriter->writeOfflineEventLog(recEventTracker->generateOfflineEventLogContent(
                 imageRecStartTimestamp,
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                 foundEventLogContent) );
-        }
 
         // in case it is a zip, it closes the file. In a multithread approach, this will have more to do of course
         imageWriter->stopWriting();
@@ -1651,10 +1719,12 @@ void MainWindow::onRecordImageClick() {
         // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
         bool changedGiven = false; // unused yet
         while(  imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_UNDETERMINED ||
-                imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ZIP_UNOPENABLE) {
+                imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ZIP_UNOPENABLE ||
+                imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_VIDEO_START_FAILURE) {
 
-            if (imageRecordingOutputTarget.endsWith(".zip")) {
-                imageRecordingOutputTarget = SupportFunctions::prepareOutputZipDirForImageWriter(
+            if (    imageRecordingOutputTarget.endsWith(".zip") ||
+                    imageRecordingOutputTarget.endsWith(".mkv") ) {
+                imageRecordingOutputTarget = SupportFunctions::prepareOutputFileDirForImageWriter(
                         imageRecordingOutputTarget, applicationSettings, changedGiven, this);
             } else {
                 imageRecordingOutputTarget = SupportFunctions::prepareOutputDirForImageWriter(
@@ -1676,20 +1746,37 @@ void MainWindow::onRecordImageClick() {
             }
 
             // TODO: only make record button clickable again, if the last recording has ended (signals in queue were dealt with)
-            imageWriter->prepareForWriting(imageRecordingOutputTarget, stereo);
+            imageWriter->prepareForWriting(imageRecordingOutputTarget, stereo, QSize(selectedCamera->getImageROIwidth(), selectedCamera->getImageROIheight()), selectedCamera->getResultingFrameRateValue() );
             if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ZIP_UNOPENABLE) {
 
                 QMessageBox *msgBox = new QMessageBox(this);
-                msgBox->setWindowTitle("The set existing output zip archive could not be opened");
+                msgBox->setWindowTitle("The set existing output Zip archive could not be opened");
                 msgBox->setText(
-                        "The set existing output zip archive could not be opened for appending. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. Importantly, this does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+                        "The set existing output Zip archive could not be opened for appending. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. Importantly, this does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
                 msgBox->setMinimumSize(330, 260);
                 msgBox->setIcon(QMessageBox::Warning);
                 msgBox->setModal(true);
                 msgBox->exec();
 
-            } if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ERROR) {
+            }
+            if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ERROR) {
                 imageWriter->stopWriting();
+                return;
+            }
+
+            if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_VIDEO_START_FAILURE) {
+
+                QMessageBox *msgBox = new QMessageBox(this);
+                msgBox->setWindowTitle("Video writing could not start");
+                msgBox->setText(
+                        "We could not start writing the video file with the current video output settings. Either the codec could not be set up or sufficient memory cannot be allocated. Please set another video output codec and try again. If the issue persists, try rather writing the images into a Zip archive or image directory, as they are reliable fallbacks.");
+                msgBox->setMinimumSize(330, 260);
+                msgBox->setIcon(QMessageBox::Warning);
+                msgBox->setModal(true);
+                msgBox->exec();
+
+                // TODO: auto countdown if user does not interact, and start writing with a fallback option of e.g. zip
+
                 return;
             }
         }
@@ -1711,10 +1798,8 @@ void MainWindow::onRecordImageClick() {
             generalSettingsDialog->setLimitationsWhileImageWriting(true);
 
         // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response
-        if(SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings)) {
-            imageWriter->writeMetaSnapshot(MetaSnapshotOrganizer::generateSnapshotFileContent(
-                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings));
-        }
+        imageWriter->writeMetaSnapshot(MetaSnapshotOrganizer::generateSnapshotFileContent(
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings));
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
 
         // TODO: might not be necessary here, once imageWriter will be in a separate thread itself
@@ -2649,7 +2734,11 @@ void MainWindow::onOpenImageDirectory() {
             this,
             tr("Open Image Recording"),
             recentImageReadingDirectory,
-            tr("Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip);;Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm);;Zip Archive (*.zip)")
+#ifdef QT_DEBUG
+            tr("Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip *.mkv);;Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm);;Zip Archive (*.zip);;Matroska Video Format (*.mkv)")
+#else
+            tr("Any Supported (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm *.zip *.mkv);;Image Files (*.tiff *.tif *.png *.bmp *.jpeg *.jpg *.jpe *.jp2 *.webp *.pgm);;Zip Archive (*.zip)")
+#endif
             );
 
     /*
@@ -2676,7 +2765,7 @@ void MainWindow::onOpenImageDirectory() {
         return;
 
     QString selectedFile = dialog.selectedFiles()[0];
-    if(selectedFile.endsWith("zip")) {
+    if(selectedFile.endsWith("zip") || selectedFile.endsWith("mkv")) {
         // TODO: check if file can be read? even here
         imageSource = selectedFile;
     } else {
@@ -2948,7 +3037,21 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
             QMessageBox *msgBox = new QMessageBox(this);
             msgBox->setWindowTitle("Zip archive could not be opened");
             msgBox->setText(
-                    "This zip archive could not be opened for reading. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+                    "This Zip archive could not be opened for reading. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+            msgBox->setMinimumSize(330, 260);
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            selectedCamera->close();
+            selectedCamera = nullptr;
+            return;
+        } else if (dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_VIDEO_UNOPENABLE) {
+            QApplication::restoreOverrideCursor();
+            QMessageBox *msgBox = new QMessageBox(this);
+            msgBox->setWindowTitle("Video file could not be opened");
+            msgBox->setText(
+                    "This video file could not be opened for reading. The file might be corrupted or it is encoded in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the content is completely lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
             msgBox->setMinimumSize(330, 260);
             msgBox->setIcon(QMessageBox::Warning);
             msgBox->setModal(false);

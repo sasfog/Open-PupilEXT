@@ -534,10 +534,12 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
     if(str[0].toLower() == 'p' && str.size()>=4) { // changing pupil detection settings
         if(str[1].toLower() == 'a') { // set pupil detection algorithm
             w->PRGsetPupilDetectionAlgorithm(str.mid(3, str.length()-3).toLower());
-        } else if(str[1].toLower() == 'r') { // Use ROI Area Selection
+        } else if(str[1].toLower() == 'r') { // Use PD ROI Area Selection
             w->PRGsetPupilDetectionUsingROI(str.mid(3, str.length()-3).toLower());
         } else if(str[1].toLower() == 'o') { // Compute Additional Outline Confidence
             w->PRGsetPupilDetectionCompOutlineConf(str.mid(3, str.length()-3).toLower());
+        } else if(str[1].toLower() == 'b') { // Compute BRISQUE
+            w->PRGsetPupilDetectionCompBRISQUE(str.mid(3, str.length()-3).toLower());
         }
         return;
     }

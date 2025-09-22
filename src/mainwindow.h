@@ -154,6 +154,7 @@ private:
     QIcon dataTableIcon;
     QIcon sceneImageViewIcon;
     QIcon archiveIcon;
+    QIcon videoFileIcon;
 
     QMenu *windowMenu;
     QMenu *cameraMenu;
@@ -365,6 +366,7 @@ private slots:
     void setLogFile();
     void imageRecordingOutputDirectorySelected();
     void imageRecordingOutputZipSelected();
+    void imageRecordingOutputVideoSelected();
 
     void updateMenus();
     void updateSingleCamerasMenu();
@@ -456,6 +458,7 @@ public slots:
     void PRGsetPupilDetectionAlgorithm(const QString &alg);
     void PRGsetPupilDetectionUsingROI(const QString &state);
     void PRGsetPupilDetectionCompOutlineConf(const QString &state);
+    void PRGsetPupilDetectionCompBRISQUE(const QString &state);
     void PRGconnectRemoteUDP(QString conf);
     void PRGconnectRemoteCOM(QString conf);
     void PRGconnectStreamUDP(QString conf);

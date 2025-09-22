@@ -33,6 +33,7 @@ First all provided arguments are sorted to fit in a predefined order, which then
 -setPDAlgorithm
 -setPDUsingROI
 -setPDComputeOutlineConf
+-setPDComputeBRISQUE
 -startTracking
 -setImageOutputPath
 -setImageOutputFormat
@@ -89,9 +90,11 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 
 `-setPDAlgorithm "<algorithm>"` - Set pupil detection algorithm. Accepted algorithms: `else` or `excuse` or `pure` or `purest` or `starburst` or `swirski2d`.
 
-`-setPDUsingROI "<state>"` - Use ROI Area Selection. Either `true` or `false`.
+`-setPDUsingROI "<state>"` - Use PD ROI Area Selection. Either `true` or `false`.
 
 `-setPDComputeOutlineConf "<value>"` - Compute Additional Outline Confidence. Either "true" or "false".
+
+`-setPDComputeBRISQUE "<value>"` - Compute BRISQUE Score. Might make proccessing significantly slower. Either "true" or "false".
 
 `-startTracking` - Start pupil tracking. A camera needs to be opened beforehand.
 

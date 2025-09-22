@@ -30,6 +30,92 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         imageReaderSource = IMSOURCE_ZIP;
         exploreZip(imageSource, subrecordingNumber);
 
+    } else if(imageSource.endsWith(videoSuffix) && QFile(imageSource).exists()) {
+        qDebug() << "Image source seems to be a video.";
+        imageReaderSource = IMSOURCE_VIDEO;
+
+        avformat_network_init();
+
+        if (avformat_open_input(&fmt_ctx, imageSource.toStdString().c_str(), nullptr, nullptr) < 0) {
+            imageReaderStatus = IMSTATUS_VIDEO_UNOPENABLE;
+            return;
+        }
+        if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+            imageReaderStatus = IMSTATUS_VIDEO_UNOPENABLE;
+            return;
+        }
+
+        for (unsigned i = 0; i < fmt_ctx->nb_streams; i++) {
+            if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+                videoStreamIndices.push_back(i);
+            //else if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+            //    subtitleStreamIndices.push_back(i);
+        }
+
+        if(videoStreamIndices.size() < 1) {
+            imageReaderStatus = IMSTATUS_VIDEO_UNOPENABLE;
+            return;
+        }
+
+        // NOTE: we use the same codec for all video streams, so no need to determine separately
+        vcodec = avcodec_find_decoder(fmt_ctx->streams[videoStreamIndices[0]]->codecpar->codec_id);
+        vctx = avcodec_alloc_context3(vcodec);
+        int ok = 0;
+        if(ok == 0) ok += avcodec_parameters_to_context(vctx, fmt_ctx->streams[videoStreamIndices[0]]->codecpar);
+        if(ok == 0) ok += avcodec_open2(vctx, vcodec, nullptr);
+
+
+        ////
+        QString videoSidecarFileContent;
+        QString videoSidecarFilename = imageSource.mid(0, imageSource.lastIndexOf(".")) + ".xml";
+        QFile videoSidecarFile(videoSidecarFilename);
+        if(videoSidecarFile.exists() && videoSidecarFile.open(QFile::ReadOnly | QFile::Text)) {
+            videoSidecarFileContent = videoSidecarFile.readAll();
+        }
+        bool couldOpenExisting = !videoSidecarFileContent.isEmpty();
+        QDomDocument document;
+        if(couldOpenExisting) {
+            QString errorString;
+            int errorLine;
+            int errorColumn;
+            couldOpenExisting = document.setContent(videoSidecarFileContent, false, &errorString, &errorLine, &errorColumn);
+            if (!couldOpenExisting) {
+                qDebug() << errorLine;
+                qDebug() << errorColumn;
+                qDebug() << errorString;
+            }
+        }
+        QDomElement root = document.firstChildElement();
+
+        QDomElement subRoot = root.firstChildElement();
+        if(couldOpenExisting) {
+            // NOTE: NOT dealing with found content versions yet
+            while(!subRoot.isNull()) {
+                QDomDocument tdoc;
+                // deep copy with children
+                QDomNode imported = tdoc.importNode(subRoot, true);
+                tdoc.appendChild(imported);
+
+                if (subRoot.tagName() == "RecordedEvents")
+                    offlineEventLogContent = tdoc.toString();
+                if (subRoot.tagName() == "MetaSnapshot")
+                    metaSnapshotContent = tdoc.toString();
+                if (subRoot.tagName() == "FrameInfoFile")
+                    frameInfoFileContent = tdoc.toString();
+
+                subRoot = subRoot.nextSiblingElement();
+            }
+        } else {
+            // TODO: INFORM USER
+        }
+
+        // any image read attempt can only come after this first allocation
+        frame = av_frame_alloc();
+        grayFrame = av_frame_alloc();
+        pkt = av_packet_alloc(); // this does the "new ..." and init too
+
+        acqTimestamps = extractAcqTimestampsFromFrameInfoFile(frameInfoFileContent);
+
     } else if( QDir(imageSource).exists() ) {
         QDir imageSourceDir = QDir(imageSource);
         QList<QFileInfo> fil;
@@ -121,16 +207,20 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         return;
     }
 
-    // TODO: add check to ensure the same timestamp has images in both directories
-    fileNames[0].sort();
-    fileNames[0] = purgeFileNamesVector(fileNames[0]);
-    if(stereoMode) {
-        fileNames[1].sort();
-        fileNames[1] = purgeFileNamesVector(fileNames[1]);
-    }
+    //
 
-    acqTimestamps = extractAcqTimestamps(fileNames[0]);
+    if(imageReaderSource != IMSOURCE_VIDEO) {
+        // TODO: add check to ensure the same timestamp has images in both directories
+        fileNames[0].sort();
+        fileNames[0] = purgeFileNamesVector(fileNames[0]);
+        if (stereoMode) {
+            fileNames[1].sort();
+            fileNames[1] = purgeFileNamesVector(fileNames[1]);
+        }
+
+        acqTimestamps = extractAcqTimestamps(fileNames[0]);
 //    qDebug()<<"ImageReader: found " << fileNames[0].size() << " images. Ready." ;
+    }
 
     cv::Mat checkImg = getStillImageSingle(0);
     foundImageWidth = checkImg.cols;
@@ -162,6 +252,45 @@ std::vector<quint64> ImageReader::extractAcqTimestamps(const QStringList &fileNa
             fnc = fnc.mid(0, lid);
         }
         timestamps.push_back( fnc.toULongLong(&ok, 10) );
+    }
+    return timestamps;
+}
+
+std::vector<quint64> ImageReader::extractAcqTimestampsFromFrameInfoFile(const QString &content) {
+
+    bool couldOpenExisting = !content.isEmpty();
+
+    QDomDocument document;
+    if(couldOpenExisting) {
+        QString errorString;
+        int errorLine;
+        int errorColumn;
+        couldOpenExisting = document.setContent(content, false, &errorString, &errorLine, &errorColumn);
+        if (!couldOpenExisting) {
+            qDebug() << errorLine;
+            qDebug() << errorColumn;
+            qDebug() << errorString;
+        }
+    }
+
+    QDomElement root;
+    if(couldOpenExisting) {
+        root = document.firstChildElement();
+    } else {
+        // ...
+    }
+
+    if (!root.hasAttribute("Version") || root.attribute("Version","1").toUShort() < currentFrameInfoFileVersion) {
+        // TODO:
+        //root.setAttribute("Version", QString::number(currentFrameInfoFileVersion));
+    }
+
+    bool ok;
+    std::vector<quint64> timestamps;
+    QDomElement currObj = root.firstChildElement();
+    while(currObj.hasAttribute("TimestampMs")) {
+        timestamps.push_back( currObj.attribute("TimestampMs", "0").toULongLong(&ok, 10) );
+        currObj = currObj.nextSiblingElement();
     }
     return timestamps;
 }
@@ -465,6 +594,23 @@ ImageReader::~ImageReader() {
         delete imageSourceZip;
         imageSourceZipInnerFile = nullptr;
         imageSourceZip = nullptr;
+    } else if(imageReaderSource == IMSOURCE_VIDEO) {
+        videoStreamIndices.clear();
+
+        // av_frame_free(&frame);
+        // avcodec_free_context(&vctx);
+        // if (sctx) avcodec_free_context(&sctx);
+        // avformat_close_input(&fmt_ctx);
+
+        avio_close(fmt_ctx->pb);
+
+        av_frame_free(&frame); // not to be confused with av_frame_unref(), that has to be done often, this not
+        av_frame_free(&grayFrame); // not to be confused with av_frame_unref(), that has to be done often, this not
+        sws_freeContext(swsCtx);
+        avformat_free_context(fmt_ctx);
+        fmt_ctx = nullptr;
+        avcodec_free_context(&vctx);
+        av_packet_free(&pkt); // not to be confused with av_packet_unref(), that has to be done often, this not
     }
 }
 
@@ -473,7 +619,7 @@ bool ImageReader::quickReadImageSingle(cv::Mat &img, const int &imageIndex) {
     try {
         if (imageReaderSource == IMSOURCE_DIRECTORY) {
             img = cv::imread(fileNames[0][imageIndex].toStdString(), cv::IMREAD_GRAYSCALE);
-        } else { // if(imageReaderSource == IMSOURCE_ZIP) {
+        } else if(imageReaderSource == IMSOURCE_ZIP) {
             QByteArray a;
             ok &= imageSourceZip->setCurrentFile(fileNames[0][imageIndex]);
             ok &= imageSourceZipInnerFile->open(QIODevice::ReadOnly);
@@ -486,6 +632,81 @@ bool ImageReader::quickReadImageSingle(cv::Mat &img, const int &imageIndex) {
 
             img = cv::imdecode(cv::InputArray(std::vector<uchar>(a.begin(), a.end())), cv::IMREAD_GRAYSCALE);
             //ok &= !img.empty();
+        } else { // if(imageReaderSource == IMSOURCE_VIDEO) {
+
+            // DEV
+            int av_read_frameRESULT = 0;
+
+            if (avcodec_receive_frame(vctx, frame) == 0 && frame != NULL) {
+                if (!swsCtx) {
+                    createSwsCtxAndPrepareGrayFrame();
+                }
+
+                if (frame->format != AV_PIX_FMT_GRAY8) {
+                    sws_scale(swsCtx, frame->data, frame->linesize, 0, frame->height, grayFrame->data,
+                              grayFrame->linesize);
+                    img = cv::Mat(grayFrame->height, grayFrame->width, CV_8UC1, grayFrame->data[0],
+                                  grayFrame->linesize[0]).clone();
+                } else {
+                    img = cv::Mat(frame->height, frame->width, CV_8UC1, frame->data[0],
+                                  frame->linesize[0]).clone();
+                }
+
+                av_packet_unref(pkt);
+                goto sirdone; // break out after first frame
+            }
+
+            av_read_frameRESULT = av_read_frame(fmt_ctx, pkt);
+            while (av_read_frameRESULT >= 0) {
+                if (pkt->stream_index == videoStreamIndices[0]) {
+                    if (avcodec_send_packet(vctx, pkt) == 0) {
+                        while (avcodec_receive_frame(vctx, frame) == 0 && frame != NULL) {
+                            if (!swsCtx) {
+                                createSwsCtxAndPrepareGrayFrame();
+                            }
+
+                            if (frame->format != AV_PIX_FMT_GRAY8) {
+                                sws_scale(swsCtx, frame->data, frame->linesize, 0, frame->height, grayFrame->data,
+                                          grayFrame->linesize);
+                                img = cv::Mat(grayFrame->height, grayFrame->width, CV_8UC1, grayFrame->data[0],
+                                              grayFrame->linesize[0]).clone();
+                            } else {
+                                img = cv::Mat(frame->height, frame->width, CV_8UC1, frame->data[0],
+                                              frame->linesize[0]).clone();
+                            }
+
+                            //auto zzz = frame->pts;
+
+                            av_packet_unref(pkt);
+                            goto sirdone; // break out after first frame
+                        }
+                    }
+                }
+                av_packet_unref(pkt);
+                av_read_frameRESULT = av_read_frame(fmt_ctx, pkt);
+            }
+            av_packet_unref(pkt);
+
+            if(av_read_frameRESULT == AVERROR_EOF) {
+                // Feed null packet to signal EOF
+                avcodec_send_packet(vctx, nullptr);
+
+                while (avcodec_receive_frame(vctx, frame) == 0) {
+                    std::cout << "Found remaining frames" << std::endl;
+                }
+                av_frame_unref(frame); // I dont think free is necessary yet
+
+            }
+
+            if(av_read_frameRESULT != 0) {
+                // TODO: STEREO?
+                seekInVideoStream(0, true);
+            }
+            sirdone:;
+
+            // After seeking, flush decoder
+//            avcodec_flush_buffers(vctx);
+
         }
     } catch (const std::exception &e) {
         qWarning() << "ImageReader encountered an error upon initialization: " << e.what();
@@ -515,7 +736,7 @@ bool ImageReader::quickReadImageStereo(cv::Mat &img, cv::Mat &imgSecondary, cons
             synchronizer.waitForFinished();
             img = synchronizer.futures().at(0).result();
             imgSecondary = synchronizer.futures().at(1).result();
-        } else { // if(imageReaderSource == IMSOURCE_ZIP) {
+        } else if(imageReaderSource == IMSOURCE_ZIP) {
             QByteArray a;
 
             ok &= imageSourceZip->setCurrentFile(fileNames[0][imageIndex]);
@@ -537,6 +758,102 @@ bool ImageReader::quickReadImageStereo(cv::Mat &img, cv::Mat &imgSecondary, cons
             ok &= (imageSourceZipInnerFile->getZipError() == UNZ_OK);
             imgSecondary = cv::imdecode(cv::InputArray(std::vector<uchar>(a.begin(), a.end())), cv::IMREAD_GRAYSCALE);
             //ok &= !imgSecondary.empty();
+        } else { // if(imageReaderSource == IMSOURCE_VIDEO) {
+
+            frame = av_frame_alloc();
+            AVFrame *grayFrame = av_frame_alloc();
+            SwsContext *swsCtx = nullptr;
+            pkt = av_packet_alloc(); // this does the "new ..." and init too
+
+            bool oneAlreadyGot = false;
+            while (av_read_frame(fmt_ctx, pkt) >= 0) {
+                if (pkt->stream_index == videoStreamIndices[0]) {
+                    // Send packet to decoder
+                    if (avcodec_send_packet(vctx, pkt) == 0) {
+                        while (avcodec_receive_frame(vctx, frame) == 0) {
+                            // Lazy-init swsContext for this frame format
+                            if (!swsCtx) {
+                                swsCtx = sws_getContext(
+                                        frame->width, frame->height, (AVPixelFormat)frame->format,
+                                        frame->width, frame->height, AV_PIX_FMT_GRAY8,
+                                        SWS_BILINEAR, nullptr, nullptr, nullptr);
+                                grayFrame->format = AV_PIX_FMT_GRAY8;
+                                grayFrame->width  = frame->width;
+                                grayFrame->height = frame->height;
+                                av_frame_get_buffer(grayFrame, 32);
+                            }
+
+                            // Convert to GRAY8
+                            sws_scale(swsCtx,
+                                      frame->data, frame->linesize,
+                                      0, frame->height,
+                                      grayFrame->data, grayFrame->linesize);
+                            img = cv::Mat(
+                                    grayFrame->height,
+                                    grayFrame->width,
+                                    CV_8UC1,
+                                    grayFrame->data[0],
+                                    grayFrame->linesize[0]
+                            ).clone(); // clone so it's safe after frame unref
+
+                            if(oneAlreadyGot) {
+                                av_packet_unref(pkt);
+                                goto sirdone; // break out after first frame
+                            } else {
+                                oneAlreadyGot = true;
+                            }
+
+                        }
+                    }
+                }
+
+                if (pkt->stream_index == videoStreamIndices[1]) {
+                    // Send packet to decoder
+                    if (avcodec_send_packet(vctx, pkt) == 0) {
+                        while (avcodec_receive_frame(vctx, frame) == 0) {
+                            // Lazy-init swsContext for this frame format
+                            if (!swsCtx) {
+                                swsCtx = sws_getContext(
+                                        frame->width, frame->height, (AVPixelFormat)frame->format,
+                                        frame->width, frame->height, AV_PIX_FMT_GRAY8,
+                                        SWS_BILINEAR, nullptr, nullptr, nullptr);
+                                grayFrame->format = AV_PIX_FMT_GRAY8;
+                                grayFrame->width  = frame->width;
+                                grayFrame->height = frame->height;
+                                av_frame_get_buffer(grayFrame, 32);
+                            }
+
+                            // Convert to GRAY8
+                            sws_scale(swsCtx,
+                                      frame->data, frame->linesize,
+                                      0, frame->height,
+                                      grayFrame->data, grayFrame->linesize);
+                            img = cv::Mat(
+                                    grayFrame->height,
+                                    grayFrame->width,
+                                    CV_8UC1,
+                                    grayFrame->data[0],
+                                    grayFrame->linesize[0]
+                            ).clone(); // clone so it's safe after frame unref
+
+                            if(oneAlreadyGot) {
+                                av_packet_unref(pkt);
+                                goto sirdone; // break out after first frame
+                            } else {
+                                oneAlreadyGot = true;
+                            }
+
+                        }
+                    }
+                }
+
+                av_packet_unref(pkt);
+            }
+            sirdone:
+
+            // After seeking, flush decoder
+            avcodec_flush_buffers(vctx);
+
         }
     } catch (const std::exception &e) {
         qWarning() << "ImageReader encountered an error upon initialization: " << e.what();
@@ -568,7 +885,7 @@ void ImageReader::setPlaybackSpeed(int fps) {
 void ImageReader::run() {
 
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-    while(currentImageIndex < fileNames[0].size()) {
+    while(currentImageIndex < acqTimestamps.size()) {
         if (state != PlaybackState::PLAYING) {
 //            qDebug() << "Image Reader: Run Loop found Stop/Pause signal" ;
             break;
@@ -605,7 +922,7 @@ void ImageReader::run() {
 //            std::cerr << "Image Reader: Image could not be read, skipping: " << fileNames[0][currentImageIndex] ;
             currentImageIndex++;
 
-        } if (playbackLoop && currentImageIndex == fileNames[0].size()) {
+        } if (playbackLoop && currentImageIndex == acqTimestamps.size()) {
 //            qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
             currentImageIndex = 0;
         }
@@ -617,7 +934,7 @@ void ImageReader::run() {
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
         // to signal when we automatically reached the end
-        if(currentImageIndex == fileNames[0].size()){
+        if(currentImageIndex == acqTimestamps.size()){
             emit endReached();
             lastCommissionedFrameNumber = -1; // corner case
         }
@@ -653,6 +970,9 @@ void ImageReader::runImpl(std::chrono::steady_clock::time_point& startTime, std:
     //cimg.filename = fileNames[0][currentImageIndex].toStdString();
     img.release();
 
+    //av_frame_unref(frame);
+    //av_frame_unref(grayFrame);
+
     /*
     if (!noDelay) {
         int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -676,7 +996,7 @@ void ImageReader::runStereo() {
 
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
     // We assume both lists fileNames[0] and fileNames[1] are same length
-    while(currentImageIndex < fileNames[0].size()) {
+    while(currentImageIndex < acqTimestamps.size()) {
         if (state != PlaybackState::PLAYING) {
             qDebug() << "Image Reader: Run Loop found Stop/Pause signal" ;
             break;
@@ -707,10 +1027,10 @@ void ImageReader::runStereo() {
             currentImageIndex++;
 
         } else if (!img.data || !imgSecondary.data){
-            qDebug() << "Image Reader: Image could not be read, skipping: " << fileNames[0][currentImageIndex] ;
+            qDebug() << "Image Reader: Image could not be read, skipping: " << acqTimestamps[currentImageIndex] ;
             currentImageIndex++;
 
-        } if (playbackLoop && currentImageIndex == fileNames[0].size()) {
+        } if (playbackLoop && currentImageIndex == acqTimestamps.size()) {
             qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
             currentImageIndex = 0;
         }
@@ -721,7 +1041,7 @@ void ImageReader::runStereo() {
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
         // to signal when we automatically reached the end
-        if(currentImageIndex == fileNames[0].size()){
+        if(currentImageIndex == acqTimestamps.size()){
             emit endReached();
             qDebug() << "endReached";
             lastCommissionedFrameNumber = -1; // corner case
@@ -899,17 +1219,41 @@ QStringList ImageReader::purgeFileNamesVector(QStringList fileNameCandidates) {
 
 cv::Mat ImageReader::getStillImageSingle(int frameNumber) {
     cv::Mat img;
-    if(fileNames[0].size() > frameNumber) {
+    if(acqTimestamps.size() > frameNumber) {
+        //if(imageReaderSource == IMSOURCE_VIDEO) {
+        //    // IMPORTANT: in video files, we cannot just read a frame without really seeking the stream there...
+        //    //  so we need to seek back one more frame just after this. To not let skip the one that we are only
+        //    //  reading now for passive display in th GUI.
+        //    seekToFrame(frameNumber, seekBackwards);
+        //}
+
         //return cv::imread(fileNames[0][frameNumber].toStdString(), cv::IMREAD_GRAYSCALE);
         quickReadImageSingle(img, frameNumber);
+
+        if(imageReaderSource == IMSOURCE_VIDEO) {
+            // HERE IT IS. Sandwiched.
+            seekToFrame(frameNumber, true);
+        }
     }
     return img;
 }
 
 std::vector<cv::Mat> ImageReader::getStillImageStereo(int frameNumber) {
     cv::Mat img, imgSecondary;
-    if(fileNames[0].size() >= frameNumber && fileNames[1].size() > frameNumber) {
+    if(acqTimestamps.size() >= frameNumber) {
+        //if(imageReaderSource == IMSOURCE_VIDEO) {
+        //    // IMPORTANT: in video files, we cannot just read a frame without really seeking the stream there...
+        //    //  so we need to seek back one more frame just after this. To not let skip the one that we are only
+        //    //  reading now for passive display in th GUI.
+        //    seekToFrame(frameNumber, seekBackwards);
+        //}
+
         quickReadImageStereo(img, imgSecondary, frameNumber);
+
+        if(imageReaderSource == IMSOURCE_VIDEO) {
+            // HERE IT IS. Sandwiched.
+            seekToFrame(frameNumber, true);
+        }
     }
     return {img, imgSecondary};
 }

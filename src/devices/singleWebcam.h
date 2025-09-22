@@ -114,6 +114,8 @@ public:
     int getImageROIoffsetYInc() override { return 1; };
     QRectF getImageROI() override;
 
+    double getResultingFrameRateValue() override;
+
     bool isTemperatureReadingSupported() override {return false;};
 
     bool isHardwareTriggerEnabled();
@@ -141,7 +143,6 @@ private:
     void loadCalibrationFile();
 
 public slots:
-    int getFPSValue();
     double getBrightnessValue();
     double getContrastValue();
     double getGainValue();

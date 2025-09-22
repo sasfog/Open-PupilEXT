@@ -391,8 +391,19 @@ void ImagePlaybackControlDialog::onDialBackward() {
 void ImagePlaybackControlDialog::onSliderValueChanged(int val) {
     int frameNumber = floor((float)(val)/(float)slider->maximum()*(float)(numImagesTotal-1));
     //qDebug() << "Seek to frame number (INDEX, starting from 0): " << frameNumber;
-    fileCamera->seekToFrame(frameNumber);
+
+    // NOTE: here I think it is okay to just hack the value out of GUI, as the whole
+    //  seeking feature is only a GUI feature. This is either "selectedFrameVal" when
+    //  selected (if playing or not), or "lastPlayedFrame" (if playing).
+    bool seekBackwards = frameNumber < selectedFrameBox->value();
+
+    // NOTE: HERE ALREADY IS A SEEKING CALL. THIS IS ALWAYS NEEDED BEFORE ANY STILL IMAGE READ CALL.
+    fileCamera->seekToFrame(frameNumber, seekBackwards);
+
+    selectedFrameBox->blockSignals(true);
     selectedFrameBox->setValue(frameNumber + 1);
+    selectedFrameBox->blockSignals(false);
+
     if(!playImagesOn) {
         updateInfoInternal(frameNumber);
         emit stillImageChange(frameNumber);
@@ -565,7 +576,14 @@ void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
 //        qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
-        fileCamera->seekToFrame(selectedFrameVal -1);
+
+        // NOTE: here I think it is okay to just hack the value out of GUI, as the whole
+        //  seeking feature is only a GUI feature. This is either "selectedFrameVal" when
+        //  selected (if playing or not), or "lastPlayedFrame" (if playing).
+        bool seekBackwards = frameNumber < selectedFrameBox->value();
+
+        // NOTE: HERE ALREADY IS A SEEKING CALL. THIS IS ALWAYS NEEDED BEFORE ANY STILL IMAGE READ CALL.
+        fileCamera->seekToFrame(selectedFrameVal -1, seekBackwards);
         updateInfoInternal(selectedFrameVal - 1);
         emit stillImageChange(selectedFrameVal - 1);
     }

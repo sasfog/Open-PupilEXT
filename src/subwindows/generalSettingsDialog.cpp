@@ -13,15 +13,16 @@
 GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         QDialog(parent),
         //playbackSpeed(30),
-        //imageWriterFormat("tiff"),
+        //iwImageSeqFormat("tiff"),
         //imageWriterDataRule("ask"),
         //dataWriterDelimiter(","),
         //dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    ////this->setMinimumSize(200, 330);
-    //this->setMinimumSize(380, 580);
-    this->setMinimumSize(380, 600);
+    //////this->setMinimumSize(200, 330);
+    ////this->setMinimumSize(380, 580);
+    //this->setMinimumSize(380, 600);
+    this->setMinimumSize(730, 600);
     this->setWindowTitle("Settings");
 
     readSettings();
@@ -29,20 +30,28 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
 
     updateForm();
 
-    connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatChange(int)));
-    connect(imageWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
+    connect(iwImageSeqFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterImageSequenceFormatChange(int)));
+    connect(iwImageSeqDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
 
-    connect(formatPngCompressionBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatPngCompressionChange(int)));
-    connect(formatJpegQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterFormatJpegQualityChange(int)));
-    connect(formatWebpQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterFormatWebpQualityChange(int)));
+    connect(iwImageSeqPngCompressionBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterImageSequencePngCompressionChange(int)));
+    connect(iwImageSeqJpegQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterImageSequenceJpegQualityChange(int)));
+    connect(iwImageSeqWebpQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterImageSequenceWebpQualityChange(int)));
+
+
+    connect(iwVideoCodecBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterVideoCodecChange(int)));
+
+    //connect(iwVideoPngCompressionBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterVideoPngCompressionChange(int)));
+    connect(iwVideoMJpegQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterVideoMJpegQualityChange(int)));
+    connect(iwVideoMPEG4QualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterVideoMPEG4QualityChange(int)));
+    connect(iwVideoProResQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterVideoProResQualityChange(int)));
+    connect(iwVideoFFV1CoderBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterVideoFFV1CoderChange(int)));
+    connect(iwVideoFFV1ContextBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterVideoFFV1ContextChange(int)));
 
     connect(dataWriterDelimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDelimiterChange(int)));
     connect(dataWriterDataStyleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataStyleChange(int)));
     connect(dataWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataRuleChange(int)));
 
     connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
-    connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
-    connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
     connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
     connect(adminWarningBox, SIGNAL(stateChanged(int)), this, SLOT(setAdminWarning(int)));
 
@@ -54,18 +63,29 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
 
 // Reads the settings from the QT application setting, if the entries were found
 void GeneralSettingsDialog::readSettings() {
-    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
-    if (!m_imageWriterFormat.isEmpty()) {
-        imageWriterFormat = m_imageWriterFormat;
+
+    const QString m_imageWriterSeparateImagesFormat = applicationSettings->value("imageWriter.imageSequence.chosenFormat", "tiff").toString();
+    if (!m_imageWriterSeparateImagesFormat.isEmpty()) {
+        iwImageSeqFormat = m_imageWriterSeparateImagesFormat;
     }
+    iwImageSeqPngCompression = applicationSettings->value("imageWriter.imageSequence.png.compression", "0").toInt();
+    iwImageSeqJpegQuality = applicationSettings->value("imageWriter.imageSequence.jpeg.quality", "100").toInt();
+    iwImageSeqWebpQuality = applicationSettings->value("imageWriter.imageSequence.webp.quality", "100").toInt();
 
-    imageWriterFormatPngCompression = applicationSettings->value("imageWriterFormat.png.compression", "0").toInt();
-    imageWriterFormatJpegQuality = applicationSettings->value("imageWriterFormat.jpeg.quality", "100").toInt();
-    imageWriterFormatWebpQuality = applicationSettings->value("imageWriterFormat.webp.quality", "100").toInt();
+    const QString m_iwVideoCodec = applicationSettings->value("imageWriter.video.chosenCodec", "AV_CODEC_ID_FFV1").toString();
+    if (!m_iwVideoCodec.isEmpty()) {
+        iwVideoCodec = m_iwVideoCodec;
+    }
+    //iwVideoPngCompression = applicationSettings->value("imageWriter.video.png.compression", "0").toInt();
+    iwVideoMJpegQuality = applicationSettings->value("imageWriter.video.mjpeg.quality", "2").toInt();
+    iwVideoMPEG4Quality = applicationSettings->value("imageWriter.video.mpeg4.quality", "2").toInt();
+    iwVideoProResQuality = applicationSettings->value("imageWriter.video.prores.quality", "2").toInt();
+    iwVideoFFV1Coder = applicationSettings->value("imageWriter.video.ffv1.coder", "1").toInt();
+    iwVideoFFV1Context = applicationSettings->value("imageWriter.video.ffv1.context", "1").toInt();
 
-    const QString m_imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
-    if (!m_imageWriterDataRule.isEmpty()) {
-        imageWriterDataRule = m_imageWriterDataRule;
+    const QString m_iwDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
+    if (!m_iwDataRule.isEmpty()) {
+        iwImageSeqDataRule = m_iwDataRule;
     }
 
     const QString m_dataWriterDelimiter = applicationSettings->value("dataWriterDelimiter", ",").toString();
@@ -83,8 +103,6 @@ void GeneralSettingsDialog::readSettings() {
         dataWriterDataRule = m_dataWriterDataRule;
     }
 
-    metaSnapshotsEnabled = SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings);
-    saveOfflineEventLog = SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings);
     alwaysOnTop = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
     adminWarning = SupportFunctions::readBoolFromQSettings("adminWarning", true, applicationSettings);
 
@@ -97,22 +115,38 @@ void GeneralSettingsDialog::readSettings() {
 
 void GeneralSettingsDialog::updateForm() {
 
-    imageWriterFormatBox->setCurrentIndex(imageWriterFormatBox->findData(imageWriterFormat));
+    iwImageSeqFormatBox->setCurrentIndex(iwImageSeqFormatBox->findData(iwImageSeqFormat));
+    //
+    iwImageSeqPngCompressionBox->setCurrentIndex(iwImageSeqPngCompression);
+    iwImageSeqJpegQualityBox->setValue(iwImageSeqJpegQuality);
+    iwImageSeqWebpQualityBox->setValue(iwImageSeqWebpQuality);
+    //
+    iwImageSeqPngCompressionWidget->setVisible(iwImageSeqFormat == "png");
+    iwImageSeqJpegQualityWidget->setVisible(iwImageSeqFormat == "jpeg");
+    formatWebpQualityWidget->setVisible(iwImageSeqFormat == "webp");
 
-    formatPngCompressionBox->setCurrentIndex(imageWriterFormatPngCompression);
-    formatJpegQualityBox->setValue(imageWriterFormatJpegQuality);
-    formatWebpQualityBox->setValue(imageWriterFormatWebpQuality);
+    iwVideoCodecBox->setCurrentIndex(iwVideoCodecBox->findData(iwVideoCodec));
+    //
+    //iwVideoPngCompressionBox->setCurrentIndex(iwVideoPngCompression);
+    iwVideoMJpegQualityBox->setValue(iwVideoMJpegQuality);
+    iwVideoMPEG4QualityBox->setValue(iwVideoMPEG4Quality);
+    iwVideoProResQualityBox->setValue(iwVideoProResQuality);
+    iwVideoFFV1CoderBox->setCurrentIndex(iwVideoFFV1CoderBox->findData(iwVideoFFV1Coder));
+    iwVideoFFV1ContextBox->setCurrentIndex(iwVideoFFV1ContextBox->findData(iwVideoFFV1Context));
+    //
+    //iwVideoPngCompressionWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_PNG");
+    iwVideoMJpegQualityWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_MJPEG");
+    iwVideoMPEG4QualityWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_MPEG4");
+    iwVideoProResQualityWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_PRORES");
+    iwVideoFFV1CoderWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_FFV1");
+    iwVideoFFV1ContextWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_FFV1");
 
-    formatPngCompressionWidget->setVisible(imageWriterFormat == "png");
-    formatJpegQualityWidget->setVisible(imageWriterFormat == "jpeg");
-    formatWebpQualityWidget->setVisible(imageWriterFormat == "webp");
-
-    if(imageWriterDataRule == "ask")
-        imageWriterDataRuleBox->setCurrentIndex(0);
-    else if(imageWriterDataRule == "append")
-        imageWriterDataRuleBox->setCurrentIndex(1);
-    else // if(imageWriterDataRule == "new")
-        imageWriterDataRuleBox->setCurrentIndex(2);
+    if(iwImageSeqDataRule == "ask")
+        iwImageSeqDataRuleBox->setCurrentIndex(0);
+    else if(iwImageSeqDataRule == "append")
+        iwImageSeqDataRuleBox->setCurrentIndex(1);
+    else // if(iwImageSeqDataRule == "new")
+        iwImageSeqDataRuleBox->setCurrentIndex(2);
 
     //dataWriterDelimiterBox->setCurrentText(delimiterToUse);
     if(dataWriterDelimiter == ";")
@@ -137,8 +171,6 @@ void GeneralSettingsDialog::updateForm() {
 
     darkAdaptBox->setCurrentIndex(darkAdaptMode);
 
-    metaSnapshotBox->setChecked(metaSnapshotsEnabled);
-    saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
     alwaysOnTopBox->setChecked(alwaysOnTop);
     adminWarningBox->setChecked(adminWarning);
 
@@ -147,17 +179,22 @@ void GeneralSettingsDialog::updateForm() {
 
 // Saved the settings selected in the dialog to the QT application settings
 void GeneralSettingsDialog::saveSettings() {
-    applicationSettings->setValue("imageWriterFormat.chosenFormat", imageWriterFormat);
-    applicationSettings->setValue("imageWriterFormat.png.compression", imageWriterFormatPngCompression);
-    applicationSettings->setValue("imageWriterFormat.jpeg.quality", imageWriterFormatJpegQuality);
-    applicationSettings->setValue("imageWriterFormat.webp.quality", imageWriterFormatWebpQuality);
-    applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
+    applicationSettings->setValue("imageWriter.imageSequence.chosenFormat", iwImageSeqFormat);
+    applicationSettings->setValue("imageWriter.imageSequence.png.compression", iwImageSeqPngCompression);
+    applicationSettings->setValue("imageWriter.imageSequence.jpeg.quality", iwImageSeqJpegQuality);
+    applicationSettings->setValue("imageWriter.imageSequence.webp.quality", iwImageSeqWebpQuality);
+    applicationSettings->setValue("imageWriter.video.chosenCodec", iwVideoCodec);
+    //applicationSettings->setValue("imageWriter.video.png.compression", iwVideoPngCompression);
+    applicationSettings->setValue("imageWriter.video.mjpeg.quality", iwVideoMJpegQuality);
+    applicationSettings->setValue("imageWriter.video.mpeg4.quality", iwVideoMPEG4Quality);
+    applicationSettings->setValue("imageWriter.video.prores.quality", iwVideoProResQuality);
+    applicationSettings->setValue("imageWriter.video.ffv1.coder", iwVideoFFV1Coder);
+    applicationSettings->setValue("imageWriter.video.ffv1.context", iwVideoFFV1Context);
+    applicationSettings->setValue("imageWriterDataRule", iwImageSeqDataRule);
     applicationSettings->setValue("dataWriterDelimiter", dataWriterDelimiter );
     applicationSettings->setValue("dataWriterDataStyle", dataWriterDataStyle );
     applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
     applicationSettings->setValue("GUIDarkAdaptMode", darkAdaptMode );
-    applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
-    applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
     applicationSettings->setValue("alwaysOnTop", alwaysOnTop );
     applicationSettings->setValue("adminWarning", adminWarning );
     applicationSettings->setValue("ignoreFrameSkipWarnings", ignoreFrameSkip );
@@ -165,7 +202,18 @@ void GeneralSettingsDialog::saveSettings() {
 
 void GeneralSettingsDialog::createForm() {
 
-    QVBoxLayout *mainLayout = new QVBoxLayout();
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    //mainLayout->setMargin(10);
+    mainLayout->setContentsMargins(10,10,10,10);
+    QHBoxLayout *mainLayoutInner = new QHBoxLayout();
+    //mainLayoutInner->setMargin(0);
+    mainLayoutInner->setContentsMargins(0,0,0,0);
+    QVBoxLayout *mainLayoutInnerCol1 = new QVBoxLayout();
+    //mainLayoutInnerCol1->setMargin(0);
+    mainLayoutInnerCol1->setContentsMargins(0,5,0,5);
+    QVBoxLayout *mainLayoutInnerCol2 = new QVBoxLayout();
+    //mainLayoutInnerCol2->setMargin(0);
+    mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
 
     dataWriterGroup = new QGroupBox("General Data Output");
@@ -202,99 +250,222 @@ void GeneralSettingsDialog::createForm() {
     dataWriterDataRuleBox->setCurrentText(dataWriterDataRule);
     dataOutLayout->addRow(dataWriterDataRuleBox);
 
-    metaSnapshotBox = new QCheckBox("Generate metadata snapshot files");
-    metaSnapshotBox->setChecked(getMetaSnapshotsEnabled());
-    dataOutLayout->addRow(metaSnapshotBox);
-
     dataWriterGroup->setLayout(dataOutLayout);
-    mainLayout->addWidget(dataWriterGroup);
+    mainLayoutInnerCol1->addWidget(dataWriterGroup);
 
 
 
-    imageWriterGroup = new QGroupBox("Image Writer");
-    QFormLayout *writerLayout = new QFormLayout();
+    iwImageSeqGroup = new QGroupBox("Image Writer (Directory or Zip archive)");
+    QFormLayout *iwImageSeqLayout = new QFormLayout();
 
-    QLabel *formatLabel = new QLabel(tr("Image Format**"));
-    imageWriterFormatBox = new QComboBox();
-    imageWriterFormatBox->addItem(QString("tiff [small files]"), QString("tiff"));
-    imageWriterFormatBox->addItem(QString("png [configurable]"), QString("png"));
-    imageWriterFormatBox->addItem(QString("bmp [large files]"), QString("bmp"));
-    imageWriterFormatBox->addItem(QString("jpeg [configurable]"), QString("jpeg"));
-    imageWriterFormatBox->addItem(QString("webp [configurable]"), QString("webp"));
-    imageWriterFormatBox->addItem(QString("pgm"), QString("pgm"));
-    int hahaha = imageWriterFormatBox->findData(imageWriterFormat);
-    imageWriterFormatBox->setCurrentIndex(imageWriterFormatBox->findData(imageWriterFormat));
-    writerLayout->addRow(formatLabel, imageWriterFormatBox);
+    QLabel *iwImageSeqFormatLabel = new QLabel(tr("Image Format**"));
+    iwImageSeqFormatBox = new QComboBox();
+    iwImageSeqFormatBox->addItem(QString("tiff [small files]"), QString("tiff"));
+    iwImageSeqFormatBox->addItem(QString("png [configurable]"), QString("png"));
+    iwImageSeqFormatBox->addItem(QString("bmp [large files]"), QString("bmp"));
+    iwImageSeqFormatBox->addItem(QString("jpeg [configurable]"), QString("jpeg"));
+    iwImageSeqFormatBox->addItem(QString("webp [configurable]"), QString("webp"));
+    iwImageSeqFormatBox->addItem(QString("pgm"), QString("pgm"));
+    //int hahaha = iwImageSeqFormatBox->findData(iwImageSeqFormat);
+    iwImageSeqFormatBox->setCurrentIndex(iwImageSeqFormatBox->findData(iwImageSeqFormat));
+    iwImageSeqLayout->addRow(iwImageSeqFormatLabel, iwImageSeqFormatBox);
 
-    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!\nAlso, jpeg and webp can be lossy, thus not recommended."));
+    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!\nAlso, lossy formats are not recommended, unless at very high resolution."));
     SupportFunctions::setSmallerLabelFontSize(formatNoteLabel);
-    writerLayout->addRow(formatNoteLabel);
+    iwImageSeqLayout->addRow(formatNoteLabel);
 
-    formatPngCompressionWidget = new QWidget();
-    QHBoxLayout *formatPngCompressionLayout = new QHBoxLayout();
-    formatPngCompressionLayout->setContentsMargins(0,0,0,0);
-    QLabel *formatPngCompressionLabel = new QLabel(tr("PNG compression level:"));
-    formatPngCompressionBox = new QComboBox();
-    formatPngCompressionBox->addItem(QString("0 (large files, fast)"), 0);
-    formatPngCompressionBox->addItem(QString("1"), 1);
-    formatPngCompressionBox->addItem(QString("2"), 2);
-    formatPngCompressionBox->addItem(QString("3"), 3);
-    formatPngCompressionBox->addItem(QString("4"), 4);
-    formatPngCompressionBox->addItem(QString("5"), 5);
-    formatPngCompressionBox->addItem(QString("6"), 6);
-    formatPngCompressionBox->addItem(QString("7"), 7);
-    formatPngCompressionBox->addItem(QString("8"), 8);
-    formatPngCompressionBox->addItem(QString("9 (small files, slow)"), 9);
-    formatPngCompressionBox->setCurrentIndex(formatPngCompressionBox->findData(imageWriterFormatPngCompression));
-    formatPngCompressionLayout->addWidget(formatPngCompressionLabel);
-    formatPngCompressionLayout->addWidget(formatPngCompressionBox);
-    formatPngCompressionWidget->setLayout(formatPngCompressionLayout);
-    writerLayout->addRow(formatPngCompressionWidget);
+    iwImageSeqPngCompressionWidget = new QWidget();
+    QHBoxLayout *iwImageSeqPngCompressionLayout = new QHBoxLayout();
+    iwImageSeqPngCompressionLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *iwImageSeqPngCompressionLabel = new QLabel(tr("PNG compression level:"));
+    iwImageSeqPngCompressionBox = new QComboBox();
+    iwImageSeqPngCompressionBox->addItem(QString("0 (large files, fast)"), 0);
+    iwImageSeqPngCompressionBox->addItem(QString("1"), 1);
+    iwImageSeqPngCompressionBox->addItem(QString("2"), 2);
+    iwImageSeqPngCompressionBox->addItem(QString("3"), 3);
+    iwImageSeqPngCompressionBox->addItem(QString("4"), 4);
+    iwImageSeqPngCompressionBox->addItem(QString("5"), 5);
+    iwImageSeqPngCompressionBox->addItem(QString("6"), 6);
+    iwImageSeqPngCompressionBox->addItem(QString("7"), 7);
+    iwImageSeqPngCompressionBox->addItem(QString("8"), 8);
+    iwImageSeqPngCompressionBox->addItem(QString("9 (small files, slow)"), 9);
+    iwImageSeqPngCompressionBox->setCurrentIndex(iwImageSeqPngCompressionBox->findData(iwImageSeqPngCompression));
+    iwImageSeqPngCompressionLayout->addWidget(iwImageSeqPngCompressionLabel);
+    iwImageSeqPngCompressionLayout->addWidget(iwImageSeqPngCompressionBox);
+    iwImageSeqPngCompressionWidget->setLayout(iwImageSeqPngCompressionLayout);
+    iwImageSeqLayout->addRow(iwImageSeqPngCompressionWidget);
 
-    formatJpegQualityWidget = new QWidget();
-    QHBoxLayout *formatJpegQualityLayout = new QHBoxLayout();
-    formatJpegQualityLayout->setContentsMargins(0,0,0,0);
-    QLabel *formatJpegQualityLabel = new QLabel(tr("JPEG quality:"));
-    formatJpegQualityBox = new QSpinBox();
-    formatJpegQualityBox->setMinimum(50);
-    formatJpegQualityBox->setMaximum(100);
-    formatJpegQualityBox->setSingleStep(1);
-    formatJpegQualityBox->setValue(imageWriterFormatJpegQuality);
-    formatJpegQualityLayout->addWidget(formatJpegQualityLabel);
-    formatJpegQualityLayout->addWidget(formatJpegQualityBox);
-    formatJpegQualityWidget->setLayout(formatJpegQualityLayout);
-    writerLayout->addRow(formatJpegQualityWidget);
+    iwImageSeqJpegQualityWidget = new QWidget();
+    QHBoxLayout *iwImageSeqJpegQualityLayout = new QHBoxLayout();
+    iwImageSeqJpegQualityLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *iwImageSeqJpegQualityLabel = new QLabel(tr("JPEG quality:"));
+    iwImageSeqJpegQualityBox = new QSpinBox();
+    iwImageSeqJpegQualityBox->setMinimum(50);
+    iwImageSeqJpegQualityBox->setMaximum(100);
+    iwImageSeqJpegQualityBox->setSingleStep(1);
+    iwImageSeqJpegQualityBox->setValue(iwImageSeqJpegQuality);
+    iwImageSeqJpegQualityLayout->addWidget(iwImageSeqJpegQualityLabel);
+    iwImageSeqJpegQualityLayout->addWidget(iwImageSeqJpegQualityBox);
+    iwImageSeqJpegQualityWidget->setLayout(iwImageSeqJpegQualityLayout);
+    iwImageSeqLayout->addRow(iwImageSeqJpegQualityWidget);
 
     formatWebpQualityWidget = new QWidget();
-    QHBoxLayout *formatWebpQualityLayout = new QHBoxLayout();
-    formatWebpQualityLayout->setContentsMargins(0,0,0,0);
-    QLabel *formatWebpQualityLabel = new QLabel(tr("WEBP quality:"));
-    formatWebpQualityBox = new QSpinBox();
-    formatWebpQualityBox->setMinimum(50);
-    formatWebpQualityBox->setMaximum(100);
-    formatWebpQualityBox->setSingleStep(1);
-    formatWebpQualityBox->setValue(imageWriterFormatWebpQuality);
-    formatWebpQualityLayout->addWidget(formatWebpQualityLabel);
-    formatWebpQualityLayout->addWidget(formatWebpQualityBox);
-    formatWebpQualityWidget->setLayout(formatWebpQualityLayout);
-    writerLayout->addRow(formatWebpQualityWidget);
+    QHBoxLayout *iwImageSeqWebpQualityLayout = new QHBoxLayout();
+    iwImageSeqWebpQualityLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *iwImageSeqWebpQualityLabel = new QLabel(tr("WEBP quality:"));
+    iwImageSeqWebpQualityBox = new QSpinBox();
+    iwImageSeqWebpQualityBox->setMinimum(50);
+    iwImageSeqWebpQualityBox->setMaximum(100);
+    iwImageSeqWebpQualityBox->setSingleStep(1);
+    iwImageSeqWebpQualityBox->setValue(iwImageSeqWebpQuality);
+    iwImageSeqWebpQualityLayout->addWidget(iwImageSeqWebpQualityLabel);
+    iwImageSeqWebpQualityLayout->addWidget(iwImageSeqWebpQualityBox);
+    formatWebpQualityWidget->setLayout(iwImageSeqWebpQualityLayout);
+    iwImageSeqLayout->addRow(formatWebpQualityWidget);
 
-    QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
-    writerLayout->addRow(imageWriterDataRuleLabel);
+    QLabel *iwImageSeqDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
+    iwImageSeqLayout->addRow(iwImageSeqDataRuleLabel);
 
-    imageWriterDataRuleBox = new QComboBox();
-    imageWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
-    imageWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
-    imageWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
-    imageWriterDataRuleBox->setCurrentText(imageWriterDataRule);
-    writerLayout->addRow(imageWriterDataRuleBox);
+    iwImageSeqDataRuleBox = new QComboBox();
+    iwImageSeqDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
+    iwImageSeqDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
+    iwImageSeqDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
+    iwImageSeqDataRuleBox->setCurrentText(iwImageSeqDataRule);
+    iwImageSeqLayout->addRow(iwImageSeqDataRuleBox);
 
-    saveOfflineEventLogBox = new QCheckBox("Save trials/event log for offline analyses");
-    saveOfflineEventLogBox->setChecked(getSaveOfflineEventLog());
-    writerLayout->addRow(saveOfflineEventLogBox);
+    iwImageSeqGroup->setLayout(iwImageSeqLayout);
+    mainLayoutInnerCol1->addWidget(iwImageSeqGroup);
 
-    imageWriterGroup->setLayout(writerLayout);
-    mainLayout->addWidget(imageWriterGroup);
+
+    ////////
+
+    iwVideoGroup = new QGroupBox("Image Writer (Video file)");
+    QFormLayout *iwVideoLayout = new QFormLayout();
+
+    // TODO: check which codec is available (?)
+    // AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_PNG);
+    //if (!codec) throw std::runtime_error("PNG encoder not found");
+
+    QLabel *iwVideoCodecLabel = new QLabel(tr("Video Codec**"));
+    iwVideoCodecBox = new QComboBox();
+    iwVideoCodecBox->addItem(QString("FFV1 [lossless]"), QString("AV_CODEC_ID_FFV1"));
+    //iwVideoCodecBox->addItem(QString("PNG sequence [lossless]"), QString("AV_CODEC_ID_PNG")); // avcodec_open2() always fails with -22
+    iwVideoCodecBox->addItem(QString("MJPEG [lossy]"), QString("AV_CODEC_ID_MJPEG"));
+    iwVideoCodecBox->addItem(QString("MPEG-4 Part 2 [lossy]"), QString("AV_CODEC_ID_MPEG4"));
+    iwVideoCodecBox->addItem(QString("ProRes [lossy]"), QString("AV_CODEC_ID_PRORES"));
+    iwVideoCodecBox->setCurrentIndex(iwVideoCodecBox->findData(iwVideoCodec));
+    iwVideoLayout->addRow(iwVideoCodecLabel, iwVideoCodecBox);
+
+    QLabel *formatNoteLabel2 = new QLabel(tr("**Lossy formats are not recommended, unless at very high resolution."));
+    SupportFunctions::setSmallerLabelFontSize(formatNoteLabel2);
+    iwVideoLayout->addRow(formatNoteLabel2);
+
+    //iwVideoPngCompressionWidget = new QWidget();
+    //QHBoxLayout *iwVideoPngCompressionLayout = new QHBoxLayout();
+    //iwVideoPngCompressionLayout->setContentsMargins(0, 0, 0, 0);
+    //QLabel *iwVideoPngCompressionLabel = new QLabel(tr("PNG compression level:"));
+    //iwVideoPngCompressionBox = new QComboBox();
+    //iwVideoPngCompressionBox->addItem(QString("0 (large files, fast)"), 0);
+    //iwVideoPngCompressionBox->addItem(QString("1"), 1);
+    //iwVideoPngCompressionBox->addItem(QString("2"), 2);
+    //iwVideoPngCompressionBox->addItem(QString("3"), 3);
+    //iwVideoPngCompressionBox->addItem(QString("4"), 4);
+    //iwVideoPngCompressionBox->addItem(QString("5"), 5);
+    //iwVideoPngCompressionBox->addItem(QString("6"), 6);
+    //iwVideoPngCompressionBox->addItem(QString("7"), 7);
+    //iwVideoPngCompressionBox->addItem(QString("8"), 8);
+    //iwVideoPngCompressionBox->addItem(QString("9 (small files, slow)"), 9);
+    //iwVideoPngCompressionBox->setCurrentIndex(iwVideoPngCompressionBox->findData(iwVideoPngCompression));
+    //iwVideoPngCompressionLayout->addWidget(iwVideoPngCompressionLabel);
+    //iwVideoPngCompressionLayout->addWidget(iwVideoPngCompressionBox);
+    //iwVideoPngCompressionWidget->setLayout(iwVideoPngCompressionLayout);
+    //iwVideoLayout->addRow(iwVideoPngCompressionWidget);
+
+    iwVideoFFV1CoderWidget = new QWidget();
+    QHBoxLayout *iwVideoFFV1CoderLayout = new QHBoxLayout();
+    iwVideoFFV1CoderLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *videoFFV1CoderLabel = new QLabel(tr("FFV1 coder:"));
+    iwVideoFFV1CoderBox = new QComboBox();
+    iwVideoFFV1CoderBox->addItem(QString("Golomb-Rice (faster, larger file)"), 0);
+    iwVideoFFV1CoderBox->addItem(QString("Range coder (slower, smaller file)"), 1);
+    iwVideoFFV1CoderBox->setCurrentIndex(iwVideoFFV1CoderBox->findData(iwVideoFFV1Coder));
+    iwVideoFFV1CoderLayout->addWidget(videoFFV1CoderLabel);
+    iwVideoFFV1CoderLayout->addWidget(iwVideoFFV1CoderBox);
+    iwVideoFFV1CoderWidget->setLayout(iwVideoFFV1CoderLayout);
+    iwVideoLayout->addRow(iwVideoFFV1CoderWidget);
+
+    iwVideoFFV1ContextWidget = new QWidget();
+    QHBoxLayout *iwVideoFFV1ContextLayout = new QHBoxLayout();
+    iwVideoFFV1ContextLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *videoFFV1ContextLabel = new QLabel(tr("FFV1 context modeling:"));
+    iwVideoFFV1ContextBox = new QComboBox();
+    iwVideoFFV1ContextBox->addItem(QString("Off (faster, larger)"), 0);
+    iwVideoFFV1ContextBox->addItem(QString("On (slower, smaller)"), 1);
+    iwVideoFFV1ContextBox->setCurrentIndex(iwVideoFFV1ContextBox->findData(iwVideoFFV1Context));
+    iwVideoFFV1ContextLayout->addWidget(videoFFV1ContextLabel);
+    iwVideoFFV1ContextLayout->addWidget(iwVideoFFV1ContextBox);
+    iwVideoFFV1ContextWidget->setLayout(iwVideoFFV1ContextLayout);
+    iwVideoLayout->addRow(iwVideoFFV1ContextWidget);
+
+    iwVideoMJpegQualityWidget = new QWidget();
+    QHBoxLayout *iwVideoMJpegQualityLayout = new QHBoxLayout();
+    iwVideoMJpegQualityLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *videoMJpegQualityLabel = new QLabel(tr("MJPEG quality (2=highest, 31=lowest):"));
+    iwVideoMJpegQualityBox = new QSpinBox();
+    iwVideoMJpegQualityBox->setMinimum(2);
+    iwVideoMJpegQualityBox->setMaximum(31);
+    iwVideoMJpegQualityBox->setSingleStep(1);
+    iwVideoMJpegQualityBox->setValue(iwVideoMJpegQuality);
+    iwVideoMJpegQualityLayout->addWidget(videoMJpegQualityLabel);
+    iwVideoMJpegQualityLayout->addWidget(iwVideoMJpegQualityBox);
+    iwVideoMJpegQualityWidget->setLayout(iwVideoMJpegQualityLayout);
+    iwVideoLayout->addRow(iwVideoMJpegQualityWidget);
+
+    iwVideoMPEG4QualityWidget = new QWidget();
+    QHBoxLayout *iwVideoMPEG4QualityLayout = new QHBoxLayout();
+    iwVideoMPEG4QualityLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *videoMPEG4QualityLabel = new QLabel(tr("MPEG4 quality (2=highest, 31=lowest):"));
+    iwVideoMPEG4QualityBox = new QSpinBox();
+    iwVideoMPEG4QualityBox->setMinimum(2);
+    iwVideoMPEG4QualityBox->setMaximum(31);
+    iwVideoMPEG4QualityBox->setSingleStep(1);
+    iwVideoMPEG4QualityBox->setValue(iwVideoMPEG4Quality);
+    iwVideoMPEG4QualityLayout->addWidget(videoMPEG4QualityLabel);
+    iwVideoMPEG4QualityLayout->addWidget(iwVideoMPEG4QualityBox);
+    iwVideoMPEG4QualityWidget->setLayout(iwVideoMPEG4QualityLayout);
+    iwVideoLayout->addRow(iwVideoMPEG4QualityWidget);
+
+    iwVideoProResQualityWidget = new QWidget();
+    QHBoxLayout *iwVideoProResQualityLayout = new QHBoxLayout();
+    iwVideoProResQualityLayout->setContentsMargins(0, 0, 0, 0);
+    QLabel *videoProResQualityLabel = new QLabel(tr("ProRes quality (2=highest, 31=lowest):"));
+    iwVideoProResQualityBox = new QSpinBox();
+    iwVideoProResQualityBox->setMinimum(2);
+    iwVideoProResQualityBox->setMaximum(31);
+    iwVideoProResQualityBox->setSingleStep(1);
+    iwVideoProResQualityBox->setValue(iwVideoProResQuality);
+    iwVideoProResQualityLayout->addWidget(videoProResQualityLabel);
+    iwVideoProResQualityLayout->addWidget(iwVideoProResQualityBox);
+    iwVideoProResQualityWidget->setLayout(iwVideoProResQualityLayout);
+    iwVideoLayout->addRow(iwVideoProResQualityWidget);
+
+    QLabel *iwVideoDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
+    iwVideoLayout->addRow(iwVideoDataRuleLabel);
+
+    QComboBox *iwVideoDataRuleBox = new QComboBox();
+    //iwVideoDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
+    //iwVideoDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
+    iwVideoDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
+    //iwVideoDataRuleBox->setCurrentText(iwImageSeqDataRule);
+    iwVideoDataRuleBox->setEnabled(false);
+    iwVideoLayout->addRow(iwVideoDataRuleBox);
+
+    iwVideoGroup->setLayout(iwVideoLayout);
+#ifdef QT_DEBUG
+    mainLayoutInnerCol1->addWidget(iwVideoGroup);
+#endif
+
+    /////////
 
     // GB NOTE: removed playback speed and playback loop settings, as these are yet in ImagePlaybackSettingsDialog
 
@@ -319,7 +490,7 @@ void GeneralSettingsDialog::createForm() {
     appearanceLayout->addRow(adminWarningBox);
 
     appearanceGroup->setLayout(appearanceLayout);
-    mainLayout->addWidget(appearanceGroup);
+    mainLayoutInnerCol2->addWidget(appearanceGroup);
 
 
     QGroupBox *cameraInterfacingGroup = new QGroupBox("Camera Interfacing");
@@ -330,7 +501,7 @@ void GeneralSettingsDialog::createForm() {
     cameraInterfacingLayout->addRow(ignoreFrameSkipBox);
 
     cameraInterfacingGroup->setLayout(cameraInterfacingLayout);
-    mainLayout->addWidget(cameraInterfacingGroup);
+    mainLayoutInnerCol2->addWidget(cameraInterfacingGroup);
 
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
@@ -343,6 +514,9 @@ void GeneralSettingsDialog::createForm() {
     buttonsLayout->addWidget(applyButton);
     buttonsLayout->addWidget(cancelButton);
 
+    mainLayoutInner->addLayout(mainLayoutInnerCol1);
+    mainLayoutInner->addLayout(mainLayoutInnerCol2);
+    mainLayout->addLayout(mainLayoutInner);
     mainLayout->addLayout(buttonsLayout);
 
     setLayout(mainLayout);
@@ -351,7 +525,7 @@ void GeneralSettingsDialog::createForm() {
 void GeneralSettingsDialog::setLimitationsWhileImageWriting(bool state) {
     readSettings();
     updateForm();
-    imageWriterGroup->setDisabled(state);
+    iwImageSeqGroup->setDisabled(state);
 }
 
 void GeneralSettingsDialog::setLimitationsWhileDataWriting(bool state) {
@@ -400,12 +574,6 @@ void GeneralSettingsDialog::cancel() {
     close();
 }
 
-bool GeneralSettingsDialog::getMetaSnapshotsEnabled() const {
-    return metaSnapshotsEnabled;
-}
-bool GeneralSettingsDialog::getSaveOfflineEventLog() const {
-    return saveOfflineEventLog;
-}
 bool GeneralSettingsDialog::getAlwaysOnTop() const {
     return alwaysOnTop;
 }
@@ -416,27 +584,6 @@ bool GeneralSettingsDialog::getIgnoreFrameSkip() const {
     return ignoreFrameSkip;
 }
 
-
-//// Returns the current writer format setting i.e. tiff, jpeg, bmp
-//QString GeneralSettingsDialog::getImageWriterFormat() const {
-//    return imageWriterFormat;
-//}
-//QString GeneralSettingsDialog::getImageWriterDataRule() const {
-//    return imageWriterDataRule;
-//}
-//QString GeneralSettingsDialog::getDataWriterDataRule() const {
-//    return dataWriterDataRule;
-//}
-//QString GeneralSettingsDialog::getDataWriterDataStyle() const {
-//    return dataWriterDataStyle;
-//}
-
-void GeneralSettingsDialog::setMetaSnapshotEnabled(int m_state) {
-    metaSnapshotsEnabled = (bool) m_state;
-}
-void GeneralSettingsDialog::setSaveOfflineEventLog(int m_state) {
-    saveOfflineEventLog = (bool) m_state;
-}
 void GeneralSettingsDialog::setAlwaysOnTop(int m_state) {
     alwaysOnTop = (bool) m_state;
 }
@@ -447,44 +594,63 @@ void GeneralSettingsDialog::setIgnoreFrameSkip(int m_state) {
     ignoreFrameSkip = (bool) m_state;
 }
 
-//// Set the image writer format, all formats supported by OpenCV's imwrite can be specified
-//// Choices in the settings window are tiff, jpeg, and bmp
-//void GeneralSettingsDialog::setImageWriterFormat(const QString &m_imageWriterFormat) {
-//    imageWriterFormat = m_imageWriterFormat;
-//}
-//void GeneralSettingsDialog::setImageWriterDataRule(const QString &m_imageWriterDataRule) {
-//    imageWriterDataRule = m_imageWriterDataRule;
-//}
-//void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDataRule) {
-//    dataWriterDataRule = m_dataWriterDataRule;
-//}
-//void GeneralSettingsDialog::setDataWriterDataStyle(const QString &m_dataWriterDataStyle) {
-//    dataWriterDataStyle = m_dataWriterDataStyle;
-//}
+void GeneralSettingsDialog::onImageWriterImageSequenceFormatChange(int index) {
+    iwImageSeqFormat = iwImageSeqFormatBox->itemData(index).toString();
 
-// Event handler on the change of the combobox selection in the dialog
-void GeneralSettingsDialog::onImageWriterFormatChange(int index) {
-    imageWriterFormat = imageWriterFormatBox->itemData(index).toString();
+    iwImageSeqPngCompressionWidget->setVisible(iwImageSeqFormat == "png");
+    iwImageSeqJpegQualityWidget->setVisible(iwImageSeqFormat == "jpeg");
+    formatWebpQualityWidget->setVisible(iwImageSeqFormat == "webp");
+}
 
-    formatPngCompressionWidget->setVisible(imageWriterFormat == "png");
-    formatJpegQualityWidget->setVisible(imageWriterFormat == "jpeg");
-    formatWebpQualityWidget->setVisible(imageWriterFormat == "webp");
+void GeneralSettingsDialog::onImageWriterVideoCodecChange(int index) {
+    iwVideoCodec = iwVideoCodecBox->itemData(index).toString();
+
+    //iwVideoPngCompressionWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_PNG");
+    iwVideoMJpegQualityWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_MJPEG");
+    iwVideoMPEG4QualityWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_MPEG4");
+    iwVideoProResQualityWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_PRORES");
+    iwVideoFFV1CoderWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_FFV1");
+    iwVideoFFV1ContextWidget->setVisible(iwVideoCodec == "AV_CODEC_ID_FFV1");
 }
 
 void GeneralSettingsDialog::onImageWriterDataRuleChange(int index) {
-    imageWriterDataRule = imageWriterDataRuleBox->itemData(index).toString();
+    iwImageSeqDataRule = iwImageSeqDataRuleBox->itemData(index).toString();
 }
 
-void GeneralSettingsDialog::onImageWriterFormatPngCompressionChange(int index) {
-    imageWriterFormatPngCompression = formatPngCompressionBox->itemData(index).toInt();
+void GeneralSettingsDialog::onImageWriterImageSequencePngCompressionChange(int index) {
+    iwImageSeqPngCompression = iwImageSeqPngCompressionBox->itemData(index).toInt();
 }
 
-void GeneralSettingsDialog::onImageWriterFormatJpegQualityChange(int value) {
-    imageWriterFormatJpegQuality = value;
+void GeneralSettingsDialog::onImageWriterImageSequenceJpegQualityChange(int value) {
+    iwImageSeqJpegQuality = value;
 }
 
-void GeneralSettingsDialog::onImageWriterFormatWebpQualityChange(int value) {
-    imageWriterFormatWebpQuality = value;
+void GeneralSettingsDialog::onImageWriterImageSequenceWebpQualityChange(int value) {
+    iwImageSeqWebpQuality = value;
+}
+
+//void GeneralSettingsDialog::onImageWriterVideoPngCompressionChange(int index) {
+//    iwVideoPngCompression = iwVideoPngCompressionBox->itemData(index).toInt();
+//}
+
+void GeneralSettingsDialog::onImageWriterVideoMJpegQualityChange(int value) {
+    iwVideoMJpegQuality = value;
+}
+
+void GeneralSettingsDialog::onImageWriterVideoMPEG4QualityChange(int value) {
+    iwVideoMPEG4Quality = value;
+}
+
+void GeneralSettingsDialog::onImageWriterVideoProResQualityChange(int value) {
+    iwVideoProResQuality = value;
+}
+
+void GeneralSettingsDialog::onImageWriterVideoFFV1CoderChange(int index) {
+    iwVideoFFV1Coder = iwVideoFFV1CoderBox->itemData(index).toInt();
+}
+
+void GeneralSettingsDialog::onImageWriterVideoFFV1ContextChange(int index) {
+    iwVideoFFV1Context = iwVideoFFV1ContextBox->itemData(index).toInt();
 }
 
 // Event handler on the change of the combobox selection in the dialog

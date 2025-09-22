@@ -192,6 +192,13 @@ class PupilEXT(object):
             self.__sendRaw('PO true')
         else:
             self.__sendRaw('PO false')
+      
+    def setComputeBRISQUE(self, state):
+        if not self.Enabled : return
+        if state:
+            self.__sendRaw('PB true')
+        else:
+            self.__sendRaw('PB false')
     
     def connectRemoteControlUDP(self, ipAddress, portNumber):
         if not self.Enabled : return

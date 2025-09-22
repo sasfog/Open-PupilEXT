@@ -235,7 +235,7 @@ void MainWindow::PRGsetImageOutputFormat(QString format) {
             format="tiff";
         else if(format=="jpg")
             format="jpeg";
-        applicationSettings->setValue("imageWriterFormat.chosenFormat", format);
+        applicationSettings->setValue("imageWriter.imageSequence.chosenFormat", format);
 
         // workaround yet
         if(generalSettingsDialog)
@@ -267,6 +267,16 @@ void MainWindow::PRGsetPupilDetectionCompOutlineConf(const QString &state) {
     } else if(state == "false" || state == "0") {
         pupilDetectionWorker->enableOutlineConfidence(false);
         applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", false);
+    }
+}
+
+void MainWindow::PRGsetPupilDetectionCompBRISQUE(const QString &state) {
+    if(state == "true" || state == "1") {
+        pupilDetectionWorker->enableComputeBRISQUE(true);
+        applicationSettings->setValue("PupilDetectionSettingsDialog.computeBRISQUE", true);
+    } else if(state == "false" || state == "0") {
+        pupilDetectionWorker->enableComputeBRISQUE(false);
+        applicationSettings->setValue("PupilDetectionSettingsDialog.computeBRISQUE", false);
     }
 }
 

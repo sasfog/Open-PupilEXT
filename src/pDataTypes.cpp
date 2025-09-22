@@ -20,7 +20,10 @@ std::map<PDataType, QString> PDataTypes::tyf = {
     {PDataType::PUPIL_OUTLINE_CONFIDENCE, "Pupil outline confidence"},
     {PDataType::PUPIL_CIRCUMFERENCE,      "Pupil circumference"},
     {PDataType::PUPIL_RATIO,              "Pupil axis ratio"},
-    {PDataType::PUPIL_ANGLE,              "Pupil ellipse angle"}
+    {PDataType::PUPIL_ANGLE,              "Pupil ellipse angle"},
+    {PDataType::PUPIL_BRISQUE_FULL_IMAGE, "BRISQUE of full image"},
+    {PDataType::PUPIL_BRISQUE_PD_ROI,     "BRISQUE of PD ROI"}//,
+    //{PDataType::PUPIL_BRISQUE_PD_Internal,"BRISQUE of PD internal"}
 };
 
 std::map<PDataType, QString> PDataTypes::tyn = {
@@ -42,7 +45,10 @@ std::map<PDataType, QString> PDataTypes::tyn = {
         {PDataType::PUPIL_OUTLINE_CONFIDENCE, "pupilOutlineConfidence"},
         {PDataType::PUPIL_CIRCUMFERENCE,      "pupilCircumference"},
         {PDataType::PUPIL_RATIO,              "pupilAxisRatio"},
-        {PDataType::PUPIL_ANGLE,              "pupilAngle"}
+        {PDataType::PUPIL_ANGLE,              "pupilAngle"},
+        {PDataType::PUPIL_BRISQUE_FULL_IMAGE, "BRISQUEFullImage"},
+        {PDataType::PUPIL_BRISQUE_PD_ROI,     "BRISQUEPDROI"}//,
+        //{PDataType::PUPIL_BRISQUE_PD_Internal,"BRISQUEPDInternal"}
 };
 
 std::map<PDataType, QString> PDataTypes::tytXDF = {
@@ -64,7 +70,10 @@ std::map<PDataType, QString> PDataTypes::tytXDF = {
         {PDataType::PUPIL_OUTLINE_CONFIDENCE, "Confidence"},
         {PDataType::PUPIL_CIRCUMFERENCE,      ""},
         {PDataType::PUPIL_RATIO,              ""},
-        {PDataType::PUPIL_ANGLE,              ""}
+        {PDataType::PUPIL_ANGLE,              ""},
+        {PDataType::PUPIL_BRISQUE_FULL_IMAGE, ""},
+        {PDataType::PUPIL_BRISQUE_PD_ROI,     ""}//,
+        //{PDataType::PUPIL_BRISQUE_PD_Internal,""}
 };
 
 std::map<PDataType, QString> PDataTypes::tyd = {
@@ -86,7 +95,10 @@ std::map<PDataType, QString> PDataTypes::tyd = {
         {PDataType::PUPIL_OUTLINE_CONFIDENCE, ""},
         {PDataType::PUPIL_CIRCUMFERENCE,      "px"},
         {PDataType::PUPIL_RATIO,              ""},
-        {PDataType::PUPIL_ANGLE,              "deg"}
+        {PDataType::PUPIL_ANGLE,              "deg"},
+        {PDataType::PUPIL_BRISQUE_FULL_IMAGE, ""},
+        {PDataType::PUPIL_BRISQUE_PD_ROI,     ""}//,
+        //{PDataType::PUPIL_BRISQUE_PD_Internal,""}
 };
 
 const std::vector<PDataType> PDataTypes::dataTableRows = {
@@ -108,7 +120,11 @@ const std::vector<PDataType> PDataTypes::dataTableRows = {
         PDataType::PUPIL_CONFIDENCE,
         PDataType::PUPIL_OUTLINE_CONFIDENCE,
         PDataType::PUPIL_CIRCUMFERENCE,
-        PDataType::PUPIL_RATIO
+        PDataType::PUPIL_RATIO,
+
+        PDataType::PUPIL_BRISQUE_FULL_IMAGE,
+        PDataType::PUPIL_BRISQUE_PD_ROI,
+        //PDataType::PUPIL_BRISQUE_PD_Internal,
 };
 
 const std::vector<PDataType> PDataTypes::dataOutputFields = {
@@ -125,7 +141,10 @@ const std::vector<PDataType> PDataTypes::dataOutputFields = {
         PDataType::PUPIL_ANGLE,
         PDataType::PUPIL_CIRCUMFERENCE,
         PDataType::PUPIL_CONFIDENCE,
-        PDataType::PUPIL_OUTLINE_CONFIDENCE
+        PDataType::PUPIL_OUTLINE_CONFIDENCE,
+        PDataType::PUPIL_BRISQUE_FULL_IMAGE,
+        PDataType::PUPIL_BRISQUE_PD_ROI,
+        //PDataType::PUPIL_BRISQUE_PD_Internal,
 };
 
 
