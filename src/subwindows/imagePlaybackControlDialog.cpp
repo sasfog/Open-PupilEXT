@@ -59,16 +59,16 @@ void ImagePlaybackControlDialog::createForm() {
     timestampRowLayout->setContentsMargins(0,0,0,0);
     QLabel *timestampLabel = new QLabel(tr("Timestamp [ms]:"));
     timestampLabel->setFixedWidth(120);
-    //timestampVal = new QLineEdit();
-    timestampVal = new TimestampSpinBox(fileCamera);
-    timestampVal->setReadOnly(false);
-    timestampVal->setFixedWidth(140);
-    timestampVal->setMinimum(0);
+    //timestampBox = new QLineEdit();
+    timestampBox = new TimestampSpinBox(fileCamera);
+    timestampBox->setReadOnly(false);
+    timestampBox->setFixedWidth(140);
+    timestampBox->setMinimum(0);
     uint64_t timestampMax = fileCamera->getTimestampForFrameNumber(fileCamera->getNumImagesTotal()-1);
-    timestampVal->setMaximum(timestampMax);
-    timestampVal->setWrapping(true);
+    timestampBox->setMaximum(timestampMax);
+    timestampBox->setWrapping(true);
     timestampRowLayout->addWidget(timestampLabel);
-    timestampRowLayout->addWidget(timestampVal);
+    timestampRowLayout->addWidget(timestampBox);
     timestampRowLayout->addSpacerItem(new QSpacerItem(10, 20, QSizePolicy::Expanding));
     infoLayout->addRow(timestampRowLayout);
 
@@ -214,7 +214,7 @@ void ImagePlaybackControlDialog::createForm() {
     connect(syncRecordCsvBox, SIGNAL(toggled(bool)), this, SLOT(setSyncRecordCsv(bool)));
     connect(syncStreamBox, SIGNAL(toggled(bool)), this, SLOT(setSyncStream(bool)));
     connect(selectedFrameBox, SIGNAL(valueChanged(int)), this, SLOT(onFrameSelected(int)));
-    connect(timestampVal, SIGNAL(valueChanged(double)), this, SLOT(onTimestampSelected(double)));
+    connect(timestampBox, SIGNAL(valueChanged(double)), this, SLOT(onTimestampSelected(double)));
     connect(fileCamera, SIGNAL(endReached()), this, SLOT(onEndReached()));
     connect(fileCamera, SIGNAL(finished()), this, SLOT(onFinished()));
 }
@@ -257,7 +257,9 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
     QTime timeElapsed = QTime::fromMSecsSinceStartOfDay(elapsedMs);
 
     //timestampValLabel->setText(QString::number(img.timestamp));
-    timestampVal->setValue(frameNumber+1);
+//    timestampBox->->blockSignals(true);
+    timestampBox->setValue(frameNumber + 1);
+//    timestampBox->->blockSignals(false);
     timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
     //timestampHumanValLabel->setText(QLocale::system().toString(date));
     acqFPSValLabel->setText("-");
@@ -311,7 +313,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         QTime timeElapsed = QTime::fromMSecsSinceStartOfDay(elapsedMs);
 
         //timestampValLabel->setText(QString::number(img.timestamp));
-        timestampVal->setValue(frameNumber+1);
+        timestampBox->setValue(frameNumber + 1);
         timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
         //timestampHumanValLabel->setText(QLocale::system().toString(date));
         selectedFrameBox->setValue(frameNumber + 1);
@@ -343,6 +345,10 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
             startTimestamp = timestamp;
 
 //    }
+
+    // frameNumber is an INDEX, so begint at 0 and ends at (num of frames-1)
+    if(exportingRecSection && frameNumber >= exportSectionToFrame-1)
+        finished = true;
 
     if (finished || paused){
 //        resetState();
@@ -592,8 +598,8 @@ void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
 void ImagePlaybackControlDialog::enableWidgets(){
     selectedFrameBox->setReadOnly(false);
     selectedFrameBox->setDisabled(false);
-    timestampVal->setReadOnly(false);
-    timestampVal->setDisabled(false);
+    timestampBox->setReadOnly(false);
+    timestampBox->setDisabled(false);
     dial->setDisabled(false);
     slider->setDisabled(false);
     infoGroup->setDisabled(false);
@@ -605,8 +611,8 @@ void ImagePlaybackControlDialog::enableWidgets(){
 void ImagePlaybackControlDialog::disableWidgets(){
     selectedFrameBox->setReadOnly(true);
     selectedFrameBox->setDisabled(true);
-    timestampVal->setReadOnly(true);
-    timestampVal->setDisabled(true);
+    timestampBox->setReadOnly(true);
+    timestampBox->setDisabled(true);
     dial->setDisabled(true);
     slider->setDisabled(true);
     infoGroup->setDisabled(true);
@@ -640,6 +646,9 @@ void ImagePlaybackControlDialog::onPlaybackStopApproved() {
         lastPlayedFrame = 0;
 
         emit onPlaybackSafelyStopped();
+
+        if(exportingRecSection)
+            endExportRecSection();
     }
     else if (finished && !endReached){
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
@@ -660,6 +669,9 @@ void ImagePlaybackControlDialog::onPlaybackStopApproved() {
         selectedFrameVal = 1;
         selectedFrameBox->setValue(selectedFrameVal);
         emit onPlaybackSafelyStopped();
+
+        if(exportingRecSection)
+            endExportRecSection();
     }
 
     this->update();
@@ -669,5 +681,67 @@ void ImagePlaybackControlDialog::onFinished() {
     finished = true;
 //    resetState();
     emit onPlaybackStopInitiated();
+}
+
+void ImagePlaybackControlDialog::startExportRecSection() {
+
+    playbackSpeedBeforeExport = playbackSpeed;
+
+    // NOTE: if the playback FPS was set to 0, then use 30 FPS instead. 0 setting is for data processing to csv only
+    // NOTE: also for any FPS below 30. GIF seems to always have 30
+    if(playbackSpeed < 30) {
+        playbackFPSVal->setValue(30);
+        playbackSpeed = 30;
+    }
+
+    applicationSettings->setValue("ExportRecSection.DesiredPlaybackFPS", playbackSpeed);
+
+    exportSectionFromFrame = applicationSettings->value("ExportRecSection.FromFrameNumber", 1).toInt();
+    //uint64_t fromTimestamp = fileCamera->getTimestampForFrameNumber(fromFrame);
+    exportSectionToFrame = applicationSettings->value("ExportRecSection.ToFrameNumber", fileCamera->getNumImagesTotal()-1).toInt();
+    //uint64_t toTimestamp = fileCamera->getTimestampForFrameNumber(toFrame);
+
+    fileCamera->startExportRecSection(exportSectionToFrame);
+
+    selectedFrameBox->setValue(exportSectionFromFrame);
+
+    exportingRecSection = true;
+    //slider->showSectionBetweenTimestamps(fromTimestamp, toTimestamp);
+    slider->showSection((exportSectionFromFrame/(float)numImagesTotal), (exportSectionToFrame/(float)numImagesTotal));
+
+    startPauseButton->click();
+
+    slider->setEnabled(false);
+    startPauseButton->setEnabled(false);
+
+    // NOTE: there is no specific guardrail for not looping when animation export is going, but
+    //  already the section start and end can only be specified to not overlap the end/start of
+    //  the image recording, so no sophisticated later check is done for this.
+
+    // tell the exporter class to begin encoding the gif, etc
+    emit exportAllowedToStart();
+}
+
+void ImagePlaybackControlDialog::endExportRecSection() {
+
+    emit exportAllowedToEnd();
+
+    slider->hideSection();
+    slider->setEnabled(true);
+    startPauseButton->setEnabled(true); // tuti? vagy magától is kéne tudnia talán?
+
+    // NOTE: Yet there is only this allowed-to-end signal, that the recSectionExporter gets.
+    //  But there is no waiting here for the return of some other signal, from recSectionExporter
+    //  that the export has ended gracefully. Thus, in a corner case, the user could hypothetically
+    //  start another export before the previous one ended, but it is very unlikely, given the
+    //  amount of quick clicks needed for that.
+
+    exportSectionFromFrame = 1;
+    exportSectionToFrame = 2;
+
+    exportingRecSection = false;
+    finished = false;
+
+    playbackSpeed = playbackSpeedBeforeExport;
 }
 

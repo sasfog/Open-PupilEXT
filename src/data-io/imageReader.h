@@ -134,8 +134,10 @@ public:
     uint64_t getTimestampForFrameNumber(int frameNumber) {
         if(acqTimestamps.size() > frameNumber)
             return acqTimestamps[frameNumber];
+        else if(frameNumber < 0)
+            return acqTimestamps[0];
         else
-            return 0;
+            return acqTimestamps[acqTimestamps.size()-1];
     }
 
     /*uint64_t getLastCommissionedTimestamp() {
@@ -157,6 +159,12 @@ public:
 
     uint64_t getRecordingDuration() {
         return acqTimestamps[acqTimestamps.size()-1] - acqTimestamps[0];
+    }
+    QString getRecordingName() {
+        return imageRecordingName;
+    }
+    QString getRecordingFullPath() {
+        return imageRecordingFullPath;
     }
     void seekInVideoStream(int frameNumber, bool seekBackwards) {
 
@@ -226,6 +234,10 @@ public:
         qDebug() << (endTsStr.toULongLong(&ok, 10) - startTsStr.toULongLong(&ok, 10));
         return (endTsStr.toULongLong(&ok, 10) - startTsStr.toULongLong(&ok, 10));
     }
+    void startExportRecSection(int toFrame) {
+        exportingRecSection = true;
+        exportSectionToFrame = toFrame;
+    };
 
     void setSynchronised(bool synchronised);
 
@@ -240,6 +252,9 @@ private:
     ImageReaderStatus imageReaderStatus = IMSTATUS_UNDETERMINED;
     ImageReaderSource imageReaderSource = IMSOURCE_UNDETERMINED;
 
+    QString imageRecordingName;
+    QString imageRecordingFullPath;
+
     QuaZip* imageSourceZip = nullptr;
     QuaZipFile* imageSourceZipInnerFile = nullptr;
     QuaZipFileInfo info;
@@ -249,6 +264,9 @@ private:
     const QString zipSuffix = "zip";
     const QString videoSuffix = "mkv";
     int currentFrameInfoFileVersion = 1;
+
+    bool exportingRecSection = false;
+    int exportSectionToFrame = -1;
 
 
     uint64 startTimestamp;

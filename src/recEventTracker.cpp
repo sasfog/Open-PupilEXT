@@ -400,7 +400,7 @@ bool RecEventTracker::isReady()
 }
 uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp)
 {
-    for (size_t i = trialIncrements.size(); i >= 0; i--)
+    for (size_t i = (trialIncrements.size()-1); i >= 0; i--)
         if (trialIncrements[i].timestamp < timestamp)
         {
             return trialIncrements[i].trialNumber;

@@ -1,11 +1,33 @@
 
 Version 0.1.3. beta
 
+	TODO: NÉV LEGYEN "ECV" végződésű! és a hardware repo is! (?) vagy valahogy mindenképp megkülönböztethető kéne legyen
+
     Added:
-		...
-	
+		- Added feature to read and write image recordings into/from .zip archives. Importantly, existing recordings in directories can be zipped (using any common archive manager program) and then be opened with this new functionality.
+		- Added interfacing support for GigE cameras through the Pylon library.
+		- Added LSL streaming option via liblsl. Yet events are not set streamed (e.g. trigger events).
+		- Added feature to automatically notify the user if the application was started without administrator privileges. A choice is offered to restart the application. Also the popup message can be suppressed for any further restarts if the user decides.
+		- New feature to calculate BRISQUE score, a commonly used dimensionless metric for reference-less image quality quantification.
+		- Added feature to limit streamed sample rate. Importantly, no interpolation occurs, only decimation /temporal filtering of let-pass eye data output.
+		- Added build manifest for Windows target.
+		- Added Ubuntu .deb packing snippet to cmake script.
+		- Implemented Aravis camera interfacing. Importantly, GigE cameras not yet stable in all cases, frame drops can occur sporadically (rare but persistent).
+		- Eye identities ("L" for left or "R" for right, as well as "X" for unknown), and camera identities ("M" for main or "S" for secondary) are now kept track in pupil detection. They are automatically assignes if they are determined by processing mode. In case of single eye processing modes, the eye identity can be specified manually by the user in the pupil detection settings dialog.
+		- Added preliminary support to export sections of existing recordings into animated .gif files for demonstrative use (for presentations, etc.)
+		
     Changed:
-		...
+		- Eye output is now subpixel resolution. (Was previously truncated)
+		- Importantly, data output management is reformed. Now in tabular (.csv) and streamed tabular output, each data column is automatically named in the following fashion: "<variable>_<dimension>_<eye identity>_<camera identity>" where variable name is in camel case, dimension is the nominal dimension, the eye identity is either "X" or "R" or "L", and camera identity is either "M" or "S". If there is no dimension associated, then only "<variable>_<eye identity>_<camera identity>" will be used as column name. The same variables will be added for each eye (pupil). The only exception is timestmap, which will appear only once per data row. As for LSL V1 "Permissive" output, it is the same. The LSL XDF "Restrictive" output only contains a handful of output variables, and also holds only one timestamp channel. In other streaming output means, in any non-tabular formats (where each eye has an own small tree of variables contained) timestamp may appear for each eye.
+		- Raised Qt framework version to 6.8.3 LTS.
+		- Raised Pylon version to 8.1.0.
+		- Raised OpenCV dependency to version 4.11.
+		- Vcpkg baseline commit updated: on 2025.07.16 14:46 CET
+		- 
+		- Camera temperature checks are now indicated with a questionmark icon if temperature readings could not be obtained from the camera, or if they are invalid.
+		- On Windows, now the program is default built to require administrator privileges to run.
+		- Updated qcustomplot
+		
 	
     Deprecated:
 		...
@@ -14,7 +36,8 @@ Version 0.1.3. beta
 		...
 	
     Fixed:
-		...
+		- Bug that caused crash when an image recording was open, but the user clicked the Camera View window button.
+		- Fixed code and documentation about data container setting to be optional for streaming connection initiation.
 
 Version 0.1.2. beta
 

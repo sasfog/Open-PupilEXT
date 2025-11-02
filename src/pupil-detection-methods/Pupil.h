@@ -147,7 +147,8 @@ public:
         BRISQUEPDROI=-1.0;
         //BRISQUEPDInternal=-1.0;
 
-        // IMPORTANT: if you add anything new, be sure to update the object copy method, and constructors too
+        // IMPORTANT: if you add anything new, be sure to update the object copy method, and constructors too,
+        //  and also modify n_channels in the Permissive variant os LSL streaming channel allocation.
     }
 
     void resize(const float &xf, const float &yf) {

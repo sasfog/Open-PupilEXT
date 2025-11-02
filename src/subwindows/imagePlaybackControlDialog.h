@@ -76,8 +76,8 @@ private:
     QSpinBox* playbackFPSVal;
 
     QGroupBox *infoGroup;
-    //QLineEdit *timestampVal;
-    TimestampSpinBox *timestampVal;
+    //QLineEdit *timestampBox;
+    TimestampSpinBox *timestampBox;
     QSpinBox *selectedFrameBox;
     QLabel *timestampHumanValLabel;
     QLabel *numImagesTotalLabel;
@@ -105,6 +105,11 @@ private:
     QCheckBox *syncRecordCsvBox;
     QCheckBox *syncStreamBox;
 
+    bool exportingRecSection = false;
+    int exportSectionFromFrame = 1;
+    int exportSectionToFrame = 2;
+    int playbackSpeedBeforeExport = 30;
+
     void createForm();
     void enableWidgets();
     void disableWidgets();
@@ -130,6 +135,9 @@ public slots:
     void onPlaybackStartApproved();
     void onPlaybackPauseApproved();
     void onPlaybackStopApproved();
+
+    void startExportRecSection();
+    void endExportRecSection();
 
 private slots:
     void onStartPauseButtonClick();
@@ -169,6 +177,9 @@ signals:
 
     void cameraPlaybackChanged();
     void cameraPlaybackPositionChanged();
+
+    void exportAllowedToStart();
+    void exportAllowedToEnd();
 
 };
 

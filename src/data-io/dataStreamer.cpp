@@ -69,25 +69,30 @@ void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, Proc
         type = "EyeData";
         //type = "EyeDataFFT";
 
-        switch((ProcMode)procMode) {
-            case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-                n_channels = 13;
-                break;
-            case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-                n_channels = 25;
-                break;
-            case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-                n_channels = 25;
-                break;
-            case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-                n_channels = 48;
-                break;
-            // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-            //     //break;
-            default:
-                throw std::runtime_error("Proc Mode undetermined at LSL streaming start");
-            //    n_channels = 0;
-        }
+        auto aaaa = pupilDetection->getEyeIdentities().size();
+        auto bbbb = PDataTypes::dataOutputFields.size();
+
+        n_channels = pupilDetection->getEyeIdentities().size() * PDataTypes::dataOutputFields.size() - (pupilDetection->getEyeIdentities().size()-1);
+
+        //switch((ProcMode)procMode) {
+        //    case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+        //        n_channels = 15;
+        //        break;
+        //    case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+        //        n_channels = 29;
+        //        break;
+        //    case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+        //        n_channels = 29;
+        //        break;
+        //    case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+        //        n_channels = 56;
+        //        break;
+        //    // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        //    //     //break;
+        //    default:
+        //        throw std::runtime_error("Proc Mode undetermined at LSL streaming start");
+        //    //    n_channels = 0;
+        //}
     } else {
         throw std::runtime_error("Data Container undetermined at LSL streaming start");
     }
@@ -118,10 +123,11 @@ void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, Proc
     //  add some description fields
     //info.desc().append_child_value("manufacturer", "LSL");
 
+    // TODO: once PupilEXT hardware will be configurable, these could be filled out automatically
     lsl::xml_element acqs = info->desc().append_child("acquisition")
-            .append_child_value("manufacturer", "hahaha")
-            .append_child_value("model", "hahaha")
-            .append_child_value("serialnumber", type);
+            .append_child_value("manufacturer", "")
+            .append_child_value("model", "")
+            .append_child_value("serialnumber", "");
 
     // <label>
     // # label of the channel

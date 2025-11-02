@@ -34,7 +34,8 @@ MainWindow::MainWindow():
                           dataWriter(nullptr),
                           imageWriterThread(new QThread()),
                           imageWriter(nullptr),
-                          
+                          recSectionExporter(nullptr),
+
                           singleWebcamSettingsDialog(nullptr),
                           singleCameraChildWidget(nullptr),
                           stereoCameraChildWidget(nullptr),
@@ -151,6 +152,10 @@ MainWindow::MainWindow():
     //
     connect(imageWriter, SIGNAL (writingFailed()), this, SLOT (onImageWriterFailed()));
 
+    // Runs on GUI thread, okay for now
+    recSectionExporter = new RecSectionExporter(this);
+//    connect(recSectionExporter, SIGNAL (writingFailed()), this, SLOT (onRecSectionExporterFailed()));
+
     mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
@@ -242,6 +247,7 @@ MainWindow::MainWindow():
 
 void MainWindow::loadIcons() {
     fileOpenIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/document-open.svg"), applicationSettings);
+    exportRecSectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/tool-animator.svg"), applicationSettings);
 //    cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings);
     cameraSerialConnectionIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings);
     pupilDetectionSettingsIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/draw-circle.svg"), applicationSettings);
@@ -275,6 +281,14 @@ void MainWindow::createActions() {
     fileOpenAct->setIconVisibleInMenu(true);
     fileOpenAct->setStatusTip(tr("Open Image Directory for Playback. Single and Stereo Mode supported."));
     fileMenu->addAction(fileOpenAct);
+
+    exportRecSectionAct = fileMenu->addAction(tr("Export Recording Section"), this, &MainWindow::onExportRecSection);
+    exportRecSectionAct->setIcon(exportRecSectionIcon);
+    exportRecSectionAct->setIconVisibleInMenu(true);
+    exportRecSectionAct->setStatusTip(tr("Export a section of an existing Image Recording to animated .gif for presentation."));
+    fileMenu->addAction(exportRecSectionAct);
+    exportRecSectionAct->setEnabled(false);
+
     fileMenu->addSeparator();
 
     QAction *exitAct = fileMenu->addAction(tr("E&xit"), qApp, &QApplication::closeAllWindows);
@@ -986,7 +1000,7 @@ void MainWindow::setLogFile() {
     //file.close();
 
     if(trackingOn)
-        recordAct->setDisabled(false);
+        recordAct->setEnabled(!exportingRecSection);
 }
 
 void MainWindow::imageRecordingOutputDirectorySelected() {
@@ -1487,10 +1501,10 @@ void MainWindow::onTrackActClick() {
         trackAct->setIcon(trackOnIcon);
         trackingOn = true;
 
-        recordAct->setEnabled(!dataRecordingOutputTarget.isEmpty());
+        recordAct->setEnabled(!dataRecordingOutputTarget.isEmpty() && !exportingRecSection);
 
         // NOTE: streaming can only be enabled if the underlying connection is established, and tracking is on
-        streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+        streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() && !exportingRecSection);
     }
 
     if(stereoCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE)) {
@@ -1918,6 +1932,7 @@ void MainWindow::onCameraDisconnectClick() {
     }
 
     fileOpenAct->setEnabled(true);
+    exportRecSectionAct->setEnabled(false);
 
     if (selectedCamera && signalPubSubHandler) {
         disconnect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler,
@@ -2790,15 +2805,23 @@ void MainWindow::onOpenImageDirectory() {
         if (fileNames.isEmpty() && folderNames.size() < 2)
             return;
 
+        // Needed if we do not use the folder opener dialog, but the file opener dialog instead.
+        QDir imageDirUp = imageDir;
+        imageDirUp.cdUp();
+        QStringList folderNamesUp = imageDirUp.entryList(QStringList() << "0" << "1", QDir::Dirs);
+
         //qDebug() << fileNames;
 
-        if (folderNames.size() == 2) {
-            QDir stereo0Dir(imageDir.filePath("0"));
+        if (folderNamesUp.size() == 2) {
+            QDir stereo0Dir(imageDirUp.filePath("0"));
             if (stereo0Dir.isEmpty() || stereo0Dir.entryList(nameFilter, QDir::Files).isEmpty())
                 return;
-            QDir stereo1Dir(imageDir.filePath("1"));
+            QDir stereo1Dir(imageDirUp.filePath("1"));
             if (stereo1Dir.isEmpty() || stereo1Dir.entryList(nameFilter, QDir::Files).isEmpty())
                 return;
+
+            // if its really stereo
+            imageSource = imageDirUp.absolutePath();
         }
         //qDebug() << tempDir;
     }
@@ -2806,6 +2829,83 @@ void MainWindow::onOpenImageDirectory() {
     // NOTE: Yet we only pass this string, as the openImageFileSource function should be callable by
     //  remote control commands or specified in CMD arguments, where before we have no other checks
     openImageFileSource(imageSource, 0);
+}
+
+void MainWindow::onExportRecSection() {
+
+    // show dialog, and if it returns with "ok" response, do the export
+    ExportRecSectionDialog *dialog = new ExportRecSectionDialog(
+            "Export Recording Section",
+            dynamic_cast<FileCamera*>(selectedCamera),
+            this);
+    dialog->setModal(true);
+    // dialog->raise();
+    if(dialog->exec() != QDialog::Accepted)
+        return;
+
+    auto resp = dialog->getResponse();
+
+    if(resp != ExportRecSectionDialog::ExportRecSectionResponse::PERFORM)
+        return;
+
+    // ...
+
+    bool success = recSectionExporter->prepareExport(
+            selectedCamera->getImageROIwidth(),
+            selectedCamera->getImageROIheight(),
+            pupilDetectionWorker->getCurrentProcMode(),
+            recEventTracker);
+    if(!success)
+        return;
+
+    // TODO: this is ugly, we should just use a singleton class, also on on its own thread
+
+    if(!trackingOn)
+        connect(pupilDetectionWorker,
+                   SIGNAL(processedImageLowFPS(CameraImage)),
+                   recSectionExporter,
+                   SLOT(onNewImage(CameraImage)));
+    else
+        connect(pupilDetectionWorker,
+                SIGNAL (processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)),
+                recSectionExporter,
+                SLOT (onNewImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+
+    if(recordOn)
+        onRecordClick();
+    if(streamOn)
+        onStreamClick();
+
+    trackAct->setEnabled(false);
+
+    // TODO: connect some signals from the camera view window
+
+    imagePlaybackControlDialog->startExportRecSection();
+
+    exportingRecSection = true;
+    resetStatus(true);
+
+    // tell imagePlaybackControlDialog to rewind to set position, and play with export on.
+    // importantly, tracking can be enabled or disabled on the fly, etc, everything is the
+    // same as during regular playback, but with export now. Also importantly, do not re-loop, even if checked
+    // Also, no data recording this time, it is suppressed while export is going. Add note text for this
+
+}
+
+void MainWindow::onExportAllowedToEnd() {
+    exportingRecSection = false;
+    // trackAct->setEnabled(true);
+    resetStatus(true);
+    if(!trackingOn)
+        disconnect(pupilDetectionWorker,
+                SIGNAL(processedImageLowFPS(CameraImage)),
+                recSectionExporter,
+                SLOT(onNewImage(CameraImage)));
+    else
+        disconnect(pupilDetectionWorker,
+                SIGNAL (processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)),
+                recSectionExporter,
+                SLOT (onNewImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 }
 
 /*
@@ -2982,7 +3082,10 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
 
     QString recordingName = lst[lst.count()-1];
     QString recordingParentLocation = imageSource.chopped(recordingName.length());
-    QString suggestedCSVPathAndName = recordingParentLocation + '/' + recordingName + ".csv";
+    QString recordingNameBase = recordingName;
+    while(recordingNameBase.endsWith(".zip") && recordingNameBase.length() > 4)
+        recordingNameBase = recordingName.mid(0, recordingName.lastIndexOf('.'));
+    QString suggestedCSVPathAndName = recordingParentLocation + '/' + recordingNameBase + ".csv";
     PRGsetCsvPathAndName(suggestedCSVPathAndName);
 
     if(selectedCamera) {
@@ -3173,6 +3276,12 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     connect(this, SIGNAL(playbackPauseApproved()), imagePlaybackControlDialog, SLOT(onPlaybackPauseApproved()));
     connect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
 
+    // TODO: disconnects?
+    connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToEnd()), this, SLOT(onExportAllowedToEnd()));
+    connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToStart()), recSectionExporter, SLOT(onExportAllowedToStart()));
+    connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToEnd()), recSectionExporter, SLOT(onExportAllowedToEnd()));
+    // starting the exportRecSection is done by call, only result is watched here in mainwindow
+
     /*
     // GB: (old comment) moved here. Had to ensure that proc mode is correctly set before creating camera view (as now it relies on pupilDetection instance too)
     // GB: (later comment) Had to move it more way down, here. As it internally calls connectCameraPlaybackChangedSlots(); already, hence
@@ -3197,6 +3306,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     // If everything went fine
 
     fileOpenAct->setEnabled(false);
+    exportRecSectionAct->setEnabled(true);
     currentStatusMessageLabel->setText("Image file source: " + SupportFunctions::shortenStringForDisplay(imageSource, 100));
     currentStatusMessageLabel->setToolTip(imageSource);
     // We also store the recent path in QSettings
@@ -3532,7 +3642,7 @@ void MainWindow::onStreamingUDPConnect() {
     //            streamingSettingsDialog->getDataContainerUDP() );
     //    streamingSettingsDialog->setLimitationsWhileStreamingUDP(true);
     //}
-    streamAct->setEnabled(trackingOn);
+    streamAct->setEnabled(trackingOn && !exportingRecSection);
 }
 
 void MainWindow::onStreamingUDPDisconnect() {
@@ -3545,7 +3655,7 @@ void MainWindow::onStreamingUDPDisconnect() {
         }
     }
 
-    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() && !exportingRecSection);
 }
 
 void MainWindow::onStreamingCOMConnect() {
@@ -3559,7 +3669,7 @@ void MainWindow::onStreamingCOMConnect() {
     //            streamingSettingsDialog->getDataContainerCOM() );
     //    streamingSettingsDialog->setLimitationsWhileStreamingCOM(true);
     //}
-    streamAct->setEnabled(trackingOn);
+    streamAct->setEnabled(trackingOn && !exportingRecSection);
 }
 
 void MainWindow::onStreamingCOMDisconnect() {
@@ -3572,7 +3682,7 @@ void MainWindow::onStreamingCOMDisconnect() {
         }
     }
 
-    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() && !exportingRecSection);
 }
 
 #ifdef USE_LSL
@@ -3588,7 +3698,7 @@ void MainWindow::onStreamingLSLConnect() {
     //            );
     //    streamingSettingsDialog->setLimitationsWhileStreamingLSL(true);
     //}
-    streamAct->setEnabled(trackingOn);
+    streamAct->setEnabled(trackingOn && !exportingRecSection);
 }
 
 void MainWindow::onStreamingLSLDisconnect() {
@@ -3601,7 +3711,7 @@ void MainWindow::onStreamingLSLDisconnect() {
         }
     }
 
-    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+    streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() && !exportingRecSection);
 }
 #endif
 
@@ -3707,7 +3817,7 @@ void MainWindow::resetStatus(bool isConnect)
         logFileAct->setEnabled(true);
 
         // NOTE: streaming can only be enabled if the underlying connection is established, and tracking is on
-        streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected());
+        streamAct->setEnabled(trackingOn && streamingSettingsDialog && streamingSettingsDialog->isAnyConnected() && !exportingRecSection);
 
 //        cameraSettingsAct->setEnabled(false);
         cameraViewAct->setEnabled(true); // In the View menu
@@ -3719,11 +3829,15 @@ void MainWindow::resetStatus(bool isConnect)
         manualIncTrialAct->setEnabled(realCameraSelected);
         forceResetMessageAct->setEnabled(realCameraSelected);
 
+        exportRecSectionAct->setEnabled(selectedCamera && (selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE));
+
 //        streamingSettingsAct->setEnabled(true);
         trialWidget->setVisible(realCameraSelected);
         trialWidgetLayoutSep->setVisible(realCameraSelected);
         messageWidget->setVisible(realCameraSelected);
         messageWidgetLayoutSep->setVisible(realCameraSelected);
+
+        recordAct->setEnabled(!exportingRecSection);
     }
     else {
         cameraAct->setEnabled(true);
@@ -3751,12 +3865,15 @@ void MainWindow::resetStatus(bool isConnect)
         manualIncTrialAct->setEnabled(false);
         forceResetMessageAct->setEnabled(false);
 
+        exportRecSectionAct->setEnabled(false);
+
 //        streamingSettingsAct->setEnabled(false); / This should be enabled even if disconnected from camera
         trialWidget->setVisible(false);
         trialWidgetLayoutSep->setVisible(false);
         messageWidget->setVisible(false);
         messageWidgetLayoutSep->setVisible(false);
 
+        // NOTE: az alábbi 2-nek nincs ellenpárja. Jó ez így?
         recordAct->setEnabled(false); //
         cameraPlaying = true; //
         }

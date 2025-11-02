@@ -225,8 +225,8 @@ private:
     std::vector<PupilDetectionMethod*> pupilDetectionMethods3;
     std::vector<PupilDetectionMethod*> pupilDetectionMethods4;
 
-    QString BRISQUEModelFileNameRES = ":/3rdparty/models/brisque_model_live.yml";
-    QString BRISQUERangeFileNameRES = ":/3rdparty/models/brisque_range_live.yml";
+    QString BRISQUEModelFileNameRES = ":/3rdparty/models/BRISQUE/brisque_model_live.yml";
+    QString BRISQUERangeFileNameRES = ":/3rdparty/models/BRISQUE/brisque_range_live.yml";
     cv::Ptr<cv::quality::QualityBRISQUE> brisque;
 
     // NOTE:

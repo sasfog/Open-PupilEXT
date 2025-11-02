@@ -99,6 +99,12 @@ public:
     uint64_t getRecordingDuration() {
         return imageReader->getRecordingDuration();
     }
+    QString getRecordingName() {
+        return imageReader->getRecordingName();
+    }
+    QString getRecordingFullPath() {
+        return imageReader->getRecordingFullPath();
+    }
     void seekToFrame(int frameNumber, bool seekBackwards) {
         imageReader->seekToFrame(frameNumber, seekBackwards);
     }
@@ -119,6 +125,9 @@ public:
     }
     QString getMetaSnapshotContent() {
         return imageReader->getMetaSnapshotContent();
+    }
+    void startExportRecSection(int toFrame) {
+        imageReader->startExportRecSection(toFrame);
     }
 
     int getImageROIwidth() override;

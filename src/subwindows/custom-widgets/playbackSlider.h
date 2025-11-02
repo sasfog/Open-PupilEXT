@@ -29,6 +29,10 @@ class PlaybackSlider : public QSlider
     const uint rightDrawMargin = 5; //3;
 
     float colorTickPos = 0.0f; // between 0 and 1
+    float sectionFromPos = 0.0f; // between 0 and 1
+    float sectionToPos = 0.0f; // between 0 and 1
+
+    bool sectionVisible = false;
 
 public:
     void setColorTickPos(float value) {
@@ -40,15 +44,36 @@ public:
 
     PlaybackSlider() {};
 
+    void showSection(float fromPos, float toPos) {
+        sectionVisible = true;
+        sectionFromPos = fromPos;
+        sectionToPos = toPos;
+    };
+
+    void hideSection() {
+        sectionVisible = false;
+    };
+
 protected:
 
     void paintEvent(QPaintEvent * event) override {
         QPainter p{this};
-        
-        p.setPen({0, 200, 0});
+
         float width = (rect().right()-rightDrawMargin)-(rect().left()+leftDrawMargin);
-        int xPos = round(width*colorTickPos)+leftDrawMargin;
-        p.drawLine(xPos, rect().top(), xPos, rect().bottom());
+
+        // p.setPen({0, 200, 0});
+        // int xPos = round(width*colorTickPos)+leftDrawMargin;
+        // p.drawLine(xPos, rect().top(), xPos, rect().bottom());
+
+        if(sectionVisible) {
+            p.setPen({0, 200, 0});
+            int xPos1 = round(width * sectionFromPos) + leftDrawMargin;
+            p.drawLine(xPos1, rect().top(), xPos1, rect().bottom());
+
+            //p.setPen({0, 200, 0});
+            int xPos2 = round(width * sectionToPos) + leftDrawMargin;
+            p.drawLine(xPos1, rect().top(), xPos1, rect().bottom());
+        }
 
         QSlider::paintEvent(event);
     }

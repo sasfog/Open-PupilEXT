@@ -13,6 +13,7 @@
 #include "subwindows/singleCameraView.h"
 #include "data-io/dataWriter.h"
 #include "data-io/imageWriter.h"
+#include "data-io/recSectionExporter.h"
 #include "subwindows/generalSettingsDialog.h"
 #include "subwindows/subjectSelectionDialog.h"
 #include "subwindows/stereoCameraSettingsDialog.h"
@@ -48,6 +49,7 @@
 //#include <QtMultimedia/QCameraInfo>
 #include "subwindows/openZipChoiceDialog.h"
 #include "subwindows/threeChoiceDialog.h"
+#include "subwindows/exportRecSectionDialog.h"
 #include "adminPrivileges.h"
 
 #ifdef USE_PYLON
@@ -136,6 +138,7 @@ private:
     RestorableQMdiSubWindow *sceneImageWindow;
 
     QIcon fileOpenIcon;
+    QIcon exportRecSectionIcon;
     QIcon cameraSerialConnectionIcon;
     QIcon pupilDetectionSettingsIcon;
     QIcon setupGeometryIcon;
@@ -202,6 +205,7 @@ private:
     //bool playImagesOn = false; // NOTE: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
     bool cameraPlaying = true;
+    bool exportingRecSection = false;
 
     void loadIcons();
     void createActions();
@@ -224,6 +228,7 @@ private:
 
     DataWriter *dataWriter;
     ImageWriter *imageWriter;
+    RecSectionExporter *recSectionExporter;
     QThread *imageWriterThread;
 
     bool streamOn = false;
@@ -261,6 +266,7 @@ private:
     QSpinBox *webcamDeviceBox;
 
     QAction *fileOpenAct; // GB: made global to let it disable when image directory is already open
+    QAction *exportRecSectionAct;
     QAction *toggleFullscreenAct;
     QAction *streamingSettingsAct;
     QAction *streamAct;
@@ -332,6 +338,8 @@ private slots:
     void onCameraCalibrationDisabled();
 
     void onOpenImageDirectory();
+    void onExportRecSection();
+    void onExportAllowedToEnd();
 
     void onCameraClick();
     void onImageRecordingOutputClick();

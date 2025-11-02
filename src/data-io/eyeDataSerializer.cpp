@@ -222,6 +222,7 @@ QString EyeDataSerializer::getHeaderCSV(const std::vector<QChar> &eyeIdentities,
     //result = result % "algorithm" % delim;
 
     // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    bool isTimestampAlreadyAdded = false;
     for(int i = 0; i < eyeIdentities.size(); i++) {
         for(auto v : PDataTypes::dataOutputFields) {
             QString ds = "";
@@ -230,9 +231,10 @@ QString EyeDataSerializer::getHeaderCSV(const std::vector<QChar> &eyeIdentities,
             }
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(v == PDataType::TIME_RAW_TIMESTAMP)
+            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
                 result = result % "timestamp_ms" % delim;
-            else
+                isTimestampAlreadyAdded = true;
+            } else
                 result = result % PDataTypes::tyn.at(v) % ds % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
         }
     }
@@ -298,6 +300,7 @@ void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<QChar> &eyeIdent
     //        .append_child_value("type", "timestamp").append_child_value("unit", "ms");
 
     // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    bool isTimestampAlreadyAdded = false;
     for(int i = 0; i < eyeIdentities.size(); i++) {
         eyeStr = "both";
         if(eyeIdentities[i] == 'R')
@@ -309,10 +312,11 @@ void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<QChar> &eyeIdent
         for(auto v : PDataTypes::dataOutputFields) {
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(v == PDataType::TIME_RAW_TIMESTAMP)
+            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
                 chns.append_child("channel").append_child_value("label", "timestamp")
                         .append_child_value("type", "timestamp").append_child_value("unit", "ms");
-            else
+                isTimestampAlreadyAdded = true;
+            } else
                 chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(v).toStdString()).append_child_value("eye", eyeStr)
                     .append_child_value("type", PDataTypes::tytXDF.at(v).toStdString()).append_child_value("unit", PDataTypes::tyd.at(v).toStdString()).append_child_value("camera", camStr);
         }
@@ -342,7 +346,7 @@ void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<QChar> &eyeIdent
         //chns.append_child("channel").append_child_value("label", "outlineConfidence").append_child_value("eye", eyeStr)
         //        .append_child_value("type", "confidence").append_child_value("unit", "").append_child_value("camera", camStr);
     }
-
+    //auto hahaha = info->as_xml();
     //"trial"
     //"message"
     //"cameraTemperature_M_c"
@@ -433,13 +437,15 @@ std::vector<double> EyeDataSerializer::pupilToLSLsample_V1(quint64 timestamp, co
     //result.push_back((double)(timestamp));
 
     // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    bool isTimestampAlreadyAdded = false;
     for(int i = 0; i < Pupils.size(); i++) {
         for(auto v : PDataTypes::dataOutputFields) {
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(v == PDataType::TIME_RAW_TIMESTAMP)
-                result.push_back((double)(timestamp));
-            else
+            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
+                result.push_back((double) (timestamp));
+                isTimestampAlreadyAdded = true;
+            } else
                 result.push_back(Pupils[i].getPData(v));
         }
     }
@@ -458,13 +464,15 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
     //result = result % delim % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName);
 
     // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
+    bool isTimestampAlreadyAdded = false;
     for(int i = 0; i < Pupils.size(); i++) {
         for(auto v : PDataTypes::dataOutputFields) {
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(v == PDataType::TIME_RAW_TIMESTAMP)
+            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
                 result = result % QString::number(timestamp);
-            else
+                isTimestampAlreadyAdded = true;
+            } else
                 result = result % delim % QString::number(Pupils[i].getPData(v));
         }
     }

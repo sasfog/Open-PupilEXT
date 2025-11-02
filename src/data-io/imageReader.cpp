@@ -120,6 +120,10 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         QDir imageSourceDir = QDir(imageSource);
         QList<QFileInfo> fil;
 
+        //// Needed if we do not use the folder opener dialog, but the file opener dialog instead.
+        //QDir imageSourceDirUp = imageSourceDir;
+        //imageSourceDirUp.cdUp();
+
         // Check if in imageSource, a stereo structure with directories 0 and 1 for main and secondary camera are present
         if (imageSourceDir.exists("0") && imageSourceDir.exists("1")) {
             stereoMode = true;
@@ -235,6 +239,10 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         foundImageHeight = checkImg.rows;
     }
     */
+
+    QStringList lst = imageSource.split('/');
+    imageRecordingName = lst[lst.count()-1];
+    imageRecordingFullPath = imageSource;
 
     setPlaybackSpeed(playbackSpeed);
 }
@@ -612,6 +620,9 @@ ImageReader::~ImageReader() {
         avcodec_free_context(&vctx);
         av_packet_free(&pkt); // not to be confused with av_packet_unref(), that has to be done often, this not
     }
+
+    imageRecordingName = "";
+    imageRecordingFullPath = "";
 }
 
 bool ImageReader::quickReadImageSingle(cv::Mat &img, const int &imageIndex) {
@@ -934,9 +945,10 @@ void ImageReader::run() {
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
         // to signal when we automatically reached the end
-        if(currentImageIndex == acqTimestamps.size()){
+        if(currentImageIndex == acqTimestamps.size() || (exportingRecSection && exportSectionToFrame >= currentImageIndex)){
             emit endReached();
             lastCommissionedFrameNumber = -1; // corner case
+            exportingRecSection = false;
         }
         currentImageIndex = 0;
 //        qDebug() << "finished()";

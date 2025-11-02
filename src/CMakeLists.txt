@@ -147,6 +147,8 @@ list(APPEND ALL_SOURCES_TO_ADD
         subwindows/QJsonModel/QUtf8.hpp
         subwindows/openZipChoiceDialog.h
         subwindows/openZipChoiceDialog.cpp
+        data-io/recSectionExporter.h data-io/recSectionExporter.cpp
+        subwindows/exportRecSectionDialog.h
 )
 
 if(USE_PYLON)

@@ -158,6 +158,3 @@ Screen(window,'Flip');
 KbWait_c(KbName('space'));
     
 Screen('CloseAll');
-
-
-
