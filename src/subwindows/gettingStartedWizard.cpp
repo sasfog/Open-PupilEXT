@@ -66,16 +66,19 @@ QWizardPage* GettingStartedWizard::createIntro01() {
     logoButton->setIcon(QIcon(":/icons/PupilEXT-Logo.png"));
 
     QLabel *label = new QLabel(tr("<b>%1 Version: %2 </b> is an open source application for pupillometry.<br><br>"
-                                  "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (2021). "
+                                  "Gábor L. Bényei, Attila B. Boncsér, Péter Pajkossy (<b>2024</b>). "
+                                  "Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform.</br>"
+                                  " ECEM2024, 22nd European Conference on Eye Movements. doi:10.13140/RG.2.2.33761.93284.<br><br>"
+                                  "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (<b>2021</b>). "
                                   "PupilEXT: Flexible Open-Source Platform for High-Resolution Pupil Measurement in Vision Research.</br>"
                                   " Frontiers in Neuroscience. doi:10.3389/fnins.2021.676220."
-                                  "<br><br>Consider to cite our work, if you find this tool useful for your research. "
+                                  "<br><br>Consider to cite our works, if you find this tool useful for your research. "
                                   "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br><br>"
                                   "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
                                   ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
                                   " Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses (see GitHub repository).<br><br>"
                                   "<b>This release was built from the Experimental Community Version branch source code</b>, "
-                                  "contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
+                                  "contributed by Gábor Bényei and Attila Boncsér as of 2025. Please always cite the original 2021 paper as well.<br><br>"
     ).arg(QCoreApplication::applicationName(),QCoreApplication::applicationVersion()));
 
     QHBoxLayout *appSettingsRow = new QHBoxLayout();
