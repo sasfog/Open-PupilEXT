@@ -546,7 +546,8 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
 
     if(str[0].toLower() == 'i' && str.size()>=3) { // changing camera-related and Image acquisition settings
         if(str[1].toLower() == 't' && str.size()>=4) { // set image acquisition triggering mode
-            if(str[3].toLower() == 'h') { // hardware-based triggering
+            if(str[3].toLower() == '1' || str[3].toLower() == 'h' ||
+                (str.size()>=7 && (str.mid(3,4) == "true") ) ) { // hardware-based triggering
                 w->PRGenableHWT(true);
             } else if(str[3].toLower() == 's') { // software-based triggering
                 w->PRGenableHWT(false);

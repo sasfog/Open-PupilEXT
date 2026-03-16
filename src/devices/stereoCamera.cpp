@@ -2,6 +2,7 @@
 #include "stereoCamera.h"
 #include "camTempMonitor.h"
 #include <QThread>
+#include <QDebug>
 
 #ifdef USE_PYLON
 #include <pylon/TlFactory.h>
@@ -201,7 +202,7 @@ void StereoCamera::open(bool enableHardwareTrigger) {
         //if (cameras[0].CanWaitForFrameTriggerReady() && cameras[1].CanWaitForFrameTriggerReady()) {
             startGrabbing();
         //} else {
-        //    std::cout << "Cameras can not be queried whether it is ready to accept the next frame trigger.";
+        //    qDebug() << "Cameras can not be queried whether it is ready to accept the next frame trigger.";
         //}
 
         // Rewrite these properties in the cameras in order to be able to read ResultingFramerate later
@@ -256,16 +257,17 @@ void StereoCamera::synchronizeTime() {
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);
     std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
 
-    std::cout << "Camera Synchronize Time" << std::endl << "=========================" << std::endl;
-    std::cout << "Timestamp Camera Main: " << cameraMainTime << std::endl;
-    std::cout << "Timestamp Camera Secondary: " << cameraSecondaryTime << std::endl;
-    std::cout << "Timestamp System: " << systemTime << std::endl;
-    std::cout << "System Epoch: " << std::ctime(&epochTime) << std::endl;
-    std::cout << "System Time: " << std::ctime(&startTime) << std::endl;
-    std::cout << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "Time from Epoch (ns): " << std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "=========================" << std::endl;
+    qInfo() << "Camera Synchronize Time";
+    qInfo() << "=========================";
+    qInfo() << "Timestamp Camera Main: " << cameraMainTime;
+    qInfo() << "Timestamp Camera Secondary: " << cameraSecondaryTime;
+    qInfo() << "Timestamp System: " << systemTime;
+    qInfo() << "System Epoch: " << std::ctime(&epochTime);
+    qInfo() << "System Time: " << std::ctime(&startTime);
+    qInfo() << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+    qInfo() << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count();
+    qInfo() << "Time from Epoch (ns): " << std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
+    qInfo() << "=========================";
 }
 
 
@@ -276,7 +278,7 @@ bool StereoCamera::isOpen() {
 // Close the stereo camera and release all Pylon resources
 void StereoCamera::close() {
 
-    std::cout << "StereoCamera: Releasing pylon resources.";
+    qDebug() << "StereoCamera: Releasing pylon resources.";
     cameras.StopGrabbing();
 
 //    for(int i = 0; i<cameras.GetSize(); i++) {
@@ -425,7 +427,7 @@ void StereoCamera::setExposureTimeValue(int value) {
         if (isEmulated()) {
             if (cameras.GetSize() == 2 && cameras[0].ExposureTimeAbs.IsWritable() &&
                 cameras[1].ExposureTimeAbs.IsWritable() && value != 0) {
-                std::cout << "Writing exposure value: " << value << std::endl;
+                qDebug() << "Writing exposure value: " << value;
 
                 // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
                 //  Also correct Aravis implementation for this
@@ -448,7 +450,7 @@ void StereoCamera::setExposureTimeValue(int value) {
             }
             if (cameras.GetSize() == 2 && cameras[0].ExposureTime.IsWritable() &&
                 cameras[1].ExposureTime.IsWritable()) {
-                std::cout << "Writing exposure value: " << value << std::endl;
+                qDebug() << "Writing exposure value: " << value;
                 cameras[0].ExposureTime.TrySetValue(value);
                 cameras[1].ExposureTime.TrySetValue(value);
             }
@@ -656,14 +658,14 @@ void StereoCamera::autoGainOnce() {
                 // Carry out luminance control by using the "once" gain auto function.
                 // For demonstration purposes only, set the gain to an initial value. TODO
 
-                std::cout << "Starting AutoGain..." << std::endl;
+                qDebug() << "Starting AutoGain...";
 
                 //camera.Gain.SetToMaximum();
                 cameras[0].Gain.TrySetToMaximum();
 
 
                 if (!cameras[0].GainAuto.IsWritable()) {
-                    std::cout << "The camera does not support Gain Auto." << std::endl;
+                    qDebug() << "The camera does not support Gain Auto.";
                     return;
                 }
 
@@ -700,8 +702,8 @@ void StereoCamera::autoGainOnce() {
 
                     // We are going to try GainAuto = Once.
 
-                    std::cout << "Trying 'GainAuto = Once'." << std::endl;
-                    std::cout << "Initial Gain = " << cameras[0].Gain.GetValue() << std::endl;
+                    qDebug() << "Trying 'GainAuto = Once'.";
+                    qDebug() << "Initial Gain = " << cameras[0].Gain.GetValue();
 
                     // Set the gain ranges for luminance control.
                     cameras[0].AutoGainLowerLimit.TrySetValue(cameras[0].Gain.GetMin());
@@ -727,10 +729,10 @@ void StereoCamera::autoGainOnce() {
                     }
                 }
 
-                std::cout << "GainAuto went back to 'Off' after " << n << " frames." << std::endl;
+                qDebug() << "GainAuto went back to 'Off' after " << n << " frames.";
                 if(cameras[0].Gain.IsReadable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
                 {
-                    std::cout << "Final Gain = " << cameras[0].Gain.GetValue() << std::endl;
+                    qDebug() << "Final Gain = " << cameras[0].Gain.GetValue();
                 }
 
                 // set Gain value for second camera
@@ -783,7 +785,7 @@ void StereoCamera::autoExposureOnce() {
 
                 if (!cameras[0].ExposureAuto.IsWritable())
                 {
-                    std::cout << "The camera does not support Exposure Auto." << std::endl;
+                    qDebug() << "The camera does not support Exposure Auto.";
                     return;
                 }
 
@@ -818,9 +820,9 @@ void StereoCamera::autoExposureOnce() {
                     cameras[0].AutoTargetBrightness.TrySetValue(0.3);
 
                     // Try ExposureAuto = Once.
-                    std::cout << "Trying 'ExposureAuto = Once'." << std::endl;
-                    std::cout << "Initial exposure time = ";
-                    std::cout << cameras[0].ExposureTime.GetValue() << " us" << std::endl;
+                    qDebug() << "Trying 'ExposureAuto = Once'.";
+                    qDebug() << "Initial exposure time = ";
+                    qDebug() << cameras[0].ExposureTime.GetValue() << " us";
 
                     // Set the exposure time ranges for luminance control.
                     cameras[0].AutoExposureTimeLowerLimit.TrySetValue(cameras[0].AutoExposureTimeLowerLimit.GetMin());
@@ -847,12 +849,12 @@ void StereoCamera::autoExposureOnce() {
                     }
                 }
 
-                std::cout << "ExposureAuto went back to 'Off' after " << n << " frames." << std::endl;
-                std::cout << "Final exposure time = ";
+                qDebug() << "ExposureAuto went back to 'Off' after " << n << " frames.";
+                qDebug() << "Final exposure time = ";
 
                 if (cameras[0].ExposureTime.IsReadable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
                 {
-                    std::cout << cameras[0].ExposureTime.GetValue() << " us" << std::endl;
+                    qDebug() << cameras[0].ExposureTime.GetValue() << " us";
                 }
 
                 // Set value of second camera
@@ -891,17 +893,18 @@ CameraImageType StereoCamera::getType() {
     return CameraImageType::LIVE_STEREO_CAMERA;
 }
 
-void StereoCamera::startGrabbing()
-{
+void StereoCamera::startGrabbing() {
     if (cameras.IsOpen() && !cameras.IsGrabbing()) {
         cameras.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
     }
+    qDebug() << "Grabbing started";
 }
 
-void StereoCamera::stopGrabbing()
-{
-    if (cameras.IsOpen() && cameras.IsGrabbing())
+void StereoCamera::stopGrabbing() {
+    if (cameras.IsOpen() && cameras.IsGrabbing()) {
         cameras.StopGrabbing();
+    }
+    qDebug() << "Grabbing stopped";
 }
 
 // Returns a list of the friendly device names of the connected cameras
@@ -934,8 +937,7 @@ void StereoCamera::loadCalibrationFile() {
     QString configFile = getCalibrationFilename();
     configFile.replace(" ", "");
     if (QFile::exists(configFile)) {
-        std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
-                  << std::endl;
+        qDebug() << "Found calibration file in settings directory. Loading: " << configFile.toStdString();
         cameraCalibration->loadFromFile(configFile.toStdString().c_str());
     }
 }
@@ -980,7 +982,7 @@ int StereoCamera::getImageROIheight() {
         int val0 = (int) cameras[0].Height.GetValue();
         int val1 = (int) cameras[1].Height.GetValue();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI height of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            qDebug() << "Image acquisition ROI height of the two cameras are not the same. Now resetting both to the lower value.";
             int minVal = (val0 < val1) ? val0 : val1;
             cameras[0].Height.TrySetValue(minVal);
             cameras[1].Height.TrySetValue(minVal);
@@ -1001,7 +1003,7 @@ int StereoCamera::getImageROIoffsetX() {
         int val0 = (int) cameras[0].OffsetX.GetValue();
         int val1 = (int) cameras[1].OffsetX.GetValue();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI offsetX of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            qDebug() << "Image acquisition ROI offsetX of the two cameras are not the same. Now resetting both to the lower value.";
             int minVal = (val0 < val1) ? val0 : val1;
             cameras[0].OffsetX.TrySetValue(minVal);
             cameras[1].OffsetX.TrySetValue(minVal);
@@ -1041,7 +1043,7 @@ int StereoCamera::getImageROIoffsetY() {
         int val0 = (int) cameras[0].OffsetY.GetValue();
         int val1 = (int) cameras[1].OffsetY.GetValue();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI offsetY of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            qDebug() << "Image acquisition ROI offsetY of the two cameras are not the same. Now resetting both to the lower value.";
             int minVal = (val0 < val1) ? val0 : val1;
             cameras[0].OffsetY.TrySetValue(minVal);
             cameras[1].OffsetY.TrySetValue(minVal);
@@ -1086,7 +1088,7 @@ int StereoCamera::getImageROIwidthMax() {
         int val0 = (int) cameras[0].WidthMax.GetValue();
         int val1 = (int) cameras[1].WidthMax.GetValue();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI max width of the two cameras are not the same. Now using the lower (safer) value." << std::endl;
+            qDebug() << "Image acquisition ROI max width of the two cameras are not the same. Now using the lower (safer) value.";
             if (val0 > val1)
                 val0 = val1;
         }
@@ -1106,7 +1108,7 @@ int StereoCamera::getImageROIwidthInc() {
         int val0 = (int) cameras[0].Width.GetInc();
         int val1 = (int) cameras[1].Width.GetInc();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI width increment of the two cameras are not the same. Now using the higher (safer) value." << std::endl;
+            qDebug() << "Image acquisition ROI width increment of the two cameras are not the same. Now using the higher (safer) value.";
             if (val0 < val1)
                 val0 = val1;
         }
@@ -1131,7 +1133,7 @@ int StereoCamera::getImageROIheightMax() {
         int val0 = (int) cameras[0].HeightMax.GetValue();
         int val1 = (int) cameras[1].HeightMax.GetValue();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI max height of the two cameras are not the same. Now using the lower (safer) value." << std::endl;
+            qDebug() << "Image acquisition ROI max height of the two cameras are not the same. Now using the lower (safer) value.";
             if (val0 > val1)
                 val0 = val1;
         }
@@ -1151,7 +1153,7 @@ int StereoCamera::getImageROIheightInc() {
         int val0 = (int) cameras[0].Height.GetInc();
         int val1 = (int) cameras[1].Height.GetInc();
         if (val0 != val1) {
-            std::cout << "Image acquisition ROI height increment of the two cameras are not the same. Now using the higher (safer) value." << std::endl;
+            qDebug() << "Image acquisition ROI height increment of the two cameras are not the same. Now using the higher (safer) value.";
             if (val0 < val1)
                 val0 = val1;
         }
@@ -1213,7 +1215,7 @@ int StereoCamera::getBinningVal() {
         int b0 = (int) cameras[0].BinningHorizontal.GetValue();
         int b1 = (int) cameras[1].BinningHorizontal.GetValue();
         if (b0 != b1) {
-            std::cout << "Image acquisition horizontal binning of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            qDebug() << "Image acquisition horizontal binning of the two cameras are not the same. Now resetting both to the lower value.";
             setBinningVal(b0);
         }
         return b0;
@@ -1233,7 +1235,7 @@ int StereoCamera::getBinningMax() {
         int b0 = (int) cameras[0].BinningHorizontal.GetMax();
         int b1 = (int) cameras[1].BinningHorizontal.GetMax();
         if (b0 != b1) {
-            std::cout << "Image acquisition horizontal binning maximum of the two cameras are not the same." << std::endl;
+            qDebug() << "Image acquisition horizontal binning maximum of the two cameras are not the same.";
             return 1;
         }
         return b0;
@@ -1357,19 +1359,19 @@ bool StereoCamera::setBinningVal(int value) {
                 cameras[0].BinningVertical.TrySetValue(2) &&
                 cameras[1].BinningHorizontal.TrySetValue(2) &&
                 cameras[1].BinningVertical.TrySetValue(2);
-            std::cout << "Setting binning to 2 on both axes"<< std::endl;
+            qDebug() << "Setting binning to 2 on both axes";
         } else if(value==4) {
             success = cameras[0].BinningHorizontal.TrySetValue(4) &&
                 cameras[0].BinningVertical.TrySetValue(4) &&
                 cameras[1].BinningHorizontal.TrySetValue(4) &&
                 cameras[1].BinningVertical.TrySetValue(4);
-            std::cout << "Setting binning to 4 on both axes"<< std::endl;
+            qDebug() << "Setting binning to 4 on both axes";
         } else { //if(value==1) {
             success = cameras[0].BinningHorizontal.TrySetValue(1) &&
                 cameras[0].BinningVertical.TrySetValue(1) &&
                 cameras[1].BinningHorizontal.TrySetValue(1) &&
                 cameras[1].BinningVertical.TrySetValue(1);
-            std::cout << "Setting binning to 1 (no binning) on both axes"<< std::endl;
+            qDebug() << "Setting binning to 1 (no binning) on both axes";
         }
     }
     startGrabbing();
@@ -1382,7 +1384,7 @@ bool StereoCamera::setImageROIwidth(int width) {
         return false;
     }
 
-    //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
+    //qDebug() << "Setting both cameras Image ROI width=" << std::to_string(width);
     bool success = false;
 
     if(cameras.IsGrabbing())
@@ -1414,7 +1416,7 @@ bool StereoCamera::setImageROIheight(int height) {
         return false;
     }
 
-    //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
+    //qDebug() << "Setting both cameras Image ROI height=" << std::to_string(height);
     bool success = false;
 
     if(cameras.IsGrabbing())
@@ -1446,7 +1448,7 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
         return false;
     }
 
-    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
     bool success = false;
 
     if(cameras.IsGrabbing())
@@ -1476,7 +1478,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
         return false;
     }
     
-    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
     bool success = false;
 
     if(cameras.IsGrabbing())
@@ -1505,7 +1507,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
+//    //qDebug() << "Setting both cameras Image ROI width=" << std::to_string(width);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -1538,7 +1540,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
+//    //qDebug() << "Setting both cameras Image ROI height=" << std::to_string(height);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -1571,7 +1573,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+//    //"Setting Image ROI offsetX=" << std::to_string(offsetX);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -1601,7 +1603,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+//    //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -1994,7 +1996,7 @@ void StereoCamera::open(bool enableHardwareTrigger) {
         //if (cameras[0].CanWaitForFrameTriggerReady() && cameras[1].CanWaitForFrameTriggerReady()) {
             startGrabbing();
         //} else {
-        //    std::cout << "Camera can not be queried whether it is ready to accept the next frame trigger.";
+        //    qDebug() << "Camera can not be queried whether it is ready to accept the next frame trigger.";
         //}
 
         // Rewrite these properties in the cameras in order to be able to read ResultingFramerate later
@@ -2051,16 +2053,17 @@ void StereoCamera::synchronizeTime() {
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);
     std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
 
-    std::cout << "Camera Synchronize Time" << std::endl << "=========================" << std::endl;
-    std::cout << "Timestamp Camera Main: " << cameraMainTime << std::endl;
-    std::cout << "Timestamp Camera Secondary: " << cameraSecondaryTime << std::endl;
-    std::cout << "Timestamp System: " << systemTime << std::endl;
-    std::cout << "System Epoch: " << std::ctime(&epochTime) << std::endl;
-    std::cout << "System Time: " << std::ctime(&startTime) << std::endl;
-    std::cout << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "Time from Epoch (ns): " << std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "=========================" << std::endl;
+    qInfo() << "Camera Synchronize Time";
+    qInfo() << "=========================";
+    qInfo() << "Timestamp Camera Main: " << cameraMainTime;
+    qInfo() << "Timestamp Camera Secondary: " << cameraSecondaryTime;
+    qInfo() << "Timestamp System: " << systemTime;
+    qInfo() << "System Epoch: " << std::ctime(&epochTime);
+    qInfo() << "System Time: " << std::ctime(&startTime);
+    qInfo() << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+    qInfo() << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count();
+    qInfo() << "Time from Epoch (ns): " << std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
+    qInfo() << "=========================";
      */
 }
 
@@ -2074,7 +2077,7 @@ bool StereoCamera::isOpen() {
 // Close the stereo camera and release all Pylon resources
 void StereoCamera::close() {
 
-    std::cout << "StereoCamera: Releasing resources.";
+    qDebug() << "StereoCamera: Releasing resources.";
 
     // TODO: might not necessarily happen here
     stopGrabbing();
@@ -2090,7 +2093,7 @@ void StereoCamera::close() {
 
     /*
 
-    std::cout << "StereoCamera: Releasing pylon resources.";
+    qDebug() << "StereoCamera: Releasing pylon resources.";
     cameras.StopGrabbing();
 
 //    for(int i = 0; i<cameras.GetSize(); i++) {
@@ -2980,8 +2983,7 @@ void StereoCamera::loadCalibrationFile() {
     QString configFile = getCalibrationFilename();
     configFile.replace(" ", "");
     if (QFile::exists(configFile)) {
-        std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
-                  << std::endl;
+        qDebug() << "Found calibration file in settings directory. Loading: " << configFile.toStdString();
         cameraCalibration->loadFromFile(configFile.toStdString().c_str());
     }
 }
@@ -3648,7 +3650,7 @@ bool StereoCamera::setBinningVal(int value) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIwidth(int width) {
-    //std::cout << "Setting Image ROI width=" << std::to_string(width) << std::endl;
+    //qDebug() << "Setting Image ROI width=" << std::to_string(width);
     bool success = false;
 
     stopGrabbing();
@@ -3667,13 +3669,13 @@ bool StereoCamera::setImageROIwidth(int width) {
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
 
-    //std::cout << "width = " << width << std::endl;
-    //std::cout << "maxWidth = " << maxWidth << std::endl;
-    //std::cout << "offsetX = " << offsetX << std::endl;
-    //std::cout << "getImageROIwidthMax() = " << getImageROIwidthMax() << std::endl;
-    //std::cout << "getImageROIwidthInc() = " << getImageROIwidthInc() << std::endl;
-    //std::cout << "modVal = " << modVal << std::endl;
-    //std::cout << "bestWidth = " << bestWidth << std::endl;
+    //qDebug() << "width = " << width;
+    //qDebug() << "maxWidth = " << maxWidth;
+    //qDebug() << "offsetX = " << offsetX;
+    //qDebug() << "getImageROIwidthMax() = " << getImageROIwidthMax();
+    //qDebug() << "getImageROIwidthInc() = " << getImageROIwidthInc();
+    //qDebug() << "modVal = " << modVal;
+    //qDebug() << "bestWidth = " << bestWidth;
 
     GError *error = nullptr;
     try {
@@ -3700,7 +3702,7 @@ bool StereoCamera::setImageROIwidth(int width) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIheight(int height) {
-    //std::cout << "Setting Image ROI height=" << std::to_string(height) << std::endl;
+    //qDebug() << "Setting Image ROI height=" << std::to_string(height);
     bool success = false;
 
     stopGrabbing();
@@ -3744,7 +3746,7 @@ bool StereoCamera::setImageROIheight(int height) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIoffsetX(int offsetX) {
-    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
     bool success = false;
 
     stopGrabbing();
@@ -3790,7 +3792,7 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIoffsetY(int offsetY) {
-    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
     bool success = false;
 
     stopGrabbing();
@@ -3841,7 +3843,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
+//    //qDebug() << "Setting both cameras Image ROI width=" << std::to_string(width);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -3876,7 +3878,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
+//    //qDebug() << "Setting both cameras Image ROI height=" << std::to_string(height);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -3911,7 +3913,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+//    //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())
@@ -3943,7 +3945,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
 //        return false;
 //    }
 //
-//    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+//    //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
 //    bool success = false;
 //
 //    if(cameras.IsGrabbing())

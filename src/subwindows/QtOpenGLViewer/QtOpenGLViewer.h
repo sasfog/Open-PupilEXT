@@ -38,7 +38,8 @@
 //      pattogva fog mozogni, még akkor is ha csak forgatjuk később, úgy marad. Valami kerekítési oka lehet, de nem
 //      találom hol. Amikor a z tengellyel szemben áll a kamera akkor minimális a pattoágs,
 //      és minél jobban el van forogva, annál nagyobb, ehhez lehet köze.
-//      DE érdekes módon a camera téglatestje nem csinálja ezt, csak minden más
+//      DE érdekes módon a camera téglatestje nem csinálja ezt, csak minden más.
+//      És úgy vettem észre release alatt nem, csak debug buildnél.
 
 enum OpenGLPrimitiveType {
     //POINT = 0,
@@ -197,7 +198,7 @@ public slots:
 
     void addToScene(GUIGeom geom) {
         _GUIGeoms.push_back(geom);
-        qDebug() << "added geom " << geom.a << "; " << geom.dimItem->value() << "; " << geom.locItem->value() << "; " << geom.rotItem->value();
+        //qDebug() << "added geom " << geom.a << "; " << geom.dimItem->value() << "; " << geom.locItem->value() << "; " << geom.rotItem->value();
     };
     
 protected:

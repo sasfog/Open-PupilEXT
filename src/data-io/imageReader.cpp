@@ -158,14 +158,14 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         if( QFileInfo(fPathAndName).exists() ) {
             QFile f(fPathAndName);
             if (!f.open(QIODevice::ReadOnly)) {
-                std::cout << "Could not open XML file. Check file availability or file access permission.";
+                qDebug() << "Could not open XML file. Check file availability or file access permission.";
 
                 fPathAndName = suggestedXmlsLocation + '/' + "offline-event-log.xml";
                 qDebug() << "Trying again with expected offline event log fPathAndName = " << fPathAndName;
                 if( QFileInfo(fPathAndName).exists() ) {
                     QFile g(fPathAndName);
                     if (!g.open(QIODevice::ReadOnly)) {
-                        std::cout << "Could not open XML file. Check file availability or file access permission.";
+                        qDebug() << "Could not open XML file. Check file availability or file access permission.";
                     } else {
                         offlineEventLogContent = g.readAll();
                     }
@@ -180,14 +180,14 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         if( QFileInfo(fPathAndName).exists() ) {
             QFile f(fPathAndName);
             if (!f.open(QIODevice::ReadOnly)) {
-                std::cout << "Could not open XML file. Check file availability or file access permission.";
+                qDebug() << "Could not open XML file. Check file availability or file access permission.";
 
                 fPathAndName = suggestedXmlsLocation + '/' + "imagerec-meta.xml";
                 qDebug() << "Trying again with expected image rec meta snapshot fPathAndName = " << fPathAndName;
                 if( QFileInfo(fPathAndName).exists() ) {
                     QFile g(fPathAndName);
                     if (!g.open(QIODevice::ReadOnly)) {
-                        std::cout << "Could not open XML file. Check file availability or file access permission.";
+                        qDebug() << "Could not open XML file. Check file availability or file access permission.";
                     } else {
                         metaSnapshotContent = g.readAll();
                     }
@@ -703,7 +703,7 @@ bool ImageReader::quickReadImageSingle(cv::Mat &img, const int &imageIndex) {
                 avcodec_send_packet(vctx, nullptr);
 
                 while (avcodec_receive_frame(vctx, frame) == 0) {
-                    std::cout << "Found remaining frames" << std::endl;
+                    qDebug() << "Found remaining frames";
                 }
                 av_frame_unref(frame); // I dont think free is necessary yet
 
@@ -898,7 +898,7 @@ void ImageReader::run() {
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
     while(currentImageIndex < acqTimestamps.size()) {
         if (state != PlaybackState::PLAYING) {
-//            qDebug() << "Image Reader: Run Loop found Stop/Pause signal" ;
+//            qInfo() << "Image Reader: Run Loop found Stop/Pause signal" ;
             break;
         }
 
@@ -930,12 +930,18 @@ void ImageReader::run() {
             currentImageIndex++;
 
         } else if (!img.data){
-//            std::cerr << "Image Reader: Image could not be read, skipping: " << fileNames[0][currentImageIndex] ;
+            qWarning() << "Image Reader: Image could not be read, skipping: " << fileNames[0][currentImageIndex];
             currentImageIndex++;
 
         } if (playbackLoop && currentImageIndex == acqTimestamps.size()) {
-//            qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
+            qInfo() << "ImageReader: end reached, resetting playback, endless looping";
             currentImageIndex = 0;
+        }
+
+        if(exportingRecSection && currentImageIndex >= exportSectionToFrame) {
+            qInfo() << "ImageReader: recording section export ending";
+            break;
+            // TODO: make this piece of code cleaner.
         }
         //qDebug() << "Looping";
     }
@@ -945,8 +951,9 @@ void ImageReader::run() {
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
         // to signal when we automatically reached the end
-        if(currentImageIndex == acqTimestamps.size() || (exportingRecSection && exportSectionToFrame >= currentImageIndex)){
+        if(currentImageIndex == acqTimestamps.size() || (exportingRecSection && currentImageIndex >= exportSectionToFrame)){
             emit endReached();
+//            qDebug() << "endReached";
             lastCommissionedFrameNumber = -1; // corner case
             exportingRecSection = false;
         }
@@ -1039,27 +1046,34 @@ void ImageReader::runStereo() {
             currentImageIndex++;
 
         } else if (!img.data || !imgSecondary.data){
-            qDebug() << "Image Reader: Image could not be read, skipping: " << acqTimestamps[currentImageIndex] ;
+            qWarning() << "Image Reader: Image could not be read, skipping: " << acqTimestamps[currentImageIndex];
             currentImageIndex++;
 
         } if (playbackLoop && currentImageIndex == acqTimestamps.size()) {
-            qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
+            qInfo() << "ImageReader: end reached, resetting playback, endless looping";
             currentImageIndex = 0;
         }
+
+        if(exportingRecSection && currentImageIndex >= exportSectionToFrame) {
+            qInfo() << "ImageReader: recording section export ending";
+            break;
+            // TODO: make this piece of code cleaner.
+        }
     }
-    qDebug() << "Loop ended";
+//    qDebug() << "Loop ended";
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
         // to signal when we automatically reached the end
-        if(currentImageIndex == acqTimestamps.size()){
+        if(currentImageIndex == acqTimestamps.size() || (exportingRecSection && currentImageIndex >= exportSectionToFrame)){
             emit endReached();
-            qDebug() << "endReached";
+//            qDebug() << "endReached";
             lastCommissionedFrameNumber = -1; // corner case
+            exportingRecSection = false;
         }
         currentImageIndex = 0;
-        qDebug() << "finished()";
+//        qDebug() << "finished()";
         emit finished();
     }
 
@@ -1173,7 +1187,7 @@ QString ImageReader::findMostFrequentExtension(const QStringList &fileNameCandid
             if(whereInVector == fileExtensions.end()) { // if the extension can NOT be found in the vector, add it
                 fileExtensions.push_back(currExt);
                 fileExtensionFreqencies.push_back(1);
-                //std::cout << "Found files in the folder with the following extension = " << currExt ;
+                //qDebug() << "Found files in the folder with the following extension = " << currExt;
             } else {
                 fileExtensionFreqencies[(int)(whereInVector-fileExtensions.begin())]++;
             }
@@ -1182,8 +1196,8 @@ QString ImageReader::findMostFrequentExtension(const QStringList &fileNameCandid
         }
     }
     int mostFreqIndex = std::max_element(fileExtensionFreqencies.begin(), fileExtensionFreqencies.end())-fileExtensionFreqencies.begin();
-    //std::cout << "Freq of the most frequent extension = " << fileExtensionFreqencies[mostFreqIndex] ;
-    //std::cout << "The most frequent extension = " << fileExtensions[mostFreqIndex] ;
+    //qDebug() << "Freq of the most frequent extension = " << fileExtensionFreqencies[mostFreqIndex];
+    //qDebug() << "The most frequent extension = " << fileExtensions[mostFreqIndex];
 
     return QString::fromStdString(fileExtensions[mostFreqIndex]);
 }

@@ -52,10 +52,10 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(dataWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataRuleChange(int)));
 
     connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
-    connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
-    connect(adminWarningBox, SIGNAL(stateChanged(int)), this, SLOT(setAdminWarning(int)));
+    connect(alwaysOnTopBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(setAlwaysOnTop(Qt::CheckState)));
+    connect(adminWarningBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(setAdminWarning(Qt::CheckState)));
 
-    connect(ignoreFrameSkipBox, SIGNAL(stateChanged(int)), this, SLOT(setIgnoreFrameSkip(int)));
+    connect(ignoreFrameSkipBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(setIgnoreFrameSkip(Qt::CheckState)));
 
     connect(applyButton, &QPushButton::clicked, this, &GeneralSettingsDialog::apply);
     connect(cancelButton, &QPushButton::clicked, this, &GeneralSettingsDialog::cancel);
@@ -584,13 +584,13 @@ bool GeneralSettingsDialog::getIgnoreFrameSkip() const {
     return ignoreFrameSkip;
 }
 
-void GeneralSettingsDialog::setAlwaysOnTop(int m_state) {
+void GeneralSettingsDialog::setAlwaysOnTop(Qt::CheckState m_state) {
     alwaysOnTop = (bool) m_state;
 }
-void GeneralSettingsDialog::setAdminWarning(int m_state) {
+void GeneralSettingsDialog::setAdminWarning(Qt::CheckState m_state) {
     adminWarning = (bool) m_state;
 }
-void GeneralSettingsDialog::setIgnoreFrameSkip(int m_state) {
+void GeneralSettingsDialog::setIgnoreFrameSkip(Qt::CheckState m_state) {
     ignoreFrameSkip = (bool) m_state;
 }
 

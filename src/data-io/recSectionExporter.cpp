@@ -72,7 +72,7 @@ void RecSectionExporter::close() {
     textStream = nullptr;
      */
 
-    std::cout << "RecSectionExporter object deleted." << std::endl;
+    qInfo() << "RecSectionExporter object deleted.";
 }
 
 // partly based on https://stackoverflow.com/a/38997739/11414500 by SO user Sierra
@@ -95,7 +95,7 @@ bool RecSectionExporter::prepareExport(int ws, int hs, int procMode, RecEventTra
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
             width *= 2;
-            height *= 2;
+            //height *= 2;
             break;
     }
 
@@ -305,11 +305,11 @@ void RecSectionExporter::addFrame(cv::Mat image, int64_t at_pts) {
 
 void RecSectionExporter::onNewImage(CameraImage mimg) {
     if(mimg.img.empty()) {
-        std::cout << "Empty frame received with timestamp: " + QString::number(mimg.timestamp).toStdString() + "\n";
+        qDebug() << "Empty frame received with timestamp: " + QString::number(mimg.timestamp).toStdString();
         return;
     }
     if(!avframe) {
-        std::cout << "Avframe already nulled, but receiving frame to save with timestamp: " + QString::number(mimg.timestamp).toStdString() + "\n";
+        qDebug() << "Avframe already nulled, but receiving frame to save with timestamp: " + QString::number(mimg.timestamp).toStdString();
         return;
     }
 
@@ -319,11 +319,11 @@ void RecSectionExporter::onNewImage(CameraImage mimg) {
 //void RecSectionExporter::onNewImage(quint64 timestamp, int procMode, const std::vector<cv::Mat> &images, const std::vector<Pupil> &Pupils) {
 void RecSectionExporter::onNewImage(CameraImage mimg, int procMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils) {
     if(mimg.img.empty()) {
-        std::cout << "Empty frame received with timestamp: " + QString::number(mimg.timestamp).toStdString() + "\n";
+        qDebug() << "Empty frame received with timestamp: " + QString::number(mimg.timestamp).toStdString();
         return;
     }
     if(!avframe) {
-        std::cout << "Avframe already nulled, but receiving frame to save with timestamp: " + QString::number(mimg.timestamp).toStdString() + "\n";
+        qDebug() << "Avframe already nulled, but receiving frame to save with timestamp: " + QString::number(mimg.timestamp).toStdString();
         return;
     }
 
@@ -362,10 +362,12 @@ cv::Mat RecSectionExporter::resizeARAware(const cv::Mat &image) {
 
 void RecSectionExporter::processImage(CameraImage mimg, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils) {
 
-    if(freshStart)
+    if(freshStart) {
         drawTimer.start();
+        freshStart = false;
+    }
 
-    std::cout << mimg.timestamp << std::endl;
+//    qDebug() << "Processing image at RecSectionExporter with timestamp: " << mimg.timestamp;
 
     // use the BGRA, that works
     cv::Mat internalImage((int)height, (int)width, CV_8UC4, cv::Scalar(0,255,0));
@@ -415,10 +417,9 @@ void RecSectionExporter::processImage(CameraImage mimg, std::vector<cv::Rect> RO
 
 
 
-
     // TODO: "bug" that no matter if we set the presentation timestamps (e.g. for very low desired playback speeds),
     //  the gif will be played e.g. by a we browser at 30 FPS... is it normal?
-    //  Should we add extra useless frames in betweeen, to tascle this?
+    //  Should we add extra useless frames in betweeen, to tackle this?
     addFrame(internalImage, drawTimer.elapsed());
 
     // TODO: properly

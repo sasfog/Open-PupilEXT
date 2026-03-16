@@ -216,11 +216,11 @@ public:
         for (int i = 0; i < items3D.size(); i++) {
             p = items3D[i]->parent();
 
-            qDebug() << p->key();
-            qDebug() << p->childrenWithKey("Dim")[0]->value();
-            qDebug() << p->childrenWithKey("Loc")[0]->value();
-            qDebug() << p->childrenWithKey("Rot")[0]->value();
-            qDebug() << "------------";
+//            qDebug() << p->key();
+//            qDebug() << p->childrenWithKey("Dim")[0]->value();
+//            qDebug() << p->childrenWithKey("Loc")[0]->value();
+//            qDebug() << p->childrenWithKey("Rot")[0]->value();
+//            qDebug() << "------------";
 
             if (p->key().startsWith("Eyeball")) {
                 linkedGLViewer->addToScene({SPHEROID, p->childrenWithKey("Dim")[0], p->childrenWithKey("Loc")[0], p->childrenWithKey("Rot")[0], false });

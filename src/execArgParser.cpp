@@ -11,7 +11,8 @@ ExecArgParser::ExecArgParser(int argc, char *argv[]) {
         //std::cout << argv[i] << "\n";
         //std::string str(argv[i]);
 
-        if( i < argc && 
+        if( i < argc &&
+            argv[i] &&
             std::strlen(argv[i])>1 &&
             argv[i][0] == '-' ) {
             
@@ -102,7 +103,7 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGsetExposure(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_ACQUISITION_TRIGGERING_MODE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            if(execArgs[i].argVals[0].toLower() == "1" || execArgs[i].argVals[0].toLower() == "true")
+            if(execArgs[i].argVals[0].toLower() == "1" || execArgs[i].argVals[0].toLower() == "true" || execArgs[i].argVals[0].toLower() == "h")
                 w->PRGenableHWT(true);
             else
                 w->PRGenableHWT(false);

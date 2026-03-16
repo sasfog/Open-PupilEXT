@@ -374,6 +374,7 @@ void ImagePlaybackControlDialog::onEndReached() {
     endReached = true;
     // NOTE: gets called whenever imageReader is finished with reading and sending images
 
+    //if(exportingRecSection)
 }
 
 void ImagePlaybackControlDialog::onAutomaticFinish() {
@@ -629,7 +630,7 @@ void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
 
 void ImagePlaybackControlDialog::onPlaybackStopApproved() {
 
-    if (finished && endReached && fileCamera->getNumImagesTotal() == selectedFrameVal){
+    if (finished && endReached && (fileCamera->getNumImagesTotal() == selectedFrameVal || exportingRecSection) ){
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
 

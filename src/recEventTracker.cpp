@@ -49,7 +49,7 @@ RecEventTracker::RecEventTracker(const QString &offlineEventLogContent, QObject 
     QDomElement root = domDocument.documentElement();
     if (root.tagName() != "RecordedEvents")
     {
-        std::cout << "Could open offline event log XML file, but it does not contain recorded events.";
+        qDebug() << "Could open offline event log XML file, but it does not contain recorded events.";
         return;
     }
 
@@ -320,7 +320,7 @@ QString RecEventTracker::generateOfflineEventLogContent(uint64 timestampFrom, ui
     QDomElement currObj;
 
     // NOTE: Should this range inclusive on both sides? (Should be low inclusive high exclusive?) But now it surely prevents data loss
-    for (size_t i = 0; i < trialIncrements.size(); i++) {
+    for (int i = 0; i < trialIncrements.size(); i++) {
         if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp < timestampTo) {
             currObj = document.createElement("TrialIncrement");
             currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp));
@@ -328,7 +328,7 @@ QString RecEventTracker::generateOfflineEventLogContent(uint64 timestampFrom, ui
             root.appendChild(currObj);
         }
     }
-    for (size_t i = 0; i < temperatureChecks.size(); i++) {
+    for (int i = 0; i < temperatureChecks.size(); i++) {
         if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp < timestampTo) {
             currObj = document.createElement("CameraTempCheck");
             currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp));
@@ -338,7 +338,7 @@ QString RecEventTracker::generateOfflineEventLogContent(uint64 timestampFrom, ui
             root.appendChild(currObj);
         }
     }
-    for (size_t i = 0; i < messages.size(); i++) {
+    for (int i = 0; i < messages.size(); i++) {
         if (messages[i].timestamp >= timestampFrom && messages[i].timestamp < timestampTo) {
             currObj = document.createElement("Message");
             currObj.setAttribute("TimestampMs", QString::number(messages[i].timestamp));
@@ -400,11 +400,12 @@ bool RecEventTracker::isReady()
 }
 uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp)
 {
-    for (size_t i = (trialIncrements.size()-1); i >= 0; i--)
-        if (trialIncrements[i].timestamp < timestamp)
-        {
+    // NOTE: DO NOT USE size_t here ! it is UNSIGNED, and upon underflow, it will allow the loop to refer to invalid memory
+    for (int i = (trialIncrements.size()-1); i >= 0; i--) {
+        if (trialIncrements[i].timestamp < timestamp) {
             return trialIncrements[i].trialNumber;
         }
+    }
     // qDebug() << "No trial found, returning assumed trial number 1";
     return 1;
 }
@@ -476,7 +477,7 @@ Message RecEventTracker::getMessage(quint64 timestamp)
     if (messages.size() < 1)
         return emptyElem;
 
-    size_t i = 1;
+    int i = 1;
     while (i <= messages.size())
     { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC2019 x86_amd64
         if (messages[messages.size() - i].timestamp < timestamp)

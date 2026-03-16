@@ -51,10 +51,10 @@ private slots:
 
 public slots:
 
-    //void appendData(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    //void appendData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    //void appendData(quint64 timestamp, const Pupil &pupil);
+    //void appendData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec);
 
-    void appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename); // GB
+    void appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils); // GB
 
     void appendData(const double &fps);
     void appendData(const int &framecount);

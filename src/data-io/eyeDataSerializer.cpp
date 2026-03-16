@@ -460,13 +460,14 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
 
     QString result; // TODO: .reserve() ?
 
-    result = result % QString::number(timestamp);
+    //result = result % QString::number(timestamp);
     //result = result % delim % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName);
 
     // NOTE: physicalDiameter will be duplicated redundantly. But it does not matter, this way data is much more self explanatory
     bool isTimestampAlreadyAdded = false;
     for(int i = 0; i < Pupils.size(); i++) {
         for(auto v : PDataTypes::dataOutputFields) {
+
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
             if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {

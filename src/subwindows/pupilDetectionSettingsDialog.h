@@ -82,8 +82,8 @@ private slots:
     void applyCloseButtonClick();
     void onShowHelpDialog();
 
-    void onPupilUndistortionClick(int state);
-    void onImageUndistortionClick(int state);
+    void onPupilUndistortionClick(Qt::CheckState state);
+    void onImageUndistortionClick(Qt::CheckState state);
 
     void onProcModeSelection(int idx);
     void updateProcModeEnabled();

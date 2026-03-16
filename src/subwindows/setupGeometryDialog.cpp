@@ -95,7 +95,7 @@ void SetupGeometryDialog::createForm() {
     //a2Box->setChecked(pupilDetection->isOutlineConfidenceEnabled());
     aLayout->addRow(a3Label, a2Box);
 
-    //connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
+    //connect(pupilUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onPupilUndistortionClick(Qt::CheckState)));
 
     qtOpenGlViewer = new QtOpenGLViewer();
     qtOpenGlViewer->setFixedSize(700,500);
@@ -104,7 +104,7 @@ void SetupGeometryDialog::createForm() {
     mainLayoutInnerCol1->addWidget(qtOpenGlViewer);
 
 
-    helpBoxLayout = new QVBoxLayout(this);
+    helpBoxLayout = new QVBoxLayout();
     helpBoxLayout->setContentsMargins(0,0,0,0);
 
     // NOTE: This hardcoded 20px is the width of the vertical scrollbar, as we need to count it in as well
@@ -263,7 +263,7 @@ void SetupGeometryDialog::createForm() {
     componentsLayout->addRow(setupModelTreeLabel);
     componentsLayout->addRow(setupModelTree);
 
-    //connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
+    //connect(pupilUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onPupilUndistortionClick(Qt::CheckState)));
 
     mainLayoutInnerCol2->addLayout(componentsLayout);
 

@@ -707,14 +707,14 @@ bool VideoView::saveROI1Selection() {
 
     roi1SelectionRectLastR = roiR;
 
-    std::cout << "imageSize.width=" << imageSize.width<<"; roiR.x()="<<roiR.x()<<"; roiR.width()="<<roiR.width()<<std::endl;
-    std::cout << "imageSize.height=" << imageSize.height<<"; roiR.y()="<<roiR.y()<<"; roiR.height()="<<roiR.height()<<std::endl;
-    std::cout << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width()<<std::endl;
-    std::cout << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height()<<std::endl;
+    qDebug() << "imageSize.width=" << imageSize.width<<"; roiR.x()="<<roiR.x()<<"; roiR.width()="<<roiR.width();
+    qDebug() << "imageSize.height=" << imageSize.height<<"; roiR.y()="<<roiR.y()<<"; roiR.height()="<<roiR.height();
+    qDebug() << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width();
+    qDebug() << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height();
 
     // note: removed initialFit restriction
     if(roiR.size().width() > 1 ||  roiR.size().height() > 1) {
-        std::cout<<"Saving ROI1 Selection: out of image bounds."<<std::endl;
+        qDebug() << "Saving ROI1 Selection: out of image bounds.";
         return false;
     }
 
@@ -723,7 +723,7 @@ bool VideoView::saveROI1Selection() {
     if( !graphicsScene->sceneRect().contains(roiD) ||
             (roi1AllowedArea == ROIAllowedArea::RIGHT_HALF && roiR.left() < 0.5) ||
             (roi1AllowedArea == ROIAllowedArea::LEFT_HALF && roiR.right() > 0.5) ) {
-        std::cout<<"Saving ROI1 Selection: out of scene bounds."<<std::endl;
+        qDebug() << "Saving ROI1 Selection: out of scene bounds.";
         return false;
     }
     //std::cout<<"ROI selected contained:" << graphicsScene->sceneRect().contains(roi) << " size: " << roi.topLeft().x() << ":" << roi.topLeft().x() << " - " << roi.height() << std::endl;
@@ -752,21 +752,21 @@ bool VideoView::saveROI2Selection() {
 
     roi2SelectionRectLastR = roiR;
 
-    std::cout << "imageSize.width=" << imageSize.width<<"; roiR.x()="<<roiR.x()<<"; roiR.width()="<<roiR.width()<<std::endl;
-    std::cout << "imageSize.height=" << imageSize.height<<"; roiR.y()="<<roiR.y()<<"; roiR.height()="<<roiR.height()<<std::endl;
-    std::cout << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width()<<std::endl;
-    std::cout << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height()<<std::endl;
+    qDebug() << "imageSize.width=" << imageSize.width<<"; roiR.x()="<<roiR.x()<<"; roiR.width()="<<roiR.width();
+    qDebug() << "imageSize.height=" << imageSize.height<<"; roiR.y()="<<roiR.y()<<"; roiR.height()="<<roiR.height();
+    qDebug() << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width();
+    qDebug() << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height();
 
     // note: removed initialFit restriction
     if(roiR.size().width() > 1 ||  roiR.size().height() > 1) {
-        std::cout<<"Saving ROI2 Selection: out of image bounds."<<std::endl;
+        qDebug() << "Saving ROI2 Selection: out of image bounds.";
         return false;
     }
 
     if( !graphicsScene->sceneRect().contains(roiD) ||
             (roi2AllowedArea == ROIAllowedArea::RIGHT_HALF && roiR.left() < 0.5) ||
             (roi2AllowedArea == ROIAllowedArea::LEFT_HALF && roiR.right() > 0.5) ) {
-        std::cout<<"Saving ROI2 Selection: out of scene bounds."<<std::endl;
+        qDebug() << "Saving ROI2 Selection: out of scene bounds.";
         return false;
     }
     //std::cout<<"ROI selected contained:" << graphicsScene->sceneRect().contains(roi) << " size: " << roi.topLeft().x() << ":" << roi.topLeft().x() << " - " << roi.height() << std::endl;

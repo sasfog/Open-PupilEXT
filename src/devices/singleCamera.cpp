@@ -2,6 +2,7 @@
 #include "singleCamera.h"
 #include "camTempMonitor.h"
 #include <QThread>
+#include <QDebug>
 
 #ifdef USE_PYLON
 
@@ -169,7 +170,7 @@ SingleCamera::~SingleCamera() {
 
 void SingleCamera::genericExceptionOccured(const GenericException &e) {
     //QThread::msleep(1000);
-    std::cerr << "A Pylon exception occurred." << std::endl<< e.GetDescription() << std::endl;
+    qCritical() << "A Pylon exception occurred." << Qt::endl << e.GetDescription();
     if (camera.IsCameraDeviceRemoved()) {
         emit cameraDeviceRemoved();
         camera.Close();
@@ -280,13 +281,13 @@ void SingleCamera::autoGainOnce() {
                 // Carry out luminance control by using the "once" gain auto function.
                 // For demonstration purposes only, set the gain to an initial value.
 
-                std::cout << "Starting AutoGain..." << std::endl;
+                std::cout << "Starting AutoGain...";
 
                 //camera.Gain.SetToMaximum();
                 //camera.Gain.TrySetToMaximum();
 
                 if (!camera.GainAuto.IsWritable()) {
-                    std::cout << "The camera does not support Gain Auto." << std::endl;
+                    std::cout << "The camera does not support Gain Auto.";
                     return;
                 }
 
@@ -323,8 +324,8 @@ void SingleCamera::autoGainOnce() {
 
                     // We are going to try GainAuto = Once.
 
-                    std::cout << "Trying 'GainAuto = Once'." << std::endl;
-                    std::cout << "Initial Gain = " << camera.Gain.GetValue() << std::endl;
+                    std::cout << "Trying 'GainAuto = Once'.";
+                    std::cout << "Initial Gain = " << camera.Gain.GetValue();
 
                     // Set the gain ranges for luminance control.
                     camera.AutoGainLowerLimit.TrySetValue(camera.Gain.GetMin());
@@ -350,22 +351,22 @@ void SingleCamera::autoGainOnce() {
                     }
                 }
 
-                std::cout << "GainAuto went back to 'Off' after " << n << " frames." << std::endl;
+                std::cout << "GainAuto went back to 'Off' after " << n << " frames.";
                 if(camera.Gain.IsReadable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
                 {
-                    std::cout << "Final Gain = " << camera.Gain.GetValue() << std::endl;
+                    std::cout << "Final Gain = " << camera.Gain.GetValue();
                 }
 
                 startGrabbing();
             }
         } else {
-            std::cerr << "Only area scan cameras support auto functions." << std::endl;
+            qWarning() << "Only area scan cameras support auto functions.";
         }
     } catch (const TimeoutException &e) {
         // Auto functions did not finish in time.
         // Maybe the cap on the lens is still on or there is not enough light.
-        std::cerr << "A timeout has occurred: " << std::endl << e.GetDescription() << std::endl;
-        std::cerr << "Please make sure you remove the cap from the camera lens before running auto gain." << std::endl;
+        qWarning() << "A timeout has occurred: " << Qt::endl << e.GetDescription();
+        qWarning() << "Please make sure you remove the cap from the camera lens before running auto gain.";
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
     }
@@ -402,7 +403,7 @@ void SingleCamera::autoExposureOnce() {
 
                 if (!camera.ExposureAuto.IsWritable())
                 {
-                    std::cout << "The camera does not support Exposure Auto." << std::endl;
+                    std::cout << "The camera does not support Exposure Auto.";
                     return;
                 }
 
@@ -437,9 +438,8 @@ void SingleCamera::autoExposureOnce() {
                     camera.AutoTargetBrightness.TrySetValue(0.3);
 
                     // Try ExposureAuto = Once.
-                    std::cout << "Trying 'ExposureAuto = Once'." << std::endl;
-                    std::cout << "Initial exposure time = ";
-                    std::cout << camera.ExposureTime.GetValue() << " us" << std::endl;
+                    qDebug() << "Trying 'ExposureAuto = Once'.";
+                    qDebug() << "Initial exposure time = " << camera.ExposureTime.GetValue() << " us";
 
                     // Set the exposure time ranges for luminance control.
                     camera.AutoExposureTimeLowerLimit.TrySetValue(camera.AutoExposureTimeLowerLimit.GetMin());
@@ -466,24 +466,24 @@ void SingleCamera::autoExposureOnce() {
                     }
                 }
 
-                std::cout << "ExposureAuto went back to 'Off' after " << n << " frames." << std::endl;
-                std::cout << "Final exposure time = ";
+                qDebug() << "ExposureAuto went back to 'Off' after " << n << " frames.";
+                qDebug() << "Final exposure time = ";
 
                 if (camera.ExposureTime.IsReadable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
                 {
-                    std::cout << camera.ExposureTime.GetValue() << " us" << std::endl;
+                    qDebug() << camera.ExposureTime.GetValue() << " us";
                 }
 
                 startGrabbing();
             }
         } else {
-            std::cerr << "Only area scan cameras support auto functions." << std::endl;
+            qWarning() << "Only area scan cameras support auto functions.";
         }
     } catch (const TimeoutException &e) {
         // Auto functions did not finish in time.
         // Maybe the cap on the lens is still on or there is not enough light.
-        std::cerr << "A timeout has occurred: " << e.GetDescription() << std::endl;
-        std::cerr << "Please make sure you remove the cap from the camera lens before running this sample." << std::endl;
+        qWarning() << "A timeout has occurred: " << e.GetDescription();
+        qWarning() << "Please make sure you remove the cap from the camera lens before running this sample.";
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
     }
@@ -633,7 +633,7 @@ void SingleCamera::loadFromFile(const QString &filename) {
         CFeaturePersistence::Load( filename.toStdString().c_str(), &camera.GetNodeMap(), true );
     } catch (const GenericException &e) {
         // Error handling.
-        std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
+        qCritical() << "An exception occurred: " << e.GetDescription();
     }
 
     if(camera.TriggerMode.GetValueOrDefault("Off") == "On") {
@@ -647,7 +647,7 @@ void SingleCamera::saveToFile(const QString &filename) {
         CFeaturePersistence::Save(filename.toStdString().c_str(), &camera.GetNodeMap() );
     } catch (const GenericException &e) {
         // Error handling.
-        std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
+        qCritical() << "An exception occurred: " << e.GetDescription();
     }
 }
 
@@ -776,14 +776,15 @@ void SingleCamera::synchronizeTime() {
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);
     std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
 
-    std::cout << "Camera Synchronize Time" << std::endl << "=========================" << std::endl;
-    std::cout << "Timestamp Camera: " << cameraTime << std::endl;
-    std::cout << "Timestamp System: " << systemTime << std::endl;
-    std::cout << "System Epoch: " << std::ctime(&epochTime) << std::endl;
-    std::cout << "System Time: " << std::ctime(&startTime) << std::endl;
-    std::cout << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "=========================" << std::endl;
+    qInfo() << "Camera Synchronize Time";
+    qInfo() << "=========================";
+    qInfo() << "Timestamp Camera: " << cameraTime;
+    qInfo() << "Timestamp System: " << systemTime;
+    qInfo() << "System Epoch: " << std::ctime(&epochTime);
+    qInfo() << "System Time: " << std::ctime(&startTime);
+    qInfo() << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+    qInfo() << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count();
+    qInfo() << "=========================";
 }
 
 QString SingleCamera::getLineSource() {
@@ -823,7 +824,7 @@ void SingleCamera::loadCalibrationFile() {
     configFile.replace(" ", "");
 
     if (QFile::exists(configFile)) {
-        std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString() << std::endl;
+        qDebug() << "Found calibration file in settings directory. Loading: " << configFile.toStdString();
         cameraCalibration->loadFromFile(configFile.toStdString().c_str());
     }
 }
@@ -1094,15 +1095,15 @@ bool SingleCamera::setBinningVal(int value) {
         if(value==2 || value==3) {
             success = camera.BinningHorizontal.TrySetValue(2) &&
                     camera.BinningVertical.TrySetValue(2);
-            std::cout << "Setting binning to 2 on both axes"<< std::endl;
+            qDebug() << "Setting binning to 2 on both axes";
         } else if(value==4) {
             success = camera.BinningHorizontal.TrySetValue(4) &&
                     camera.BinningVertical.TrySetValue(4);
-            std::cout << "Setting binning to 4 on both axes"<< std::endl;
+            qDebug() << "Setting binning to 4 on both axes";
         } else { //if(value==1) {
             success = camera.BinningHorizontal.TrySetValue(1) &&
                     camera.BinningVertical.TrySetValue(1);
-            std::cout << "Setting binning to 1 (no binning) on both axes"<< std::endl;
+            qDebug() << "Setting binning to 1 (no binning) on both axes";
         }
     }
     startGrabbing();
@@ -1111,7 +1112,7 @@ bool SingleCamera::setBinningVal(int value) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIwidth(int width) {
-    //std::cout << "Setting Image ROI width=" << std::to_string(width) << std::endl;
+    //qDebug() << "Setting Image ROI width=" << std::to_string(width);
     bool success = false;
 
     if(camera.IsGrabbing())
@@ -1144,7 +1145,7 @@ bool SingleCamera::setImageROIwidth(int width) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIheight(int height) {
-    //std::cout << "Setting Image ROI height=" << std::to_string(height) << std::endl;
+    //qDebug() << "Setting Image ROI height=" << std::to_string(height);
     bool success = false;
 
     if(camera.IsGrabbing())
@@ -1177,7 +1178,7 @@ bool SingleCamera::setImageROIheight(int height) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIoffsetX(int offsetX) {
-    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
     bool success = false;
 
     if(camera.IsGrabbing())
@@ -1208,7 +1209,7 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIoffsetY(int offsetY) {
-    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
     bool success = false;
 
     if(camera.IsGrabbing())
@@ -1478,7 +1479,7 @@ void SingleCamera::resizeStreamBuffer() {
 
 void SingleCamera::genericExceptionOccured(const std::exception &e, const GError &lastAravisError) {
     //QThread::msleep(1000);
-    std::cerr << "An Aravis exception occurred." << std::endl<< e.what() << std::endl;
+    qCritical() << "An Aravis exception occurred." << Qt::endl << e.what();
 
     // TODO: sketchy check if the device was removed or not
     bool deviceRemoved = false;
@@ -1491,7 +1492,7 @@ void SingleCamera::genericExceptionOccured(const std::exception &e, const GError
 
 void SingleCamera::genericExceptionOccured(const std::exception &e, bool deviceRemoved) {
     //QThread::msleep(1000);
-    std::cerr << "An Aravis exception occurred." << std::endl<< e.what() << std::endl;
+    qCritical() << "An Aravis exception occurred." << Qt::endl << e.what();
 
     // logic: only quick cleanup if the device got removed. If not, we will keep running
 
@@ -1509,7 +1510,7 @@ bool SingleCamera::isOpen() {
 }
 
 void SingleCamera::close() {
-    std::cout << "SingleCamera: Releasing resources.";
+    qDebug() << "SingleCamera: Releasing resources.";
 
     // TODO: might not necessarily happen here
     stopGrabbing();
@@ -1993,7 +1994,7 @@ void SingleCamera::loadFromFile(const QString &filename) {
         CFeaturePersistence::Load( filename, &camera.GetNodeMap(), true );
     } catch (const GenericException &e) {
         // Error handling.
-        std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
+        qCritical() << "An exception occurred: " << e.GetDescription();
     }
 
     if(camera.TriggerMode.GetValueOrDefault("Off") == "On") {
@@ -2011,7 +2012,7 @@ void SingleCamera::saveToFile(const QString &filename) {
         CFeaturePersistence::Save(filename, &camera.GetNodeMap() );
     } catch (const GenericException &e) {
         // Error handling.
-        std::cerr << "An exception occurred: " << e.GetDescription() << std::endl;
+        qCritical() << "An exception occurred: " << e.GetDescription();
     }
      */
 }
@@ -2026,8 +2027,8 @@ bool SingleCamera::isEnabledAcquisitionFrameRate() {
     try {
         val = arv_camera_get_frame_rate_enable(camera, &error);
         if(error) {
-            qDebug() << "Could not get whether acquisition frame rate setting is enabled or not.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Could not get whether acquisition frame rate setting is enabled or not.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2049,8 +2050,8 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
     try {
         arv_camera_set_frame_rate_enable(camera, enabled, &error);
         if(error) {
-            qDebug() << "Could not set acquisition frame rate enabled/disabled.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Could not set acquisition frame rate enabled/disabled.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2062,14 +2063,14 @@ void SingleCamera::setAcquisitionFPSValue(int value) {
     try {
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(error) {
-            qDebug() << "Acquisition framerate not available.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Acquisition framerate not available.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         } else if(canGet) {
             error = nullptr;
             arv_camera_set_frame_rate(camera, (double)value, &error);
             if(error) {
-                qDebug() << "Could not set acquisition framerate.";
-                qDebug() << "Error during aravis API call. Message: " << error->message;
+                qWarning() << "Could not set acquisition framerate.";
+                qWarning() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
@@ -2087,15 +2088,15 @@ int SingleCamera::getAcquisitionFPSValue() {
     try {
         bool canGet = arv_camera_is_frame_rate_available(camera, &error);
         if(error) {
-            qDebug() << "Acquisition framerate not available.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Acquisition framerate not available.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         } else if(canGet) {
             // NOTE: rounding here
             error = nullptr;
             val = (int)round(arv_camera_get_frame_rate(camera, &error));
             if(error) {
-                qDebug() << "Could not get acquisition framerate.";
-                qDebug() << "Error during aravis API call. Message: " << error->message;
+                qWarning() << "Could not get acquisition framerate.";
+                qWarning() << "Error during aravis API call. Message: " << error->message;
             }
         }
     } catch (const std::exception &e) {
@@ -2123,7 +2124,7 @@ int SingleCamera::getAcquisitionFPSMin() {
             val = (int)round(valMin);
         }
         if(error) {
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2150,7 +2151,7 @@ int SingleCamera::getAcquisitionFPSMax() {
             val = (int)round(valMax);
         }
         if(error) {
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2184,16 +2185,16 @@ double SingleCamera::getResultingFrameRateValue() {
         }
 
         if(error) {
-            qDebug() << "Could not obtain resulting framerate value. This camera might not support it.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Could not obtain resulting framerate value. This camera might not support it.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
 
             // TODO
         }
         auto temp = g_value_get_double(&v);
         // additional checks could come here
         if(error) {
-            qDebug() << "Could neither get resulting framerate, nor acquisition framerate.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Could neither get resulting framerate, nor acquisition framerate.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         } else {
             val = (int)temp;
         }
@@ -2217,8 +2218,8 @@ bool SingleCamera::isHardwareTriggerEnabled() {
         val = (tval == "On");
 
         if(error) {
-            qDebug() << "Could not determine whether hardware triggering is enabled.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+            qWarning() << "Could not determine whether hardware triggering is enabled.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
@@ -2279,14 +2280,15 @@ void SingleCamera::synchronizeTime() {
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);
     std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
 
-    std::cout << "Camera Synchronize Time" << std::endl << "=========================" << std::endl;
-    std::cout << "Timestamp Camera: " << cameraTime << std::endl;
-    std::cout << "Timestamp System: " << systemTime << std::endl;
-    std::cout << "System Epoch: " << std::ctime(&epochTime) << std::endl;
-    std::cout << "System Time: " << std::ctime(&startTime) << std::endl;
-    std::cout << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count() << std::endl;
-    std::cout << "=========================" << std::endl;
+    qInfo() << "Camera Synchronize Time";
+    qInfo() << "=========================";
+    qInfo() << "Timestamp Camera: " << cameraTime;
+    qInfo() << "Timestamp System: " << systemTime;
+    qInfo() << "System Epoch: " << std::ctime(&epochTime);
+    qInfo() << "System Time: " << std::ctime(&startTime);
+    qInfo() << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+    qInfo() << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count();
+    qInfo() << "=========================";
 
 }
 
@@ -2425,7 +2427,7 @@ void SingleCamera::loadCalibrationFile() {
     configFile.replace(" ", "");
 
     if (QFile::exists(configFile)) {
-        std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString() << std::endl;
+        qDebug() << "Found calibration file in settings directory. Loading: " << configFile.toStdString();
         cameraCalibration->loadFromFile(configFile.toStdString().c_str());
     }
 }
@@ -2939,7 +2941,7 @@ bool SingleCamera::setBinningVal(int value) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIwidth(int width) {
-    //std::cout << "Setting Image ROI width=" << std::to_string(width) << std::endl;
+    //qDebug() << "Setting Image ROI width=" << std::to_string(width);
     bool success = false;
 
     stopGrabbing();
@@ -2958,13 +2960,13 @@ bool SingleCamera::setImageROIwidth(int width) {
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
 
-    //std::cout << "width = " << width << std::endl;
-    //std::cout << "maxWidth = " << maxWidth << std::endl;
-    //std::cout << "offsetX = " << offsetX << std::endl;
-    //std::cout << "getImageROIwidthMax() = " << getImageROIwidthMax() << std::endl;
-    //std::cout << "getImageROIwidthInc() = " << getImageROIwidthInc() << std::endl;
-    //std::cout << "modVal = " << modVal << std::endl;
-    //std::cout << "bestWidth = " << bestWidth << std::endl;
+    //qDebug() << "width = " << width;
+    //qDebug() << "maxWidth = " << maxWidth;
+    //qDebug() << "offsetX = " << offsetX;
+    //qDebug() << "getImageROIwidthMax() = " << getImageROIwidthMax();
+    //qDebug() << "getImageROIwidthInc() = " << getImageROIwidthInc();
+    //qDebug() << "modVal = " << modVal;
+    //qDebug() << "bestWidth = " << bestWidth;
 
     GError *error = nullptr;
     try {
@@ -2989,7 +2991,7 @@ bool SingleCamera::setImageROIwidth(int width) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIheight(int height) {
-    //std::cout << "Setting Image ROI height=" << std::to_string(height) << std::endl;
+    //qDebug() << "Setting Image ROI height=" << std::to_string(height);
     bool success = false;
 
     stopGrabbing();
@@ -3031,7 +3033,7 @@ bool SingleCamera::setImageROIheight(int height) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIoffsetX(int offsetX) {
-    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
     bool success = false;
 
     stopGrabbing();
@@ -3075,7 +3077,7 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool SingleCamera::setImageROIoffsetY(int offsetY) {
-    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
     bool success = false;
 
     stopGrabbing();

@@ -176,7 +176,7 @@ void PupilDetectionSettingsDialog::createForm() {
     pupilUndistortionBox->setChecked(pupilDetection->isPupilUndistortionEnabled());
     checkboxGroup->addButton(pupilUndistortionBox);
     optionsLayout->addRow(pupilSizeUndistortionLabel, pupilUndistortionBox);
-    connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
+    connect(pupilUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onPupilUndistortionClick(Qt::CheckState)));
 
 
     QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) (single camera only) [<a href=\"http://mock.link\">?</a>]:"));
@@ -186,7 +186,7 @@ void PupilDetectionSettingsDialog::createForm() {
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
     checkboxGroup->addButton(imageUndistortionBox);
     optionsLayout->addRow(imageUndistortionLabel, imageUndistortionBox);
-    connect(imageUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onImageUndistortionClick(int)));
+    connect(imageUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onImageUndistortionClick(Qt::CheckState)));
 
     optionsGroup->setLayout(optionsLayout);
     mainLayoutInnerCol1->addWidget(optionsGroup);
@@ -516,14 +516,14 @@ void PupilDetectionSettingsDialog::onSettingsChange() {
     updateProcModeCompatibility();
 }
 
-void PupilDetectionSettingsDialog::onPupilUndistortionClick(int state) {
+void PupilDetectionSettingsDialog::onPupilUndistortionClick(Qt::CheckState state) {
 
     if(state == Qt::Checked) {
         imageUndistortionBox->setChecked(false);
     }
 }
 
-void PupilDetectionSettingsDialog::onImageUndistortionClick(int state) {
+void PupilDetectionSettingsDialog::onImageUndistortionClick(Qt::CheckState state) {
 
     if(state == Qt::Checked) {
         pupilUndistortionBox->setChecked(false);

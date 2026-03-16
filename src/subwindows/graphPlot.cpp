@@ -26,6 +26,12 @@ GraphPlot::GraphPlot(PDataType _plotDataKey, ProcMode procMode, bool legend, QWi
     // TODO any chance to get the opengl qcustomplot scaling to work?
     //customPlot->setOpenGl(true);
 
+    // Turn on Antialiasing
+    // TODO: make this optional using a QApplicationSettings param
+    customPlot->setAntialiasedElements(QCP::aeAll);
+    customPlot->setNotAntialiasedElements(QCP::aeNone);
+    customPlot->setNoAntialiasingOnDrag(false);
+
     // We need this outer layout to be able to make a padding on the left side to let the y label fit correctly,
     // and at the same time also fill the background with dark-mode sensitive background color
     QVBoxLayout* outerLayout = new QVBoxLayout(this);
@@ -496,7 +502,7 @@ void GraphPlot::setPupilData(const Pupil &pupil, int graphID, quint64 timestamp)
 // Slot that is called upon receiving a new stereo pupil detection
 // Updates the table columns with current pupil data i.e. all meta information of both pupil detections
 // This is called from the pupil detection process, potentially 120 times per second, however only data is appended in that rate
-void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
+void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils) {
 
     // TODO: something better?
     if(currentProcMode != procMode) {

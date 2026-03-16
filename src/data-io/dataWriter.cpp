@@ -52,7 +52,7 @@ DataWriter::DataWriter(
     // if the exe was started without admin rights, open would fail, and the null-ed dataFile can cause exception later on
     bool fileWriteable = dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
     if (!fileWriteable) {
-        //std::cout << "Recording failure. Could not open: " << fileName.toStdString() << std::endl;
+        //qDebug() << "Recording failure. Could not open: " << fileName.toStdString();
         delete dataFile;
         dataFile = nullptr;
         /*
@@ -92,7 +92,7 @@ void DataWriter::close() {
     dataFile = nullptr;
     textStream = nullptr;
 
-    std::cout << "DataWriter object deleted." << std::endl;
+    qDebug() << "DataWriter object deleted.";
 }
 
 // GB: replacing previous methods for single pupil detection from single or stereo cameras, 

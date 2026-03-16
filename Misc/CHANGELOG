@@ -25,7 +25,6 @@ Version 0.1.3. beta
 		- Vcpkg baseline commit updated: on 2025.07.16 14:46 CET
 		- 
 		- Camera temperature checks are now indicated with a questionmark icon if temperature readings could not be obtained from the camera, or if they are invalid.
-		- On Windows, now the program is default built to require administrator privileges to run.
 		- Updated qcustomplot
 		
 	

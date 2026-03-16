@@ -168,7 +168,7 @@ void DataStreamer::startLSLStreamer(int srate, DataContainer dataContainer, Proc
     LSLOutlet = new lsl::stream_outlet(*info, 0, max_buffered);
 
 //    std::vector<float> sample(n_channels, 0.0);
-    std::cout << LSLOutlet->info().as_xml() << std::endl;
+   qDebug() << LSLOutlet->info().as_xml();
 
 
     qDebug() << "Now starting LSL streaming";

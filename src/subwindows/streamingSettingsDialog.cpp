@@ -317,7 +317,7 @@ void StreamingSettingsDialog::createForm() {
 }
 
 void StreamingSettingsDialog::connectSignals() {
-    connect(udpIpBox, SIGNAL(signalTextChanged(QLineEdit)), this, SLOT(saveUDPSettings()));
+    connect(udpIpBox, SIGNAL(signalTextChanged(QLineEdit*)), this, SLOT(saveUDPSettings()));
     connect(udpPortBox, SIGNAL(valueChanged(int)), this, SLOT(saveUDPSettings()));
     connect(dataContainerUDPBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveUDPSettings()));
     connect(udpSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveUDPSettings()));

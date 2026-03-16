@@ -541,7 +541,7 @@ void SingleCameraSettingsDialog::accept() {
 void SingleCameraSettingsDialog::updateFrameRateValue() {
     frameRateValueLabel->setText(QString::number(camera->getResultingFrameRateValue()));
 
-    std::cout << "resulting framerate " << camera->getResultingFrameRateValue() << std::endl;
+    qDebug() << "resulting framerate " << camera->getResultingFrameRateValue();
 
     // commented out, reason:
     // TODO: problematic, as resulting framerate is affected by framerate limit, which creates a "loop" of events,
@@ -593,7 +593,7 @@ void SingleCameraSettingsDialog::startHardwareTrigger() {
     int count = (int) ((runtime * 60000000) / (delay * 2)); // corrected following SBelgers in previous commit
 
     QString cmd = "<TX" + QString::number(count) + "X" + QString::number(delay) + ">";
-    std::cout << "Sending hardware trigger command: " << cmd.toStdString() << std::endl;
+    qDebug() << "Sending hardware trigger command: " << cmd.toStdString();
 
     emit onHardwareTriggerEnable();
     emit onHardwareTriggerStart(cmd);
@@ -820,8 +820,8 @@ void SingleCameraSettingsDialog::updateImageROISettingsMax() {
     auto wm = camera->getImageROIwidthMax();
     auto hm = camera->getImageROIheightMax();
 
-    std::cout << "wm = " << wm << std::endl;
-    std::cout << "hm = " << hm << std::endl;
+    qDebug() << "wm = " << wm;
+    qDebug() << "hm = " << hm;
 
     imageROIwidthInputBox->setMaximum(wm);
     imageROIheightInputBox->setMaximum(hm);

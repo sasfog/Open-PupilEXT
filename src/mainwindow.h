@@ -107,9 +107,10 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
-    bool eventFilter(QObject *obj, QEvent *event);
-    void dragEnterEvent(QDragEnterEvent* e);
-    void dropEvent(QDropEvent* e);
+    bool eventFilter(QObject *obj, QEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent* e) override;
+    //void dragMoveEvent(QDragMoveEvent* e) override; // likely not necessary
+    void dropEvent(QDropEvent* e) override;
 
 private:
  

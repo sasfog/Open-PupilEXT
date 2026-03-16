@@ -38,6 +38,14 @@ void SingleCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         //std::cout << "SizeX: " << ptrGrabResult->GetWidth() << std::endl;
         //std::cout << "SizeY: " << ptrGrabResult->GetHeight() << std::endl;
 
+        //// DEV DEE DEMO LUND
+        //if (dummyFrameLimiterFrameCount < 2) {
+        //    dummyFrameLimiterFrameCount++;
+        //    return;
+        //} else {
+        //    dummyFrameLimiterFrameCount = 0;
+        //}
+
         uint64 timeStamp = ptrGrabResult->GetTimeStamp();
         // cameraTime describes the acquisition start in camera time, systemTime the acquisition start in system time
         timeStamp = ((timeStamp-cameraTime) / 1000000) + systemTime;

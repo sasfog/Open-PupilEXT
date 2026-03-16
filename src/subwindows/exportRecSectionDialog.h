@@ -252,7 +252,7 @@ public:
         mainLayout->addWidget(noteLabel2);
 
 
-        QFormLayout *buttonsLayout = new QFormLayout(this);
+        QFormLayout *buttonsLayout = new QFormLayout();
         buttonPerform = new QPushButton("Perform export");
         // buttonOption1->setFixedWidth(option1Width); // 210
         // //buttonOption2->setFixedWidth(option2Width); // 200
@@ -280,10 +280,10 @@ public:
         connect(toTimestampBox, SIGNAL(valueChanged(double)), this, SLOT(onToTimestampSelected(double)));
         connect(buttonPerform, &QPushButton::clicked, this, &ExportRecSectionDialog::onPerformClicked);
 
-        connect(includeShownOverlaysBox, SIGNAL(stateChanged(int)), this, SLOT(onIncludeShownOverlaysChanged(int)));
-        connect(cropToPDROIBox, SIGNAL(stateChanged(int)), this, SLOT(onCropToPDROIChanged(int)));
-        connect(embedFrameInfoBox, SIGNAL(stateChanged(int)), this, SLOT(onEmbedFrameInfoChanged(int)));
-        connect(uniformPortableImageSizeBox, SIGNAL(stateChanged(int)), this, SLOT(onUniformPortableImageSizeChanged(int)));
+        connect(includeShownOverlaysBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onIncludeShownOverlaysChanged(Qt::CheckState)));
+        connect(cropToPDROIBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onCropToPDROIChanged(Qt::CheckState)));
+        connect(embedFrameInfoBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onEmbedFrameInfoChanged(Qt::CheckState)));
+        connect(uniformPortableImageSizeBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onUniformPortableImageSizeChanged(Qt::CheckState)));
 
     };
     ~ExportRecSectionDialog() override = default;
@@ -333,16 +333,16 @@ private slots:
 
         applicationSettings->setValue("ExportRecSection.ToFrameNumber", val);
     };
-    void onIncludeShownOverlaysChanged(int val) {
+    void onIncludeShownOverlaysChanged(Qt::CheckState val) {
         applicationSettings->setValue("ExportRecSection.IncludeShownOverlays", (bool)val );
     };
-    void onCropToPDROIChanged(int val) {
+    void onCropToPDROIChanged(Qt::CheckState val) {
         applicationSettings->setValue("ExportRecSection.CropToPDROI", (bool)val );
     };
-    void onEmbedFrameInfoChanged(int val) {
+    void onEmbedFrameInfoChanged(Qt::CheckState val) {
         applicationSettings->setValue("ExportRecSection.EmbedFrameInfo", (bool)val );
     };
-    void onUniformPortableImageSizeChanged(int val) {
+    void onUniformPortableImageSizeChanged(Qt::CheckState val) {
         applicationSettings->setValue("ExportRecSection.UniformPortableImageSize", (bool)val );
     };
 

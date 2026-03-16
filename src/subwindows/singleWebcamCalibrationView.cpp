@@ -292,8 +292,7 @@ void SingleWebcamCalibrationView::loadConfigFile() {
     QString configFile = camera->getCalibrationFilename();
     //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
     if (QFile::exists(configFile)) {
-        std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
-                  << std::endl;
+        qDebug() << "Found calibration file in settings directory. Loading: " << configFile.toStdString();
         calibrationWorker->loadFromFile(configFile.toStdString().c_str());
         updateSettings();
     }

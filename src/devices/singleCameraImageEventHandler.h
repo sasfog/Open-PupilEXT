@@ -48,6 +48,9 @@ private:
     CImageFormatConverter formatConverter;
     CPylonImage pylonImage;
 
+    // DEV DEE DEMO LUND
+    int dummyFrameLimiterFrameCount = 0;
+
 signals:
 
     void onNewGrabResult(CameraImage grabResult);

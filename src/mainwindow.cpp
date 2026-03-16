@@ -14,6 +14,22 @@
 #include "subwindows/RestorableQMdiSubWindow.h"
 #include "subwindows/singleCameraSharpnessView.h"
 #include "supportFunctions.h"
+#include "mainwindow.h"
+#include <QtWidgets>
+#include <QtWidgets/QWidget>
+#include "subwindows/graphPlot.h"
+#include "subwindows/singleCameraView.h"
+#include "subwindows/singleCameraCalibrationView.h"
+#include "subwindows/dataTable.h"
+#include "devices/fileCamera.h"
+#include "subwindows/stereoCameraSettingsDialog.h"
+#include "subwindows/stereoCameraView.h"
+#include "subwindows/stereoCameraCalibrationView.h"
+#include "subwindows/stereoFileCameraCalibrationView.h"
+#include "subwindows/singleFileCameraCalibrationView.h"
+#include "subwindows/RestorableQMdiSubWindow.h"
+#include "subwindows/singleCameraSharpnessView.h"
+#include "supportFunctions.h"
 
 int const MainWindow::EXIT_CODE_REBOOT = 2000;
 
@@ -56,9 +72,13 @@ MainWindow::MainWindow():
     loadIcons();
 
     if(!AdminPrivileges::isRunningAsAdmin() && SupportFunctions::readBoolFromQSettings("adminWarning", true, applicationSettings)) {
+        QString innerText = "PupilEXT detected that it was started without administrator privileges. It is however best advised to run the application with these elevated privileges. Would you like to try restart the application with privileges requested?";
+#ifdef Q_OS_WIN
+        innerText = innerText + "\nNote: if run with administrator rights on Windows, the drag-and-drop feature will not work due to UAC restrictions.";
+#endif
         ThreeChoiceDialog *dialog = new ThreeChoiceDialog(
                 "Application was started without administrator privileges",
-                "PupilEXT detected that it was started without administrator privileges. It is however best advised to run the application with these elevated privileges. Would you like to try restart the application with privileges requested?",
+                innerText,
                 "Restart",
                 "Dismiss",
                 "Always dismiss",
@@ -122,10 +142,10 @@ MainWindow::MainWindow():
 
     pupilDetectionSettingsDialog = new PupilDetectionSettingsDialog(pupilDetectionWorker, this);
     pupilDetectionSettingsDialog->setWindowIcon(pupilDetectionSettingsIcon);
-
+#ifdef QT_DEBUG
     setupGeometryDialog = new SetupGeometryDialog(this);
     setupGeometryDialog->setWindowIcon(setupGeometryIcon);
-
+#endif
     generalSettingsDialog = new GeneralSettingsDialog(this);
     generalSettingsDialog->setWindowIcon(generalSettingsIcon);
 
@@ -144,7 +164,8 @@ MainWindow::MainWindow():
     pupilDetectionThread->setPriority(QThread::HighPriority); // TODO: highest priority
 
     // Image writing is going to be on a separate thread, allowing for a lot better control
-    imageWriter = new ImageWriter(this);
+//    imageWriter = new ImageWriter(this); // we cannot use mainwindow as parent, because then we could not move to a thread
+    imageWriter = new ImageWriter();
     imageWriter->moveToThread(imageWriterThread);
     connect(imageWriterThread, SIGNAL (finished()), imageWriterThread, SLOT (deleteLater()));
     imageWriterThread->start();
@@ -240,7 +261,26 @@ MainWindow::MainWindow():
     generalSettingsDialog->setWindowFlags(Qt::Tool);
 #endif
 
+    // NOTE: No matter what we do, DragEnter never triggers if the appliction is running with administrator rights,
+    //  on windows. This cannot be bypassed.
+//    setAttribute( Qt::WA_AcceptDrops, false );
+//    setAttribute( Qt::WA_AcceptDrops, true );
+
+//    for (auto *w : QApplication::allWidgets()) {
+//        w->setAcceptDrops(true);
+//        w->installEventFilter(this);
+//    }
+
     setAcceptDrops(true);
+//    this->centralWidget()->setAcceptDrops(true);
+//    for (auto *w : findChildren<QWidget*>())
+//        w->setAcceptDrops(true);
+//    qApp->installEventFilter(this);
+//    //this->installEventFilter(this);
+
+    qDebug() << "Window hints set currently:";
+    qDebug() << this->windowFlags();
+
 
     playbackSynchroniser = nullptr;
 }
@@ -877,9 +917,17 @@ void MainWindow::onCameraPlaybackChanged()
     }
 }
 
-bool MainWindow::eventFilter(QObject *obj, QEvent *event)
-{
-    if(obj == singleCameraSettingsDialog || obj == stereoCameraSettingsDialog){
+bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+
+    ////QWidget *w = qobject_cast<QWidget*>(obj);
+    //qDebug() << event->type();
+
+//    // NOTE: Yet we have separate overridden listeners for this. Change if necessary
+//    if (event->type() == QEvent::DragEnter) {
+//        qDebug() << "DragEnter caught!";
+//    }
+
+    if(obj == singleCameraSettingsDialog || obj == stereoCameraSettingsDialog) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
             if (keyEvent->key() == Qt::Key_F){
@@ -894,6 +942,25 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     }
     else
         return QObject::eventFilter(obj, event);
+//    else {
+//        if (event->type() == QEvent::DragEnter) {
+//            QDragEnterEvent *de = static_cast<QDragEnterEvent*>(event);
+//            //dragEnterEvent(de);
+//            return true;
+//        }
+//        if (event->type() == QEvent::DragMove) {
+//            QDragMoveEvent *de = static_cast<QDragMoveEvent*>(event);
+//            //dragMoveEvent(de);
+//            return true;
+//        }
+//        else if (event->type() == QEvent::Drop) {
+//            QDropEvent *de = static_cast<QDropEvent*>(event);
+//            //dropEvent(de);
+//            return true;
+//        }
+//        else
+//            return QObject::eventFilter(obj, event);
+//    }
 }
 
 void MainWindow::about() {
@@ -1968,7 +2035,7 @@ void MainWindow::onCameraDisconnectClick() {
     if(pupilDetectionSettingsDialog->isVisible()) {
         pupilDetectionSettingsDialog->close();
     }
-    if(setupGeometryDialog->isVisible()) {
+    if(setupGeometryDialog && setupGeometryDialog->isVisible()) {
         setupGeometryDialog->close();
     }
     //if(subjectSelectionDialog->isVisible()) {
@@ -2715,18 +2782,20 @@ void MainWindow::onCreateGraphPlot(const PDataType &value) {
     auto *child = new RestorableQMdiSubWindow(childWidget, "GraphPlot_" + PDataTypes::tyf.at(value), this);
     child->setWindowIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings));
 
+    bool connSuccess = false;
+
     // switch values to connect different slots/signals to GraphPlot and the data
     /*if(value == DataTable::FRAME_NUMBER) {
 
-        connect(signalPubSubHandler, SIGNAL (cameraFramecount(int)), childWidget, SLOT (appendData(int)));
+        connSuccess = connect(signalPubSubHandler, SIGNAL (cameraFramecount(int)), childWidget, SLOT (appendData(int)));
     } else*/ if(value == PDataType::CAMERA_FPS) {
 
-        connect(signalPubSubHandler, SIGNAL (cameraFPS(double)), childWidget, SLOT (appendData(double)));
+        connSuccess = connect(signalPubSubHandler, SIGNAL (cameraFPS(double)), childWidget, SLOT (appendData(double)));
     } else if(value == PDataType::PUPIL_FPS) {
 
-        connect(pupilDetectionWorker, SIGNAL (fps(double)), childWidget, SLOT (appendData(double)));
+        connSuccess = connect(pupilDetectionWorker, SIGNAL (fps(double)), childWidget, SLOT (appendData(double)));
     } else {
-        connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>)), childWidget, SLOT (appendData(quint64, int, std::vector<Pupil>)));
+        connSuccess = connect(pupilDetectionWorker, SIGNAL (processedPupilDataLowFPS(quint64, int, std::vector<Pupil>)), childWidget, SLOT (appendData(quint64, int, std::vector<Pupil>)));
     }
     mdiArea->addSubWindow(child);
     child->show();
@@ -3277,9 +3346,9 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     connect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
 
     // TODO: disconnects?
-    connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToEnd()), this, SLOT(onExportAllowedToEnd()));
-    connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToStart()), recSectionExporter, SLOT(onExportAllowedToStart()));
-    connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToEnd()), recSectionExporter, SLOT(onExportAllowedToEnd()));
+    assert( connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToEnd()), this, SLOT(onExportAllowedToEnd())) );
+    assert( connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToStart()), recSectionExporter, SLOT(onExportAllowedToStart())) );
+    assert( connect(imagePlaybackControlDialog, SIGNAL(exportAllowedToEnd()), recSectionExporter, SLOT(onExportAllowedToEnd())) );
     // starting the exportRecSection is done by call, only result is watched here in mainwindow
 
     /*
@@ -4000,19 +4069,27 @@ void MainWindow::connectCameraPlaybackChangedSlots()
     // but we are actually not displaying anything else in the views, just fileCamera frames,
     // so I dedicated separate functions for them, which only take the frameNumber,
     // implemented for both single and stereo camera views. This is ok too
-    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
+    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget && singleCameraChildWidget) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), singleCameraChildWidget, SLOT(displayFileCameraFrame(int)));
-    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
+    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget && singleCameraChildWidget) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), stereoCameraChildWidget, SLOT(displayFileCameraFrame(int)));
     }
 }
+
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* e)
 {
     if (e->mimeData()->hasUrls())
         e->acceptProposedAction();
 }
-
+/*
+void MainWindow::dragMoveEvent(QDragMoveEvent *e)
+{
+    // DEV: not sure if the check is needed here too
+    if (e->mimeData()->hasUrls())
+        e->acceptProposedAction();
+}
+*/
 void MainWindow::dropEvent(QDropEvent* e)
 {
     QStringList pathList;
@@ -4055,6 +4132,7 @@ void MainWindow::dropEvent(QDropEvent* e)
     // TODO: add further checks and event handling
     e->acceptProposedAction();
 }
+
 
 void MainWindow::onStereoCamerasOpened() {
     resetStatus(true);

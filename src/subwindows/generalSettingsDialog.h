@@ -133,10 +133,10 @@ public slots:
     void onDataWriterDataStyleChange(int index);
     void onDataWriterDataRuleChange(int index);
     void onDarkAdaptChange(int index);
-    void setAlwaysOnTop(int m_state);
-    void setAdminWarning(int m_state);
+    void setAlwaysOnTop(Qt::CheckState m_state);
+    void setAdminWarning(Qt::CheckState m_state);
 
-    void setIgnoreFrameSkip(int m_state);
+    void setIgnoreFrameSkip(Qt::CheckState m_state);
 
     void onImageWriterImageSequencePngCompressionChange(int index);
     void onImageWriterImageSequenceJpegQualityChange(int value);
