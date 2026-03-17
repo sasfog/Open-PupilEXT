@@ -61,6 +61,8 @@ int main(int argc, char *argv[])
         qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg){
             fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
             QFile logFile("lastrun.txt");
+//            if(msg == "QFlags<Qt::MouseButton>(LeftButton)")
+//                std::cout << "Test event caught";
             if (logFile.open(QIODevice::WriteOnly)) {
                 QTextStream out(&logFile);
                 out << msg << "\n";

@@ -105,7 +105,7 @@ protected:
 
     void mouseMoveEvent ( QMouseEvent * event )
     {
-        qDebug() << (event->buttons() & Qt::LeftButton);
+//        qDebug() << (event->buttons() & Qt::LeftButton);
         
         //if(event->button() == Qt::LeftButton) // doesn't work. See explanation here: https://stackoverflow.com/a/10780752/11414500
         if(event->buttons() & Qt::LeftButton)
