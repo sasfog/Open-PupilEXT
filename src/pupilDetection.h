@@ -336,8 +336,8 @@ public slots:
     void setROIstereoImageOnePupilS(QRectF roi); // formerly void setSecondaryROI(QRectF roi);
     void setROIstereoImageTwoPupilRM(QRectF roi);
     void setROIstereoImageTwoPupilRS(QRectF roi);
-    void setROIstereoImageTwoPupilL1(QRectF roi);
-    void setROIstereoImageTwoPupilL2(QRectF roi);
+    void setROIstereoImageTwoPupilLM(QRectF roi);
+    void setROIstereoImageTwoPupilLS(QRectF roi);
     void setROImirrImageOnePupil1(QRectF roi);
     void setROImirrImageOnePupil2(QRectF roi);
 

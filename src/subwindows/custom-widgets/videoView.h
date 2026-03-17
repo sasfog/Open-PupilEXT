@@ -151,13 +151,13 @@ public slots:
 
     void updateView(const cv::Mat &img);
 
-    void setROI1SelectionR(float roiSize);
-    void setROI1SelectionR(QRectF roi);
-    void setROI2SelectionR(float roiSize);
-    void setROI2SelectionR(QRectF roi);
+    void setROI1Selection_rat(float roiSize);
+    void setROI1Selection_rat(QRectF roiR);
+    void setROI2Selection_rat(float roiSize);
+    void setROI2Selection_rat(QRectF roiR);
 
-    QRectF getROI1SelectionR();
-    QRectF getROI2SelectionR();
+    QRectF getROI1Selection_rat();
+    QRectF getROI2Selection_rat();
 
     void clearProcessedOverlayMemory();
 
@@ -199,11 +199,11 @@ public slots:
 signals:
 
     // these emit a QRectF, which has its x, y, width, height expressed as pixels of image width and height
-    void onROI1SelectionD(QRectF roiD);
-    void onROI2SelectionD(QRectF roiD);
+    void onROI1Selection(QRectF roiD);
+    void onROI2Selection(QRectF roiD);
 
     // these emit a QRectF, which has its x, y, width, height expressed as ratios of image width and height, expressed as floats between 0.0 and 1.0
-    void onROI1SelectionR(QRectF roiR);
-    void onROI2SelectionR(QRectF roiR);
+    void onROI1Selection_rat(QRectF roiR);
+    void onROI2Selection_rat(QRectF roiR);
 
 };

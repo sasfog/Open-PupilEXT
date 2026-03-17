@@ -59,8 +59,7 @@ public:
             openRecordingNameBase = openRecordingName.mid(0, openRecordingName.lastIndexOf('.'));
         //QString suggestedPathAndName = recentRecParentLocation + '/' + openRecordingNameBase + ".gif";
 
-        // TODO: add directory picker dialog button
-        // TODO: save gif!
+        // TODO: add directory picker dialog button (where to save gif)
 
         // ez nem jó. csak akkor kéne ezeknek újraíródnia, vagy legalábbis
         //  a fájlnévnek csak, ha új recordingot nyitunk meg

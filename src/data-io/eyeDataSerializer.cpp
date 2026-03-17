@@ -231,9 +231,11 @@ QString EyeDataSerializer::getHeaderCSV(const std::vector<QChar> &eyeIdentities,
             }
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
-                result = result % "timestamp_ms" % delim;
-                isTimestampAlreadyAdded = true;
+            if(v == PDataType::TIME_RAW_TIMESTAMP) {
+                if(!isTimestampAlreadyAdded) {
+                    result = result % "timestamp_ms" % delim;
+                    isTimestampAlreadyAdded = true;
+                }
             } else
                 result = result % PDataTypes::tyn.at(v) % ds % "_" % eyeIdentities[i] % "_" % camIdentities[i] % delim;
         }
@@ -312,10 +314,12 @@ void EyeDataSerializer::addLSLChannelsInfo_V1(const std::vector<QChar> &eyeIdent
         for(auto v : PDataTypes::dataOutputFields) {
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
-                chns.append_child("channel").append_child_value("label", "timestamp")
-                        .append_child_value("type", "timestamp").append_child_value("unit", "ms");
-                isTimestampAlreadyAdded = true;
+            if(v == PDataType::TIME_RAW_TIMESTAMP) {
+                if(!isTimestampAlreadyAdded) {
+                    chns.append_child("channel").append_child_value("label", "timestamp")
+                            .append_child_value("type", "timestamp").append_child_value("unit", "ms");
+                    isTimestampAlreadyAdded = true;
+                }
             } else
                 chns.append_child("channel").append_child_value("label", PDataTypes::tyn.at(v).toStdString()).append_child_value("eye", eyeStr)
                     .append_child_value("type", PDataTypes::tytXDF.at(v).toStdString()).append_child_value("unit", PDataTypes::tyd.at(v).toStdString()).append_child_value("camera", camStr);
@@ -442,9 +446,11 @@ std::vector<double> EyeDataSerializer::pupilToLSLsample_V1(quint64 timestamp, co
         for(auto v : PDataTypes::dataOutputFields) {
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
-                result.push_back((double) (timestamp));
-                isTimestampAlreadyAdded = true;
+            if(v == PDataType::TIME_RAW_TIMESTAMP) {
+                if(!isTimestampAlreadyAdded) {
+                    result.push_back((double) (timestamp));
+                    isTimestampAlreadyAdded = true;
+                }
             } else
                 result.push_back(Pupils[i].getPData(v));
         }
@@ -470,9 +476,11 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
 
 
             // TODO DEV KISZEDNI AMINT A PUPILLAL EGYÜTT KÖZVETíTETTÉ VÁLIK A TIMESTAMP A STRUCTON ÁT
-            if(!isTimestampAlreadyAdded && v == PDataType::TIME_RAW_TIMESTAMP) {
-                result = result % QString::number(timestamp);
-                isTimestampAlreadyAdded = true;
+            if(v == PDataType::TIME_RAW_TIMESTAMP) {
+                if(!isTimestampAlreadyAdded) {
+                    result = result % QString::number(timestamp);
+                    isTimestampAlreadyAdded = true;
+                }
             } else
                 result = result % delim % QString::number(Pupils[i].getPData(v));
         }

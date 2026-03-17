@@ -62,8 +62,8 @@ private:
     QAction *smallROIAct;
     QAction *middleROIAct;
 
-    VideoView *mainVideoView;
-    VideoView *secondaryVideoView;
+    VideoView *videoViewM;
+    VideoView *videoViewS;
 
     QStatusBar *statusBar;
     QLabel *cameraFPSValue;
@@ -98,8 +98,8 @@ private:
     QAction *showPositioningGuideAct;
     bool showPositioningGuide;
 
-    QRectF tempROIs[4]; // 0 -> mainVideoView.ROI1Selection, 1 -> secondaryVideoView->ROI1Selection
-                        // 2 -> mainVideoView.ROI2Selection, 3 -> secondaryVideoView->ROI2Selection
+    QRectF tempROIs[4]; // 0 -> videoViewM.ROI1Selection, 1 -> videoViewS->ROI1Selection
+                        // 2 -> videoViewM.ROI2Selection, 3 -> videoViewS->ROI2Selection
     
     void updateProcModeLabel();
 
@@ -107,8 +107,8 @@ private:
     bool isAutoParamModificationEnabled();
 
     void paintEvent(QPaintEvent *event) override {
-        mainVideoView->drawOverlay();
-        secondaryVideoView->drawOverlay();
+        videoViewM->drawOverlay();
+        videoViewS->drawOverlay();
     };
 
 public slots:

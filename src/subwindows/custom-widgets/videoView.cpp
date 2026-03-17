@@ -693,42 +693,42 @@ bool VideoView::saveROI1Selection() {
 
     //QRectF roi = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
     //QRectF roiDBoundingRect = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-    QRectF roiD = roi1Selection->sceneBoundingRect();
-    //QRectF roiD = roi1Selection->getRect();
-    QRectF roiR;
+    QRectF roi = roi1Selection->sceneBoundingRect();
+    //QRectF roi = roi1Selection->getRect();
+    QRectF roi_rat;
     if(imageSize.width>0 && imageSize.height>0)
-        roiR = QRectF( roiD.x()/imageSize.width, roiD.y()/imageSize.height, roiD.width()/imageSize.width, roiD.height()/imageSize.height );
+        roi_rat = QRectF(roi.x() / imageSize.width, roi.y() / imageSize.height, roi.width() / imageSize.width, roi.height() / imageSize.height );
     else {
         if(usingDoubleROI)
-            roiR = QRectF(0,0,0.5,1);
+            roi_rat = QRectF(0, 0, 0.5, 1);
         else
-            roiR = QRectF(0,0,1,1);
+            roi_rat = QRectF(0, 0, 1, 1);
     }
 
-    roi1SelectionRectLastR = roiR;
+    roi1SelectionRectLastR = roi_rat;
 
-    qDebug() << "imageSize.width=" << imageSize.width<<"; roiR.x()="<<roiR.x()<<"; roiR.width()="<<roiR.width();
-    qDebug() << "imageSize.height=" << imageSize.height<<"; roiR.y()="<<roiR.y()<<"; roiR.height()="<<roiR.height();
-    qDebug() << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width();
-    qDebug() << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height();
+    qDebug() << "imageSize.width=" << imageSize.width << "; roi_rat.x()=" << roi_rat.x() << "; roi_rat.width()=" << roi_rat.width();
+    qDebug() << "imageSize.height=" << imageSize.height << "; roi_rat.y()=" << roi_rat.y() << "; roi_rat.height()=" << roi_rat.height();
+    qDebug() << "imageSize.width=" << imageSize.width << "; roi.x()=" << roi.x() << "; roi.width()=" << roi.width();
+    qDebug() << "imageSize.height=" << imageSize.height << "; roi.y()=" << roi.y() << "; roi.height()=" << roi.height();
 
     // note: removed initialFit restriction
-    if(roiR.size().width() > 1 ||  roiR.size().height() > 1) {
+    if(roi_rat.size().width() > 1 || roi_rat.size().height() > 1) {
         qDebug() << "Saving ROI1 Selection: out of image bounds.";
         return false;
     }
 
     QRectF sceneRect = graphicsScene->sceneRect();
-    bool contains = graphicsScene->sceneRect().contains(roiD);
-    if( !graphicsScene->sceneRect().contains(roiD) ||
-            (roi1AllowedArea == ROIAllowedArea::RIGHT_HALF && roiR.left() < 0.5) ||
-            (roi1AllowedArea == ROIAllowedArea::LEFT_HALF && roiR.right() > 0.5) ) {
+    bool contains = graphicsScene->sceneRect().contains(roi);
+    if(!graphicsScene->sceneRect().contains(roi) ||
+       (roi1AllowedArea == ROIAllowedArea::RIGHT_HALF && roi_rat.left() < 0.5) ||
+       (roi1AllowedArea == ROIAllowedArea::LEFT_HALF && roi_rat.right() > 0.5) ) {
         qDebug() << "Saving ROI1 Selection: out of scene bounds.";
         return false;
     }
     //std::cout<<"ROI selected contained:" << graphicsScene->sceneRect().contains(roi) << " size: " << roi.topLeft().x() << ":" << roi.topLeft().x() << " - " << roi.height() << std::endl;
-    emit onROI1SelectionR(roiR);
-    emit onROI1SelectionD(roiD);
+    emit onROI1Selection_rat(roi_rat);
+    emit onROI1Selection(roi);
 
     return true;
 }
@@ -742,36 +742,36 @@ bool VideoView::saveROI2Selection() {
         return false;
 
     //QRectF roi = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-    QRectF roiD = roi2Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-    QRectF roiR;
+    QRectF roi = roi2Selection->sceneBoundingRect() - QMarginsF(0.5, 0.5, 0.5, 0.5);
+    QRectF roi_rat;
     if(imageSize.width>0 && imageSize.height>0)
-        roiR = QRectF( roiD.x()/imageSize.width, roiD.y()/imageSize.height, roiD.width()/imageSize.width, roiD.height()/imageSize.height );
+        roi_rat = QRectF(roi.x() / imageSize.width, roi.y() / imageSize.height, roi.width() / imageSize.width, roi.height() / imageSize.height );
     else {
-        roiR = QRectF(0,0.5,1,1);
+        roi_rat = QRectF(0, 0.5, 1, 1);
     }
 
-    roi2SelectionRectLastR = roiR;
+    roi2SelectionRectLastR = roi_rat;
 
-    qDebug() << "imageSize.width=" << imageSize.width<<"; roiR.x()="<<roiR.x()<<"; roiR.width()="<<roiR.width();
-    qDebug() << "imageSize.height=" << imageSize.height<<"; roiR.y()="<<roiR.y()<<"; roiR.height()="<<roiR.height();
-    qDebug() << "imageSize.width=" << imageSize.width<<"; roiD.x()="<<roiD.x()<<"; roiD.width()="<<roiD.width();
-    qDebug() << "imageSize.height=" << imageSize.height<<"; roiD.y()="<<roiD.y()<<"; roiD.height()="<<roiD.height();
+    qDebug() << "imageSize.width=" << imageSize.width << "; roi_rat.x()=" << roi_rat.x() << "; roi_rat.width()=" << roi_rat.width();
+    qDebug() << "imageSize.height=" << imageSize.height << "; roi_rat.y()=" << roi_rat.y() << "; roi_rat.height()=" << roi_rat.height();
+    qDebug() << "imageSize.width=" << imageSize.width << "; roi.x()=" << roi.x() << "; roi.width()=" << roi.width();
+    qDebug() << "imageSize.height=" << imageSize.height << "; roi.y()=" << roi.y() << "; roi.height()=" << roi.height();
 
     // note: removed initialFit restriction
-    if(roiR.size().width() > 1 ||  roiR.size().height() > 1) {
+    if(roi_rat.size().width() > 1 || roi_rat.size().height() > 1) {
         qDebug() << "Saving ROI2 Selection: out of image bounds.";
         return false;
     }
 
-    if( !graphicsScene->sceneRect().contains(roiD) ||
-            (roi2AllowedArea == ROIAllowedArea::RIGHT_HALF && roiR.left() < 0.5) ||
-            (roi2AllowedArea == ROIAllowedArea::LEFT_HALF && roiR.right() > 0.5) ) {
+    if(!graphicsScene->sceneRect().contains(roi) ||
+       (roi2AllowedArea == ROIAllowedArea::RIGHT_HALF && roi_rat.left() < 0.5) ||
+       (roi2AllowedArea == ROIAllowedArea::LEFT_HALF && roi_rat.right() > 0.5) ) {
         qDebug() << "Saving ROI2 Selection: out of scene bounds.";
         return false;
     }
     //std::cout<<"ROI selected contained:" << graphicsScene->sceneRect().contains(roi) << " size: " << roi.topLeft().x() << ":" << roi.topLeft().x() << " - " << roi.height() << std::endl;
-    emit onROI2SelectionR(roiR);
-    emit onROI2SelectionD(roiD);
+    emit onROI2Selection_rat(roi_rat);
+    emit onROI2Selection(roi);
 
     return true;
 }
@@ -864,7 +864,7 @@ void VideoView::onROI2Change() {
 // Sets a predefined ROI (GB: ROI nr 1) selection based on a given roi size in percentage i.e. 0.3
 // The predefined ROI preserved the image ratio
 // GB: modified for RATIO ROIs
-void VideoView::setROI1SelectionR(float roiSize) {
+void VideoView::setROI1Selection_rat(float roiSize) {
     // GB: roiSize>0.5 would not fit
     if(roiSize<=0 || (usingDoubleROI && roiSize>0.5))
         return; 
@@ -882,7 +882,7 @@ void VideoView::setROI1SelectionR(float roiSize) {
 // Sets a predefined ROI (GB: ROI nr 2) selection based on a given roi size in percentage i.e. 0.3
 // The predefined ROI preserved the image ratio
 // GB: added, and modified for RATIO ROIs
-void VideoView::setROI2SelectionR(float roiSize) {
+void VideoView::setROI2Selection_rat(float roiSize) {
     // GB: roiSize>0.5 would not fit
     if(roiSize<=0 || !usingDoubleROI || roiSize>0.5)
         return;
@@ -894,7 +894,7 @@ void VideoView::setROI2SelectionR(float roiSize) {
 
 // Sets a ROI (GB: ROI nr 1) selection based on a given rectangle
 // GB: modified for RATIO ROIs
-void VideoView::setROI1SelectionR(QRectF roiR) {
+void VideoView::setROI1Selection_rat(QRectF roiR) {
     if(roiR.isEmpty())
         return;
 
@@ -905,7 +905,7 @@ void VideoView::setROI1SelectionR(QRectF roiR) {
 }
 
 // Sets a ROI (and ROI nr 2) selection based on a given rectangle
-void VideoView::setROI2SelectionR(QRectF roiR) {
+void VideoView::setROI2Selection_rat(QRectF roiR) {
     if(roiR.isEmpty() || !usingDoubleROI)
         return;
 
@@ -970,10 +970,10 @@ void VideoView::setROI2AllowedArea(int roiAllowedArea) {
     roi2AllowedArea = roiAllowedArea;
 }
 
-QRectF VideoView::getROI1SelectionR(){
+QRectF VideoView::getROI1Selection_rat(){
     return roi1SelectionRectLastR;
 }
 
-QRectF VideoView::getROI2SelectionR(){
+QRectF VideoView::getROI2Selection_rat(){
     return roi2SelectionRectLastR;
 }

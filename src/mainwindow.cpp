@@ -1513,8 +1513,9 @@ void MainWindow::updateRois() {
         }
         if(!roiLM.isEmpty()) {
             QRectF roiLM_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilLM.rational", QRectF()).toRectF();
-            pupilDetectionWorker->setROIstereoImageTwoPupilL1(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiLM, roiLM_rat));
-            //pupilDetectionWorker->setROIstereoImageTwoPupilL1(roiMain2);
+            pupilDetectionWorker->setROIstereoImageTwoPupilLM(
+                    SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiLM, roiLM_rat));
+            //pupilDetectionWorker->setROIstereoImageTwoPupilLM(roiMain2);
         }
         if(!roiRS.isEmpty()) {
             QRectF roiRS_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilRS.rational", QRectF()).toRectF();
@@ -1524,8 +1525,9 @@ void MainWindow::updateRois() {
         }
         if(!roiLS.isEmpty()) {
             QRectF roiLS_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilLS.rational", QRectF()).toRectF();
-            pupilDetectionWorker->setROIstereoImageTwoPupilL2(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiLS, roiLS_rat));
-            //pupilDetectionWorker->setROIstereoImageTwoPupilL2(roiSecondary2);
+            pupilDetectionWorker->setROIstereoImageTwoPupilLS(
+                    SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiLS, roiLS_rat));
+            //pupilDetectionWorker->setROIstereoImageTwoPupilLS(roiSecondary2);
         }
         // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
         //     QRectF roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.discrete", QRectF()).toRectF();
@@ -1591,7 +1593,9 @@ void MainWindow::onTrackActClick() {
             pupilDetectionSettingsDialog->onSettingsChange();
         }
 
-        updateRois();
+        // NOTE: 2026.03.17. COMMENTED OUT. The rois do not need to be reset to rational unless necessary.
+        //  necessary means: when opening a new recording
+        //updateRois();
         // NOTE: This needs to be called AFTER all pupil detection ROIs are loaded and set in the current
         // pupilDetection instance, otherwise autoParam will not be done
 

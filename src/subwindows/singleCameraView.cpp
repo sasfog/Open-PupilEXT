@@ -418,8 +418,8 @@ void SingleCameraView::loadSettings() {
     //     roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
 
-    videoView->setROI1SelectionR(roi1);
-    videoView->setROI2SelectionR(roi2);
+    videoView->setROI1Selection_rat(roi1);
+    videoView->setROI2Selection_rat(roi2);
 
     // these are needed in order to save the ROI even if QSettings is reset and the default roi value is set
     videoView->saveROI1Selection();
@@ -597,11 +597,11 @@ void SingleCameraView::onDisplayPupilViewClick(bool value) {
 
 void SingleCameraView::onSetROIClick(float roiSize) {
 
-    tempROIRect1 = videoView->getROI1SelectionR();
-    videoView->setROI1SelectionR(roiSize);
+    tempROIRect1 = videoView->getROI1Selection_rat();
+    videoView->setROI1Selection_rat(roiSize);
     if(videoView->getDoubleROI()) {
-        tempROIRect2 = videoView->getROI2SelectionR();
-        videoView->setROI2SelectionR(roiSize);
+        tempROIRect2 = videoView->getROI2Selection_rat();
+        videoView->setROI2Selection_rat(roiSize);
     }
 
     if(roiSize == -1.0) {// "Custom"
@@ -750,19 +750,19 @@ void SingleCameraView::onCameraPlaybackChanged() {
 
 void SingleCameraView::updateForPupilDetectionProcMode() {
 
-    disconnect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageOnePupil(QRectF)));
-    disconnect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIsingleImageOnePupil(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
     
-    disconnect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilA(QRectF)));
-    disconnect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
-    disconnect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilB(QRectF)));
-    disconnect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
-
-    disconnect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil1(QRectF)));
-    disconnect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
-    disconnect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil2(QRectF)));
-    disconnect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
-
+    disconnect(videoView, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilR(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilL(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+/*
+    disconnect(videoView, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil1(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil2(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+*/
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
@@ -770,8 +770,8 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
         videoView->setDoubleROI(false);
         videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
 
-        connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageOnePupil(QRectF)));
-        connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+        connect(videoView, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIsingleImageOnePupil(QRectF)));
+        connect(videoView, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
         
     } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
         //qDebug() << "SINGLE_IMAGE_TWO_PUPIL" << Qt::endl;
@@ -779,10 +779,10 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
         videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
         videoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
 
-        connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilA(QRectF)));
-        connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
-        connect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilB(QRectF)));
-        connect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+        connect(videoView, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilR(QRectF)));
+        connect(videoView, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+        connect(videoView, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilL(QRectF)));
+        connect(videoView, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
         
     // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
     //     //qDebug() << "MIRR_IMAGE_ONE_PUPIL" << Qt::endl;
@@ -867,9 +867,9 @@ void SingleCameraView::displayFileCameraFrame(int frameNumber) {
 }
 
 void SingleCameraView::onDiscardROISelectionClick(){
-    videoView->setROI1SelectionR(tempROIRect1);
+    videoView->setROI1Selection_rat(tempROIRect1);
     if(videoView->getDoubleROI())
-        videoView->setROI2SelectionR(tempROIRect2);
+        videoView->setROI2Selection_rat(tempROIRect2);
     onSaveROIClick();
 }
 

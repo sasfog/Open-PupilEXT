@@ -408,7 +408,7 @@ void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
         //      qDebug() << "pupilDetection image processed, unlocking";
         imagePublished->wakeAll();
         if (trackingOn) {
-            qDebug() << "Locking image processing";
+//            qDebug() << "Locking image processing";
             imageProcessed->wait(imageMutex);
         }
     }
@@ -609,7 +609,7 @@ void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
         //      qDebug() << "pupilDetection image processed, unlocking";
         imagePublished->wakeAll();
         if (trackingOn) {
-            qDebug() << "Locking image processing";
+//            qDebug() << "Locking image processing";
             imageProcessed->wait(imageMutex);
         }
     }
@@ -819,7 +819,7 @@ void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
         //      qDebug() << "pupilDetection image processed, unlocking";
         imagePublished->wakeAll();
         if (trackingOn) {
-            qDebug() << "Locking image processing";
+//            qDebug() << "Locking image processing";
             imageProcessed->wait(imageMutex);
         }
     }
@@ -1193,11 +1193,11 @@ void PupilDetection::setROIstereoImageTwoPupilRS(QRectF roi) {
     if(!roi.isEmpty())
         ROIstereoImageTwoPupilRS = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIstereoImageTwoPupilL1(QRectF roi) {
+void PupilDetection::setROIstereoImageTwoPupilLM(QRectF roi) {
     if(!roi.isEmpty())
         ROIstereoImageTwoPupilLM = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
-void PupilDetection::setROIstereoImageTwoPupilL2(QRectF roi) {
+void PupilDetection::setROIstereoImageTwoPupilLS(QRectF roi) {
     if(!roi.isEmpty())
         ROIstereoImageTwoPupilLS = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }

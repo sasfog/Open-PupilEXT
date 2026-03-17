@@ -1032,15 +1032,15 @@ void ImageReader::runStereo() {
 
             if (synchronised) {
                 const QMutexLocker locker(imageMutex);
-                qDebug() << "imageReader locking";
-                qDebug() << "Current image index: " << currentImageIndex;
+//                qDebug() << "imageReader locking";
+//                qDebug() << "Current image index: " << currentImageIndex;
                 runStereoImpl(startTime, elapsedDuration, img, imgSecondary);
                 imageProcessed->wakeAll();
                 if (state == PlaybackState::PLAYING) {
                     imagePublished->wait(imageMutex);
                 }
             } else {
-                qDebug() << "Current image index: " << currentImageIndex;
+//                qDebug() << "Current image index: " << currentImageIndex;
                 runStereoImpl(startTime, elapsedDuration, img, imgSecondary);
             }
             currentImageIndex++;
