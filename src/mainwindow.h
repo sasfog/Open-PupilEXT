@@ -338,8 +338,8 @@ private slots:
     void onCameraCalibrationEnabled();
     void onCameraCalibrationDisabled();
 
-    void onOpenImageDirectory();
-    void onExportRecSection();
+    void onOpenImageRecordingClicked();
+    void onExportRecSectionClicked();
     void onExportAllowedToEnd();
 
     void onCameraClick();
@@ -353,6 +353,7 @@ private slots:
     //void onSubjectsClick();
 
     void onTrackActClick();
+    void updateRois(); // DEV
     void onRecordClick();
 
     void onGeneralSettingsChange();

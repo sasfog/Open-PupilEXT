@@ -413,24 +413,24 @@ void StereoCameraView::loadSettings() {
     
     ProcMode val = pupilDetection->getCurrentProcMode();
 
-    QRectF roiMain1R;
-    QRectF roiMain2R;
-    QRectF roiSecondary1R;
-    QRectF roiSecondary2R;
+    QRectF roiRM_rat;
+    QRectF roiLM_rat;
+    QRectF roiRS_rat;
+    QRectF roiLS_rat;
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
-        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
+        roiRM_rat = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupilM.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
+        roiRS_rat = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupilS.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilR1.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
-        roiMain2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilL1.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
-        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilR2.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
-        roiSecondary2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilL2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
+        roiRM_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilRM.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roiLM_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilLM.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
+        roiRS_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilRS.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roiLS_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilLS.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
 
-    mainVideoView->setROI1SelectionR(roiMain1R);
-    mainVideoView->setROI2SelectionR(roiMain2R);
-    secondaryVideoView->setROI1SelectionR(roiSecondary1R);
-    secondaryVideoView->setROI2SelectionR(roiSecondary2R);
+    mainVideoView->setROI1SelectionR(roiRM_rat);
+    mainVideoView->setROI2SelectionR(roiLM_rat);
+    secondaryVideoView->setROI1SelectionR(roiRS_rat);
+    secondaryVideoView->setROI2SelectionR(roiLS_rat);
 
     // these are needed in order to save the ROI even if QSettings is reset and the default roi value is set
     mainVideoView->saveROI1Selection();
@@ -516,7 +516,7 @@ void StereoCameraView::updateView(const CameraImage &cimg, const int &procMode, 
     }
 
     mainVideoView->updateViewProcessed(cimg.img, mainViewROIs, mainViewPupils);
-    secondaryVideoView->updateViewProcessed(cimg.imgSecondary, secondaryViewROIs, secondaryViewPupils);
+    secondaryVideoView->updateViewProcessed(cimg.imgS, secondaryViewROIs, secondaryViewPupils);
 }
 
 
@@ -534,7 +534,7 @@ void StereoCameraView::updateView(const CameraImage &cimg) {
     // statusBar->showMessage(QLocale::system().toString(date));
     
     mainVideoView->updateView(cimg.img);
-    secondaryVideoView->updateView(cimg.imgSecondary);
+    secondaryVideoView->updateView(cimg.imgS);
 }
 
 void StereoCameraView::updateCameraFPS(double fps) {
@@ -777,63 +777,63 @@ void StereoCameraView::onPlotROIClick(bool value) {
 
 // Saves the ROI selection to the application wide settings (which are persisted to file)
 // saves main view, roi nr 1
-void StereoCameraView::saveMainROI1Selection(QRectF roiR) {
+void StereoCameraView::saveMainROI1Selection(QRectF roi_rat) {
     qDebug() << "Saving Main ROI 1 selection" << Qt::endl;
 
     QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil1.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil1.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilM.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilM.discrete", roi);
         //qDebug() << "Pupil, viewpoint 1" << Qt::endl;
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilR1.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilR1.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRM.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRM.discrete", roi);
         //qDebug() << "Pupil A, viewpoint 1" << Qt::endl;
     }
 }
 
 // Saves the ROI selection to the application wide settings (which are persisted to file)
 // saves secondary view, roi nr 1
-void StereoCameraView::saveSecondaryROI1Selection(QRectF roiR) {
+void StereoCameraView::saveSecondaryROI1Selection(QRectF roi_rat) {
     qDebug() << "Saving Secondary ROI 1 selection" << Qt::endl;
 
     QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil2.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil2.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilS.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilS.discrete", roi);
         //qDebug() << "Pupil, viewpoint 2" << Qt::endl;
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilR2.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilR2.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRS.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRS.discrete", roi);
         //qDebug() << "Pupil A, viewpoint 2" << Qt::endl;
     }
 }
 
-void StereoCameraView::saveMainROI2Selection(QRectF roiR) {
+void StereoCameraView::saveMainROI2Selection(QRectF roi_rat) {
     qDebug() << "Saving Main ROI 2 selection" << Qt::endl;
     
     QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
     // STEREO_IMAGE_TWO_PUPIL
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilL1.rational", roiR);
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilL1.discrete", roiD);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLM.rational", roi_rat);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLM.discrete", roi);
     //qDebug() << "Pupil B, viewpoint 1" << Qt::endl;
 }
 
-void StereoCameraView::saveSecondaryROI2Selection(QRectF roiR) {
+void StereoCameraView::saveSecondaryROI2Selection(QRectF roi_rat) {
     qDebug() << "Saving Secondary ROI 2 selection" << Qt::endl;
 
     QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
     // STEREO_IMAGE_TWO_PUPIL
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilL2.rational", roiR);
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilL2.discrete", roiD);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLS.rational", roi_rat);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLS.discrete", roi);
     //qDebug() << "Pupil B, viewpoint 2" << Qt::endl; 
 }
 

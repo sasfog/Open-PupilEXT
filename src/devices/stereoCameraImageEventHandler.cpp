@@ -78,7 +78,7 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
             if(cameraContextValue == 0) {
                 stereoImage.img = img.clone();
             } else if(cameraContextValue == 1) {
-                stereoImage.imgSecondary = img.clone();
+                stereoImage.imgS = img.clone();
             }
             //std::cout<< "Stereoimage complete: " << stereoImage.frameNumber << " " << stereoImage.timestamp <<std::endl;
             //std::cout<< "-------------------------------" <<std::endl;
@@ -91,7 +91,7 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
             if(cameraContextValue == 0) {
                 stereoImage.img = img.clone();
             } else if(cameraContextValue == 1) {
-                stereoImage.imgSecondary = img.clone();
+                stereoImage.imgS = img.clone();
             }
         }
         mutex.unlock();
@@ -280,7 +280,7 @@ void StereoCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
                 if(cameraContextValue == 0) {
                     ((StereoCameraImageEventHandler*)callbackData->emitter)->stereoImage.img = img.clone();
                 } else if(cameraContextValue == 1) {
-                    ((StereoCameraImageEventHandler*)callbackData->emitter)->stereoImage.imgSecondary = img.clone();
+                    ((StereoCameraImageEventHandler*)callbackData->emitter)->stereoImage.imgS = img.clone();
                 }
                 //std::cout<< "Stereoimage complete: " << stereoImage.frameNumber << " " << stereoImage.timestamp <<std::endl;
                 //std::cout<< "-------------------------------" <<std::endl;
@@ -293,7 +293,7 @@ void StereoCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
                 if(cameraContextValue == 0) {
                     ((StereoCameraImageEventHandler*)callbackData->emitter)->stereoImage.img = img.clone();
                 } else if(cameraContextValue == 1) {
-                    ((StereoCameraImageEventHandler*)callbackData->emitter)->stereoImage.imgSecondary = img.clone();
+                    ((StereoCameraImageEventHandler*)callbackData->emitter)->stereoImage.imgS = img.clone();
                 }
             }
             ((StereoCameraImageEventHandler*)callbackData->emitter)->mutex.unlock();
@@ -327,7 +327,7 @@ void StereoCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
 // TODO: do this properly, after having implemented a multiple-frame buffer stack instead of this one(x2) images buffer
 void StereoCameraImageEventHandler::dropAllPending() {
     stereoImage.img = cv::Mat();
-    stereoImage.imgSecondary = cv::Mat();
+    stereoImage.imgS = cv::Mat();
     stereoImage.timestamp = 0;
 }
 

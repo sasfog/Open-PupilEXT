@@ -316,13 +316,13 @@ void MainWindow::createActions() {
     QMenu *fileMenu = menuBar()->addMenu(tr("File"));
 
     // Note: made global to let is get disabled/enabled, whether there is already an opened directory or not
-    fileOpenAct = fileMenu->addAction(tr("Open Image Recording"), this, &MainWindow::onOpenImageDirectory);
+    fileOpenAct = fileMenu->addAction(tr("Open Image Recording"), this, &MainWindow::onOpenImageRecordingClicked);
     fileOpenAct->setIcon(fileOpenIcon);
     fileOpenAct->setIconVisibleInMenu(true);
-    fileOpenAct->setStatusTip(tr("Open Image Directory for Playback. Single and Stereo Mode supported."));
+    fileOpenAct->setStatusTip(tr("Open Image Recording for Playback. Single and Stereo Mode supported."));
     fileMenu->addAction(fileOpenAct);
 
-    exportRecSectionAct = fileMenu->addAction(tr("Export Recording Section"), this, &MainWindow::onExportRecSection);
+    exportRecSectionAct = fileMenu->addAction(tr("Export Recording Section"), this, &MainWindow::onExportRecSectionClicked);
     exportRecSectionAct->setIcon(exportRecSectionIcon);
     exportRecSectionAct->setIconVisibleInMenu(true);
     exportRecSectionAct->setStatusTip(tr("Export a section of an existing Image Recording to animated .gif for presentation."));
@@ -907,14 +907,23 @@ void MainWindow::onCameraFreezePressed()
     emit cameraPlaybackChanged();
 }
 
-void MainWindow::onCameraPlaybackChanged()
-{
-    if (cameraPlaying){
-        stopCamera();
+// TODO: remove. Playback is not anymore managed by mainwindow,
+//  but playback control dialog. However, the usages of cameraPlaying bool should be
+//  precisely removed/changed everywhere, so yet I left this here.
+//  However, for the special case when someone hits Freeze, this is now run. Could be changed to a cleaner solution
+void MainWindow::onCameraPlaybackChanged() {
+    if (!selectedCamera)
+        return;
+    if (selectedCamera->getType() != STEREO_IMAGE_FILE && selectedCamera->getType() != SINGLE_IMAGE_FILE) {
+        if (selectedCamera->isGrabbing()) {
+            selectedCamera->stopGrabbing();
+            qInfo() << "Camera Freeze: on";
+        } else {
+            selectedCamera->startGrabbing();
+            qInfo() << "Camera Freeze: off";
+        }
     }
-    else{ 
-        startCamera();
-    }
+    cameraPlaying = !cameraPlaying;
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
@@ -1454,6 +1463,80 @@ void MainWindow::updateOpenCVCamerasMenu() {
 }
  */
 
+void MainWindow::updateRois() {
+    int val = pupilDetectionWorker->getCurrentProcMode();
+    // this needs to happen, because if we just open a camera, and start tracking, no ROI has been set for pupilDetection before
+    if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+        QRectF roi = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
+        if(!roi.isEmpty()){
+            QRectF roi_rat = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIsingleImageOnePupil(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roi, roi_rat));
+        }
+    } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        QRectF roiR = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilR.discrete", QRectF()).toRectF();
+        QRectF roiL = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilL.discrete", QRectF()).toRectF();
+        if(!roiR.isEmpty()) {
+            QRectF roiR_rat = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilR.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIsingleImageTwoPupilR(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiR, roiR_rat));
+            //pupilDetectionWorker->setROIsingleImageTwoPupilR(roiR);
+        }
+        if(!roiL.isEmpty()) {
+            QRectF roiL_rat = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupilL.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIsingleImageTwoPupilL(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiL, roiL_rat));
+            //pupilDetectionWorker->setROIsingleImageTwoPupilL(roiB);
+        }
+    } else if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
+        QRectF roiM = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupilM.discrete", QRectF()).toRectF();
+        QRectF roiS = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupilS.discrete", QRectF()).toRectF();
+        if(!roiM.isEmpty()) {
+            QRectF roiM_rat = applicationSettings->value("SingleCameraView.ROIstereoImageOnePupilM.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIstereoImageOnePupilM(
+                    SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiM, roiM_rat));
+            //pupilDetectionWorker->setROIstereoImageOnePupilM(roiMain1);
+        }
+        if(!roiS.isEmpty()) {
+            QRectF roiS_rat = applicationSettings->value("SingleCameraView.ROIstereoImageOnePupilS.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIstereoImageOnePupilS(
+                    SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiS, roiS_rat));
+            //pupilDetectionWorker->setROIstereoImageOnePupilS(roiSecondary1);
+        }
+    } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
+        QRectF roiRM = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilRM.discrete", QRectF()).toRectF();
+        QRectF roiLM = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilLM.discrete", QRectF()).toRectF();
+        QRectF roiRS = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilRS.discrete", QRectF()).toRectF();
+        QRectF roiLS = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilLS.discrete", QRectF()).toRectF();
+        if(!roiRM.isEmpty()) {
+            QRectF roiRM_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilRM.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIstereoImageTwoPupilRM(
+                    SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiRM, roiRM_rat));
+            //pupilDetectionWorker->setROIstereoImageTwoPupilRM(roiMain1);
+        }
+        if(!roiLM.isEmpty()) {
+            QRectF roiLM_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilLM.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIstereoImageTwoPupilL1(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiLM, roiLM_rat));
+            //pupilDetectionWorker->setROIstereoImageTwoPupilL1(roiMain2);
+        }
+        if(!roiRS.isEmpty()) {
+            QRectF roiRS_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilRS.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIstereoImageTwoPupilRS(
+                    SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiRS, roiRS_rat));
+            //pupilDetectionWorker->setROIstereoImageTwoPupilRS(roiSecondary1);
+        }
+        if(!roiLS.isEmpty()) {
+            QRectF roiLS_rat = applicationSettings->value("SingleCameraView.ROIstereoImageTwoPupilLS.rational", QRectF()).toRectF();
+            pupilDetectionWorker->setROIstereoImageTwoPupilL2(SupportFunctions::calculateRoiD(selectedCamera->getImageROI(), roiLS, roiLS_rat));
+            //pupilDetectionWorker->setROIstereoImageTwoPupilL2(roiSecondary2);
+        }
+        // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //     QRectF roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.discrete", QRectF()).toRectF();
+        //     QRectF roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.discrete", QRectF()).toRectF();
+        //     if(!roi1.isEmpty())
+        //         pupilDetectionWorker->setROImirrImageOnePupil1(roi1);
+        //     if(!roi2.isEmpty())
+        //         pupilDetectionWorker->setROImirrImageOnePupil2(roi2);
+    }
+}
+
 void MainWindow::onTrackActClick() {
 
     if(trackingOn) {
@@ -1507,51 +1590,8 @@ void MainWindow::onTrackActClick() {
             //pupilDetectionSettingsDialog->updateProcModeEnabled();
             pupilDetectionSettingsDialog->onSettingsChange();
         }
-    
-        int val = pupilDetectionWorker->getCurrentProcMode();
-        // this needs to happen, because if we just open a camera, and start tracking, no ROI has been set for pupilDetection before
-        if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
-            if(!roi1D.isEmpty()){
-                QRectF initRoi = selectedCamera->getImageROI();
-                QRectF roi1R = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
-                pupilDetectionWorker->setROIsingleImageOnePupil(SupportFunctions::calculateRoiD(initRoi, roi1D, roi1R));
-                }
-        } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-            QRectF roiA = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilR.discrete", QRectF()).toRectF();
-            QRectF roiB = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilL.discrete", QRectF()).toRectF();
-            if(!roiA.isEmpty())
-                pupilDetectionWorker->setROIsingleImageTwoPupilR(roiA);
-            if(!roiB.isEmpty())
-                pupilDetectionWorker->setROIsingleImageTwoPupilL(roiB);
-        } else if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-            QRectF roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.discrete", QRectF()).toRectF();
-            QRectF roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.discrete", QRectF()).toRectF();
-            if(!roiMain1.isEmpty())
-                pupilDetectionWorker->setROIstereoImageOnePupil1(roiMain1);
-            if(!roiSecondary1.isEmpty())
-                pupilDetectionWorker->setROIstereoImageOnePupil2(roiSecondary1);
-        } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-            QRectF roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilR1.discrete", QRectF()).toRectF();
-            QRectF roiMain2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilL1.discrete", QRectF()).toRectF();
-            QRectF roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilR2.discrete", QRectF()).toRectF();
-            QRectF roiSecondary2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilL2.discrete", QRectF()).toRectF();
-            if(!roiMain1.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilR1(roiMain1);
-            if(!roiMain2.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilL1(roiMain2);
-            if(!roiSecondary1.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilR2(roiSecondary1);
-            if(!roiSecondary2.isEmpty())
-                pupilDetectionWorker->setROIstereoImageTwoPupilL2(roiSecondary2);
-        // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        //     QRectF roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.discrete", QRectF()).toRectF();
-        //     QRectF roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.discrete", QRectF()).toRectF();
-        //     if(!roi1.isEmpty())
-        //         pupilDetectionWorker->setROImirrImageOnePupil1(roi1);
-        //     if(!roi2.isEmpty())
-        //         pupilDetectionWorker->setROImirrImageOnePupil2(roi2);
-        }
+
+        updateRois();
         // NOTE: This needs to be called AFTER all pupil detection ROIs are loaded and set in the current
         // pupilDetection instance, otherwise autoParam will not be done
 
@@ -1998,8 +2038,9 @@ void MainWindow::onCameraDisconnectClick() {
         playbackSynchroniser = nullptr;
     }
 
-    fileOpenAct->setEnabled(true);
-    exportRecSectionAct->setEnabled(false);
+    // NOTE: thease are already dealt with, in resettatus(false);
+//    fileOpenAct->setEnabled(true);
+//    exportRecSectionAct->setEnabled(false);
 
     if (selectedCamera && signalPubSubHandler) {
         disconnect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler,
@@ -2812,7 +2853,7 @@ void MainWindow::onCreateGraphPlot(const PDataType &value) {
     }
 }
 
-void MainWindow::onOpenImageDirectory() {
+void MainWindow::onOpenImageRecordingClicked() {
     //QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.jpeg *.bmp *.tiff *.tif *.webp)"));
     QFileDialog dialog(
             this,
@@ -2900,7 +2941,7 @@ void MainWindow::onOpenImageDirectory() {
     openImageFileSource(imageSource, 0);
 }
 
-void MainWindow::onExportRecSection() {
+void MainWindow::onExportRecSectionClicked() {
 
     // show dialog, and if it returns with "ok" response, do the export
     ExportRecSectionDialog *dialog = new ExportRecSectionDialog(
@@ -3374,12 +3415,26 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
 
     // If everything went fine
 
-    fileOpenAct->setEnabled(false);
-    exportRecSectionAct->setEnabled(true);
+    // NOTE: these are already dealt with, in resetStatus(true);
+//    fileOpenAct->setEnabled(false);
+//    exportRecSectionAct->setEnabled(true);
+
     currentStatusMessageLabel->setText("Image file source: " + SupportFunctions::shortenStringForDisplay(imageSource, 100));
     currentStatusMessageLabel->setToolTip(imageSource);
     // We also store the recent path in QSettings
     setRecentImageReadingDirectory(recordingParentLocation);
+
+    resetStatus(true);
+
+    // DEV: 2026.03.16
+    updateRois();
+    if(stereoCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE)) {
+        stereoCameraChildWidget->updateForPupilDetectionProcMode();
+//        stereoCameraChildWidget->update();
+    } else if(singleCameraChildWidget && (selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA || selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE)) {
+        singleCameraChildWidget->updateForPupilDetectionProcMode();
+//        singleCameraChildWidget->update();
+    }
 
 }
 
@@ -3848,28 +3903,6 @@ void MainWindow::loadSharpnessWindow(){
 //    }
 }
 
-void MainWindow::stopCamera()
-{
-    if (selectedCamera){
-        // TODO: remove these completely. Playback is not anymore managed by mainwindow,
-        //  but playback control dialog. However, the usages of cameraPlaying bool should be
-        //  precisely removed/changed everywhere, so yet I left this here
-//        selectedCamera->stopGrabbing();
-        cameraPlaying = false;
-    }
-}
-
-void MainWindow::startCamera()
-{
-    if (selectedCamera){
-        // TODO: remove these completely. Playback is not anymore managed by mainwindow,
-        //  but playback control dialog. However, the usages of cameraPlaying bool should be
-        //  precisely removed/changed everywhere, so yet I left this here
-//        selectedCamera->startGrabbing();
-        cameraPlaying = true;
-    }
-}
-
 void MainWindow::resetStatus(bool isConnect)
 {
     bool realCameraSelected = (selectedCamera && (selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE));
@@ -3898,6 +3931,7 @@ void MainWindow::resetStatus(bool isConnect)
         manualIncTrialAct->setEnabled(realCameraSelected);
         forceResetMessageAct->setEnabled(realCameraSelected);
 
+        fileOpenAct->setEnabled(false);
         exportRecSectionAct->setEnabled(selectedCamera && (selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE));
 
 //        streamingSettingsAct->setEnabled(true);
@@ -3934,6 +3968,7 @@ void MainWindow::resetStatus(bool isConnect)
         manualIncTrialAct->setEnabled(false);
         forceResetMessageAct->setEnabled(false);
 
+        fileOpenAct->setEnabled(true);
         exportRecSectionAct->setEnabled(false);
 
 //        streamingSettingsAct->setEnabled(false); / This should be enabled even if disconnected from camera
@@ -4069,9 +4104,9 @@ void MainWindow::connectCameraPlaybackChangedSlots()
     // but we are actually not displaying anything else in the views, just fileCamera frames,
     // so I dedicated separate functions for them, which only take the frameNumber,
     // implemented for both single and stereo camera views. This is ok too
-    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget && singleCameraChildWidget) {
+    if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget && imagePlaybackControlDialog) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), singleCameraChildWidget, SLOT(displayFileCameraFrame(int)));
-    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget && singleCameraChildWidget) {
+    } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget && imagePlaybackControlDialog) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), stereoCameraChildWidget, SLOT(displayFileCameraFrame(int)));
     }
 }

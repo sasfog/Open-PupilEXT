@@ -174,10 +174,10 @@ StereoCameraCalibrationView::~StereoCameraCalibrationView() {
 // Received image signals from the calibration process
 void StereoCameraCalibrationView::updateView(const CameraImage &cimg) {
 
-    if(!cimg.img.empty() && !cimg.imgSecondary.empty()) {
+    if(!cimg.img.empty() && !cimg.imgS.empty()) {
 
         mainVideoView->updateView(cimg.img);
-        secondaryVideoView->updateView(cimg.imgSecondary);
+        secondaryVideoView->updateView(cimg.imgS);
     }
 }
 

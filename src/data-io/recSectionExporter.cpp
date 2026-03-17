@@ -375,7 +375,7 @@ void RecSectionExporter::processImage(CameraImage mimg, std::vector<cv::Rect> RO
     std::vector<cv::Mat> images;
     images.push_back(mimg.img.clone());
     if(mimg.type == STEREO_IMAGE_FILE)
-        images.push_back(mimg.imgSecondary.clone());
+        images.push_back(mimg.imgS.clone());
 
     for(int i = 0; i < images.size(); i++) {
         cv::Mat tempImage = images[i];

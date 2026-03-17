@@ -230,18 +230,18 @@ private:
     cv::Ptr<cv::quality::QualityBRISQUE> brisque;
 
     // NOTE:
-    // in case of e.g.: ROIstereoImageTwoPupilR1
+    // in case of e.g.: ROIstereoImageTwoPupilRM
     // the NUMBER in the end denotes the different VIEWPOINTS of the same pupil
     // the LETTER denotes different EYES
     cv::Rect ROIsingleImageOnePupil; // formerly cv::Rect ROI;
     cv::Rect ROIsingleImageTwoPupilR;
     cv::Rect ROIsingleImageTwoPupilL;
-    cv::Rect ROIstereoImageOnePupil1; // formerly cv::Rect ROI;
-    cv::Rect ROIstereoImageOnePupil2; // formerly cv::Rect ROISecondary;
-    cv::Rect ROIstereoImageTwoPupilR1;
-    cv::Rect ROIstereoImageTwoPupilR2;
-    cv::Rect ROIstereoImageTwoPupilL1;
-    cv::Rect ROIstereoImageTwoPupilL2;
+    cv::Rect ROIstereoImageOnePupilM; // formerly cv::Rect ROI;
+    cv::Rect ROIstereoImageOnePupilS; // formerly cv::Rect ROISecondary;
+    cv::Rect ROIstereoImageTwoPupilRM;
+    cv::Rect ROIstereoImageTwoPupilRS;
+    cv::Rect ROIstereoImageTwoPupilLM;
+    cv::Rect ROIstereoImageTwoPupilLS;
     cv::Rect ROImirrImageOnePupil1;
     cv::Rect ROImirrImageOnePupil2;
 
@@ -320,22 +320,22 @@ public slots:
     QRect getROIsingleImageOnePupil();
     QRect getROIsingleImageTwoPupilR();
     QRect getROIsingleImageTwoPupilL();
-    QRect getROIstereoImageOnePupil1();
-    QRect getROIstereoImageOnePupil2();
-    QRect getROIstereoImageTwoPupilR1();
-    QRect getROIstereoImageTwoPupilR2();
-    QRect getROIstereoImageTwoPupilL1();
-    QRect getROIstereoImageTwoPupilL2();
+    QRect getROIstereoImageOnePupilM();
+    QRect getROIstereoImageOnePupilS();
+    QRect getROIstereoImageTwoPupilRM();
+    QRect getROIstereoImageTwoPupilRS();
+    QRect getROIstereoImageTwoPupilLM();
+    QRect getROIstereoImageTwoPupilLS();
     QRect getROImirrImageOnePupil1();
     QRect getROImirrImageOnePupil2();
     
     void setROIsingleImageOnePupil(QRectF roi); // formerly void setROI(QRectF roi);
     void setROIsingleImageTwoPupilR(QRectF roi);
     void setROIsingleImageTwoPupilL(QRectF roi);
-    void setROIstereoImageOnePupil1(QRectF roi); // formerly void setROI(QRectF roi);
-    void setROIstereoImageOnePupil2(QRectF roi); // formerly void setSecondaryROI(QRectF roi);
-    void setROIstereoImageTwoPupilR1(QRectF roi);
-    void setROIstereoImageTwoPupilR2(QRectF roi);
+    void setROIstereoImageOnePupilM(QRectF roi); // formerly void setROI(QRectF roi);
+    void setROIstereoImageOnePupilS(QRectF roi); // formerly void setSecondaryROI(QRectF roi);
+    void setROIstereoImageTwoPupilRM(QRectF roi);
+    void setROIstereoImageTwoPupilRS(QRectF roi);
     void setROIstereoImageTwoPupilL1(QRectF roi);
     void setROIstereoImageTwoPupilL2(QRectF roi);
     void setROImirrImageOnePupil1(QRectF roi);

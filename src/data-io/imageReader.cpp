@@ -768,7 +768,7 @@ bool ImageReader::quickReadImageStereo(cv::Mat &img, cv::Mat &imgSecondary, cons
             imageSourceZipInnerFile->close();
             ok &= (imageSourceZipInnerFile->getZipError() == UNZ_OK);
             imgSecondary = cv::imdecode(cv::InputArray(std::vector<uchar>(a.begin(), a.end())), cv::IMREAD_GRAYSCALE);
-            //ok &= !imgSecondary.empty();
+            //ok &= !imgS.empty();
         } else { // if(imageReaderSource == IMSOURCE_VIDEO) {
 
             frame = av_frame_alloc();
@@ -1098,7 +1098,7 @@ ImageReader::runStereoImpl(std::chrono::steady_clock::time_point &startTime, std
     CameraImage cimg;
     cimg.type = CameraImageType::STEREO_IMAGE_FILE;
     cimg.img = img.clone();
-    cimg.imgSecondary = imgSecondary.clone();
+    cimg.imgS = imgSecondary.clone();
     //cimg.timestamp = startTimestamp;
     cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
     cimg.frameNumber = currentImageIndex;

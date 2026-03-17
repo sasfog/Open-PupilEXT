@@ -38,7 +38,9 @@ void SingleCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         //std::cout << "SizeX: " << ptrGrabResult->GetWidth() << std::endl;
         //std::cout << "SizeY: " << ptrGrabResult->GetHeight() << std::endl;
 
-        //// DEV DEE DEMO LUND
+        //// TODO: artificially discard every nth frame. e.g. if triggering is hardware determined,
+        ///   but we do not want to capture all of them. Useful when hardware triggering is simply
+        ///   locked to an external eyetracker and we just want to sync to that.
         //if (dummyFrameLimiterFrameCount < 2) {
         //    dummyFrameLimiterFrameCount++;
         //    return;

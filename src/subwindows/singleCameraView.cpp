@@ -687,39 +687,39 @@ void SingleCameraView::onPlotROIClick(bool value) {
     emit onShowROI(plotROIContour && pupilDetection->isROIPreProcessingEnabled());
 }
 
-void SingleCameraView::saveROI1Selection(QRectF roiR) { 
+void SingleCameraView::saveROI1Selection(QRectF roi_rat) {
     qDebug() << "Saving ROI 1 selection" << Qt::endl;
     //applicationSettings->setValue("SingleCameraView.roi1SelectionRect", roi);
 
     QRectF imageSize = videoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("SingleCameraView.ROIsingleImageOnePupil.rational", roiR);
-        applicationSettings->setValue("SingleCameraView.ROIsingleImageOnePupil.discrete", roiD);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageOnePupil.rational", roi_rat);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageOnePupil.discrete", roi);
     } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilR.rational", roiR);
-        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilR.discrete", roiD);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilR.rational", roi_rat);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilR.discrete", roi);
     // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.rational", roiR);
-    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.discrete", roiD);
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.rational", roi_rat);
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.discrete", roi);
     }
 }
 
-void SingleCameraView::saveROI2Selection(QRectF roiR) {
+void SingleCameraView::saveROI2Selection(QRectF roi_rat) {
     qDebug() << "Saving ROI 2 selection" << Qt::endl;
 
     QRectF imageSize = videoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilL.rational", roiR);
-        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilL.discrete", roiD);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilL.rational", roi_rat);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilL.discrete", roi);
     // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.rational", roiR);
-    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.discrete", roiD);
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.rational", roi_rat);
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.discrete", roi);
     } 
 }
 

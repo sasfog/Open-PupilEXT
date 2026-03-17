@@ -135,8 +135,8 @@ public slots:
 
     void onPupilDetectionMenuClick();
 
-    void saveROI1Selection(QRectF roiR);
-    void saveROI2Selection(QRectF roiR);
+    void saveROI1Selection(QRectF roi_rat);
+    void saveROI2Selection(QRectF roi_rat);
 
     void displayFileCameraFrame(int frameNumber);
 

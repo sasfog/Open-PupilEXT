@@ -428,7 +428,7 @@ void ImageWriter::onNewImage(const CameraImage &img) {
             ok &= (imageOutputTargetZipInnerFile->getZipError() == UNZ_OK);
 
             fileName = outputZipInnerRootDirectory + "/1/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
-            cv::imencode(('.'+imageWriterFormatString).toStdString(), img.imgSecondary, imencodeBuffer, writeParams);
+            cv::imencode(('.'+imageWriterFormatString).toStdString(), img.imgS, imencodeBuffer, writeParams);
             ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName), nullptr, 0, 0);
             imageOutputTargetZipInnerFile->write(
                     reinterpret_cast<const char *>(imencodeBuffer.data()),
@@ -455,8 +455,8 @@ void ImageWriter::onNewImage(const CameraImage &img) {
             //QtConcurrent::run(cv::imwrite, filepath.toStdString(), img.img, writeParams);
             ok &= cv::imwrite(fileName.toStdString(), img.img, writeParams);
             fileName = outputDirectory + "/1/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
-            //QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgSecondary, writeParams);
-            ok &= cv::imwrite(fileName.toStdString(), img.imgSecondary, writeParams);
+            //QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgS, writeParams);
+            ok &= cv::imwrite(fileName.toStdString(), img.imgS, writeParams);
         } else {
             // Write every image over a thread pool managed by QT, this way nothing blocks and we can write images very fast (cpu heavy)
             fileName = outputDirectory + "/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
@@ -476,7 +476,7 @@ void ImageWriter::onNewImage(const CameraImage &img) {
         writeVideoFrame(img.img, img.timestamp, 'M');
         if(stereoMode) {
             //frameInfos.push_back({img.timestamp, 'S'});
-            writeVideoFrame(img.imgSecondary, img.timestamp, 'S');
+            writeVideoFrame(img.imgS, img.timestamp, 'S');
         }
 
         //addSubtitleAtTimestamp(QString::number(img.timestamp), img.timestamp);

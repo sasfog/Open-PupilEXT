@@ -126,13 +126,13 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
     CameraImage mimg = cimg;
     if (cimg.img.channels() == 1) {
         cv::cvtColor(cimg.img, mimg.img, cv::COLOR_GRAY2BGR);
-        cv::cvtColor(cimg.imgSecondary, mimg.imgSecondary, cv::COLOR_GRAY2BGR);
+        cv::cvtColor(cimg.imgS, mimg.imgS, cv::COLOR_GRAY2BGR);
     } else {
         mimg.img = cimg.img.clone();
-        mimg.imgSecondary = cimg.imgSecondary.clone();    }
+        mimg.imgS = cimg.imgS.clone();    }
 
     cv::Mat img = mimg.img;
-    cv::Mat imgSecondary = mimg.imgSecondary;
+    cv::Mat imgSecondary = mimg.imgS;
 
     if(mode==CAPTURING && captureCount < maxCaptures) {
 
@@ -289,7 +289,7 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
             cv::putText(undistSec, "RECTIFIED", cv::Point(0.1*undistSec.cols, 0.1*undistSec.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255,0,0), 3);
             cv::putText(undistSec, "SEC. RMSE: " + std::to_string(intrinsicRMSESec) + "px (Avg. " + std::to_string(avgMAESec) + ")", cv::Point(0.1 * undistSec.cols, 0.2 * undistSec.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 3);
             cv::putText(undistSec, "AVG. MAE: " + std::to_string(avgMAESec) + "px", cv::Point(0.1 * undist.cols, 0.3 * undist.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 3);
-            mimg.imgSecondary = undistSec;
+            mimg.imgS = undistSec;
 
             emit processedImageLowFPS(mimg);
         }
@@ -560,7 +560,7 @@ std::pair<double, double> StereoCameraCalibration::undistortPupilDiameters(const
 
     cv::Point2f secondaryPointsArr[4];
     rotPupilSecondary.points(secondaryPointsArr);
-    //cv::line(mimg.imgSecondary,secondaryPointsArr[1], secondaryPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+    //cv::line(mimg.imgS,secondaryPointsArr[1], secondaryPointsArr[secondPoint], cv::Scalar(255, 0, 0));
 
     std::vector<cv::Point2f> mainPoints{mainPointsArr[1], mainPointsArr[secondPoint]}, secondaryPoints{secondaryPointsArr[1], secondaryPointsArr[secondPoint]};
 
