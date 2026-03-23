@@ -66,6 +66,8 @@ pupilEXT.stopHardwareTriggering();
 pupilEXT.setHardwareTriggeringLineSource(1);
 pupilEXT.setHardwareTriggeringRuntimeLength(0);
 pupilEXT.setHardwareTriggeringFramerate(50);
+pupilEXT.setHardwareTriggeringFramerateLimitingEnabled(true);
+pupilEXT.setHardwareTriggeringFramerateLimit(30);
 pupilEXT.setSoftwareTriggeringFramerateLimitingEnabled(true);
 pupilEXT.setSoftwareTriggeringFramerateLimit(50);
 pupilEXT.setExposureTimeMicrosec(4000);

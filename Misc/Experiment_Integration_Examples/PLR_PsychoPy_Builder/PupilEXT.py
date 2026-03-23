@@ -269,7 +269,19 @@ class PupilEXT(object):
     def setHardwareTriggeringFramerate(self, fps):
         if (fps < 1) : return
         if not self.Enabled : return
-        self.__sendRaw('IHT ' + str(fps))
+        self.__sendRaw('IHF ' + str(fps))
+
+    def setHardwareTriggeringFramerateLimitingEnabled(self, state):
+        if not self.Enabled : return
+        if state:
+            self.__sendRaw('IHC true')
+        else:
+            self.__sendRaw('IHC false')
+
+    def setHardwareTriggeringFramerateLimit(self, fps):
+        if (fps < 1) : return
+        if not self.Enabled : return
+        self.__sendRaw('IHV ' + str(fps))
 
     def setSoftwareTriggeringFramerateLimitingEnabled(self, state):
         if not self.Enabled : return
@@ -281,7 +293,7 @@ class PupilEXT(object):
     def setSoftwareTriggeringFramerateLimit(self, fps):
         if (fps < 1) : return
         if not self.Enabled : return
-        self.__sendRaw('IST ' + str(fps))
+        self.__sendRaw('ISV ' + str(fps))
 
     def setExposureTimeMicrosec(self, expo):
         if (expo < 0) : return

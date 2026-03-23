@@ -78,20 +78,20 @@ private:
 
     QLabel *frameRateValueLabel;
     QRadioButton *SWTradioButton;
-    QCheckBox *SWTframerateEnabled;
-    QSpinBox *SWTframerateBox;
+    QCheckBox *SWTframerateLimitEnabled;
+    QSpinBox *SWTframerateLimitBox;
 
     QPushButton *MCUConfigButton;
     QFormLayout *HWTgroupLayout;
-    QLabel *HWTframerateLabel;
+    QLabel *HWTMCUframerateLabel;
     QLabel *HWTlineSourceLabel;
-    QLabel *HWTtimeSpanLabel;
+    QLabel *HWTMCUtimeSpanLabel;
     QComboBox *HWTlineSourceBox;
     bool HWTrunning = false;
     QRadioButton *HWTradioButton;
-    QHBoxLayout *HWTframerateLayout;
-    QSpinBox *HWTframerateBox;
-    QDoubleSpinBox *HWTtimeSpanBox;
+    QHBoxLayout *HWTMCUframerateLayout;
+    QSpinBox *HWTMCUframerateBox;
+    QDoubleSpinBox *HWTMCUtimeSpanBox;
 
     QGroupBox *MCUConnGroup;
     QPushButton *MCUConnDisconnButton;
@@ -104,7 +104,12 @@ private:
     void loadSettings();
     void saveSettings();
 
-    QHBoxLayout *SWTframerateLayout;
+    QHBoxLayout *SWTframerateLimitLayout;
+
+    QCheckBox *HWTframerateLimitEnabled;
+    QSpinBox *HWTframerateLimitBox;
+    QHBoxLayout *HWTframerateLimitLayout;
+
     QLabel *frameRateLabel;
     QLabel *exposureLabel;
 
@@ -140,8 +145,10 @@ public slots:
     void startHardwareTrigger();
     void stopHardwareTrigger();
     void setHWTlineSource(int lineSourceNum);
-    void setHWTruntime(double runtimeMinutes);
-    void setHWTframerate(int fps);
+    void setHWTMCUruntime(double runtimeMinutes);
+    void setHWTMCUframerate(int fps);
+
+    void setHWTframerateLimitVal(int fps); // new
 
     void setExposureTimeValue(int value);
     void setGainValue(double value);
@@ -188,6 +195,8 @@ public slots:
     void openStereoCamera(const QString &camName1, const QString &camName2);
     void connectMCU();
     void startHWT();
+
+    void HWTframerateEnabledToggled(bool state);
 
 signals:
     void onMCUConfig();

@@ -564,23 +564,29 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                 float val = str.mid(4, str.length()-4).toFloat(&ok);
                 if(!ok || (ok && val < 0.0f))
                     return;
-                w->PRGsetHWTruntime(val);
+                w->PRGsetHWTMCUruntime(val);
             } else if(str[2].toLower() == 'f' && str.size()>=5) {
                 bool ok;
                 int val = str.mid(4, str.length()-4).toInt(&ok);
                 if(!ok || (ok && val <= 0))
                     return;
-                w->PRGsetHWTframerate(val);
+                w->PRGsetHWTMCUframerate(val);
+            } else if(str[2].toLower() == 'v' && str.size()>=5) {
+                bool ok;
+                int val = str.mid(4, str.length()-4).toInt(&ok);
+                if(!ok || (ok && val <= 0))
+                    return;
+                w->PRGsetHWTframerateLimitVal(val);
             }
         } else if(str[1].toLower() == 's') { // set software-based triggering settings
-            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // enable sofwtare triggering framerate limiting
+            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // enable software triggering framerate limiting
                 w->PRGenableSWTframerateLimiting(str.mid(4, str.length()-4).toLower());
-            } else if(str[2].toLower() == 'f' && str.size()>=5) {
+            } else if((str[2].toLower() == 'f' || str[2].toLower() == 'v') && str.size()>=5) {
                 bool ok;
                 int val = str.mid(4, str.length()-4).toInt(&ok);
                 if(!ok || (ok && val <= 0))
                     return;
-                w->PRGsetSWTframerate(val);
+                w->PRGsetSWTframerateLimitVal(val);
             }
         } else if(str[1].toLower() == 'e' && str.size()>=4) { // set exposure
             bool ok;

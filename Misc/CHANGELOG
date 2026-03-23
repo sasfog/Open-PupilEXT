@@ -9,7 +9,7 @@ Version 0.1.3. beta
 		- Added LSL streaming option via liblsl. Yet events are not set streamed (e.g. trigger events).
 		- Added feature to automatically notify the user if the application was started without administrator privileges. A choice is offered to restart the application. Also the popup message can be suppressed for any further restarts if the user decides.
 		- Added popup Warning and Information messages for cases when a loaded image recording does not have (or had an empty) offline event log, or an image recording meta file, respectively.
-		- New feature to calculate BRISQUE score, a commonly used dimensionless metric for reference-less image quality quantification. (The lower the score, the less noisy the image is.) OpenCV dependency was extended with its "contrib" module, to make this new feature available. 
+		- New feature to calculate BRISQUE score, a commonly used dimensionless metric for reference-less image quality quantification. (The lower the score, the less noisy the image is.) OpenCV dependency was extended with its "contrib" module, to make this new feature available.
 		- Added feature to limit streamed sample rate. Importantly, no interpolation occurs, only decimation /temporal filtering of let-pass eye data output.
 		- Added build manifest for Windows target.
 		- Added Ubuntu .deb packing snippet to cmake script.
@@ -18,7 +18,8 @@ Version 0.1.3. beta
 		- Added preliminary support to export sections of existing recordings into animated .gif files for demonstrative use (for presentations, etc.). Yet it only runs on the GUI thread, and so the image reader thread (and pupil detection thread on its end) are not properly connected to it through a qwaitcondition, so on slower machines skipped frames or other irregularities can occur. Threading will be solved later.
 		- Arduino MCU example codes now contain two trigger output pins. Triggering accuracy could still be trusted as the MCU runs at very high clock so consecutive logical ON signals would not make the camera triggers out of sync in our millisecond range of frame timings.
 		- The example PsychToolBox paradigms were added a script that shows the user how to parallelly acquire data with an EyeLink device and PupilEXT.
-		- Added Binning level setting to list of possible executable arguments and remote control commands.
+		- Added Binning level setting to list of possible executable arguments and remote control commands. Also added code to Matlab and Python examples.
+		- Added new feature to let the user set image acquisition framerate limit not only for free run ("software triggering") but also hardware triggering mode. It might sound strange, but this feature can prove very important when the camera triggering is not realized by the MCU, but depends on an external source (e.g. locked to the infrared illumination flashes of another eye-tracker device for co-recording with it), and it is supported by GenICam.
 		
     Changed:
 		- Eye output is now subpixel resolution. (Was previously truncated)

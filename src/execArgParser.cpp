@@ -112,10 +112,16 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGsetHWTlineSource(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_RUNTIME_LENGTH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetHWTruntime(execArgs[i].argVals[0].toFloat());
+            w->PRGsetHWTMCUruntime(execArgs[i].argVals[0].toFloat());
         }
         if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetHWTframerate(execArgs[i].argVals[0].toInt());
+            w->PRGsetHWTMCUframerate(execArgs[i].argVals[0].toInt());
+        }
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE_LIMITING_ENABLED) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGenableHWTframerateLimiting(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE_LIMIT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetHWTframerateLimitVal(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(START_HARDWARE_TRIGGERING)) {
             w->PRGstartHWT();
@@ -124,7 +130,7 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGenableSWTframerateLimiting(execArgs[i].argVals[0].toLower());
         }
         if(execArgs[i].argID == getArgIdx(SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMIT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetSWTframerate(execArgs[i].argVals[0].toInt());
+            w->PRGsetSWTframerateLimitVal(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_BINNING) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetBinning(execArgs[i].argVals[0].toInt());

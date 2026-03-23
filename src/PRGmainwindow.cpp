@@ -739,37 +739,54 @@ void MainWindow::PRGsetHWTlineSource(int lineSourceNum) {
     else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setHWTlineSource(lineSourceNum);
 }
-void MainWindow::PRGsetHWTruntime(float runtimeMinutes) {
+void MainWindow::PRGsetHWTMCUruntime(float runtimeMinutes) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
     if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
-        singleCameraSettingsDialog->setHWTruntime(runtimeMinutes);
+        singleCameraSettingsDialog->setHWTMCUruntime(runtimeMinutes);
     else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
-        stereoCameraSettingsDialog->setHWTruntime(runtimeMinutes);
+        stereoCameraSettingsDialog->setHWTMCUruntime(runtimeMinutes);
 }
-void MainWindow::PRGsetHWTframerate(int fps) {
+void MainWindow::PRGsetHWTMCUframerate(int fps) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
     if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
-        singleCameraSettingsDialog->setHWTframerate(fps);
+        singleCameraSettingsDialog->setHWTMCUframerate(fps);
     else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
-        stereoCameraSettingsDialog->setHWTframerate(fps);
+        stereoCameraSettingsDialog->setHWTMCUframerate(fps);
+}
+void MainWindow::PRGenableHWTframerateLimiting(const QString &state) {
+    if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        return;
+
+    if(state == "true" || state == "1") {
+        singleCameraSettingsDialog->HWTframerateLimitEnabledToggled(true);
+    } else if(state == "false" || state == "0") {
+        singleCameraSettingsDialog->HWTframerateLimitEnabledToggled(false);
+    }
+}
+void MainWindow::PRGsetHWTframerateLimitVal(int fps) {
+    if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        return;
+
+    singleCameraSettingsDialog->setHWTframerateLimitVal(fps);
 }
 void MainWindow::PRGenableSWTframerateLimiting(const QString &state) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
         return;
 
     if(state == "true" || state == "1") {
-        singleCameraSettingsDialog->SWTframerateEnabledToggled(true);
+        singleCameraSettingsDialog->SWTframerateLimitEnabledToggled(true);
     } else if(state == "false" || state == "0") {
-        singleCameraSettingsDialog->SWTframerateEnabledToggled(false);
+        singleCameraSettingsDialog->SWTframerateLimitEnabledToggled(false);
     }
 }
-void MainWindow::PRGsetSWTframerate(int fps) {
+void MainWindow::PRGsetSWTframerateLimitVal(int fps) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
         return;
 
-    singleCameraSettingsDialog->setAcquisitionFPSValue(fps);
+//    singleCameraSettingsDialog->setAcquisitionFPSValue(fps);
+    singleCameraSettingsDialog->setSWTframerateLimitVal(fps);
 }
 void MainWindow::PRGsetExposure(int value) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
