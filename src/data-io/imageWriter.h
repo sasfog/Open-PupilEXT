@@ -124,6 +124,8 @@ private:
     AVPacket* pkt = nullptr;
     QString videoSidecarContent;
 
+    void nullZip();
+
     void writeVideoFrame(const cv::Mat &img, const uint64 &timestamp, QChar cameraIdentity);
     void embedFileWithinVideoBeforeHeader(const QString &content, const QString &fileName);
     void addSubtitleAtTimestamp(const QString &content, const uint64 &timestamp);

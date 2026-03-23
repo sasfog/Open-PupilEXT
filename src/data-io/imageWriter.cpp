@@ -37,7 +37,19 @@ ImageWriter::ImageWriter(QObject *parent) :
 
 ImageWriter::~ImageWriter() {
     stopWriting();
+
+    nullZip();
 };
+
+void ImageWriter::nullZip() {
+    // NOTE: For some reason, if these were in stopWriting(), they can set
+    //  the imageOutputTargetZipInnerFile to nullptr AFTER the code has checked for it being non-null in
+    //  onNewImage, practically causing an access violation. This is a workaround
+    delete imageOutputTargetZipInnerFile;
+    delete imageOutputTargetZip;
+    imageOutputTargetZipInnerFile = nullptr;
+    imageOutputTargetZip = nullptr;
+}
 
 bool ImageWriter::prepareForWriting(const QString& imageOutputTarget, bool stereo, QSize expectedFrameSize, int expectedFrameRate) {
 
@@ -67,6 +79,11 @@ bool ImageWriter::prepareForWriting(const QString& imageOutputTarget, bool stere
 
     if (imageOutputTarget.endsWith(".zip")) {
         imageWriterTarget = IWTARGET_ZIP;
+
+        // This is needed due to the workaround (see that method for explanation)
+        if(imageOutputTargetZipInnerFile)
+            nullZip();
+
         outputZip = imageOutputTarget;
         outputZipInnerRootDirectory = imageOutputTarget;
         outputZipInnerRootDirectory.chop(4);
@@ -324,6 +341,11 @@ bool ImageWriter::prepareForWriting(const QString& imageOutputTarget, bool stere
 };
 
 void ImageWriter::stopWriting() {
+
+    // NOTE: This is a safety measure. Although it is still possible that an onNewImage just reaches a portion of code
+    //  that uses one of the pointers that are nulled in this method. If that happens, an access violation will occur.
+    imageWriterStatus = IWSTATUS_UNDETERMINED;
+
     if(imageWriterTarget == IWTARGET_ZIP) {
         if(!imageOutputTargetZipInnerFile || !imageOutputTargetZip) {
             return;
@@ -338,10 +360,12 @@ void ImageWriter::stopWriting() {
         if (imageOutputTargetZip->getZipError() != UNZ_OK) {
             qWarning("QuaZip error during: close(): %d", imageOutputTargetZip->getZipError());
         }
-        delete imageOutputTargetZipInnerFile;
-        delete imageOutputTargetZip;
-        imageOutputTargetZipInnerFile = nullptr;
-        imageOutputTargetZip = nullptr;
+        // NOTE: These were moved to the destructor of ImageWriter. For some reason, if they are here, they can set
+        //  the imageOutputTargetZipInnerFile to nullptr AFTER the code has checked for it being non-null in
+        //  onNewImage, practically causing an access violation. As that cannot be caught anyway, the current workaround
+        //  is to move the nullptr setting to the destructor of this class, because there we can be almost completely
+        //  sure that no onNewImage happens after it.
+//        nullZip()
     } else if(imageWriterTarget == IWTARGET_VIDEO) {
         if(!fmt_ctx)
             return;
@@ -393,7 +417,7 @@ void ImageWriter::stopWriting() {
         //
         av_packet_free(&pkt); // not to be confused with av_packet_unref(), that has to be done often, this not
     }
-    imageWriterStatus = ImageWriter::IWSTATUS_UNDETERMINED;
+    // imageWriterStatus = ImageWriter::IWSTATUS_UNDETERMINED; // moved earlier
     foundZipAlreadyExist = false;
     foundFileInfoList.clear();
     foundFileNameList.clear();
@@ -410,13 +434,21 @@ void ImageWriter::onNewImage(const CameraImage &img) {
 
     // TODO: beautify
 
+    // DEV
+//    bool canAcceptNewImages = true;
+
     bool ok = true;
-    qDebug() << "Saving image at recording timestamp: " << QString::number(img.timestamp);
+    //qDebug() << "Saving image at recording timestamp: " << QString::number(img.timestamp);
 
     QString fileName;
-    if (imageWriterTarget == IWTARGET_ZIP) {
+//    if(!canAcceptNewImages) {
+    if(imageWriterStatus != IWSTATUS_OK) {
+        ok = false;
+    } else if (imageWriterTarget == IWTARGET_ZIP) {
 
-        if (stereoMode) {
+        if(imageOutputTargetZipInnerFile == nullptr) {
+            ok = false;
+        } else if (stereoMode) {
             fileName = outputZipInnerRootDirectory + "/0/" + QString::number(img.timestamp) + "." + imageWriterFormatString;
             cv::imencode(('.'+imageWriterFormatString).toStdString(), img.img, imencodeBuffer, writeParams);
             ok &= imageOutputTargetZipInnerFile->open(QIODevice::WriteOnly, QuaZipNewInfo(fileName), nullptr, 0, 0);
@@ -483,7 +515,13 @@ void ImageWriter::onNewImage(const CameraImage &img) {
     }
 
     if (!ok) {
-        emit writingFailed();
+        // For the special case when an onNewImage arrived after the stopWriting. This time we omit the explicit GUI warning message
+        if(imageWriterStatus == IWSTATUS_UNDETERMINED) {
+            qDebug() << "An image arrived at onNewImage of imageWriter, although writing has been stopped before (or in the meanwhile).";
+            qDebug() << "Image was dropped. Its timestamp was: " << QString::number(img.timestamp);
+        } else {
+            emit writingFailed();
+        }
     }
 }
 

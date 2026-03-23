@@ -8,13 +8,16 @@ Version 0.1.3. beta
 		- Added interfacing support for GigE cameras through the Pylon library.
 		- Added LSL streaming option via liblsl. Yet events are not set streamed (e.g. trigger events).
 		- Added feature to automatically notify the user if the application was started without administrator privileges. A choice is offered to restart the application. Also the popup message can be suppressed for any further restarts if the user decides.
-		- New feature to calculate BRISQUE score, a commonly used dimensionless metric for reference-less image quality quantification.
+		- New feature to calculate BRISQUE score, a commonly used dimensionless metric for reference-less image quality quantification. (The lower the score, the less noisy the image is.) OpenCV dependency was extended with its "contrib" module, to make this new feature available. 
 		- Added feature to limit streamed sample rate. Importantly, no interpolation occurs, only decimation /temporal filtering of let-pass eye data output.
 		- Added build manifest for Windows target.
 		- Added Ubuntu .deb packing snippet to cmake script.
 		- Implemented Aravis camera interfacing. Importantly, GigE cameras not yet stable in all cases, frame drops can occur sporadically (rare but persistent).
-		- Eye identities ("L" for left or "R" for right, as well as "X" for unknown), and camera identities ("M" for main or "S" for secondary) are now kept track in pupil detection. They are automatically assignes if they are determined by processing mode. In case of single eye processing modes, the eye identity can be specified manually by the user in the pupil detection settings dialog.
-		- Added preliminary support to export sections of existing recordings into animated .gif files for demonstrative use (for presentations, etc.)
+		- Eye identities ("L" for left or "R" for right, as well as "X" for unknown), and camera identities ("M" for main or "S" for secondary) are now kept track in pupil detection. They are automatically assigned if they are determined by processing mode. In case of single eye processing modes, the eye identity can be specified manually by the user in the pupil detection settings dialog.
+		- Added preliminary support to export sections of existing recordings into animated .gif files for demonstrative use (for presentations, etc.). Yet it only runs on the GUI thread, and so the image reader thread (and pupil detection thread on its end) are not properly connected to it through a qwaitcondition, so on slower machines skipped frames or other irregularities can occur. Threading will be solved later.
+		- Arduino MCU example codes now contain two trigger output pins. Triggering accuracy could still be trusted as the MCU runs at very high clock so consecutive logical ON signals would not make the camera triggers out of sync in our millisecond range of frame timings.
+		- The example PsychToolBox paradigms were added a script that shows the user how to parallelly acquire data with an EyeLink device and PupilEXT.
+		- Added Binning level setting to list of possible executable arguments and remote control commands.
 		
     Changed:
 		- Eye output is now subpixel resolution. (Was previously truncated)
@@ -27,6 +30,7 @@ Version 0.1.3. beta
 		- Camera temperature checks are now indicated with a questionmark icon if temperature readings could not be obtained from the camera, or if they are invalid.
 		- Updated qcustomplot
 		
+		
 	
     Deprecated:
 		...
@@ -36,6 +40,8 @@ Version 0.1.3. beta
 	
     Fixed:
 		- Bug that caused crash when an image recording was open, but the user clicked the Camera View window button.
+		- Bug that if an automatically named recording already existed, e.g. ending with _RunI2 suffix, then the next recording (not to overwrite it) was names automatically with a _RunI2_RunI1 suffix, etc. lengthening the names on every iteration. This is corrected now, so that only the number gets incremented.
+		- Bug that double values could not be set by remote control commands (only truncated got set until now).
 		- Fixed code and documentation about data container setting to be optional for streaming connection initiation.
 
 Version 0.1.2. beta

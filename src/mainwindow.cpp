@@ -1814,6 +1814,7 @@ void MainWindow::onRecordImageClick() {
 
         // in case it is a zip, it closes the file. In a multithread approach, this will have more to do of course
         imageWriter->stopWriting();
+        // Note: this call does not destruct imagewriter
         
         if(singleCameraSettingsDialog && !trackingOn)
             singleCameraSettingsDialog->setLimitationsWhileTracking(false);
@@ -1886,6 +1887,7 @@ void MainWindow::onRecordImageClick() {
             }
             if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ERROR) {
                 imageWriter->stopWriting();
+                // Note: this call does not destruct imagewriter
                 return;
             }
 
