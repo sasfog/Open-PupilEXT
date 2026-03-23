@@ -54,6 +54,7 @@ public:
         IMSTATUS_ERROR,
         IMSTATUS_ZIP_INDECISIVE,
         IMSTATUS_ZIP_UNOPENABLE,
+        IMSTATUS_ZIP_PASSWORD_PROTECTED,
         IMSTATUS_VIDEO_UNOPENABLE
     };
 
@@ -257,7 +258,7 @@ private:
 
     QuaZip* imageSourceZip = nullptr;
     QuaZipFile* imageSourceZipInnerFile = nullptr;
-    QuaZipFileInfo info;
+    QuaZipFileInfo zipInfo;
 
     QVector<QStringList> fileNames {QStringList(), QStringList()};
 

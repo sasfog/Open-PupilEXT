@@ -4,7 +4,7 @@ Version 0.1.3. beta
 	TODO: NÉV LEGYEN "ECV" végződésű! és a hardware repo is! (?) vagy valahogy mindenképp megkülönböztethető kéne legyen
 
     Added:
-		- Added feature to read and write image recordings into/from .zip archives. Importantly, existing recordings in directories can be zipped (using any common archive manager program) and then be opened with this new functionality.
+		- Added feature to read and write image recordings into/from .zip archives. Importantly, existing recordings in directories can be zipped (using any common archive manager program) and then be opened with this new functionality. Password protected zip reading and writing is not supported currently.
 		- Added interfacing support for GigE cameras through the Pylon library.
 		- Added LSL streaming option via liblsl. Yet events are not set streamed (e.g. trigger events).
 		- Added feature to automatically notify the user if the application was started without administrator privileges. A choice is offered to restart the application. Also the popup message can be suppressed for any further restarts if the user decides.
@@ -43,6 +43,8 @@ Version 0.1.3. beta
 		- Bug that if an automatically named recording already existed, e.g. ending with _RunI2 suffix, then the next recording (not to overwrite it) was names automatically with a _RunI2_RunI1 suffix, etc. lengthening the names on every iteration. This is corrected now, so that only the number gets incremented.
 		- Bug that double values could not be set by remote control commands (only truncated got set until now).
 		- Fixed code and documentation about data container setting to be optional for streaming connection initiation.
+		- Fixed invalid limitation on image ROI x and y during tracking or image recording. ROI location does not disrupt these processes, so should be free to set. However, it would need a brief grabbing stop and restart of frame grabbing, so it is still not generally recommended.
+		- Binning is now only available for setting in the GUI if camera supports that, with different levels available. Now if there is no support, the dropdown widget will appear as greyed out.
 
 Version 0.1.2. beta
 

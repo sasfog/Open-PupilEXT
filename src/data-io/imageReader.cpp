@@ -321,6 +321,15 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
 
     imageSourceZipInnerFile = new QuaZipFile(imageSourceZip);
 
+    // First check: is it password protected?
+//    imageSourceZipInnerFile->getFileInfo(&zipInfo);
+    imageSourceZip->getCurrentFileInfo(&zipInfo);
+    bool encrypted = zipInfo.flags & 0x1;
+    if(encrypted) {
+        imageReaderStatus = IMSTATUS_ZIP_PASSWORD_PROTECTED;
+        return;
+    }
+
     auto fileNameCandidates = QStringList::fromList(imageSourceZip->getFileNameList());
     //qDebug() << "fileNameCandidates = " << fileNameCandidates;
     //imageSourceZip->setCurrentFile();

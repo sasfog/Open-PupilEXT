@@ -1886,6 +1886,7 @@ void MainWindow::onRecordImageClick() {
 
             }
             if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ERROR) {
+
                 imageWriter->stopWriting();
                 // Note: this call does not destruct imagewriter
                 return;
@@ -3220,6 +3221,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     // std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
     while(  (selectedCamera = new FileCamera(imageSource, subrecordingNumber, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)) &&
             !selectedCamera->isOpen()   ) {
+
         if( dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_INDECISIVE ){
             qDebug() << "Could not open this FileCamera, due to ImageReader error.";
             auto zipMultiInfo = dynamic_cast<FileCamera*>(selectedCamera)->getFoundZipMultiInfo();
@@ -3257,6 +3259,20 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
             msgBox->setWindowTitle("Zip archive could not be opened");
             msgBox->setText(
                     "This Zip archive could not be opened for reading. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+            msgBox->setMinimumSize(330, 260);
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            selectedCamera->close();
+            selectedCamera = nullptr;
+            return;
+        } else if (dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_PASSWORD_PROTECTED) {
+            QApplication::restoreOverrideCursor();
+            QMessageBox *msgBox = new QMessageBox(this);
+            msgBox->setWindowTitle("Zip archive could not be opened");
+            msgBox->setText(
+                    "This Zip archive could not be opened for reading. It looks to be password protected. Handling these archives is not supported by PupilEXT at the moment. Please remove the password using a dedicated utility and try again.");
             msgBox->setMinimumSize(330, 260);
             msgBox->setIcon(QMessageBox::Warning);
             msgBox->setModal(false);
