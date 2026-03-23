@@ -366,6 +366,14 @@ classdef PupilEXT
           obj.sendRaw(['IE ' num2str(expo)]);
       end
 
+      function setBinning(obj, binning)
+          if (binning < 1 || binning > 4)
+            error('Could not set binning, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IB ' num2str(binning)]);
+      end
+
       function setGain(obj, gain)
           if (gain < 0)
             error('Could not set gain value, invalid numeric input supplied');

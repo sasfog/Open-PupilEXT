@@ -288,6 +288,11 @@ class PupilEXT(object):
         if not self.Enabled : return
         self.__sendRaw('IE ' + str(expo))
 
+    def setBinning(self, binning):
+        if ((binning < 1) or (binning > 4)) : return
+        if not self.Enabled : return
+        self.__sendRaw('IB ' + str(binning))
+
     def setGain(self, gain):
         if (gain < 0) : return
         if not self.Enabled : return

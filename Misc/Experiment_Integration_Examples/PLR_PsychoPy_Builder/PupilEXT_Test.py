@@ -69,6 +69,7 @@ pupilEXT.setHardwareTriggeringFramerate(50)
 pupilEXT.setSoftwareTriggeringFramerateLimitingEnabled(True)
 pupilEXT.setSoftwareTriggeringFramerateLimit(50)
 pupilEXT.setExposureTimeMicrosec(4000)
+pupilEXT.setBinning(2)
 pupilEXT.setGain(1.2)
 
 pupilEXT.closeHostConnection()
