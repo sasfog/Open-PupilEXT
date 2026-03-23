@@ -1451,6 +1451,10 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
     //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
     bool success = false;
 
+    // NOTE: LIKELY the offsetX and offsetY (unlike height and width) could even be set on most cameras during
+    //  grabbing as well, but it is not guaranteed. So yet we simply use the safest solution, stop, then change, then
+    //  (re)start grabbing. But if you really want to play around with this to achieve a sliding window ROI or whatever
+    //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     if(cameras.IsGrabbing())
         stopGrabbing();
 
@@ -1481,6 +1485,10 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
     //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
     bool success = false;
 
+    // NOTE: LIKELY the offsetX and offsetY (unlike height and width) could even be set on most cameras during
+    //  grabbing as well, but it is not guaranteed. So yet we simply use the safest solution, stop, then change, then
+    //  (re)start grabbing. But if you really want to play around with this to achieve a sliding window ROI or whatever
+    //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     if(cameras.IsGrabbing())
         stopGrabbing();
 
@@ -3749,6 +3757,10 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
     //qDebug() << "Setting Image ROI offsetX=" << std::to_string(offsetX);
     bool success = false;
 
+    // NOTE: LIKELY the offsetX and offsetY (unlike height and width) could even be set on most cameras during
+    //  grabbing as well, but it is not guaranteed. So yet we simply use the safest solution, stop, then change, then
+    //  (re)start grabbing. But if you really want to play around with this to achieve a sliding window ROI or whatever
+    //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     stopGrabbing();
 
     int maxWidth = getImageROIwidthMax();
@@ -3795,6 +3807,10 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
     //qDebug() << "Setting Image ROI offsetY=" << std::to_string(offsetY);
     bool success = false;
 
+    // NOTE: LIKELY the offsetX and offsetY (unlike height and width) could even be set on most cameras during
+    //  grabbing as well, but it is not guaranteed. So yet we simply use the safest solution, stop, then change, then
+    //  (re)start grabbing. But if you really want to play around with this to achieve a sliding window ROI or whatever
+    //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     stopGrabbing();
 
     int maxHeight = getImageROIheightMax();

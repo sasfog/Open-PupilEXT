@@ -935,15 +935,19 @@ void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
     imageROIwidthInputBox->setDisabled(state);
     imageROIheightLabel->setDisabled(state);
     imageROIheightInputBox->setDisabled(state);
-    imageROIoffsetXLabel->setDisabled(state);
-    imageROIoffsetXInputBox->setDisabled(state);
-    imageROIoffsetYLabel->setDisabled(state);
-    imageROIoffsetYInputBox->setDisabled(state);
+
+    // NOTE: Removed, because ROI location can still be set! Why shouldn't it be?
+//    imageROIoffsetXLabel->setDisabled(state);
+//    imageROIoffsetXInputBox->setDisabled(state);
+//    imageROIoffsetYLabel->setDisabled(state);
+//    imageROIoffsetYInputBox->setDisabled(state);
 
     imageROIwidthMaxLabel->setDisabled(state);
     imageROIheightMaxLabel->setDisabled(state);
-    imageROIoffsetXMaxLabel->setDisabled(state);
-    imageROIoffsetYMaxLabel->setDisabled(state);
+
+    // NOTE: Removed, because ROI location can still be set! Why shouldn't it be?
+//    imageROIoffsetXMaxLabel->setDisabled(state);
+//    imageROIoffsetYMaxLabel->setDisabled(state);
 
     if (!camera->isEmulated()){
         binningLabel->setDisabled(state);
