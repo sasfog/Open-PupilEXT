@@ -3258,22 +3258,8 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
             QMessageBox *msgBox = new QMessageBox(this);
             msgBox->setWindowTitle("Zip archive could not be opened");
             msgBox->setText(
-                    "This Zip archive could not be opened for reading. The archive file might be corrupted or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
-            msgBox->setMinimumSize(330, 260);
-            msgBox->setIcon(QMessageBox::Warning);
-            msgBox->setModal(false);
-            msgBox->show();
-
-            selectedCamera->close();
-            selectedCamera = nullptr;
-            return;
-        } else if (dynamic_cast<FileCamera*>(selectedCamera)->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_PASSWORD_PROTECTED) {
-            QApplication::restoreOverrideCursor();
-            QMessageBox *msgBox = new QMessageBox(this);
-            msgBox->setWindowTitle("Zip archive could not be opened");
-            msgBox->setText(
-                    "This Zip archive could not be opened for reading. It looks to be password protected. Handling these archives is not supported by PupilEXT at the moment. Please remove the password using a dedicated utility and try again.");
-            msgBox->setMinimumSize(330, 260);
+                    "This Zip archive could not be opened for reading. The archive file might be corrupted, empty, password protected, or it is compressed in an unknown format. Please check that PupilEXT has the permissions, and try again. In case you are sure this is an existing and accessible file, but you keep experiencing an opening issue, it does not mean that the archive is lost: the file might still contain a portion of its original contents, which could be retrieved by a proper extractor program.");
+            msgBox->setMinimumSize(330, 280);
             msgBox->setIcon(QMessageBox::Warning);
             msgBox->setModal(false);
             msgBox->show();
@@ -3312,6 +3298,20 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     onCameraCalibrationDisabled();
     resetStatus(true);
 
+    if(dynamic_cast<FileCamera*>(selectedCamera)->getMetaSnapshotContent().isEmpty()) {
+        // TODO: add tickbox to let the user disable this popup in the future
+
+        QApplication::restoreOverrideCursor();
+        QMessageBox *msgBox = new QMessageBox(this);
+        msgBox->setWindowTitle("No image recording meta file found");
+        msgBox->setText(
+                "This recording seems to have no meta file attached.");
+        msgBox->setMinimumSize(330, 260);
+        msgBox->setIcon(QMessageBox::Information);
+        msgBox->setModal(false);
+        msgBox->show();
+    }
+
     QString offlineEventLogContent = dynamic_cast<FileCamera*>(selectedCamera)->getOfflineEventLogContent();
 
     // Rec event tracker
@@ -3323,6 +3323,18 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
             recEventTracker->deleteLater();
             recEventTracker = nullptr;
         }
+    } else {
+        // TODO: add tickbox to let the user disable this popup in the future
+
+        QApplication::restoreOverrideCursor();
+        QMessageBox *msgBox = new QMessageBox(this);
+        msgBox->setWindowTitle("No offline event log found");
+        msgBox->setText(
+                "This recording seems to have no event log attached. Trial numbering and message triggers are not loaded accordingly.");
+        msgBox->setMinimumSize(330, 260);
+        msgBox->setIcon(QMessageBox::Warning);
+        msgBox->setModal(false);
+        msgBox->show();
     }
     safelyResetTrialCounter();
     safelyResetMessageRegister();

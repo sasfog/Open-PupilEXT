@@ -26,9 +26,6 @@ FileCamera::FileCamera(const QString &imageSource, const int &subrecordingNumber
         } else if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_UNOPENABLE) {
             qDebug() << "ImageReader::IMSTATUS_ZIP_UNOPENABLE";
             return;
-        } else if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_PASSWORD_PROTECTED) {
-            qDebug() << "ImageReader::IMSTATUS_ZIP_PASSWORD_PROTECTED";
-            return;
         }
     } catch (const std::exception &e) {
         qWarning() << "ImageReader encountered an error upon initialization: " << e.what();

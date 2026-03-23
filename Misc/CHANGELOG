@@ -21,9 +21,10 @@ Version 0.1.3. beta
 		
     Changed:
 		- Eye output is now subpixel resolution. (Was previously truncated)
+		- Image acquisition ROI width, height, offset x, and offset y are not changed by 16 as default, but adaptively according to the actual binning setting, and by retrieving the currently applicable increment value from the camera API.
 		- Importantly, data output management is reformed. Now in tabular (.csv) and streamed tabular output, each data column is automatically named in the following fashion: "<variable>_<dimension>_<eye identity>_<camera identity>" where variable name is in camel case, dimension is the nominal dimension, the eye identity is either "X" or "R" or "L", and camera identity is either "M" or "S". If there is no dimension associated, then only "<variable>_<eye identity>_<camera identity>" will be used as column name. The same variables will be added for each eye (pupil). The only exception is timestmap, which will appear only once per data row. As for LSL V1 "Permissive" output, it is the same. The LSL XDF "Restrictive" output only contains a handful of output variables, and also holds only one timestamp channel. In other streaming output means, in any non-tabular formats (where each eye has an own small tree of variables contained) timestamp may appear for each eye.
 		- Raised Qt framework version to 6.8.3 LTS.
-		- Raised Pylon version to 8.1.0.
+		- Raised Pylon version to 8.1.0. Note: Pylon GenericException does not derive from std::exception anymore, so it has to be caught separately.
 		- Raised OpenCV dependency to version 4.11.
 		- Vcpkg baseline commit updated: on 2025.07.16 14:46 CET
 		- 
@@ -39,9 +40,10 @@ Version 0.1.3. beta
 		...
 	
     Fixed:
+		- Bug that caused numeric values to be saved as binary values (visible as strange characters if viewed in a text editor) in imagerec_meta.xml files accompanying image recordings.
 		- Bug that caused crash when an image recording was open, but the user clicked the Camera View window button.
 		- Bug that if an automatically named recording already existed, e.g. ending with _RunI2 suffix, then the next recording (not to overwrite it) was names automatically with a _RunI2_RunI1 suffix, etc. lengthening the names on every iteration. This is corrected now, so that only the number gets incremented.
-		- Bug that double values could not be set by remote control commands (only truncated got set until now).
+		- Bug that floating point values could not be set by remote control commands (only truncated got set until now).
 		- Fixed code and documentation about data container setting to be optional for streaming connection initiation.
 		- Fixed invalid limitation on image ROI x and y during tracking or image recording. ROI location does not disrupt these processes, so should be free to set. However, it would need a brief grabbing stop and restart of frame grabbing, so it is still not generally recommended.
 		- Binning is now only available for setting in the GUI if camera supports that, with different levels available. Now if there is no support, the dropdown widget will appear as greyed out.

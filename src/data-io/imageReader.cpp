@@ -321,14 +321,30 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
 
     imageSourceZipInnerFile = new QuaZipFile(imageSourceZip);
 
-    // First check: is it password protected?
+    // First check: is it password protected? --> This check does not work. Commented out yet. It does false alarms.
 //    imageSourceZipInnerFile->getFileInfo(&zipInfo);
-    imageSourceZip->getCurrentFileInfo(&zipInfo);
-    bool encrypted = zipInfo.flags & 0x1;
-    if(encrypted) {
-        imageReaderStatus = IMSTATUS_ZIP_PASSWORD_PROTECTED;
+//    imageSourceZip->getCurrentFileInfo(&zipInfo);
+//    bool encrypted = zipInfo.flags & 0x1;
+//    if(encrypted) {
+//        imageReaderStatus = IMSTATUS_ZIP_PASSWORD_PROTECTED;
+//        return;
+//    }
+
+    // Check if zip is empty
+    if (!imageSourceZip->goToFirstFile()) {
+        imageReaderStatus = IMSTATUS_ZIP_UNOPENABLE;
         return;
     }
+
+    imageSourceZipInnerFile->open(QIODevice::ReadOnly);
+    QByteArray tryData = imageSourceZipInnerFile->readAll();
+//    QByteArray trydata = imageSourceZipInnerFile->read(64);  // read first 64 bytes
+    if (tryData.isEmpty()) {
+        imageReaderStatus = IMSTATUS_ZIP_UNOPENABLE;
+        imageSourceZipInnerFile->close();
+        return;
+    }
+    imageSourceZipInnerFile->close();
 
     auto fileNameCandidates = QStringList::fromList(imageSourceZip->getFileNameList());
     //qDebug() << "fileNameCandidates = " << fileNameCandidates;
@@ -574,15 +590,27 @@ void ImageReader::exploreZip(const QString &imageSource, const int &subrecording
     fPathAndName = zS_offlineEventLogPathAndName; //suggestedXmlsLocation + '/' + "offline_event_log.xml";
     qDebug() << "Expected offline event log fPathAndName = " << fPathAndName;
     imageSourceZip->setCurrentFile(fPathAndName);
-    imageSourceZipInnerFile->open(QIODevice::ReadOnly);
-    offlineEventLogContent = QString(imageSourceZipInnerFile->readAll());
+    if (!imageSourceZipInnerFile->open(QIODevice::ReadOnly)) {
+        qDebug() << "Expected offline event log could not be opened.";
+    } else {
+        offlineEventLogContent = QString(imageSourceZipInnerFile->readAll());
+        if(offlineEventLogContent.isEmpty()) {
+            qDebug() << "Expected offline event log was found to be empty.";
+        }
+    }
     imageSourceZipInnerFile->close();
     //
     fPathAndName = zS_metaSnapshotPathAndName; //suggestedXmlsLocation + '/' + "imagerec_meta.xml";
     qDebug() << "Expected image rec meta snapshot fPathAndName = " << fPathAndName;
     imageSourceZip->setCurrentFile(fPathAndName);
-    imageSourceZipInnerFile->open(QIODevice::ReadOnly);
-    metaSnapshotContent = QString(imageSourceZipInnerFile->readAll());
+    if(!imageSourceZipInnerFile->open(QIODevice::ReadOnly)) {
+        qDebug() << "Expected image rec meta snapshot could not be opened.";
+    } else {
+        metaSnapshotContent = QString(imageSourceZipInnerFile->readAll());
+        if(metaSnapshotContent.isEmpty()) {
+            qDebug() << "Expected image rec meta snapshot was found to be empty.";
+        }
+    }
     imageSourceZipInnerFile->close();
     //
     imageSourceZip->goToFirstFile();
