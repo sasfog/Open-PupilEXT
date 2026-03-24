@@ -939,11 +939,18 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     if(obj == singleCameraSettingsDialog || obj == stereoCameraSettingsDialog) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+            qDebug() << "Keypress: " << keyEvent->key();
+
             if (keyEvent->key() == Qt::Key_F){
                 keyPressEvent(keyEvent);
                 return true;
+            } else if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return){
+//                keyPressEvent(keyEvent);
+                // TODO: add special cases for when specific numeric edit boxes are in focus, in camera settings dialogs,
+                //  so that enter swaps between them. Right now the enter is just caught (not to cause trouble) and discarded
+                return true;
             }
-            else
                 return false;
         }
         else 

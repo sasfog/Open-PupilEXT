@@ -653,6 +653,10 @@ void SingleCamera::saveToFile(const QString &filename) {
 
 bool SingleCamera::isEnabledAcquisitionFrameRate() {
     try {
+        // TODO: IF THE CAMERA TYPE IS ON WHITELIST, FORCEFULLY RETURN TRUE
+        //  e.g. daA1280-54um returns false properly, but still it works surprisingly if we forcefully set
+        //  aquisition framerate. So a whitelist could be used, and that camera added to it at least
+
         if (camera.AcquisitionFrameRateEnable.IsReadable()) {
             return camera.AcquisitionFrameRateEnable.GetValue();
         }

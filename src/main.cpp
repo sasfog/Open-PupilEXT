@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
             QFile logFile("lastrun.txt");
 //            if(msg == "QFlags<Qt::MouseButton>(LeftButton)")
 //                std::cout << "Test event caught";
+            if(msg == "1000")
+                std::cout << "Test event caught";
             if (logFile.open(QIODevice::WriteOnly)) {
                 QTextStream out(&logFile);
                 out << msg << "\n";

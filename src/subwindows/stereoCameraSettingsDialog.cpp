@@ -28,9 +28,9 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
     }
 
 #ifdef Q_OS_WIN // Q_OS_MACOS
-    setMinimumSize(500, 740);
+    setMinimumSize(500, 750);
 #else
-    setMinimumSize(500, 890);
+    setMinimumSize(500, 900);
 #endif
 
     setWindowTitle(QString("Stereo Camera Settings"));
@@ -265,6 +265,7 @@ void StereoCameraSettingsDialog::createForm() {
     binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
     binningBox->addItem(QString("1 (no binning)"));
+    // IMPORTANT: The max binning is not yet known. We will know it only after the cameras are attached (upon opening)
     int binningMax = camera->getBinningMax();
     if(binningMax >= 2)
         binningBox->addItem(QString("2"));
@@ -416,7 +417,8 @@ void StereoCameraSettingsDialog::createForm() {
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
+    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate()); // This is only for the default state
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
     //HWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
     HWTframerateLimitBox = new QSpinBox();
     HWTframerateLimitLayout = new QHBoxLayout;
@@ -429,7 +431,7 @@ void StereoCameraSettingsDialog::createForm() {
     HWTframerateLimitLayout->addStretch();
     // HWTframerateLimitLayout->addSpacerItem(sp);
     HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
-    HWTframerateLimitBox->setMaximum(std::numeric_limits<short>::max());
+    HWTframerateLimitBox->setMaximum(std::numeric_limits<short>::max()); // NOTE: NEVER CHANGE
     HWTframerateLimitBox->setSingleStep(1);
     HWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
@@ -646,16 +648,17 @@ void StereoCameraSettingsDialog::updateForms() {
 
     SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
 //    SWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
-//    SWTframerateLimitBox->setMaximum(camera->getAcquisitionFPSMax());
 //    SWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
+    // ...
+    // SWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
 
     HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
     applicationSettings->setValue("StereoCameraSettingsDialog.HWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate());
     if(HWTrunning) {
-        HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
-        HWTframerateLimitBox->setMaximum(camera->getAcquisitionFPSMax());
+        HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin())); // NOTE: Max is never changed!
         HWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     }
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
 
     gainBox->setMinimum(floor(camera->getGainMin()));
     gainBox->setMaximum(floor(camera->getGainMax()));
@@ -709,26 +712,14 @@ void StereoCameraSettingsDialog::autoExposureOnce() {
     exposureInputBox->setValue(camera->getExposureTimeValue());
 }
 
-// TODO: EZ NEM JÓ
 void StereoCameraSettingsDialog::updateFrameRateValue() {
     frameRateValueLabel->setText(QString::number(camera->getResultingFrameRateValue()));
 
-    // commented out, reason:
-    // TODO: problematic, as resulting framerate is affected by framerate limit, which creates a "loop" of events,
-    // setting the max on gui as the current fps
-//    //// if(HWTstartStopButton->isEnabled()) {
-//        HWTframerateBox->setMaximum(static_cast<int>(floor(camera->getResultingFrameRateValue())));
-//        SWTframerateBox->setMaximum(static_cast<int>(floor(camera->getResultingFrameRateValue())));
-//    //// }
+    qDebug() << "Resulting framerate " << camera->getResultingFrameRateValue();
 
-    // instead:
-    int supposedMaxFPS = static_cast<int>(floor(camera->getResultingFrameRateValue()));
-    if(!camera->isOpen() || supposedMaxFPS <= 0) {
-        supposedMaxFPS = std::numeric_limits<short>::max();
-    }
-    HWTMCUframerateBox->setMaximum(supposedMaxFPS);
-    HWTframerateLimitBox->setMaximum(supposedMaxFPS);
-    SWTframerateLimitBox->setMaximum(supposedMaxFPS);
+    // NOTE: updating the maximum values of either HWTMCUframerateBox, or HWTframerateLimitBox or SWTframerateLimitBox
+    //  is problematic, as resulting framerate is affected by framerate limit. So it is simply not done. Maximum is set
+    //  only once, and the actual value is not as important, physical limitations will apply anyhow.
 }
 
 // TODO: ez miért ilyen?
@@ -903,11 +894,12 @@ void StereoCameraSettingsDialog::openStereoCamera() {
     // This is very important here, this line causes signal-slot connections to be made in pupilDetection class to receive the images grabbed
     emit stereoCamerasOpened();
 
-    updateForms();
-
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateFrameRateValue();
+
+    // ppppppppppppppppppppp
+    updateForms();
 
     // BG: migrated enabling/disabling widget groups into a separate function
     // Activate all settings groups underneath
@@ -980,6 +972,7 @@ void StereoCameraSettingsDialog::loadSettings() {
     // taken fron onHWTenabledChange of singlecamera, refined to stereo
 
     //HWTframerateLimitEnabled->setEnabled(true);
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
     HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
 
     if(HWTframerateLimitEnabled->isChecked()) {
@@ -995,6 +988,8 @@ void StereoCameraSettingsDialog::loadSettings() {
 
 //    SWTframerateBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.acquisitionFramerate", camera->getAcquisitionFPSValue()).toInt());
 //    camera->setAcquisitionFPSValue(SWTframerateBox->value());
+    // ...
+    // SWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
 
     bool m_HWTframerateLimitEnabled = SupportFunctions::readBoolFromQSettings("StereoCameraSettingsDialog.HWTframerateLimitEnabled", true, applicationSettings);
     HWTframerateLimitEnabled->setChecked(m_HWTframerateLimitEnabled);
@@ -1002,6 +997,7 @@ void StereoCameraSettingsDialog::loadSettings() {
     // 50 FPS is good for a first start, for the same reasons
     HWTframerateLimitBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.HWTframerateLimitVal", "50").toInt());
     camera->setAcquisitionFPSValue(HWTframerateLimitBox->value());
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
 
     qDebug() << imageROIwidthInputBox->value();
 
@@ -1246,6 +1242,7 @@ void StereoCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
 }
 
 void StereoCameraSettingsDialog::setLimitationsWhileCameraNotOpen(bool state) {
+
     mainCameraBox->setDisabled(!state);
     secondaryCameraBox->setDisabled(!state);
     updateDevicesButton->setDisabled(!state);
@@ -1265,13 +1262,26 @@ void StereoCameraSettingsDialog::setLimitationsWhileCameraNotOpen(bool state) {
     loadButton->setDisabled(state);
     saveButton->setDisabled(state);
 
+    binningBox->clear();
+    binningBox->addItem(QString("1 (no binning)"));
     if(state) {
         cameraOpenCloseButton->setText("Open Camera Devices");
         cameraOpenCloseButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
     } else {
+        int binningMax = camera->getBinningMax();
+        if(binningMax >= 2)
+            binningBox->addItem(QString("2"));
+        if(binningMax >= 4)
+            binningBox->addItem(QString("4"));
+
         cameraOpenCloseButton->setText("Close Camera Devices");
         cameraOpenCloseButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
     }
+
+    // TODO: some portions of code will need to be added here, when single and stereo settings dialog will get fused in
+    //  future. Particularly those from onHWTenabledChange that is the analogy right now to this method, when called as
+    //  setLimitationsWhileCameraNotOpen(false)
+    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
 }
 
 void StereoCameraSettingsDialog::setExposureTimeValue(int value) {
@@ -1355,7 +1365,7 @@ void StereoCameraSettingsDialog::setHWTMCUframerate(int fps) {
     HWTMCUframerateBox->setValue(fps);
 }
 
-void StereoCameraSettingsDialog::HWTframerateEnabledToggled(bool state) {
+void StereoCameraSettingsDialog::HWTframerateLimitEnabledToggled(bool state) {
 
     // this is necessary if we programmatically set it
     HWTframerateLimitEnabled->blockSignals(true);
@@ -1367,7 +1377,8 @@ void StereoCameraSettingsDialog::HWTframerateEnabledToggled(bool state) {
 
     applicationSettings->setValue("StereoCameraSettingsDialog.HWTframerateLimitEnabled", state);
 
-    HWTframerateLimitBox->setEnabled(state);
+    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
     if(state)
         setHWTframerateLimitVal(HWTframerateLimitBox->value());
 }

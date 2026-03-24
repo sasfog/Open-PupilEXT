@@ -421,7 +421,7 @@ void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
 void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
     if (!trackingOn) {
-        qDebug() << cimg.frameNumber;
+//        qDebug() << cimg.frameNumber;
         // TODO: also emit one in case the file camera was PAUSED !
         if ((drawTimer.elapsed() > drawDelay) ||
             (camera->getType() == SINGLE_IMAGE_FILE && (
@@ -626,7 +626,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        qDebug() << simg.frameNumber;
+//        qDebug() << simg.frameNumber;
         // TODO: also emit one in case the file camera was PAUSED !
         if ((drawTimer.elapsed() > drawDelay) ||
             (camera->getType() == STEREO_IMAGE_FILE && (
@@ -834,7 +834,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        qDebug() << simg.frameNumber;
+//        qDebug() << simg.frameNumber;
         // TODO: also emit one in case the file camera was PAUSED !
         if ((drawTimer.elapsed() > drawDelay) ||
             (camera->getType() == STEREO_IMAGE_FILE && (

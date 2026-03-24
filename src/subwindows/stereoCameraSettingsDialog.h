@@ -196,7 +196,7 @@ public slots:
     void connectMCU();
     void startHWT();
 
-    void HWTframerateEnabledToggled(bool state);
+    void HWTframerateLimitEnabledToggled(bool state);
 
 signals:
     void onMCUConfig();
