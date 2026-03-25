@@ -43,6 +43,8 @@ public:
     void OnImagesSkipped( CInstantCamera& camera, size_t countOfSkippedImages) override;
     void OnImageGrabbed( CInstantCamera& camera, const CGrabResultPtr& ptrGrabResult) override;
 
+    void setTickFreq(quint64 _tickFreq);
+
 private:
 
     QMutex mutex;
@@ -54,6 +56,10 @@ private:
     CPylonImage pylonImage;
 
     CameraImage stereoImage;
+
+    // Needed for GigE
+    bool needsTickConversion = false;
+    uint64 tickFreq = 1;
 
 signals:
 

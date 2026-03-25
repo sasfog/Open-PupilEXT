@@ -177,6 +177,57 @@ void StereoCamera::open(bool enableHardwareTrigger) {
 
         cameras.Open();
 
+        // GIGE ticks to timestamp conversion initialization, NOTE: THIS HAS TO HAPPEN AFTER CAMERA IS OPENED
+        // NOTE: currently we rely on the assumption that both cameras use the same ticks for counting.
+        if (cameras[0].GetDeviceInfo().GetTLType() == "BaslerGigE" || cameras[0].GetDeviceInfo().GetTLType() == "GEV") {
+//            qDebug() << "camera.GevTimestampTickFrequency.GetValue() = ";
+//            qDebug() << camera.GevTimestampTickFrequency.GetValue();
+            cameraImageEventHandler->setTickFreq(cameras[0].GevTimestampTickFrequency.GetValue());
+        }
+
+        // "Just to be sure" checks.Particularly useful for GigE which can get stuck when something illegal is queried
+        if(cameras[0].ExposureAuto.IsReadable() && cameras[0].ExposureAuto.GetValue() != ExposureAutoEnums::ExposureAuto_Off && cameras[0].ExposureAuto.IsWritable())
+            cameras[0].ExposureAuto.TrySetValue(ExposureAutoEnums::ExposureAuto_Off);
+        if(cameras[1].ExposureAuto.IsReadable() && cameras[1].ExposureAuto.GetValue() != ExposureAutoEnums::ExposureAuto_Off && cameras[1].ExposureAuto.IsWritable())
+            cameras[1].ExposureAuto.TrySetValue(ExposureAutoEnums::ExposureAuto_Off);
+        if(cameras[0].ExposureMode.IsReadable() && cameras[0].ExposureMode.GetValue() != ExposureModeEnums::ExposureMode_Timed && cameras[0].ExposureMode.IsWritable())
+            cameras[0].ExposureMode.TrySetValue(ExposureModeEnums::ExposureMode_Timed);
+        if(cameras[1].ExposureMode.IsReadable() && cameras[1].ExposureMode.GetValue() != ExposureModeEnums::ExposureMode_Timed && cameras[1].ExposureMode.IsWritable())
+            cameras[1].ExposureMode.TrySetValue(ExposureModeEnums::ExposureMode_Timed);
+
+        if(cameras[0].GainAuto.IsReadable() && cameras[0].GainAuto.GetValue() != GainAutoEnums::GainAuto_Off && cameras[0].GainAuto.IsWritable())
+            cameras[0].GainAuto.TrySetValue(GainAutoEnums::GainAuto_Off);
+        if(cameras[1].GainAuto.IsReadable() && cameras[1].GainAuto.GetValue() != GainAutoEnums::GainAuto_Off && cameras[1].GainAuto.IsWritable())
+            cameras[1].GainAuto.TrySetValue(GainAutoEnums::GainAuto_Off);
+        if(cameras[0].GainSelector.IsReadable() && cameras[0].GainSelector.IsWritable()) {
+            if(cameras[0].GainSelector.GetValue() != GainSelectorEnums::GainSelector_AnalogAll)
+                cameras[0].GainSelector.TrySetValue(GainSelectorEnums::GainSelector_AnalogAll);
+            else if(cameras[0].GainSelector.GetValue() != GainSelectorEnums::GainSelector_DigitalAll)
+                cameras[0].GainSelector.TrySetValue(GainSelectorEnums::GainSelector_DigitalAll);
+        }
+        if(cameras[1].GainSelector.IsReadable() && cameras[1].GainSelector.IsWritable()) {
+            if(cameras[1].GainSelector.GetValue() != GainSelectorEnums::GainSelector_AnalogAll)
+                cameras[1].GainSelector.TrySetValue(GainSelectorEnums::GainSelector_AnalogAll);
+            else if(cameras[1].GainSelector.GetValue() != GainSelectorEnums::GainSelector_DigitalAll)
+                cameras[1].GainSelector.TrySetValue(GainSelectorEnums::GainSelector_DigitalAll);
+        }
+
+//        // DEBUG HELP
+//        GenApi::INodeMap& nodemap = camera.GetNodeMap();
+//        GenApi_3_1_Basler_pylon_v3::NodeList_t Nodes;
+//        nodemap.GetNodes(Nodes);
+//        for(int i=0; i<Nodes.size(); i++)
+//            qInfo() << Nodes[i]->GetName();
+
+        // Safety check for GigE
+        // We should be able to read something very basic, e.g. ROI height
+        if(!cameras[0].Height.IsReadable() || !cameras[1].Height.IsReadable()) {
+            qCritical() << "Device is likely stuck. Resetting...";
+            safelyCloseCameras();
+
+            emit manualDeviceResetNecessary();
+        }
+
         // Synchronize the camera time to the system time
         synchronizeTime();
         
@@ -294,9 +345,12 @@ int StereoCamera::getExposureTimeValue() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].ExposureTime.IsReadable()) {
             return cameras[0].ExposureTime.GetValue();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
             return cameras[0].ExposureTimeAbs.GetValue();
+        } else if (cameras.GetSize() > 0 && cameras[0].ExposureTimeRaw.IsReadable()) {
+            return cameras[0].ExposureTimeRaw.GetValue();
+        } else if (cameras.GetSize() > 0 && cameras[0].BslEffectiveExposureTime.IsReadable()) {
+            return cameras[0].BslEffectiveExposureTime.GetValue();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -309,9 +363,12 @@ int StereoCamera::getExposureTimeMin() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].ExposureTime.IsReadable()) {
             return cameras[0].ExposureTime.GetMin();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
             return cameras[0].ExposureTimeAbs.GetMin();
+        } if (cameras.GetSize() > 0 && cameras[0].ExposureTimeRaw.IsReadable()) {
+            return cameras[0].ExposureTimeRaw.GetMin();
+        } else if (cameras.GetSize() > 0 && cameras[0].BslEffectiveExposureTime.IsReadable()) {
+            return cameras[0].BslEffectiveExposureTime.GetMin();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -324,9 +381,12 @@ int StereoCamera::getExposureTimeMax() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].ExposureTime.IsReadable()) {
             return cameras[0].ExposureTime.GetMax();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
             return cameras[0].ExposureTimeAbs.GetMax();
+        } else if (cameras.GetSize() > 0 && cameras[0].ExposureTimeRaw.IsReadable()) {
+            return cameras[0].ExposureTimeRaw.GetMax();
+        } else if (cameras.GetSize() > 0 && cameras[0].BslEffectiveExposureTime.IsReadable()) {
+            return cameras[0].BslEffectiveExposureTime.GetMax();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -339,8 +399,9 @@ double StereoCamera::getGainValue() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].Gain.IsReadable()) {
             return cameras[0].Gain.GetValue();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].GainAbs.IsReadable()) {
+            return cameras[0].GainAbs.GetValue();
+        } else if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
             return cameras[0].GainRaw.GetValue();
         }
     } catch (const GenericException &e) {
@@ -354,8 +415,9 @@ double StereoCamera::getGainMin() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].Gain.IsReadable()) {
             return cameras[0].Gain.GetMin();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].GainAbs.IsReadable()) {
+            return cameras[0].GainAbs.GetMin();
+        } else if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
             return cameras[0].GainRaw.GetMin();
         }
     } catch (const GenericException &e) {
@@ -369,8 +431,9 @@ double StereoCamera::getGainMax() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].Gain.IsReadable()) {
             return cameras[0].Gain.GetMax();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].GainAbs.IsReadable()) {
+            return cameras[0].GainAbs.GetMax();
+        } else if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
             return cameras[0].GainRaw.GetMax();
         }
     } catch (const GenericException &e) {
@@ -382,38 +445,37 @@ double StereoCamera::getGainMax() {
 // Sets the Gain value of the main and secondary camera
 void StereoCamera::setGainValue(double value) {
     try {
-        if (isEmulated()) {
-            if (cameras.GetSize() == 2 && cameras[0].GainRaw.IsWritable() && cameras[1].GainRaw.IsWritable() &&
-                value >= getGainMin() && value <= getGainMax()) {
-                qDebug() << cameras[0].GainRaw.GetMin();
-                qDebug() << cameras[1].GainRaw.GetMin();
-                qDebug() << cameras[0].GainRaw.GetMax();
-                qDebug() << cameras[1].GainRaw.GetMax();
-                int intValue = static_cast<int>(value);
+        if(cameras.GetSize() != 2)
+            return;
 
-                // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
-                //  Also correct Aravis implementation for this
-                GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap0 = cameras[0].GetNodeMap();
-                //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
-                CEnumParameter(nodemap0, "GainAuto").TrySetValue("Off");
-                GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap1 = cameras[1].GetNodeMap();
-                //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
-                CEnumParameter(nodemap1, "GainAuto").TrySetValue("Off");
+        if (    (cameras[0].Gain.IsReadable() && cameras[1].Gain.IsReadable()) ||
+                (cameras[0].GainAbs.IsReadable() && cameras[1].GainAbs.IsReadable()) ||
+                (cameras[0].GainRaw.IsReadable() && cameras[1].GainRaw.IsReadable())
+                )  {
+            if (getGainMax() < value)
+                value = getGainMax();
+            else if (getGainMin() > value)
+                value = getGainMin();
+        }
 
-                cameras[0].GainRaw.TrySetValue(intValue);
-                cameras[1].GainRaw.TrySetValue(intValue);
-            }
-        } else {
-            if (cameras[0].Gain.IsReadable() && cameras[1].Gain.IsReadable()) {
-                if (getGainMax() < value)
-                    value = getGainMax();
-                else if (getGainMin() > value)
-                    value = getGainMin();
-            }
-            if (cameras.GetSize() == 2 && cameras[0].Gain.IsWritable() && cameras[1].Gain.IsWritable()) {
-                cameras[0].Gain.TrySetValue(value);
-                cameras[1].Gain.TrySetValue(value);
-            }
+        // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
+        //  Also correct Aravis implementation for this
+        GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap0 = cameras[0].GetNodeMap();
+        //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
+        CEnumParameter(nodemap0, "GainAuto").TrySetValue("Off");
+        GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap1 = cameras[1].GetNodeMap();
+        //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
+        CEnumParameter(nodemap1, "GainAuto").TrySetValue("Off");
+
+        if (cameras[0].Gain.IsWritable() && cameras[1].Gain.IsWritable()) {
+            cameras[0].Gain.TrySetValue(value);
+            cameras[1].Gain.TrySetValue(value);
+        } else if (cameras[0].GainAbs.IsWritable() && cameras[1].GainAbs.IsWritable()) {
+            cameras[0].GainAbs.TrySetValue(value);
+            cameras[1].GainAbs.TrySetValue(value);
+        } else if (cameras[0].GainRaw.IsWritable() && cameras[1].GainRaw.IsWritable()) {
+            cameras[0].GainRaw.TrySetValue(value);
+            cameras[1].GainRaw.TrySetValue(value);
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -424,36 +486,41 @@ void StereoCamera::setGainValue(double value) {
 // Sets the exposure time value of the main and secondary camera
 void StereoCamera::setExposureTimeValue(int value) {
     try {
-        if (isEmulated()) {
-            if (cameras.GetSize() == 2 && cameras[0].ExposureTimeAbs.IsWritable() &&
-                cameras[1].ExposureTimeAbs.IsWritable() && value != 0) {
-                qDebug() << "Writing exposure value: " << value;
+        if(cameras.GetSize() != 2)
+            return;
 
-                // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
-                //  Also correct Aravis implementation for this
-                GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap0 = cameras[0].GetNodeMap();
-                //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
-                CEnumParameter(nodemap0, "ExposureAuto").TrySetValue("Off");
-                GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap1 = cameras[1].GetNodeMap();
-                //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
-                CEnumParameter(nodemap1, "ExposureAuto").TrySetValue("Off");
+        if (    (cameras[0].ExposureTime.IsReadable() && cameras[1].ExposureTime.IsReadable()) ||
+                (cameras[0].ExposureTimeAbs.IsReadable() && cameras[1].ExposureTimeAbs.IsReadable()) ||
+                (cameras[0].ExposureTimeRaw.IsReadable() && cameras[1].ExposureTimeRaw.IsReadable()) ||
+                (cameras[0].BslEffectiveExposureTime.IsReadable() && cameras[1].BslEffectiveExposureTime.IsReadable())
+                ) {
+            if (getExposureTimeMax() < value)
+                value = getExposureTimeMax();
+            else if (getExposureTimeMin() > value)
+                value = getExposureTimeMin();
+        }
 
-                cameras[0].ExposureTimeAbs.TrySetValue(value);
-                cameras[1].ExposureTimeAbs.TrySetValue(value);
-            }
-        } else {
-            if (cameras[0].ExposureTime.IsReadable() && cameras[1].ExposureTime.IsReadable()) {
-                if (getExposureTimeMax() < value)
-                    value = getExposureTimeMax();
-                else if (getExposureTimeMin() > value)
-                    value = getExposureTimeMin();
-            }
-            if (cameras.GetSize() == 2 && cameras[0].ExposureTime.IsWritable() &&
-                cameras[1].ExposureTime.IsWritable()) {
-                qDebug() << "Writing exposure value: " << value;
-                cameras[0].ExposureTime.TrySetValue(value);
-                cameras[1].ExposureTime.TrySetValue(value);
-            }
+        // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
+        //  Also correct Aravis implementation for this
+        GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap0 = cameras[0].GetNodeMap();
+        //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
+        CEnumParameter(nodemap0, "ExposureAuto").TrySetValue("Off");
+        GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap1 = cameras[1].GetNodeMap();
+        //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
+        CEnumParameter(nodemap1, "ExposureAuto").TrySetValue("Off");
+
+        if (cameras[0].ExposureTime.IsWritable() && cameras[1].ExposureTime.IsWritable()) {
+            cameras[0].ExposureTime.TrySetValue(value);
+            cameras[1].ExposureTime.TrySetValue(value);
+        } else if (cameras[0].ExposureTimeAbs.IsWritable() && cameras[1].ExposureTimeAbs.IsWritable()) {
+            cameras[0].ExposureTimeAbs.TrySetValue(value);
+            cameras[1].ExposureTimeAbs.TrySetValue(value);
+        } else if (cameras[0].ExposureTimeRaw.IsWritable() && cameras[1].ExposureTimeRaw.IsWritable()) {
+            cameras[0].ExposureTimeRaw.TrySetValue(value);
+            cameras[1].ExposureTimeRaw.TrySetValue(value);
+        } else if (cameras[0].BslEffectiveExposureTime.IsWritable() && cameras[1].BslEffectiveExposureTime.IsWritable()) {
+            cameras[0].BslEffectiveExposureTime.TrySetValue(value);
+            cameras[1].BslEffectiveExposureTime.TrySetValue(value);
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -549,8 +616,11 @@ bool StereoCamera::isEmulated()
 // Enables image acquisition frame rate for both cameras
 void StereoCamera::enableAcquisitionFrameRate(bool enabled) {
     try {
-        if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRateEnable.IsWritable() &&
-            cameras[1].AcquisitionFrameRateEnable.IsWritable()) {
+        if(cameras.GetSize() < 2) {
+            return;
+        }
+
+        if (cameras[0].AcquisitionFrameRateEnable.IsWritable() && cameras[1].AcquisitionFrameRateEnable.IsWritable()) {
             cameras[0].AcquisitionFrameRateEnable.TrySetValue(enabled);
             cameras[1].AcquisitionFrameRateEnable.TrySetValue(enabled);
         }
@@ -562,20 +632,13 @@ void StereoCamera::enableAcquisitionFrameRate(bool enabled) {
 // Sets the value of the image acquisition frame rate for both cameras
 void StereoCamera::setAcquisitionFPSValue(int value) {
     try {
-        if (isEmulated()) {
-            if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRateAbs.IsWritable() &&
-                cameras[1].AcquisitionFrameRateAbs.IsWritable()) {
-                if (value <= 0)
-                    value = 10;
-                cameras[0].AcquisitionFrameRateAbs.TrySetValue(value);
-                cameras[1].AcquisitionFrameRateAbs.TrySetValue(value);
-            }
-        } else {
-            if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRate.IsWritable() &&
-                cameras[1].AcquisitionFrameRate.IsWritable()) {
-                cameras[0].AcquisitionFrameRate.TrySetValue(value);
-                cameras[1].AcquisitionFrameRate.TrySetValue(value);
-            }
+        if(cameras.GetSize() < 2) {
+            return;
+        }
+
+        if (cameras[0].AcquisitionFrameRateAbs.IsWritable() && cameras[1].AcquisitionFrameRateAbs.IsWritable()) {
+            cameras[0].AcquisitionFrameRateAbs.TrySetValue(value);
+            cameras[1].AcquisitionFrameRateAbs.TrySetValue(value);
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -589,8 +652,7 @@ int StereoCamera::getAcquisitionFPSValue() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRate.IsReadable()) {
             return cameras[0].AcquisitionFrameRate.GetValue();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
             return cameras[0].AcquisitionFrameRateAbs.GetValue();
         }
     } catch (const GenericException &e) {
@@ -619,8 +681,7 @@ int StereoCamera::getAcquisitionFPSMax() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRate.IsReadable()) {
             return cameras[0].AcquisitionFrameRate.GetMax();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
             return cameras[0].AcquisitionFrameRateAbs.GetMax();
         }
     } catch (const GenericException &e) {
@@ -634,9 +695,10 @@ double StereoCamera::getResultingFrameRateValue() {
     try {
         if (cameras.GetSize() > 0 && cameras[0].ResultingFrameRate.IsReadable()) {
             return cameras[0].ResultingFrameRate.GetValue();
-        }
-        if (cameras.GetSize() > 0 && cameras[0].ResultingFrameRateAbs.IsReadable()) {
+        } else if (cameras.GetSize() > 0 && cameras[0].ResultingFrameRateAbs.IsReadable()) {
             return cameras[0].ResultingFrameRateAbs.GetValue();
+        } else if (cameras.GetSize() > 0 && cameras[0].BslResultingAcquisitionFrameRate.IsReadable()) {
+            return cameras[0].BslResultingAcquisitionFrameRate.GetValue();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);

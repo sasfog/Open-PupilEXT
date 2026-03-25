@@ -186,6 +186,10 @@ signals:
     void cameraDeviceRemoved();
     void imagesSkipped();
 
+    // TODO: implement to Pylon too
+    void deviceWasReset();
+    void manualDeviceResetNecessary();
+
 };
 
 #else

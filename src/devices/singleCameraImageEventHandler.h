@@ -40,6 +40,8 @@ public:
     void OnImagesSkipped( CInstantCamera& camera, size_t countOfSkippedImages) override;
     void OnImageGrabbed( CInstantCamera& camera, const CGrabResultPtr& ptrGrabResult) override;
 
+    void setTickFreq(quint64 _tickFreq);
+
 private:
 
     uint64 cameraTime;
@@ -48,8 +50,9 @@ private:
     CImageFormatConverter formatConverter;
     CPylonImage pylonImage;
 
-    // DEV DEE DEMO LUND
-    int dummyFrameLimiterFrameCount = 0;
+    // Needed for GigE
+    bool needsTickConversion = false;
+    uint64 tickFreq = 1;
 
 signals:
 

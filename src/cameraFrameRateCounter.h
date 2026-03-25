@@ -69,13 +69,18 @@ public slots:
             if(cumDiff==0 || secFrameCount==0) {
                 fps_ = 0.0;
             } else {
-                fps_ = 1000.0 / ((double) cumDiff / secFrameCount);
+                fps_ = 1000.0f / ((double) cumDiff / (double)secFrameCount);
             }            m_timer.restart();
+
+            qDebug() << "cumDiff: " << cumDiff;
+            qDebug() << "fps: " << fps_;
+
             timeout_timer.start(4000);
             secFrameCount = 0;
             cumDiff = 0;
             emit fps(fps_);
             emit framecount(totalFrameCount);
+
         }
 
         cumDiff += image.timestamp - lastTimestamp; // Store the frame timestamp distances to calculate the average framerate per second
@@ -110,7 +115,7 @@ private slots:
             if(cumDiff==0 || secFrameCount==0) {
                 fps_ = 0.0;
             } else {
-                fps_ =  (double) 1000.0f / (cumDiff / secFrameCount);
+                fps_ =  1000.0f / ((double)cumDiff / (double)secFrameCount);
             }
             m_timer.restart();
             timeout_timer.start(4000);

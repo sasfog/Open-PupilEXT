@@ -94,7 +94,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
-    if(!settingsDirectory.exists()) {
+    if (!settingsDirectory.exists()) {
 // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //        settingsDirectory.mkdir(".");
         QDir().mkpath(settingsDirectory.absolutePath());
@@ -130,6 +130,63 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
 
         camera.Open();
         assert(camera.IsOpen());
+
+        // GIGE ticks to timestamp conversion initialization, NOTE: THIS HAS TO HAPPEN AFTER CAMERA IS OPENED
+        if (camera.GetDeviceInfo().GetTLType() == "BaslerGigE" || camera.GetDeviceInfo().GetTLType() == "GEV") {
+//            qDebug() << "camera.GevTimestampTickFrequency.GetValue() = ";
+//            qDebug() << camera.GevTimestampTickFrequency.GetValue();
+            cameraImageEventHandler->setTickFreq(camera.GevTimestampTickFrequency.GetValue());
+        }
+
+        // "Just to be sure" checks.Particularly useful for GigE which can get stuck when something illegal is queried
+        if(camera.ExposureAuto.IsReadable() && camera.ExposureAuto.GetValue() != ExposureAutoEnums::ExposureAuto_Off && camera.ExposureAuto.IsWritable())
+            camera.ExposureAuto.TrySetValue(ExposureAutoEnums::ExposureAuto_Off);
+        if(camera.ExposureMode.IsReadable() && camera.ExposureMode.GetValue() != ExposureModeEnums::ExposureMode_Timed && camera.ExposureMode.IsWritable())
+            camera.ExposureMode.TrySetValue(ExposureModeEnums::ExposureMode_Timed);
+
+        if(camera.GainAuto.IsReadable() && camera.GainAuto.GetValue() != GainAutoEnums::GainAuto_Off && camera.GainAuto.IsWritable())
+            camera.GainAuto.TrySetValue(GainAutoEnums::GainAuto_Off);
+        if(camera.GainSelector.IsReadable() && camera.GainSelector.IsWritable()) {
+            if(camera.GainSelector.GetValue() != GainSelectorEnums::GainSelector_AnalogAll)
+                camera.GainSelector.TrySetValue(GainSelectorEnums::GainSelector_AnalogAll);
+            else if(camera.GainSelector.GetValue() != GainSelectorEnums::GainSelector_DigitalAll)
+                camera.GainSelector.TrySetValue(GainSelectorEnums::GainSelector_DigitalAll);
+        }
+
+//        // DEBUG HELP
+//        GenApi::INodeMap& nodemap = camera.GetNodeMap();
+//        GenApi_3_1_Basler_pylon_v3::NodeList_t Nodes;
+//        nodemap.GetNodes(Nodes);
+//        for(int i=0; i<Nodes.size(); i++)
+//            qInfo() << Nodes[i]->GetName();
+
+        // Safety check for GigE
+        // We should be able to read something very basic, e.g. ROI height
+        if(!camera.Height.IsReadable()) {
+            qCritical() << "Device is likely stuck. Resetting...";
+            camera.DeviceReset.Execute();
+            camera.Close();
+            TlFactory.ReleaseTl(pTl);
+
+            // Detach device, destroy device
+
+            // camera.StopGrabbing();
+            // camera.Close();
+            camera.DeregisterImageEventHandler(cameraImageEventHandler);
+            camera.DeregisterConfiguration(cameraConfigurationEventHandler);
+            if(hardwareTriggerConfiguration) {
+                camera.DeregisterConfiguration(hardwareTriggerConfiguration);
+            }
+            if(softwareTriggerConfiguration) {
+                camera.DeregisterConfiguration(softwareTriggerConfiguration);
+            }
+            //
+            cameraConfigurationEventHandler = nullptr;
+            softwareTriggerConfiguration = nullptr;
+            cameraImageEventHandler = nullptr;
+
+            emit manualDeviceResetNecessary();
+        }
 
         synchronizeTime();
         cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
@@ -172,6 +229,10 @@ void SingleCamera::genericExceptionOccured(const GenericException &e) {
     //QThread::msleep(1000);
     qCritical() << "A Pylon exception occurred." << Qt::endl << e.GetDescription();
     if (camera.IsCameraDeviceRemoved()) {
+
+        // DEV
+        camera.DeviceReset.Execute();
+
         emit cameraDeviceRemoved();
         camera.Close();
         camera.DetachDevice();
@@ -520,6 +581,12 @@ int SingleCamera::getExposureTimeValue() {
     try {
         if (camera.ExposureTime.IsReadable()) {
             return static_cast<int>(camera.ExposureTime.GetValue());
+        } else if(camera.ExposureTimeAbs.IsReadable()) {
+            return static_cast<int>(camera.ExposureTimeAbs.GetValue());
+        } else if(camera.ExposureTimeRaw.IsReadable()) {
+            return static_cast<int>(camera.ExposureTimeRaw.GetValue());
+        } else if (camera.BslEffectiveExposureTime.IsReadable()) {
+            return static_cast<int>(camera.BslEffectiveExposureTime.GetValue());
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -531,6 +598,12 @@ int SingleCamera::getExposureTimeMin() {
     try {
         if (camera.ExposureTime.IsReadable()) {
             return static_cast<int>(camera.ExposureTime.GetMin());
+        } else if (camera.ExposureTimeAbs.IsReadable()) {
+            return static_cast<int>(camera.ExposureTimeAbs.GetMin());
+        } else if (camera.ExposureTimeRaw.IsReadable()) {
+            return static_cast<int>(camera.ExposureTimeRaw.GetMin());
+        } else if (camera.BslEffectiveExposureTime.IsReadable()) {
+            return static_cast<int>(camera.BslEffectiveExposureTime.GetMin());
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -542,6 +615,12 @@ int SingleCamera::getExposureTimeMax() {
     try {
         if (camera.ExposureTime.IsReadable()) {
             return static_cast<int>(camera.ExposureTime.GetMax());
+        } else if (camera.ExposureTimeAbs.IsReadable()) {
+            return static_cast<int>(camera.ExposureTimeAbs.GetMax());
+        } else if (camera.ExposureTimeRaw.IsReadable()) {
+            return static_cast<int>(camera.ExposureTimeRaw.GetMax());
+        } else if (camera.BslEffectiveExposureTime.IsReadable()) {
+            return static_cast<int>(camera.BslEffectiveExposureTime.GetMax());
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -553,6 +632,10 @@ double SingleCamera::getGainValue() {
     try {
         if (camera.Gain.IsReadable()) {
             return camera.Gain.GetValue();
+        } else if (camera.GainAbs.IsReadable()) {
+            return camera.GainAbs.GetValue();
+        } else if (camera.GainRaw.IsReadable()) {
+            return camera.GainRaw.GetValue();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -564,6 +647,10 @@ double SingleCamera::getGainMin() {
     try {
         if (camera.Gain.IsReadable()) {
             return camera.Gain.GetMin();
+        } else if (camera.GainAbs.IsReadable()) {
+            return camera.GainAbs.GetMin();
+        } else if (camera.GainRaw.IsReadable()) {
+            return camera.GainRaw.GetMin();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -575,6 +662,10 @@ double SingleCamera::getGainMax() {
     try {
         if (camera.Gain.IsReadable()) {
             return camera.Gain.GetMax();
+        } else if (camera.GainAbs.IsReadable()) {
+            return camera.GainAbs.GetMax();
+        } else if (camera.GainRaw.IsReadable()) {
+            return camera.GainRaw.GetMax();
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -584,13 +675,13 @@ double SingleCamera::getGainMax() {
 
 void SingleCamera::setGainValue(double value) {
     try {
-        if (camera.Gain.IsReadable()) {
+        if (camera.Gain.IsReadable() || camera.GainAbs.IsReadable() || camera.GainRaw.IsReadable()) {
             if (getGainMax() < value)
                 value = getGainMax();
             else if (getGainMin() > value)
                 value = getGainMin();
         }
-        if (camera.Gain.IsWritable()) {
+        if (camera.Gain.IsWritable() || camera.GainAbs.IsWritable() || camera.GainRaw.IsWritable()) {
 
             // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
             //  Also correct Aravis implementation for this
@@ -598,7 +689,12 @@ void SingleCamera::setGainValue(double value) {
             //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
             CEnumParameter(nodemap, "GainAuto").TrySetValue("Off");
 
-            camera.Gain.TrySetValue(value);
+            if(camera.Gain.IsWritable())
+                camera.Gain.TrySetValue(value);
+            else if(camera.GainAbs.IsWritable())
+                camera.GainAbs.TrySetValue(value);
+            else if(camera.GainRaw.IsWritable())
+                camera.GainRaw.TrySetValue(value);
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -607,13 +703,13 @@ void SingleCamera::setGainValue(double value) {
 
 void SingleCamera::setExposureTimeValue(int value) {
     try {
-        if (camera.ExposureTime.IsReadable()) {
+        if (camera.ExposureTime.IsReadable() || camera.ExposureTimeAbs.IsReadable() || camera.ExposureTimeRaw.IsReadable() || camera.BslEffectiveExposureTime.IsReadable()) {
             if (getExposureTimeMax() < value)
                 value = getExposureTimeMax();
             else if (getExposureTimeMin() > value)
                 value = getExposureTimeMin();
         }
-        if (camera.ExposureTime.IsWritable()) {
+        if (camera.ExposureTime.IsWritable() || camera.ExposureTimeAbs.IsWritable() || camera.ExposureTimeRaw.IsWritable() || camera.BslEffectiveExposureTime.IsWritable()) {
 
             // TODO: do this properly, and add a GUI tickbox for Continous auto vs Auto once and the spinbox.
             //  Also correct Aravis implementation for this
@@ -621,7 +717,15 @@ void SingleCamera::setExposureTimeValue(int value) {
             //CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Continuous");
             CEnumParameter(nodemap, "ExposureAuto").TrySetValue("Off");
 
-            camera.ExposureTime.TrySetValue(value);
+            if (camera.ExposureTime.IsWritable()) {
+                camera.ExposureTime.TrySetValue(value);
+            } else if (camera.ExposureTimeAbs.IsWritable()) {
+                camera.ExposureTimeAbs.TrySetValue(value);
+            } else if (camera.ExposureTimeRaw.IsWritable()) {
+                camera.ExposureTimeRaw.TrySetValue(value);
+            } else if (camera.BslEffectiveExposureTime.IsWritable()) {
+                camera.BslEffectiveExposureTime.TrySetValue(value);
+            }
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
@@ -695,6 +799,8 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
     try {
         if(!enabled && camera.AcquisitionFrameRate.IsWritable())
             camera.AcquisitionFrameRate.TrySetValue(9999);
+        if(!enabled && camera.AcquisitionFrameRateAbs.IsWritable())
+            camera.AcquisitionFrameRateAbs.TrySetValue(9999);
 
         if (camera.AcquisitionFrameRateEnable.IsWritable()) {
             camera.AcquisitionFrameRateEnable.TrySetValue(enabled);
@@ -708,6 +814,8 @@ void SingleCamera::setAcquisitionFPSValue(int value) {
     try {
         if (camera.AcquisitionFrameRate.IsWritable()) {
             camera.AcquisitionFrameRate.TrySetValue(value);
+        } else if (camera.AcquisitionFrameRateAbs.IsWritable()) {
+            camera.AcquisitionFrameRateAbs.TrySetValue(value);
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
@@ -718,6 +826,8 @@ int SingleCamera::getAcquisitionFPSValue() {
     try {
         if (camera.AcquisitionFrameRate.IsReadable()) {
             return static_cast<int>(camera.AcquisitionFrameRate.GetValue());
+        } else if (camera.AcquisitionFrameRateAbs.IsReadable()) {
+            return static_cast<int>(camera.AcquisitionFrameRateAbs.GetValue());
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
@@ -729,6 +839,8 @@ int SingleCamera::getAcquisitionFPSMin() {
     try {
         if (camera.AcquisitionFrameRate.IsReadable()) {
             return static_cast<int>(camera.AcquisitionFrameRate.GetMin());
+        } else if (camera.AcquisitionFrameRateAbs.IsReadable()) {
+            return static_cast<int>(camera.AcquisitionFrameRateAbs.GetMin());
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
@@ -740,6 +852,8 @@ int SingleCamera::getAcquisitionFPSMax() {
     try {
         if (camera.AcquisitionFrameRate.IsReadable()) {
             return static_cast<int>(camera.AcquisitionFrameRate.GetMax());
+        } else if (camera.AcquisitionFrameRateAbs.IsReadable()) {
+            return static_cast<int>(camera.AcquisitionFrameRateAbs.GetMax());
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
@@ -750,12 +864,16 @@ int SingleCamera::getAcquisitionFPSMax() {
 double SingleCamera::getResultingFrameRateValue() {
     try {
         //qDebug() << "--------------------------------" << QString(camera.GetDeviceInfo().GetDeviceClass());
-        if(QString(camera.GetDeviceInfo().GetDeviceClass()) == "BaslerGigE") {
+        /*if(camera.GetDeviceInfo().GetDeviceClass() == BaslerGigEDeviceClass) {
             GenApi::INodeMap& nodemap = camera.GetNodeMap();
             // Get the resulting acquisition frame rate
             return CFloatParameter(nodemap, "ResultingFrameRateAbs").GetValue();
-        } else if (camera.ResultingFrameRate.IsReadable()) {
+        } else */ if (camera.ResultingFrameRate.IsReadable()) {
             return camera.ResultingFrameRate.GetValue();
+        } else if (camera.ResultingFrameRateAbs.IsReadable()) {
+            return camera.ResultingFrameRateAbs.GetValue();
+        } else if (camera.BslResultingAcquisitionFrameRate.IsReadable()) {
+            return camera.BslResultingAcquisitionFrameRate.GetValue();
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);

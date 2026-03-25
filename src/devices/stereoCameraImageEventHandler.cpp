@@ -18,6 +18,11 @@ StereoCameraImageEventHandler::~StereoCameraImageEventHandler() {
 
 }
 
+void StereoCameraImageEventHandler::setTickFreq(quint64 _tickFreq) {
+    tickFreq = _tickFreq;
+    needsTickConversion = true;
+}
+
 // Event handler that is executed if for any of the two cameras in the stereo camera images were skipped
 // If image skipping happens in one of the two cameras, one may assume that the images are not in sync
 // anymore and the onImageGrabbed event handler may not be able produce any stereo images due to unsync framecount
@@ -49,6 +54,9 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
 
         uint64_t timeStamp = ptrGrabResult->GetTimeStamp();
         timeStamp = ((timeStamp-cameraTime[cameraContextValue]) + systemTime) / 1000000;
+
+        if(needsTickConversion)
+            timeStamp = timeStamp / (tickFreq/1000000) *1000; // looks weird but spares conversion
 
         //std::cout<< "Grabresult from camera" << cameraContextValue << ": frameNumber:  " << frameNumber << ", timestamp: " << timeStamp <<std::endl;
 

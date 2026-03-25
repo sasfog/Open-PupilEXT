@@ -14,6 +14,11 @@ SingleCameraImageEventHandler::~SingleCameraImageEventHandler() {
 
 }
 
+void SingleCameraImageEventHandler::setTickFreq(quint64 _tickFreq) {
+    tickFreq = _tickFreq;
+    needsTickConversion = true;
+}
+
 // Event handler when images are skipped by the camera
 // BG: NOTE: According to Basler docs this will only ever get called when grabStrategy is set to LatestImageOnly or LatestImages, which is never the case for us ..(?)
 // https://zh.docs.baslerweb.com/pylonapi/cpp/class_pylon_1_1_c_basler_universal_image_event_handler#function-onimagesskipped
@@ -51,6 +56,9 @@ void SingleCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         uint64 timeStamp = ptrGrabResult->GetTimeStamp();
         // cameraTime describes the acquisition start in camera time, systemTime the acquisition start in system time
         timeStamp = ((timeStamp-cameraTime) / 1000000) + systemTime;
+
+        if(needsTickConversion)
+            timeStamp = timeStamp / (tickFreq/1000000) *1000; // looks weird but spares conversion
 
         //quint64 chrono_time  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         //qDebug() <<
