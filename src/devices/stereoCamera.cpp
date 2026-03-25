@@ -505,13 +505,27 @@ void StereoCamera::saveMainToFile(const QString &filename) {
 // The value of the image acquisition may overwrite hardware trigger framerates
 // Assumes that main and secondary camera have the same settings
 bool StereoCamera::isEnabledAcquisitionFrameRate() {
+    try {
+        if (isAcquisitionFrameRateAvailable()) {
+            return cameras[0].AcquisitionFrameRateEnable.GetValue();
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
+    }
+    return false;
+}
 
-    // TODO: IF THE CAMERA TYPE IS ON WHITELIST, FORCEFULLY RETURN TRUE
-    //  e.g. daA1280-54um returns false properly, but still it works surprisingly if we forcefully set
-    //  aquisition framerate. So a whitelist could be used, and that camera added to it at least
+bool StereoCamera::isAcquisitionFrameRateAvailable() {
+    try {
+        // TODO: IF THE CAMERA TYPE IS ON WHITELIST, FORCEFULLY RETURN TRUE
+        //  e.g. daA1280-54um returns false properly, but still it works surprisingly if we forcefully set
+        //  aquisition framerate. So a whitelist could be used, and that camera added to it at least
 
-    if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateEnable.IsReadable()) {
-        return cameras[0].AcquisitionFrameRateEnable.GetValue();
+        if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateEnable.IsReadable() && cameras[0].AcquisitionFrameRateEnable.IsWritable()) {
+            return true;
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
     }
     return false;
 }

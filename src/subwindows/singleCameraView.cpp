@@ -22,8 +22,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
         currentCameraFPS(0.0),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
-
     setWindowTitle("Single camera view");
+    windowOriginalTitle = windowTitle();
 
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -746,6 +746,11 @@ void SingleCameraView::onFreezeClicked() {
 void SingleCameraView::onCameraPlaybackChanged() {
     playbackFrozen = !playbackFrozen;
     freezeAct->setChecked(playbackFrozen);
+
+    if(playbackFrozen)
+        setWindowTitle(windowOriginalTitle + " [FREEZED (Shift+F)]");
+    else
+        setWindowTitle(windowOriginalTitle);
 }
 
 void SingleCameraView::updateForPupilDetectionProcMode() {

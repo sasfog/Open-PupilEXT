@@ -41,6 +41,94 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *cameraPtr, 
     updateDevicesBox();
     loadSettings();
     updateForms();
+
+    installEventFilter(this);
+}
+
+bool StereoCameraSettingsDialog::eventFilter(QObject *obj, QEvent *event) {
+
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+        //qDebug() << "Keypress: " << keyEvent->key();
+
+        if (    keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Plus ||
+                keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Minus
+                ) {
+            // Handle increment and decrement
+            // Special: the numeric entry boxes can also be used with
+            // Moreover, if the CTRL is held, the steps are grown fourfold
+
+            int stepToCommit = 1;
+            if(keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Plus)
+                stepToCommit = 1;
+            else if(keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Minus)
+                stepToCommit = -1;
+            else if(keyEvent->modifiers() & Qt::ControlModifier)
+                stepToCommit *= 4;
+
+            if(exposureInputBox->hasFocus()) {
+                exposureInputBox->stepBy(stepToCommit);
+            } else if(imageROIwidthInputBox->hasFocus()) {
+                imageROIwidthInputBox->stepBy(stepToCommit);
+            } else if(imageROIheightInputBox->hasFocus()) {
+                imageROIheightInputBox->stepBy(stepToCommit);
+            } else if(imageROIoffsetXInputBox->hasFocus()) {
+                imageROIoffsetXInputBox->stepBy(stepToCommit);
+            } else if(imageROIoffsetYInputBox->hasFocus()) {
+                imageROIoffsetYInputBox->stepBy(stepToCommit);
+            } else if(gainBox->hasFocus()) {
+                gainBox->stepBy(stepToCommit);
+            }
+            return true;
+
+        } else if (keyEvent->key() == Qt::Key_F){
+            // Handle freeze key for the camera view window
+            emit cameraPlaybackChanged();
+            return false;
+
+        } else if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return){
+            // We would normally interpret this as committing the value when a field is edited, BUT
+            //  as they are already reacting to the input on every keypress, we rather use the enter/return
+            //  key events as the "hop to the next entry field" interaction. However, we need to have a specific
+            //  order in which we want to hop around. This is the chain, looping over when someone hits many enters
+
+            // First just find where we are in the chain
+            int whichIndexWeHave = -1;
+            for(int i=0; i<focusChain.size(); i++) {
+                if(focusChain[i]->hasFocus()) {
+                    whichIndexWeHave = i;
+                }
+            }
+            if(whichIndexWeHave < 0)
+                return false;
+
+            // Then try to find the next one in the chain that is Enabled, and set focus on it
+            bool haveAlreadyLoopedOnce = false;
+            for(int j=0; j<focusChain.size(); j++) {
+
+                int suspectedIndex = whichIndexWeHave + j+1;
+                if(suspectedIndex >= focusChain.size())
+                    suspectedIndex -= focusChain.size();
+
+                if(focusChain[suspectedIndex]->isEnabled()) {
+                    focusChain[suspectedIndex]->setFocus();
+                    return true;
+                }
+            }
+            return true;
+
+        } else if (keyEvent->key() == Qt::Key_Space){
+            // This key always does something that the user did not want. Just discard the event.
+            //  E.g. ticking a checkbox or changing a radiobutton, ..
+            return true;
+
+        }
+        return false;
+
+    } else {
+        return false;
+    }
 }
 
 void StereoCameraSettingsDialog::createForm() {
@@ -418,7 +506,7 @@ void StereoCameraSettingsDialog::createForm() {
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
     HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate()); // This is only for the default state
-    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
     //HWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
     HWTframerateLimitBox = new QSpinBox();
     HWTframerateLimitLayout = new QHBoxLayout;
@@ -507,6 +595,17 @@ void StereoCameraSettingsDialog::createForm() {
     mainLayout->addLayout(buttonsLayout);
 
     setLayout(mainLayout);
+
+    focusChain.push_back(exposureInputBox);
+    focusChain.push_back(imageROIwidthInputBox);
+    focusChain.push_back(imageROIheightInputBox);
+    focusChain.push_back(imageROIoffsetXInputBox);
+    focusChain.push_back(imageROIoffsetYInputBox);
+    focusChain.push_back(SWTframerateLimitBox);
+    focusChain.push_back(HWTMCUframerateBox);
+    focusChain.push_back(HWTMCUtimeSpanBox);
+    focusChain.push_back(HWTframerateLimitBox);
+    focusChain.push_back(gainBox);
 
 
     // BG: only reveal settings when the cameras are connected
@@ -650,7 +749,7 @@ void StereoCameraSettingsDialog::updateForms() {
 //    SWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
 //    SWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     // ...
-    // SWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    // SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
 
     HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
     applicationSettings->setValue("StereoCameraSettingsDialog.HWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate());
@@ -658,7 +757,7 @@ void StereoCameraSettingsDialog::updateForms() {
         HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin())); // NOTE: Max is never changed!
         HWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     }
-    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
 
     gainBox->setMinimum(floor(camera->getGainMin()));
     gainBox->setMaximum(floor(camera->getGainMax()));
@@ -972,7 +1071,7 @@ void StereoCameraSettingsDialog::loadSettings() {
     // taken fron onHWTenabledChange of singlecamera, refined to stereo
 
     //HWTframerateLimitEnabled->setEnabled(true);
-    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
     HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
 
     if(HWTframerateLimitEnabled->isChecked()) {
@@ -989,7 +1088,7 @@ void StereoCameraSettingsDialog::loadSettings() {
 //    SWTframerateBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.acquisitionFramerate", camera->getAcquisitionFPSValue()).toInt());
 //    camera->setAcquisitionFPSValue(SWTframerateBox->value());
     // ...
-    // SWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    // SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
 
     bool m_HWTframerateLimitEnabled = SupportFunctions::readBoolFromQSettings("StereoCameraSettingsDialog.HWTframerateLimitEnabled", true, applicationSettings);
     HWTframerateLimitEnabled->setChecked(m_HWTframerateLimitEnabled);
@@ -997,7 +1096,7 @@ void StereoCameraSettingsDialog::loadSettings() {
     // 50 FPS is good for a first start, for the same reasons
     HWTframerateLimitBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.HWTframerateLimitVal", "50").toInt());
     camera->setAcquisitionFPSValue(HWTframerateLimitBox->value());
-    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
 
     qDebug() << imageROIwidthInputBox->value();
 
@@ -1378,7 +1477,7 @@ void StereoCameraSettingsDialog::HWTframerateLimitEnabledToggled(bool state) {
     applicationSettings->setValue("StereoCameraSettingsDialog.HWTframerateLimitEnabled", state);
 
     HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
-    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
     if(state)
         setHWTframerateLimitVal(HWTframerateLimitBox->value());
 }

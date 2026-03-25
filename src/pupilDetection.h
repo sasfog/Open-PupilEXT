@@ -189,6 +189,8 @@ public:
             return {singleEyeIdentity,singleEyeIdentity};
         else if(currentProcMode == STEREO_IMAGE_TWO_PUPIL)
             return {'R','R','L','L'};
+        else
+            return {'X'};
     };
     const std::vector<QChar> getCamIdentities() {
         if(currentProcMode == SINGLE_IMAGE_ONE_PUPIL)
@@ -199,6 +201,8 @@ public:
             return {'M','S'};
         else if(currentProcMode == STEREO_IMAGE_TWO_PUPIL)
             return {'M','S','M','S'};
+        else
+            return {'M'}; // ?
     };
     void setSingleEyeIdentity(QChar identity) {
         singleEyeIdentity = identity;

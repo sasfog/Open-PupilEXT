@@ -14,8 +14,8 @@ SetupGeometryDialog::SetupGeometryDialog(QWidget *parent) :
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(800, 500);
-    this->setMinimumSize(1100, 600);
-    this->resize(1300, 800);
+    this->setMinimumSize(1000, 300);
+    this->resize(1200, 600);
     this->setWindowTitle("Setup Geometry");
 
     //helplensIcon1 = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/lens-help-1.svg"), applicationSettings);
@@ -56,49 +56,10 @@ void SetupGeometryDialog::createForm() {
     //mainLayoutInnerCol2->setMargin(0);
     mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
-    aGroup = new QGroupBox("Test group");
-
-    //QFormLayout *procModeBoxLayout = new QFormLayout();
-    //QVBoxLayout *algorithmLayout = new QVBoxLayout();
-    //QHBoxLayout *algoBoxLayout = new QHBoxLayout();
-
-
-    //...
-    //mainLayoutInnerCol1->addWidget(procModeGroup);
-
-    //algorithmGroup->setLayout(algorithmLayout);
-    //mainLayoutInnerCol1->addWidget(algorithmGroup);
-
-    QFormLayout *aLayout = new QFormLayout();
-
-    QLabel *comboLabel = new QLabel(tr("Test label:"));
-    comboBox = new QComboBox();
-    comboBox->addItem(QString::fromStdString("1"));
-    comboBox->addItem(QString::fromStdString("2"));
-    comboBox->addItem(QString::fromStdString("3"));
-    comboBox->addItem(QString::fromStdString("4"));
-    comboBox->addItem(QString::fromStdString("5"));
-    aLayout->addWidget(comboBox);
-
-    QLabel *a1Label = new QLabel(tr("a1"));
-    a1Box = new QCheckBox();
-    //a1Box->setChecked(pupilDetection->isROIPreProcessingEnabled());
-    aLayout->addRow(a1Label, a1Box);
-
-    QLabel *a2Label = new QLabel(tr("a2"));
-    a2Box = new QCheckBox();
-    //a2Box->setChecked(pupilDetection->isOutlineConfidenceEnabled());
-    aLayout->addRow(a2Label, a2Box);
-
-    QLabel *a3Label = new QLabel(tr("a3"));
-    a3Box = new QCheckBox();
-    //a2Box->setChecked(pupilDetection->isOutlineConfidenceEnabled());
-    aLayout->addRow(a3Label, a2Box);
-
     //connect(pupilUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onPupilUndistortionClick(Qt::CheckState)));
 
     qtOpenGlViewer = new QtOpenGLViewer();
-    qtOpenGlViewer->setFixedSize(700,500);
+    qtOpenGlViewer->setFixedSize(600,450);
     qtOpenGlViewer->setBackgroundColor(QColor::fromRgb(20,31,33));
     qtOpenGlViewer->setFocusPolicy(Qt::FocusPolicy::ClickFocus); // let it catch keypresses
     mainLayoutInnerCol1->addWidget(qtOpenGlViewer);
@@ -148,11 +109,6 @@ void SetupGeometryDialog::createForm() {
     QPushButton *testHelpRotateButton = new QPushButton("Test help");
     connect(testHelpRotateButton, SIGNAL(clicked()), this, SLOT(testHelpRotateButtonClicked()));
     mainLayoutInnerCol1->addWidget(testHelpRotateButton);
-
-
-    aGroup->setLayout(aLayout);
-    mainLayoutInnerCol1->addWidget(aGroup);
-
 
 
     QFormLayout *componentsLayout = new QFormLayout();

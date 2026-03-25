@@ -34,6 +34,7 @@ public:
 protected:
 
     void reject() override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 
@@ -58,6 +59,8 @@ private:
     QDoubleSpinBox *exposureInputBox;
     QDoubleSpinBox *resizeInputBox;
 
+    QVector<QWidget*> focusChain;
+
     void createForm();
     void updateForms();
     void loadSettings();
@@ -70,5 +73,7 @@ private slots:
 signals:
 
     void onResizeFactorChanged(float value);
+    void cameraPlaybackChanged();
+
 };
 

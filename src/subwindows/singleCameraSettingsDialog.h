@@ -40,6 +40,7 @@ public:
 protected:
 
     void reject() override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 
@@ -113,6 +114,8 @@ private:
     QSpinBox *imageROIoffsetYInputBox;
     QComboBox *binningBox;
 
+    QVector<QWidget*> focusChain;
+
     CamImageRegionsWidget *camImageRegionsWidget;
 
     int lastUsedBinningVal = 0;
@@ -185,5 +188,7 @@ signals:
 
     void onImageROIChanged(QRect rect);
     void onSensorSizeChanged(QSize size);
+
+    void cameraPlaybackChanged();
 
 };

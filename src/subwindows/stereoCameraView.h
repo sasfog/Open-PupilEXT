@@ -37,6 +37,8 @@ public:
 
 private:
 
+    QString windowOriginalTitle;
+
     Camera *camera;
     PupilDetection *pupilDetection;
 

@@ -73,15 +73,6 @@ private:
 
     int testHelp = 0;
 
-
-    QCheckBox *a1Box;
-    QCheckBox *a2Box;
-    QCheckBox *a3Box;
-
-    QGroupBox *aGroup;
-    QLabel *aLabel;
-    QComboBox *comboBox;
-
     RemoteSetupModel *setupModel;
     QTreeView * setupModelTree;
 

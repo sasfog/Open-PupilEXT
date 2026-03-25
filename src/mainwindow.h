@@ -315,7 +315,8 @@ private:
     void setRecentImageWritingDirectory(QString path);
     void setRecentDataWritingDirectory(QString path);
 
-    void connectCameraPlaybackChangedSlots();
+    void connectCameraPlaybackChangedSlotsForCameraViews();
+    void connectCameraPlaybackChangedSlotsForCameraSettings();
 
 private slots:
 

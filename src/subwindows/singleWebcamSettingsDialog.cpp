@@ -15,6 +15,94 @@ SingleWebcamSettingsDialog::SingleWebcamSettingsDialog(SingleWebcam *singleWebca
     connect(gainInputBox, SIGNAL(valueChanged(double)), singleWebcam, SLOT(setGainValue(double)));
 
     loadSettings();
+
+    installEventFilter(this);
+}
+
+bool SingleWebcamSettingsDialog::eventFilter(QObject *obj, QEvent *event) {
+
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+        //qDebug() << "Keypress: " << keyEvent->key();
+
+        if (    keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Plus ||
+                keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Minus
+                ) {
+            // Handle increment and decrement
+            // Special: the numeric entry boxes can also be used with
+            // Moreover, if the CTRL is held, the steps are grown fourfold
+
+            int stepToCommit = 1;
+            if(keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Plus)
+                stepToCommit = 1;
+            else if(keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Minus)
+                stepToCommit = -1;
+            else if(keyEvent->modifiers() & Qt::ControlModifier)
+                stepToCommit *= 4;
+
+            if(fpsInputBox->hasFocus()) {
+                fpsInputBox->stepBy(stepToCommit);
+            } else if(brightnessInputBox->hasFocus()) {
+                brightnessInputBox->stepBy(stepToCommit);
+            } else if(contrastInputBox->hasFocus()) {
+                contrastInputBox->stepBy(stepToCommit);
+            } else if(gainInputBox->hasFocus()) {
+                gainInputBox->stepBy(stepToCommit);
+            } else if(exposureInputBox->hasFocus()) {
+                exposureInputBox->stepBy(stepToCommit);
+            } else if(resizeInputBox->hasFocus()) {
+                resizeInputBox->stepBy(stepToCommit);
+            }
+            return true;
+
+        } else if (keyEvent->key() == Qt::Key_F){
+            // Handle freeze key for the camera view window
+            emit cameraPlaybackChanged();
+            return false;
+
+        } else if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return){
+            // We would normally interpret this as committing the value when a field is edited, BUT
+            //  as they are already reacting to the input on every keypress, we rather use the enter/return
+            //  key events as the "hop to the next entry field" interaction. However, we need to have a specific
+            //  order in which we want to hop around. This is the chain, looping over when someone hits many enters
+
+            // First just find where we are in the chain
+            int whichIndexWeHave = -1;
+            for(int i=0; i<focusChain.size(); i++) {
+                if(focusChain[i]->hasFocus()) {
+                    whichIndexWeHave = i;
+                }
+            }
+            if(whichIndexWeHave < 0)
+                return false;
+
+            // Then try to find the next one in the chain that is Enabled, and set focus on it
+            bool haveAlreadyLoopedOnce = false;
+            for(int j=0; j<focusChain.size(); j++) {
+
+                int suspectedIndex = whichIndexWeHave + j+1;
+                if(suspectedIndex >= focusChain.size())
+                    suspectedIndex -= focusChain.size();
+
+                if(focusChain[suspectedIndex]->isEnabled()) {
+                    focusChain[suspectedIndex]->setFocus();
+                    return true;
+                }
+            }
+            return true;
+
+        } else if (keyEvent->key() == Qt::Key_Space){
+            // This key always does something that the user did not want. Just discard the event.
+            //  E.g. ticking a checkbox or changing a radiobutton, ..
+            return true;
+
+        }
+        return false;
+
+    } else {
+        return false;
+    }
 }
 
 void SingleWebcamSettingsDialog::createForm() {
@@ -103,6 +191,13 @@ void SingleWebcamSettingsDialog::createForm() {
     mainLayout->addWidget(adjGroup);
 
     setLayout(mainLayout);
+
+    focusChain.push_back(fpsInputBox);
+    focusChain.push_back(brightnessInputBox);
+    focusChain.push_back(contrastInputBox);
+    focusChain.push_back(gainInputBox);
+    focusChain.push_back(exposureInputBox);
+    focusChain.push_back(resizeInputBox);
 
 
     connect(fpsInputBox, SIGNAL(valueChanged(int)), singleWebcam, SLOT(setFPSValue(int)));

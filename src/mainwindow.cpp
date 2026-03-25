@@ -276,7 +276,7 @@ MainWindow::MainWindow():
 //    for (auto *w : findChildren<QWidget*>())
 //        w->setAcceptDrops(true);
 //    qApp->installEventFilter(this);
-//    //this->installEventFilter(this);
+//    //this->installEventFilter(this); // NOTE: NO USE TO ADD. IT IS ONLY USED FOR ADDING TO CHILDREN. REALLY.
 
     qDebug() << "Window hints set currently:";
     qDebug() << this->windowFlags();
@@ -936,11 +936,20 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
 //        qDebug() << "DragEnter caught!";
 //    }
 
-    if(obj == singleCameraSettingsDialog || obj == stereoCameraSettingsDialog) {
+    if(
+            obj == singleCameraSettingsDialog ||
+            obj == stereoCameraSettingsDialog ||
+            obj == singleCameraChildWidget ||
+            obj == stereoCameraChildWidget ||
+            (singleCameraSettingsDialog && singleCameraSettingsDialog->hasFocus()) ||
+            (stereoCameraSettingsDialog && stereoCameraSettingsDialog->hasFocus() ) ||
+            (singleCameraChildWidget && singleCameraChildWidget->hasFocus() ) ||
+            (stereoCameraChildWidget && stereoCameraChildWidget->hasFocus() )
+            ) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
 
-            qDebug() << "Keypress: " << keyEvent->key();
+            //qDebug() << "Keypress: " << keyEvent->key();
 
             if (keyEvent->key() == Qt::Key_F){
                 keyPressEvent(keyEvent);
@@ -950,11 +959,19 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
                 // TODO: add special cases for when specific numeric edit boxes are in focus, in camera settings dialogs,
                 //  so that enter swaps between them. Right now the enter is just caught (not to cause trouble) and discarded
                 return true;
-            }
+            }  else if (keyEvent->key() == Qt::Key_Space){
+
+                // This key always does something that the user did not want. Just discard the event.
+                //  E.g. ticking a checkbox or changing a radiobutton, ..
+                return true;
+
+            } else {
                 return false;
-        }
-        else 
+            }
+
+        } else {
             return false;
+        }
     }
     else
         return QObject::eventFilter(obj, event);
@@ -2461,18 +2478,22 @@ void MainWindow::cameraViewClick() {
     else
         cameraViewWindow->setWindowIcon(singleCameraIcon);
 
-    connectCameraPlaybackChangedSlots();
+    connectCameraPlaybackChangedSlotsForCameraViews();
 
     if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
         //cv::Mat temp1 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageSingle(0);
         //singleCameraChildWidget->displayStillImage(temp1);
 //        singleCameraChildWidget->displayFileCameraFrame(0);
         singleCameraChildWidget->displayFileCameraFrame(dynamic_cast<FileCamera*>(selectedCamera)->getLastCommissionedFrameNumber());
+
+        singleCameraChildWidget->installEventFilter(this);
     } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
         //std::vector<cv::Mat> temp2 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageStereo(0);
         //stereoCameraChildWidget->displayStillImage(temp2);
 //        stereoCameraChildWidget->displayFileCameraFrame(0);
         stereoCameraChildWidget->displayFileCameraFrame(dynamic_cast<FileCamera*>(selectedCamera)->getLastCommissionedFrameNumber());
+
+        stereoCameraChildWidget->installEventFilter(this);
     }
 }
 
@@ -2497,7 +2518,7 @@ void MainWindow::onSingleCameraSettingsClick() {
     singleCameraSettingsDialog->setWindowFlags(Qt::Tool);
 #endif
     singleCameraSettingsDialog->setWindowIcon(cameraSettingsIcon2);
-    singleCameraSettingsDialog->installEventFilter(this);
+//    singleCameraSettingsDialog->installEventFilter(this); // THIS HAS ITS OWN EVENTFILTER NOW
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleCameraSettingsDialog", this);
     singleCameraSettingsDialog->show();
 
@@ -2520,6 +2541,8 @@ void MainWindow::onSingleCameraSettingsClick() {
     singleCameraSettingsDialog->updateImageROISettingsValues();
     singleCameraSettingsDialog->updateCamImageRegionsWidget();
     singleCameraSettingsDialog->updateSensorSize();
+
+    connectCameraPlaybackChangedSlotsForCameraSettings();
 }
 
 void MainWindow::onSingleWebcamSettingsClick() {
@@ -2531,6 +2554,7 @@ void MainWindow::onSingleWebcamSettingsClick() {
     singleWebcamSettingsDialog->show();
 
     //connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleWebcamSettingsDialog, SLOT (onSettingsChange()));
+    connectCameraPlaybackChangedSlotsForCameraSettings();
 }
 
 void MainWindow::onStereoCameraSettingsClick() {
@@ -2539,7 +2563,7 @@ void MainWindow::onStereoCameraSettingsClick() {
     stereoCameraSettingsDialog->setWindowFlags(Qt::Tool);
 #endif
     stereoCameraSettingsDialog->setWindowIcon(cameraSettingsIcon1);
-    stereoCameraSettingsDialog->installEventFilter(this);
+//    stereoCameraSettingsDialog->installEventFilter(this); // THIS HAS ITS OWN EVENTFILTER NOW
     //auto *child = new RestorableQMdiSubWindow(childWidget, "StereoCameraSettingsDialog", this);
     stereoCameraSettingsDialog->show();
 
@@ -2565,6 +2589,8 @@ void MainWindow::onStereoCameraSettingsClick() {
     stereoCameraSettingsDialog->updateImageROISettingsValues();
     stereoCameraSettingsDialog->updateCamImageRegionsWidget();
     stereoCameraSettingsDialog->updateSensorSize();
+
+    connectCameraPlaybackChangedSlotsForCameraSettings();
 }
 
 #ifdef USE_PYLON
@@ -3168,7 +3194,7 @@ void MainWindow::openImageFileSource(QString imageSource) {
     connect(this, SIGNAL(playbackPauseApproved()), imagePlaybackControlDialog, SLOT(onPlaybackPauseApproved()));
     connect(this, SIGNAL(playbackStopApproved()), imagePlaybackControlDialog, SLOT(onPlaybackStopApproved()));
 
-    connectCameraPlaybackChangedSlots();
+    connectCameraPlaybackChangedSlotsForCameraViews();
 
     playbackSynchroniser = new PlaybackSynchroniser();
     playbackSynchroniser->setCamera(selectedCamera);
@@ -3347,7 +3373,7 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
     safelyResetMessageRegister();
 
     // GB: (old comment) moved here. Had to ensure that proc mode is correctly set before creating camera view (as now it relies on pupilDetection instance too)
-    // TODO: this internally cascades to call connectCameraPlaybackChangedSlots();, which is not efficient, as that is also called later.
+    // TODO: this internally cascades to call connectCameraPlaybackChangedSlotsForCameraViews();, which is not efficient, as that is also called later.
     //  I think it is necessary to call it later (as well) because imagePlaybackControlDialog will get connected to the cameraView window as a result
     cameraViewClick();
     onCalibrateClick();
@@ -3435,12 +3461,12 @@ void MainWindow::openImageFileSource(QString imageSource, int subrecordingNumber
 
     /*
     // GB: (old comment) moved here. Had to ensure that proc mode is correctly set before creating camera view (as now it relies on pupilDetection instance too)
-    // GB: (later comment) Had to move it more way down, here. As it internally calls connectCameraPlaybackChangedSlots(); already, hence
+    // GB: (later comment) Had to move it more way down, here. As it internally calls connectCameraPlaybackChangedSlotsForCameraViews(); already, hence
     //  connecting signals of imagePlaybackController, which has to exist at this point
     cameraViewClick();
     onCalibrateClick();
     */
-    connectCameraPlaybackChangedSlots();
+    connectCameraPlaybackChangedSlotsForCameraViews();
 
     playbackSynchroniser = new PlaybackSynchroniser();
     playbackSynchroniser->setCamera(selectedCamera);
@@ -4095,7 +4121,7 @@ void MainWindow::onManualDeviceResetNecessary() {
 
 }
 
-void MainWindow::connectCameraPlaybackChangedSlots()
+void MainWindow::connectCameraPlaybackChangedSlotsForCameraViews()
 {
     /*    if (imagePlaybackControlDialog && cameraViewWindow){
         connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
@@ -4150,6 +4176,26 @@ void MainWindow::connectCameraPlaybackChangedSlots()
     } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget && imagePlaybackControlDialog) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), stereoCameraChildWidget, SLOT(displayFileCameraFrame(int)));
     }
+}
+
+void MainWindow::connectCameraPlaybackChangedSlotsForCameraSettings() {
+    if (singleCameraSettingsDialog != nullptr){
+        connect(singleCameraSettingsDialog, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        // This is needed, for the case if someone presses F in a camera settings window, so that the tickmark gets updated in camera view window
+        connect(singleCameraSettingsDialog, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+    if (stereoCameraSettingsDialog != nullptr){
+        connect(stereoCameraSettingsDialog, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        // This is needed, for the case if someone presses F in a camera settings window, so that the tickmark gets updated in camera view window
+        connect(stereoCameraSettingsDialog, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+    if (singleWebcamSettingsDialog != nullptr){
+        connect(singleWebcamSettingsDialog, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        // This is needed, for the case if someone presses F in a camera settings window, so that the tickmark gets updated in camera view window
+        connect(singleWebcamSettingsDialog, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+    // Note that we make no connect INTO any camera settings dialog.
+    //  The reason is that, it does not have any GUI element that would need to know if the image is freezed or not.
 }
 
 

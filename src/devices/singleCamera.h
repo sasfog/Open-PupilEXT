@@ -70,6 +70,7 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
+    bool isAcquisitionFrameRateAvailable();
     bool isEmulated();
     double getResultingFrameRateValue() override; // ResultingFrameRate
 
