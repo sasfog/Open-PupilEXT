@@ -348,7 +348,7 @@ void SingleCameraSettingsDialog::createForm() {
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
+    SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
     SWTframerateLimitEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
     SWTframerateLimitBox = new QSpinBox();
     SWTframerateLimitLayout = new QHBoxLayout;
@@ -367,7 +367,7 @@ void SingleCameraSettingsDialog::createForm() {
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate()); //
+    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT()); //
     SWTframerateLimitBox->setFixedWidth(60);
 //    camera->enableAcquisitionFrameRate(false); //
 
@@ -450,8 +450,8 @@ void SingleCameraSettingsDialog::createForm() {
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate()); // This is only for the default state
-    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate()); // This is needed too
+    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT()); // This is only for the default state
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
     //HWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
     HWTframerateLimitBox = new QSpinBox();
     HWTframerateLimitLayout = new QHBoxLayout;
@@ -471,7 +471,7 @@ void SingleCameraSettingsDialog::createForm() {
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate()); //
+    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT()); //
     HWTframerateLimitBox->setFixedWidth(60);
 //    camera->enableAcquisitionFrameRate(false); //
 
@@ -593,21 +593,21 @@ void SingleCameraSettingsDialog::updateForms() {
     updateHWTStartStopRelatedWidgets();
     updateMCUConnDisconnButtonState();
 
-    SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
-    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate());
+    SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
     if(!HWTrunning) {
         SWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
         SWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     }
-    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
+    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
 
-    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
-    applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate());
+    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
     if(HWTrunning) {
         HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin())); // NOTE: Max is never changed!
         HWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     }
-    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
 
     gainBox->setMinimum(camera->getGainMin());
     gainBox->setMaximum(camera->getGainMax());
@@ -794,17 +794,20 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
     SWTradioButton->blockSignals(false);
     SWTradioButton->blockSignals(false);
 
+    // IMPORTANT
+    HWTradioButton->setEnabled(camera->isHardwareTriggerAvailable());
+
     if(HWTrunning) {
         stopHardwareTrigger();
     }
 
     //SWTframerateLimitEnabled->setEnabled(!state);
-    SWTframerateLimitEnabled->setEnabled(!state && camera->isAcquisitionFrameRateAvailable()); // This is needed too
-    SWTframerateLimitBox->setEnabled(!state && camera->isEnabledAcquisitionFrameRate());
+    SWTframerateLimitEnabled->setEnabled(!state && camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
+    SWTframerateLimitBox->setEnabled(!state && camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
 
     //HWTframerateLimitEnabled->setEnabled(state);
-    HWTframerateLimitEnabled->setEnabled(state && camera->isAcquisitionFrameRateAvailable()); // This is needed too
-    HWTframerateLimitBox->setEnabled(state && camera->isEnabledAcquisitionFrameRate());
+    HWTframerateLimitEnabled->setEnabled(state && camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
+    HWTframerateLimitBox->setEnabled(state && camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
 
     // TODO: something strange is happening here. Why do we need this piece of code below anyway?
     //  once we set the value in GUI (and in the camera accordingly) to the max possible, we cannot change
@@ -885,17 +888,17 @@ void SingleCameraSettingsDialog::loadSettings() {
 
     // The safest is to enable limiting by default, as first opening a high speed hi-res camera can just freeze the computer
     bool m_SWTframerateLimitEnabled = SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.SWTframerateLimitEnabled", true, applicationSettings);
-    SWTframerateLimitEnabled->setChecked(m_SWTframerateLimitEnabled);
-    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
-    camera->enableAcquisitionFrameRate(m_SWTframerateLimitEnabled);
+    SWTframerateLimitEnabled->setChecked(m_SWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForSWT());
+    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
+    camera->enableAcquisitionFrameRate(m_SWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForSWT());
     // 50 FPS is good for a first start, for the same reasons
     SWTframerateLimitBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.SWTframerateLimitVal", "50").toInt());
     camera->setAcquisitionFPSValue(SWTframerateLimitBox->value());
 
     bool m_HWTframerateLimitEnabled = SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.HWTframerateLimitEnabled", true, applicationSettings);
-    HWTframerateLimitEnabled->setChecked(m_HWTframerateLimitEnabled);
-    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
-    camera->enableAcquisitionFrameRate(m_HWTframerateLimitEnabled);
+    HWTframerateLimitEnabled->setChecked(m_HWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForHWT());
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
+    camera->enableAcquisitionFrameRate(m_HWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForHWT());
     // 50 FPS is good for a first start, for the same reasons
     HWTframerateLimitBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.HWTframerateLimitVal", "50").toInt());
     camera->setAcquisitionFPSValue(HWTframerateLimitBox->value());
@@ -1214,8 +1217,8 @@ void SingleCameraSettingsDialog::SWTframerateLimitEnabledToggled(bool state) {
 
     applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", state);
 
-    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
-    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
+    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
     if(state)
         setSWTframerateLimitVal(SWTframerateLimitBox->value());
 }
@@ -1232,8 +1235,8 @@ void SingleCameraSettingsDialog::HWTframerateLimitEnabledToggled(bool state) {
 
     applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateEnabled", state);
 
-    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
-    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailable()); // This is needed too
+    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
     if(state)
         setHWTframerateLimitVal(HWTframerateLimitBox->value());
 }

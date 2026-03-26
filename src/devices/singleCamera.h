@@ -233,6 +233,8 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
+    bool isAcquisitionFrameRateAvailableForSWT();
+    bool isAcquisitionFrameRateAvailableForHWT();
     bool isEmulated();
     double getResultingFrameRateValue() override; // ResultingFrameRate
 
@@ -250,6 +252,7 @@ public:
     double getGainMax();
 
     QString getLineSource();
+    bool isHardwareTriggerAvailable();
     bool isHardwareTriggerEnabled();
 
     CameraCalibration* getCameraCalibration();

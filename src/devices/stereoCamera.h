@@ -229,6 +229,8 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate();
+    bool isAcquisitionFrameRateAvailableForSWT();
+    bool isAcquisitionFrameRateAvailableForHWT();
     bool isEmulated();
     double getResultingFrameRateValue() override;
 

@@ -72,8 +72,8 @@ public slots:
                 fps_ = 1000.0f / ((double) cumDiff / (double)secFrameCount);
             }            m_timer.restart();
 
-            qDebug() << "cumDiff: " << cumDiff;
-            qDebug() << "fps: " << fps_;
+//            qDebug() << "cumDiff: " << cumDiff;
+//            qDebug() << "fps: " << fps_;
 
             timeout_timer.start(4000);
             secFrameCount = 0;

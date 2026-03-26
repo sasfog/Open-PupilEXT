@@ -291,6 +291,9 @@ void PupilDetectionSettingsDialog::updateForm() {
         procModeGroup->setDisabled(false);
     }
 
+    // Algorithms should not be changeable if tracking is on
+    algorithmBox->setEnabled(!pupilDetection->isTrackingOn());
+
     if(pupilDetection->getCurrentProcMode() == SINGLE_IMAGE_ONE_PUPIL || pupilDetection->getCurrentProcMode() == STEREO_IMAGE_ONE_PUPIL) {
         singleEyeIdentityBox->setEnabled(true);
         singleEyeIdentityBox->blockSignals(true);

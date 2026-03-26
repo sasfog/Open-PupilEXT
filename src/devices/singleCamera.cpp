@@ -1748,7 +1748,7 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         startGrabbing();
 
         // TODO: for some reason we need this workaround to get things started
-        //setImageROIwidth(getImageROIwidth());
+//        setImageROIwidth(getImageROIwidth());
 
         // DEV
     //    auto temp = arv_camera_get_integer(camera, "Width", &error);
@@ -2158,6 +2158,103 @@ void SingleCamera::saveToFile(const QString &filename) {
      */
 }
 
+bool SingleCamera::isAcquisitionFrameRateAvailableForSWT() {
+    GError *error = nullptr;
+    bool val = false;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+
+        // IMPORTANT NOTE: Those weird cameras that subtly allow changing framerate limit, but the enable setting
+        //  is missing, are likely only missing the setting for hardware tringgering! At least that is the experience.
+        //  whenever their framerate limit is set, they snap back to software based triggering... So lets rather define
+        //  a ForSWT and ForHWT variant of this checker method, that is the safest.
+
+        // This is the check that only proper cameras pass
+        // not a boolean but an On/Off "enum"
+        QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
+        val = (tval == "On");
+
+        if(error) {
+            qWarning() << "Could not determine TriggerMode.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
+        }
+
+        // This is another variant, not yet finished
+        // This should be the proper way to check it, but it fails. TODO: fix later
+        /*
+        ArvDevice *device = arv_camera_get_device(camera);
+        ArvGc *genicam = arv_device_get_genicam(device);
+        // Get the node
+        ArvGcNode *node = arv_gc_get_node(genicam, "AcquisitionFrameRateEnable");
+
+        // Is it implemented?
+        val &= (node == nullptr);
+        val &= arv_gc_feature_node_is_implemented(ARV_GC_FEATURE_NODE(node), &error);
+        if(error) {
+            qWarning() << "Could not get whether acquisition frame rate setting is enabled or not. Might not be implemented.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
+        }
+
+        // Is it available?
+        // It is possible that feature exists but is not currently available (depends on camera state)
+        val &= arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error);
+        if(error) {
+            qWarning() << "Could not get whether acquisition frame rate setting is enabled or not. Might not be available.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
+        }
+        */
+
+        // And this is the check for the "hacky" cameras
+        // On some cameras: e.g. daA1280-54um, the AcquisitionFrameRateEnabled feature is not available.
+        //  So, strictly speaking, we should not be able to even enable it. However, the AcquisitionFrameRate feature
+        //  exists, and can be set. Pylon docs are not telling much about it. Accoridng to it, the feature should
+        //  be unavailable, but it is. So.. we could make a whitelist (I am thinking about it), but yet its okay to
+        //  just rely on aravis telling its opinion. It seems to properly say yes to availability, although fuzzy
+        //  named on the surface, about what GC node it uses to determine that. Whatever, I will yet leave it like this
+        val |= arv_camera_is_frame_rate_available(camera, &error);
+        if(error) {
+            qWarning() << "Could not get whether acquisition frame rate setting is enabled or not. Might not be available.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
+        }
+
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
+}
+
+bool SingleCamera::isAcquisitionFrameRateAvailableForHWT() {
+    GError *error = nullptr;
+    bool val = false;
+
+    if(!ARV_IS_CAMERA(camera))
+        return val;
+
+    try {
+        // IMPORTANT NOTE: Those weird cameras that subtly allow changing framerate limit, but the enable setting
+        //  is missing, are likely only missing the setting for hardware tringgering! At least that is the experience.
+        //  whenever their framerate limit is set, they snap back to software based triggering... So lets rather define
+        //  a ForSWT and ForHWT variant of this checker method, that is the safest.
+
+        // not a boolean but an On/Off "enum"
+        QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
+        val = (tval == "On");
+
+        if(error) {
+            qWarning() << "Could not determine TriggerMode.";
+            qWarning() << "Error during aravis API call. Message: " << error->message;
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
+}
+
 bool SingleCamera::isEnabledAcquisitionFrameRate() {
     GError *error = nullptr;
     bool val = false;
@@ -2167,6 +2264,7 @@ bool SingleCamera::isEnabledAcquisitionFrameRate() {
 
     try {
         val = arv_camera_get_frame_rate_enable(camera, &error);
+
         if(error) {
             qWarning() << "Could not get whether acquisition frame rate setting is enabled or not.";
             qWarning() << "Error during aravis API call. Message: " << error->message;
@@ -2194,6 +2292,14 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
             qWarning() << "Could not set acquisition frame rate enabled/disabled.";
             qWarning() << "Error during aravis API call. Message: " << error->message;
         }
+
+        // pppppppppppppppppppppp
+        // Hack for those cameras that do not use arv_camera_set_frame_rate_enable() but they allow setting the
+        //  setAcquisitionFPSValue()
+        if(!enabled) {
+            setAcquisitionFPSValue(getAcquisitionFPSMax());
+        }
+
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
@@ -2317,6 +2423,8 @@ double SingleCamera::getResultingFrameRateValue() {
             arv_device_get_feature_value(arv_camera_get_device(camera), "ResultingFrameRate", &v, &error);
         } else if(arv_device_is_feature_available(arv_camera_get_device(camera), "ResultingFrameRateAbs", NULL)) {
             arv_device_get_feature_value(arv_camera_get_device(camera), "ResultingFrameRateAbs", &v, &error);
+        } else if(arv_device_is_feature_available(arv_camera_get_device(camera), "ResultingFrameRateRaw", NULL)) {
+            arv_device_get_feature_value(arv_camera_get_device(camera), "ResultingFrameRateRaw", &v, &error);
         } else {
             qDebug() << "Resulting framerate values are not available.";
             qDebug() << "Could not obtain resulting framerate value. This camera might not support it.";
@@ -2349,6 +2457,42 @@ CameraCalibration *SingleCamera::getCameraCalibration() {
     return cameraCalibration;
 }
 
+bool SingleCamera::isHardwareTriggerAvailable() {
+    GError *error = nullptr;
+    bool val = false;
+    try {
+        // BUT EVEN IF IT SAYS "On"...
+//        ArvDevice *device = arv_camera_get_device(camera);
+//        ArvGc *genicam = arv_device_get_genicam(device);
+
+//        ArvGcNode *node = arv_gc_get_node(genicam, "TriggerSource");
+//        val &= (node == nullptr);
+//        val &= arv_gc_feature_node_is_implemented(ARV_GC_FEATURE_NODE(node), &error);
+//        val &= (error == nullptr);
+//
+//
+//
+//        val &= (!ARV_IS_GC_ENUMERATION(node));
+//        // if yes ..
+
+        guint n_sources = 0;
+        const char **triggerSources = arv_camera_dup_available_trigger_sources(camera, &n_sources, &error);
+
+        for (; *triggerSources != nullptr; ++triggerSources) {
+            // If any of the names start with the string "Line" then we have hardware trigger availability
+            if (((std::string)*triggerSources).rfind("Line", 0) == 0) { // pos=0 limits the search to the prefix
+                val = true;
+                break;
+            }
+        }
+
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+    hardwareTriggerEnabled = val; // TODO: get rid of this ?
+    return val;
+}
+
 bool SingleCamera::isHardwareTriggerEnabled() {
 
     GError *error = nullptr;
@@ -2362,6 +2506,10 @@ bool SingleCamera::isHardwareTriggerEnabled() {
             qWarning() << "Could not determine whether hardware triggering is enabled.";
             qWarning() << "Error during aravis API call. Message: " << error->message;
         }
+
+        // BUT EVEN IF IT SAYS "On", weirdly, that doesnt mean that hardware triggers are even available! ...
+        val &= isHardwareTriggerAvailable();
+
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
@@ -2721,9 +2869,7 @@ int SingleCamera::getImageROIwidthMax() {
         // additional checks could come here
 
         // NOTE: the Aravis library provides the maximum with the offset already subtracted.
-        //  But in camera settings GUI, etc we want to know the max possible value, and the
-        //  offset is already taken care of separately. So just add that.
-        val = valMax + getImageROIoffsetX();
+        val = valMax;
 
         if(error) {
             qDebug() << "Could not get image acquisition ROI Width maximum.";
@@ -2769,9 +2915,7 @@ int SingleCamera::getImageROIheightMax() {
         // additional checks could come here
 
         // NOTE: the Aravis library provides the maximum with the offset already subtracted.
-        //  But in camera settings GUI, etc we want to know the max possible value, and the
-        //  offset is already taken care of separately. So just add that.
-        val = valMax + getImageROIoffsetY();
+        val = valMax;
 
         if(error) {
             qDebug() << "Could not get image acquisition ROI Height maximum.";
@@ -2858,6 +3002,11 @@ bool SingleCamera::isBinningAvailable() {
         gint bxmin = 1;
         gint bxmax = 1;
         error = nullptr;
+
+        // NOTE: We should normally check Y binning too, but:
+        //  - some cameras return 1 and min and max, even though they support 2
+        //  - it is virtually never a real case that y binning is restricted while x is not
+        //  so after all, checking the y binning extremes is disabled now. We can put it back later if needed
         arv_camera_get_x_binning_bounds(camera, &bxmin, &bxmax, &error);
 
         if(error) {
@@ -2919,6 +3068,11 @@ int SingleCamera::getBinningMax() {
             gint minX = 1;
             gint maxX = 1;
             error = nullptr;
+
+            // NOTE: We should normally check Y binning too, but:
+            //  - some cameras return 1 and min and max, even though they support 2
+            //  - it is virtually never a real case that y binning is restricted while x is not
+            //  so after all, checking the y binning extremes is disabled now. We can put it back later if needed
             arv_camera_get_x_binning_bounds(camera, &minX, &maxX, &error);
             // additional checks could come here
             if(error) {
@@ -3045,19 +3199,25 @@ bool SingleCamera::setBinningVal(int value) {
         bool canGet = arv_camera_is_binning_available(camera, &error);
         gint valXMin = 1;
         gint valXMax = 1;
-        gint valYMin = 1;
-        gint valYMax = 1;
+//        gint valYMin = 1;
+//        gint valYMax = 1;
         if(canGet) {
             error = nullptr;
             arv_camera_get_x_binning_bounds(camera, &valXMin, &valXMax, &error);
-            if(!error) arv_camera_get_y_binning_bounds(camera, &valYMin, &valYMax, &error);
+
+            // NOTE: We should normally check Y binning too, but:
+            //  - some cameras return 1 and min and max, even though they support 2
+            //  - it is virtually never a real case that y binning is restricted while x is not
+            //  so after all, checking the y binning extremes is disabled now. We can put it back later if needed
+//            if(!error) arv_camera_get_y_binning_bounds(camera, &valYMin, &valYMax, &error);
         } else {
             qDebug() << "Binning value is not avaliable.";
         }
         if(error) {
             qDebug() << "Could not get binning value.";
             wrappedErrorOccured(error);
-        } else if( (value <= valXMax && value >= valXMin) && (value <= valYMax && value >= valYMin) ) {
+//        } else if( (value <= valXMax && value >= valXMin) && (value <= valYMax && value >= valYMin) ) {
+        } else if( (value <= valXMax && value >= valXMin) ) {
 
             // TODO: better, find common number of available X and Y binning values (if they might differ)
             arv_camera_set_binning(camera, value, value, &error);

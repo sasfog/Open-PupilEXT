@@ -144,10 +144,10 @@ void SingleCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
             // //arv_make_thread_realtime(31);
             sc = arv_make_thread_high_priority(25);
             //qDebug() << "arv_make_thread_high_priority call returned: " << sc;
-            qDebug() << "ARV_STREAM_CALLBACK_TYPE_INIT, Stream thread started";
+//            qDebug() << "ARV_STREAM_CALLBACK_TYPE_INIT, Stream thread started";
             break;
         case ARV_STREAM_CALLBACK_TYPE_START_BUFFER:
-            qDebug() << "ARV_STREAM_CALLBACK_TYPE_START_BUFFER, The first packet of a new frame was received";
+//            qDebug() << "ARV_STREAM_CALLBACK_TYPE_START_BUFFER, The first packet of a new frame was received";
             break;
         case ARV_STREAM_CALLBACK_TYPE_BUFFER_DONE:
             // The buffer is received, successfully or not. It is already pushed in the output FIFO.
@@ -164,34 +164,34 @@ void SingleCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
             bs = arv_buffer_get_status(buffer);
             switch(bs) {
                 case ARV_BUFFER_STATUS_UNKNOWN:
-                    qDebug() << "ARV_BUFFER_STATUS_UNKNOWN";
+//                    qDebug() << "ARV_BUFFER_STATUS_UNKNOWN";
                     break;
                 case ARV_BUFFER_STATUS_SUCCESS:
-                    qDebug() << "ARV_BUFFER_STATUS_SUCCESS";
+//                    qDebug() << "ARV_BUFFER_STATUS_SUCCESS";
                     break;
                 case ARV_BUFFER_STATUS_CLEARED:
-                    qDebug() << "ARV_BUFFER_STATUS_CLEARED";
+//                    qDebug() << "ARV_BUFFER_STATUS_CLEARED";
                     break;
                 case ARV_BUFFER_STATUS_TIMEOUT:
-                    qDebug() << "ARV_BUFFER_STATUS_TIMEOUT";
+//                    qDebug() << "ARV_BUFFER_STATUS_TIMEOUT";
                     break;
                 case ARV_BUFFER_STATUS_MISSING_PACKETS:
-                    qDebug() << "ARV_BUFFER_STATUS_MISSING_PACKETS";
+//                    qDebug() << "ARV_BUFFER_STATUS_MISSING_PACKETS";
                     break;
                 case ARV_BUFFER_STATUS_WRONG_PACKET_ID:
-                    qDebug() << "ARV_BUFFER_STATUS_WRONG_PACKET_ID";
+//                    qDebug() << "ARV_BUFFER_STATUS_WRONG_PACKET_ID";
                     break;
                 case ARV_BUFFER_STATUS_SIZE_MISMATCH:
-                    qDebug() << "ARV_BUFFER_STATUS_SIZE_MISMATCH";
+//                    qDebug() << "ARV_BUFFER_STATUS_SIZE_MISMATCH";
                     break;
                 case ARV_BUFFER_STATUS_FILLING:
-                    qDebug() << "ARV_BUFFER_STATUS_FILLING";
+//                    qDebug() << "ARV_BUFFER_STATUS_FILLING";
                     break;
                 case ARV_BUFFER_STATUS_ABORTED:
-                    qDebug() << "ARV_BUFFER_STATUS_ABORTED";
+//                    qDebug() << "ARV_BUFFER_STATUS_ABORTED";
                     break;
                 case ARV_BUFFER_STATUS_PAYLOAD_NOT_SUPPORTED:
-                    qDebug() << "ARV_BUFFER_STATUS_PAYLOAD_NOT_SUPPORTED";
+//                    qDebug() << "ARV_BUFFER_STATUS_PAYLOAD_NOT_SUPPORTED";
                     break;
                 default:
                     qDebug() << bs;
@@ -199,9 +199,9 @@ void SingleCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
 
             if (arv_buffer_get_status(buffer) != ARV_BUFFER_STATUS_SUCCESS) {
                 if(callbackData->aboutToStopGrabbing) {
-                    qDebug() << "Grabbing is stopping. All pending frames are dropped.";
+//                    qDebug() << "Grabbing is stopping. All pending frames are dropped.";
                 } else {
-                    qDebug() << "Image(s) skipped.";
+//                    qDebug() << "Image(s) skipped.";
                     emit ((SingleCameraImageEventHandler*)callbackData->emitter)->imagesSkipped();
                 }
                 // circulate buffer to keep receiving images
@@ -237,7 +237,7 @@ void SingleCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
 
             break;
         case ARV_STREAM_CALLBACK_TYPE_EXIT:
-            qDebug() << "ARV_STREAM_CALLBACK_TYPE_EXIT, Stream thread ended";
+//            qDebug() << "ARV_STREAM_CALLBACK_TYPE_EXIT, Stream thread ended";
             // TODO: TUTI KELL EZ?
             //arv_stream_push_buffer(callbackData->stream, buffer);
             break;
