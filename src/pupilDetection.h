@@ -13,6 +13,9 @@
 #include "stereoCameraCalibration.h"
 #include "devices/singleWebcam.h"
 
+#include <queue>
+#include <unordered_map>
+
 #include <opencv2/quality/qualitybrisque.hpp>
 
 Q_DECLARE_METATYPE(Pupil)
@@ -31,7 +34,6 @@ enum ProcMode {
     STEREO_IMAGE_TWO_PUPIL = 4 //,
     // MIRR_IMAGE_ONE_PUPIL = 3
 };
-
 
 enum PupilVecIdx {
     SINGLE_IMAGE_ONE_PUPIL_MAIN = 0,
@@ -279,7 +281,7 @@ private:
     bool autoParamEnabled = false; // true as long as there is demand for autoParam. Also for informing other class instances through getter
     float autoParamPupSizePercent = 50;
     bool autoParamScheduled = false; // true only if a new performAutoParam() is necessary shortly. (need this, because performAutoParam cannot do anything when called without ROIs defined)
-    
+
     bool autoParamSettingsEnabled = false; // True if pupil detection algorithm has Automatic Parametrization setting selected.
 
     bool synchronised = false; // True if both PupilDetection and Playback are running and synchronized.
@@ -289,6 +291,37 @@ private:
     PupilDetectionMethod* getCurrentMethod(){
         return getCurrentMethod1();
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Pupil data Tracked Time Window
+    quint64 pupilTTWRefitLC;
+    int pupilTTWRefitDelayMs = 2*1000;
+    float pupilTTWCriterion_confidence = 0.8;
+    float pupilTTWCriterion_outlineConfidence = 0.8;
+    float pupilTTWCriterion_axisRatio = 2.0; // = MAJOR / MINOR ratio
+    quint64 pupilTTWTimeWindowMs = 1*1000;
+//    float pupilTTWExpectedFPS = 50;
+    std::vector<std::vector<cv::Point2f>> pupilTTW_centers;
+    std::vector<std::vector<float>> pupilTTW_dias; // TODO: seat MA and ma into a Point2F or such, so we could easily stash it and fit width & height of ROI easily
+    std::vector<std::vector<quint64>> pupilTTWTimestamps;
+    bool ROIeyeFitScheduled = false;
+
+    QVector<QRectF> pupilTTW_suggestedROIs = {QRectF(), QRectF(), QRectF(), QRectF()};
+
+    int pupilTTWminSamples = 5;
+
+    float wfac_basic = 3.5f;
+    float hfac_basic = 3.0f;
+    float wfac_clueless = 5.0f;
+    float hfac_clueless = 4.5f;
+
+    bool pupilTTW_useConfidence = false;
+    bool pupilTTW_useOutlineConfidence = false;
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////
 
     void onNewSingleImageForOnePupilImpl(const CameraImage &image);
     void onNewSingleImageForTwoPupilImpl(const CameraImage &cimg);
@@ -346,6 +379,146 @@ public slots:
     void setROImirrImageOnePupil2(QRectF roi);
 
     void setSynchronised(bool synchronised);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
+    void timeWindow_init(quint64 _pupilTTWTimeWindowMs, int _pupilTTWRefitDelayMs, int _pupilTTWExpectedFPS) {
+        pupilTTWTimeWindowMs = _pupilTTWTimeWindowMs;
+        pupilTTWRefitDelayMs = _pupilTTWRefitDelayMs;
+    }
+    /*
+    void setTimeWindow_pupilTTW(quint64 _pupilTTWTimeWindowMs) {
+        pupilTTWTimeWindowMs = _pupilTTWTimeWindowMs;
+    }
+    void setRefitDelay_pupilTTW(int _pupilTTWRefitDelayMs) {
+        pupilTTWRefitDelayMs = _pupilTTWRefitDelayMs;
+    }
+    void setExpectedFPS_pupilTTW(int _pupilTTWExpectedFPS) {
+        pupilTTWExpectedFPS = _pupilTTWExpectedFPS;
+    }
+    */
+
+    float vecMeanF(std::vector<float> vec){
+        return (std::accumulate(vec.begin(), vec.end(), 0.0) / vec.size());
+    }
+
+    cv::Point2f vecMeanP2F(std::vector<cv::Point2f> vec){
+        return (std::accumulate(vec.begin(), vec.end(), cv::Point2f(0, 0)) * (1.0f / vec.size()));
+    }
+
+    void advanceTTW(int pdx){
+        int nChecked = 0;
+        int nAll = pupilTTW_centers[pdx].size();
+        while(pupilTTW_centers[pdx].size() > 0 && nChecked < nAll) {
+            if( pupilTTWTimestamps[pdx][pupilTTW_centers[pdx].size()-1] - pupilTTWTimestamps[pdx][0] > pupilTTWTimeWindowMs
+                    ) {
+
+                // pops. should be slow anyway
+                if (!pupilTTW_centers[pdx].empty()) {
+                    pupilTTW_centers[pdx].erase(pupilTTW_centers[pdx].begin());
+                }
+                if (!pupilTTW_dias[pdx].empty()) {
+                    pupilTTW_dias[pdx].erase(pupilTTW_dias[pdx].begin());
+                }
+                if (!pupilTTWTimestamps[pdx].empty()) {
+                    pupilTTWTimestamps[pdx].erase(pupilTTWTimestamps[pdx].begin());
+                }
+            }
+            nChecked++;
+        }
+    }
+
+    QRectF pupilTTW_suggestROI(cv::Point2f avg_center, float avg_dia) {
+        float wfac, hfac;
+        if(ROIeyeFitScheduled) {
+            wfac = wfac_clueless;
+            hfac = hfac_clueless;
+            ROIeyeFitScheduled = false;
+        } else {
+            wfac = wfac_basic;
+            hfac = hfac_basic;
+        }
+        return QRectF(
+                avg_center.x - wfac/2.0*avg_dia,
+                avg_center.y - hfac/2.0*avg_dia,
+                wfac*avg_dia,
+                hfac*avg_dia
+        );
+    }
+
+    void updatePupilTTW(quint64 _timestamp, int _currentProcMode, const std::vector<Pupil> &_Pupils) {
+        //processedPupilData(image.timestamp, currentProcMode, Pupils)
+
+        // TODO: keep (not the center of pupil, but)
+        //  the midpoint between center of pupil and center of eyeball,
+        //  in/as the center of image
+
+        // check criteria
+        for(int zz = 0; zz < _Pupils.size(); zz++) {
+//        qDebug() << "confidence" << _Pupils[zz].confidence; // NOT ALL ALGS HAVE CONFIDENCE.
+//        qDebug() << "outline_confidence" << _Pupils[zz].outline_confidence; // ALSO MIGHT BE DISABLED
+//            qDebug() << "axis ratio" << (_Pupils[zz].majorAxis() / _Pupils[zz].minorAxis());
+            if (    ((pupilTTW_useConfidence && _Pupils[zz].confidence > pupilTTWCriterion_confidence) || !pupilTTW_useConfidence) &&
+                    ((pupilTTW_useOutlineConfidence && _Pupils[zz].outline_confidence > pupilTTWCriterion_outlineConfidence) || !pupilTTW_useOutlineConfidence) //&&
+                //(_Pupils[zz].majorAxis() / _Pupils[zz].minorAxis()) <= pupilTTWCriterion_axisRatio
+                    ) {
+
+                pupilTTW_centers[zz].push_back(_Pupils[zz].center);
+                pupilTTW_dias[zz].push_back(_Pupils[zz].diameter());
+                pupilTTWTimestamps[zz].push_back(_timestamp);
+            }
+        }
+
+        for(int uu = 0; uu < _Pupils.size(); uu++) {
+            if (_timestamp - pupilTTWRefitLC > pupilTTWRefitDelayMs) {
+                advanceTTW(uu);
+                pupilTTW_suggestedROIs[uu] = QRectF(); // "clear" it
+                if (pupilTTW_centers[uu].size() < pupilTTWminSamples)
+                    return;
+                pupilTTW_suggestedROIs[uu] = pupilTTW_suggestROI(vecMeanP2F(pupilTTW_centers[uu]), vecMeanF(pupilTTW_dias[uu]));
+            }
+        }
+
+        if(_timestamp - pupilTTWRefitLC > pupilTTWRefitDelayMs) {
+            if (_currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_ONE_PUPIL_MAIN].isEmpty())
+                    setROIsingleImageOnePupil(pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_ONE_PUPIL_MAIN]);
+            } else if (_currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_TWO_PUPIL_L].isEmpty())
+                    setROIsingleImageTwoPupilL(pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_TWO_PUPIL_L]);
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_TWO_PUPIL_R].isEmpty())
+                    setROIsingleImageTwoPupilR(pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_TWO_PUPIL_R]);
+            } else if (_currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_ONE_PUPIL_MAIN].isEmpty())
+                    setROIstereoImageOnePupilM(pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_ONE_PUPIL_MAIN]);
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_ONE_PUPIL_SEC].isEmpty())
+                    setROIstereoImageOnePupilS(pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_ONE_PUPIL_SEC]);
+            } else if (_currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_L_MAIN].isEmpty())
+                    setROIstereoImageTwoPupilLM(pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_L_MAIN]);
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_L_SEC].isEmpty())
+                    setROIstereoImageTwoPupilLS(pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_L_SEC]);
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_R_MAIN].isEmpty())
+                    setROIstereoImageTwoPupilRM(pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_R_MAIN]);
+                if(!pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_R_SEC].isEmpty())
+                    setROIstereoImageTwoPupilRS(pupilTTW_suggestedROIs[PupilVecIdx::STEREO_IMAGE_TWO_PUPIL_R_SEC]);
+            } else {
+                qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined";
+            }
+
+//            emit refitPupilROIs(_currentProcMode);
+            pupilTTWRefitLC = _timestamp;
+        }
+
+
+    };
+    void emptyPupilTTW () {
+        // TODO
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 
 signals:
 

@@ -1537,10 +1537,10 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
     //
     connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
-
+    //
     ////// camera.RegisterImageEventHandler(cameraImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
     //arv_camera_set_acquisition_mode (camera, ARV_ACQUISITION_MODE_CONTINUOUS, &error);
-
+    //
     callbackData.counter = 0;
     callbackData.done = FALSE;
     callbackData.stream = NULL;
@@ -1558,6 +1558,19 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     if(!cameraCalibration->isCalibrated()) {
         // If we already used this camera before, a config file may exists
         loadCalibrationFile();
+    }
+
+    error = nullptr;
+    arv_camera_set_exposure_mode(camera, ArvExposureMode::ARV_EXPOSURE_MODE_TIMED, &error);
+    if(error) {
+        qDebug() << "Could not set timed exposure mode.";
+        qDebug() << "Error during aravis API call. Message: " << error->message;
+    }
+    error = nullptr;
+    arv_camera_set_gain_auto(camera, ArvAuto::ARV_AUTO_OFF, &error);
+    if(error) {
+        qDebug() << "Could not set gain auto mode off.";
+        qDebug() << "Error during aravis API call. Message: " << error->message;
     }
 
     startGrabbing();
@@ -1590,8 +1603,8 @@ SingleCamera::~SingleCamera() {
 
 void SingleCamera::resizeStreamBuffer() {
 
-    // TODO: UNNECESSARY
-    stopGrabbing();
+    // yet unnecessary
+//    stopGrabbing();
 
     GError *error = nullptr;
 
@@ -1716,12 +1729,13 @@ void SingleCamera::enableHardwareTrigger(bool state) {
             qDebug() << "Error during aravis API call. Message: " << error->message;
         }
 
-        std::string stateStr = (state) ? "On" : "Off";
-        error = nullptr;
-        arv_device_set_string_feature_value(device, "TriggerMode", stateStr.c_str(), &error);
-        if(error){
-            qDebug() << "Error during aravis API call. Message: " << error->message;
-        }
+        // NOTE: TRIGGERMODE HAS TO BE ON, IN ORDER TO DO EITHER SWT OR HWT !!
+//        std::string stateStr = (state) ? "On" : "Off";
+//        error = nullptr;
+//        arv_device_set_string_feature_value(device, "TriggerMode", stateStr.c_str(), &error);
+//        if(error){
+//            qDebug() << "Error during aravis API call. Message: " << error->message;
+//        }
 
         if(!state) {
             error = nullptr;
@@ -2172,6 +2186,10 @@ bool SingleCamera::isAcquisitionFrameRateAvailableForSWT() {
         //  whenever their framerate limit is set, they snap back to software based triggering... So lets rather define
         //  a ForSWT and ForHWT variant of this checker method, that is the safest.
 
+
+//        // IMPORTANT: this seems to be the most trustworthy check for whether its HWT or not:
+//        val = !(getLineSource().startsWith("Line"));
+
         // This is the check that only proper cameras pass
         // not a boolean but an On/Off "enum"
         QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
@@ -2239,6 +2257,9 @@ bool SingleCamera::isAcquisitionFrameRateAvailableForHWT() {
         //  is missing, are likely only missing the setting for hardware tringgering! At least that is the experience.
         //  whenever their framerate limit is set, they snap back to software based triggering... So lets rather define
         //  a ForSWT and ForHWT variant of this checker method, that is the safest.
+
+//        // IMPORTANT: this seems to be the most trustworthy check for whether its HWT or not:
+//        val = getLineSource().startsWith("Line");
 
         // not a boolean but an On/Off "enum"
         QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
@@ -2498,6 +2519,10 @@ bool SingleCamera::isHardwareTriggerEnabled() {
     GError *error = nullptr;
     int val = false;
     try {
+
+//        // IMPORTANT: this seems to be the most trustworthy check for whether its HWT or not:
+//        val = getLineSource().startsWith("Line");
+
         // not a boolean but an On/Off "enum"
         QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
         val = (tval == "On");
@@ -2695,6 +2720,11 @@ void SingleCamera::stopGrabbing() {
     }
     gboolean delete_buffers = true;
     arv_stream_stop_thread(callbackData.stream, delete_buffers);
+
+    // DEV ppppppppp
+//    g_object_unref(callbackData.stream);
+//////    resizeStreamBuffer();
+
     isGrabbingV = false;
     qDebug() << "Stopped grabbing!";
 
@@ -3219,10 +3249,14 @@ bool SingleCamera::setBinningVal(int value) {
 //        } else if( (value <= valXMax && value >= valXMin) && (value <= valYMax && value >= valYMin) ) {
         } else if( (value <= valXMax && value >= valXMin) ) {
 
+            // May this help?
+            arv_camera_clear_triggers(camera, nullptr);
+
             // TODO: better, find common number of available X and Y binning values (if they might differ)
             arv_camera_set_binning(camera, value, value, &error);
 
             resizeStreamBuffer();
+
             if(error) {
                 qDebug() << "Could not set binning value.";
                 wrappedErrorOccured(error);

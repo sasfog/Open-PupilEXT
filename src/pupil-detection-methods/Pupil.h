@@ -27,6 +27,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 
  Modified 01.01.2010: Moritz Lode
 
+ Modified in 2025: Gábor Bényei
+
 */
 
 #include <opencv2/core/types.hpp>

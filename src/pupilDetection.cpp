@@ -86,12 +86,43 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
     processingTimer.start();
 
     //configureCameraConnection();
+
+    /////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+
+    /*
+    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+    //
+    pupilTTW_dias.push_back(std::vector<float>());
+    pupilTTW_dias.push_back(std::vector<float>());
+    pupilTTW_dias.push_back(std::vector<float>());
+    pupilTTW_dias.push_back(std::vector<float>());
+    //
+    pupilTTWTimestamps.push_back(std::vector<quint64>());
+    pupilTTWTimestamps.push_back(std::vector<quint64>());
+    pupilTTWTimestamps.push_back(std::vector<quint64>());
+    pupilTTWTimestamps.push_back(std::vector<quint64>());
+
+    timeWindow_init(2000, 1000, 10);
+
+    // UNDER CONSTRUCTION
+    connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>)), this, SLOT(updatePupilTTW(quint64, int, std::vector<Pupil>)));
+    */
+
+    /////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
 }
 
 PupilDetection::~PupilDetection() {
     brisque.release();
     //BRISQUEModel.release();
     //brisque = nullptr;
+
+    // DEV
+    emptyPupilTTW();
 }
 
 void PupilDetection::enableComputeBRISQUE(bool state) {
@@ -267,11 +298,16 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 
     cv::Rect roi = cv::Rect(0, 0, bwFrame.cols, bwFrame.rows);
 
-    if(useROIPreProcessing && !ROIsingleImageOnePupil.empty() && roi != ROIsingleImageOnePupil && ROIsingleImageOnePupil.width<=bwFrame.cols && ROIsingleImageOnePupil.height<=bwFrame.rows) {
+    if(     useROIPreProcessing && !ROIsingleImageOnePupil.empty() && roi != ROIsingleImageOnePupil &&
+            ROIsingleImageOnePupil.x < bwFrame.cols && (ROIsingleImageOnePupil.x + ROIsingleImageOnePupil.width) <= bwFrame.cols &&
+            ROIsingleImageOnePupil.y < bwFrame.rows && (ROIsingleImageOnePupil.y + ROIsingleImageOnePupil.height) <= bwFrame.rows
+            ) {
         roi = ROIsingleImageOnePupil;
         bwFrame = bwFrame(ROIsingleImageOnePupil);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIsingleImageOnePupil = roi;
+    else
+        ROIeyeFitScheduled = true;
 
     if(autoParamEnabled && autoParamScheduled) {
         performAutoParam();
@@ -450,17 +486,27 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
     cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
     cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
 
-    if(useROIPreProcessing && !ROIsingleImageTwoPupilR.empty() && roiA != ROIsingleImageTwoPupilR && ROIsingleImageTwoPupilR.width <= bwFrameA.cols && ROIsingleImageTwoPupilR.height <= bwFrameA.rows) {
+    if(     useROIPreProcessing && !ROIsingleImageTwoPupilR.empty() && roiA != ROIsingleImageTwoPupilR &&
+            ROIsingleImageTwoPupilR.x < bwFrameA.cols && (ROIsingleImageTwoPupilR.x + ROIsingleImageTwoPupilR.width) <= bwFrameA.cols &&
+            ROIsingleImageTwoPupilR.y < bwFrameA.rows && (ROIsingleImageTwoPupilR.y + ROIsingleImageTwoPupilR.height) <= bwFrameA.rows
+            ) {
         roiA = ROIsingleImageTwoPupilR;
         bwFrameA = bwFrameA(ROIsingleImageTwoPupilR);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIsingleImageTwoPupilR = roiA;
+    else
+        ROIeyeFitScheduled = true;
 
-    if(useROIPreProcessing && !ROIsingleImageTwoPupilL.empty() && roiB != ROIsingleImageTwoPupilL && ROIsingleImageTwoPupilL.width <= bwFrameB.cols && ROIsingleImageTwoPupilL.height <= bwFrameB.rows) {
+    if(     useROIPreProcessing && !ROIsingleImageTwoPupilL.empty() && roiB != ROIsingleImageTwoPupilL &&
+            ROIsingleImageTwoPupilL.x < bwFrameB.cols && (ROIsingleImageTwoPupilL.x + ROIsingleImageTwoPupilL.width) <= bwFrameB.cols &&
+            ROIsingleImageTwoPupilL.y < bwFrameB.rows && (ROIsingleImageTwoPupilL.y + ROIsingleImageTwoPupilL.height) <= bwFrameB.rows
+            ) {
         roiB = ROIsingleImageTwoPupilL;
         bwFrameB = bwFrameB(ROIsingleImageTwoPupilL);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIsingleImageTwoPupilL = roiB;
+    else
+        ROIeyeFitScheduled = true;
 
     if(autoParamEnabled && autoParamScheduled) {
         performAutoParam();
@@ -644,17 +690,26 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     cv::Rect roiS = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
-    if(useROIPreProcessing && !ROIstereoImageOnePupilM.empty() && roiM != ROIstereoImageOnePupilM && ROIstereoImageOnePupilM.width <= bwFrameM.cols && ROIstereoImageOnePupilM.height <= bwFrameM.rows) {
+    if(     useROIPreProcessing && !ROIstereoImageOnePupilM.empty() && roiM != ROIstereoImageOnePupilM &&
+            ROIstereoImageOnePupilM.x < bwFrameM.cols && (ROIstereoImageOnePupilM.x + ROIstereoImageOnePupilM.width) <= bwFrameM.cols &&
+            ROIstereoImageOnePupilM.y < bwFrameM.rows && (ROIstereoImageOnePupilM.y + ROIstereoImageOnePupilM.height) <= bwFrameM.rows) {
         roiM = ROIstereoImageOnePupilM;
         bwFrameM = bwFrameM(ROIstereoImageOnePupilM);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIstereoImageOnePupilM = roiM;
+    else
+        ROIeyeFitScheduled = true;
 
-    if(useROIPreProcessing && !ROIstereoImageOnePupilS.empty() && roiS != ROIstereoImageOnePupilS && ROIstereoImageOnePupilS.width <= bwFrameS.cols && ROIstereoImageOnePupilS.height <= bwFrameS.rows) {
+    if(     useROIPreProcessing && !ROIstereoImageOnePupilS.empty() && roiS != ROIstereoImageOnePupilS &&
+            ROIstereoImageOnePupilS.x < bwFrameS.cols && (ROIstereoImageOnePupilS.x + ROIstereoImageOnePupilS.width) <= bwFrameS.cols &&
+            ROIstereoImageOnePupilS.y < bwFrameS.rows && (ROIstereoImageOnePupilS.y + ROIstereoImageOnePupilS.height) <= bwFrameS.rows) {
         roiS = ROIstereoImageOnePupilS;
         bwFrameS = bwFrameS(ROIstereoImageOnePupilS);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIstereoImageOnePupilS = roiS;
+    else
+        ROIeyeFitScheduled = true;
+
 
     if(autoParamEnabled && autoParamScheduled) {
         performAutoParam();
@@ -855,29 +910,46 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     cv::Rect roiLM = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Rect roiLS = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilRM.empty() && roiRM != ROIstereoImageTwoPupilRM && ROIstereoImageTwoPupilRM.width <= bwFrameRM.cols && ROIstereoImageTwoPupilRM.height <= bwFrameRM.rows) {
+    if(     useROIPreProcessing && !ROIstereoImageTwoPupilRM.empty() && roiRM != ROIstereoImageTwoPupilRM &&
+            ROIstereoImageTwoPupilRM.x < bwFrameRM.cols && (ROIstereoImageTwoPupilRM.x + ROIstereoImageTwoPupilRM.width) <= bwFrameRM.cols &&
+            ROIstereoImageTwoPupilRM.y < bwFrameRM.rows && (ROIstereoImageTwoPupilRM.y + ROIstereoImageTwoPupilRM.height) <= bwFrameRM.rows) {
         roiRM = ROIstereoImageTwoPupilRM;
         bwFrameRM = bwFrameRM(ROIstereoImageTwoPupilRM);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIstereoImageTwoPupilRM = roiRM;
+    else
+        ROIeyeFitScheduled = true;
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilRS.empty() && roiRS != ROIstereoImageTwoPupilRS && ROIstereoImageTwoPupilRS.width <= bwFrameRS.cols && ROIstereoImageTwoPupilRS.height <= bwFrameRS.rows) {
+    if(     useROIPreProcessing && !ROIstereoImageTwoPupilRS.empty() && roiRS != ROIstereoImageTwoPupilRS &&
+            ROIstereoImageTwoPupilRS.x < bwFrameRS.cols && (ROIstereoImageTwoPupilRS.x + ROIstereoImageTwoPupilRS.width) <= bwFrameRS.cols &&
+            ROIstereoImageTwoPupilRS.y < bwFrameRS.rows && (ROIstereoImageTwoPupilRS.y + ROIstereoImageTwoPupilRS.height) <= bwFrameRS.rows) {
         roiRS = ROIstereoImageTwoPupilRS;
         bwFrameRS = bwFrameRS(ROIstereoImageTwoPupilRS);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIstereoImageTwoPupilRS = roiRS;
+    else
+        ROIeyeFitScheduled = true;
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilLM.empty() && roiLM != ROIstereoImageTwoPupilLM && ROIstereoImageTwoPupilLM.width <= bwFrameLM.cols && ROIstereoImageTwoPupilLM.height <= bwFrameLM.rows) {
+    if(     useROIPreProcessing && !ROIstereoImageTwoPupilLM.empty() && roiLM != ROIstereoImageTwoPupilLM &&
+            ROIstereoImageTwoPupilLM.x < bwFrameLM.cols && (ROIstereoImageTwoPupilLM.x + ROIstereoImageTwoPupilLM.width) <= bwFrameLM.cols &&
+            ROIstereoImageTwoPupilLM.y < bwFrameLM.rows && (ROIstereoImageTwoPupilLM.y + ROIstereoImageTwoPupilLM.height) <= bwFrameLM.rows) {
         roiLM = ROIstereoImageTwoPupilLM;
         bwFrameLM = bwFrameLM(ROIstereoImageTwoPupilLM);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIstereoImageTwoPupilLM = roiLM;
+    else
+        ROIeyeFitScheduled = true;
 
-    if(useROIPreProcessing && !ROIstereoImageTwoPupilLS.empty() && roiLS != ROIstereoImageTwoPupilLS && ROIstereoImageTwoPupilLS.width <= bwFrameLS.cols && ROIstereoImageTwoPupilLS.height <= bwFrameLS.rows) {
+    if(     useROIPreProcessing && !ROIstereoImageTwoPupilLS.empty() && roiLS != ROIstereoImageTwoPupilLS &&
+            ROIstereoImageTwoPupilLS.x < bwFrameLS.cols && (ROIstereoImageTwoPupilLS.x + ROIstereoImageTwoPupilLS.width) <= bwFrameLS.cols &&
+            ROIstereoImageTwoPupilLS.y < bwFrameLS.rows && (ROIstereoImageTwoPupilLS.y + ROIstereoImageTwoPupilLS.height) <= bwFrameLS.rows) {
         roiLS = ROIstereoImageTwoPupilLS;
         bwFrameLS = bwFrameLS(ROIstereoImageTwoPupilLS);
     } else if(autoParamEnabled && autoParamScheduled)
         ROIstereoImageTwoPupilLS = roiLS;
+    else
+        ROIeyeFitScheduled = true;
+
 
     if(autoParamEnabled && autoParamScheduled) {
         performAutoParam();

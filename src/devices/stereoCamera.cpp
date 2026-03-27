@@ -2075,6 +2075,32 @@ void StereoCamera::open(bool enableHardwareTrigger) {
             loadCalibrationFile();
         }
 
+        error = nullptr;
+        arv_camera_set_exposure_mode(cameras[0], ArvExposureMode::ARV_EXPOSURE_MODE_TIMED, &error);
+        if(error) {
+            qDebug() << "Could not set timed exposure mode.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        }
+        error = nullptr;
+        arv_camera_set_exposure_mode(cameras[1], ArvExposureMode::ARV_EXPOSURE_MODE_TIMED, &error);
+        if(error) {
+            qDebug() << "Could not set timed exposure mode.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        }
+        //
+        error = nullptr;
+        arv_camera_set_gain_auto(cameras[0], ArvAuto::ARV_AUTO_OFF, &error);
+        if(error) {
+            qDebug() << "Could not set gain auto mode off.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        }
+        error = nullptr;
+        arv_camera_set_gain_auto(cameras[1], ArvAuto::ARV_AUTO_OFF, &error);
+        if(error) {
+            qDebug() << "Could not set gain auto mode off.";
+            qDebug() << "Error during aravis API call. Message: " << error->message;
+        }
+
         CIntegerParameter heartbeat0( cameras[0].GetTLNodeMap(), "HeartbeatTimeout" );
         CIntegerParameter heartbeat1( cameras[1].GetTLNodeMap(), "HeartbeatTimeout" );
         heartbeat0.TrySetValue( 1000, IntegerValueCorrection_Nearest );
