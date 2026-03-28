@@ -86,6 +86,14 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
 
+    showSharpnessGuideAct = plotMenu->addAction(tr("Show Sharpness Guide Overlay"));
+    showSharpnessGuideAct->setCheckable(true);
+    showSharpnessGuideAct->setChecked(showSharpnessGuideOverlay && pupilDetection->isSharpnessGuideEnabled());
+//    showSharpnessGuideAct->setEnabled(true);
+    showSharpnessGuideAct->setStatusTip(tr("Display edges in focus."));
+    plotMenu->addAction(showSharpnessGuideAct);
+    connect(showSharpnessGuideAct, SIGNAL(toggled(bool)), this, SLOT(onShowSharpnessGuideOverlay(bool)));
+
     showPositioningGuideAct = plotMenu->addAction(tr("Show Camera Positioning Guide"));
     showPositioningGuideAct->setCheckable(true);
     showPositioningGuideAct->setChecked(showPositioningGuide);
@@ -181,7 +189,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     });
     middleROIAct->setStatusTip(tr("Pupil Detection ROI area with a size of 60% of the image width, preserving image aspect ratio.")); 
     roiMenu->addAction(middleROIAct);
-    
+
+    //////////
 
     autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
     autoParamMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/adjustlevels.svg"), applicationSettings));
@@ -230,9 +239,69 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     act4->setDefaultWidget(autoParamSliderWidget);
     autoParamMenu->addAction(act4);
 
-
+    // TODO: remove?
     autoParamPupSizeBox->setValue(50);
     autoParamSlider->setValue(50);
+
+    //////////
+
+    pupilDetectionMenu->addSeparator();
+
+    sharpnessGuideMenu = pupilDetectionMenu->addMenu(tr("&Sharpness estimation"));
+    sharpnessGuideMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/adjustlevels.svg"), applicationSettings));
+    // TODO: should be enabled if either visualization or the computation (pup data output) is enabled
+    //  and will need a reupdate accordingly, whenever any of these two is changed from any point of the GUI...
+//    sharpnessGuideMenu->setEnabled(pupilDetection->isSharpnessGuideEnabled() && ... );
+
+    QWidget *sharpnessGuideWidget = new QWidget();
+    QHBoxLayout *sharpnessGuideLayout = new QHBoxLayout();
+    sharpnessGuideLayout->setContentsMargins(8,0,8,0);
+
+    QLabel *sharpnessGuideLabel = new QLabel("Sharpness low threshold:", this);
+    sharpnessGuideLabel->setFixedWidth(150);
+
+    sharpnessGuideThreshBox = new QDoubleSpinBox();
+    sharpnessGuideThreshBox->setMinimum(10.0);
+    sharpnessGuideThreshBox->setMaximum(100.0);
+    sharpnessGuideThreshBox->setSingleStep(5.0);
+
+    sharpnessGuideLayout->addWidget(sharpnessGuideLabel);
+    sharpnessGuideLayout->addWidget(sharpnessGuideThreshBox);
+    sharpnessGuideWidget->setLayout(sharpnessGuideLayout);
+
+    QWidgetAction *act3b = new QWidgetAction(sharpnessGuideMenu);
+    act3b->setCheckable(false);
+    act3b->setDefaultWidget(sharpnessGuideWidget);
+    sharpnessGuideMenu->addAction(act3b);
+
+    QWidget *sharpnessGuideSliderWidget = new QWidget();
+    QHBoxLayout *sharpnessGuideSliderLayout = new QHBoxLayout();
+    sharpnessGuideSliderLayout->setContentsMargins(8,0,8,0);
+
+    sharpnessGuideSlider = new QSlider();
+    sharpnessGuideSlider->setOrientation(Qt::Horizontal);
+    sharpnessGuideSlider->setMinimum(10);
+    sharpnessGuideSlider->setMaximum(100);
+    //sharpnessGuideSlider->setSingleStep(10);
+    sharpnessGuideSlider->setFocusPolicy(Qt::StrongFocus);
+    sharpnessGuideSlider->setTickPosition(QSlider::TicksBelow);
+    sharpnessGuideSlider->setTickInterval(5);
+    sharpnessGuideSlider->setSingleStep(1);
+
+    sharpnessGuideSliderLayout->addWidget(sharpnessGuideSlider);
+    sharpnessGuideSliderWidget->setLayout(sharpnessGuideSliderLayout);
+
+    QWidgetAction *act4b = new QWidgetAction(sharpnessGuideMenu);
+    act4b->setCheckable(false);
+    act4b->setDefaultWidget(sharpnessGuideSliderWidget);
+    sharpnessGuideMenu->addAction(act4b);
+
+    // TODO: remove?
+    sharpnessGuideThreshBox->setValue(50);
+    sharpnessGuideSlider->setValue(50);
+
+    //////////
+
     toolBar->addAction(pupilDetectionMenuAct);
     toolBar->addSeparator();
 
@@ -346,6 +415,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(this, SIGNAL (onChangePupilColorFill(int)), videoView, SLOT (onChangePupilColorFill(int)));
     connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), videoView, SLOT (onChangePupilColorFillThreshold(float)));
     connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), videoView, SLOT (onChangeShowAutoParamOverlay(bool)));
+    // NOTE: no need to tell videoView to show sharpness guide. It will show whenever the mask it receives from pupildetection is not empty
     connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), videoView, SLOT (onChangeShowPositioningGuide(bool)));
     connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), videoView, SLOT (onChangePupilDetectionUsingROI(bool)));
     
@@ -355,6 +425,12 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), autoParamSlider, SLOT(setValue(int)));
     connect(autoParamSlider, SIGNAL(valueChanged(int)), autoParamPupSizeBox, SLOT(setValue(int)));
     connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), this, SLOT(onAutoParamPupSize(int)));
+
+    // We need this new style signal-slot connection, in order to use the convenience of
+    //  type conversions (because Slider needs integer, but DoubleSpinBox emits double)
+    connect(sharpnessGuideThreshBox, &QDoubleSpinBox::valueChanged, sharpnessGuideSlider, &QSlider::setValue);
+    connect(sharpnessGuideSlider, &QSlider::valueChanged, sharpnessGuideThreshBox, &QDoubleSpinBox::setValue);
+    connect(sharpnessGuideThreshBox, SIGNAL(valueChanged(double)), this, SLOT(onSharpnessGuideThresh(double)));
 
     // NOTE: currently it loads the settings (for loading ROI settings), so the loadSettings call at the end is not necessary
     updateForPupilDetectionProcMode();
@@ -383,6 +459,10 @@ void SingleCameraView::loadSettings() {
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
 
+    showSharpnessGuideOverlay = SupportFunctions::readBoolFromQSettings("SingleCameraView.showSharpnessGuideOverlay", false, applicationSettings);
+    showSharpnessGuideAct->setChecked(showSharpnessGuideOverlay);
+    onShowSharpnessGuideOverlay(showSharpnessGuideOverlay);
+
     showPositioningGuide = SupportFunctions::readBoolFromQSettings("SingleCameraView.showPositioningGuide", false, applicationSettings);
     if(camera->getType() == SINGLE_IMAGE_FILE) {
         showPositioningGuideAct->setDisabled(true);
@@ -400,6 +480,16 @@ void SingleCameraView::loadSettings() {
         autoParamSlider->setValue(autoParamPupSizePercent);
     //    autoParamPupSizeBox->blockSignals(false);
     //    autoParamSlider->blockSignals(false);
+
+
+    int sharpnessGuideThresh = applicationSettings->value("sharpnessGuideThresh", 50).toInt();
+    //    // GB: workaround to set values for auto param pup. size box and slider, without causing a cascade of events due to value change
+    //    autoParamPupSizeBox->blockSignals(true);
+    sharpnessGuideSlider->blockSignals(true);
+    sharpnessGuideThreshBox->setValue(sharpnessGuideThresh);
+    sharpnessGuideSlider->setValue((int)sharpnessGuideThresh); // NOTE: this likely resets. rather temporarily block signals for one of these?
+    //    autoParamPupSizeBox->blockSignals(false);
+    sharpnessGuideSlider->blockSignals(false);
 
     pupilColorFill = (ColorFill)applicationSettings->value("SingleCameraView.pupilColorFill", pupilColorFill).toInt();
     pupilColorFillThreshold = applicationSettings->value("SingleCameraView.pupilColorFillThreshold", pupilColorFillThreshold).toFloat();;
@@ -482,7 +572,7 @@ void SingleCameraView::updateView(const CameraImage &cimg, const int &procMode, 
     // As we are using a single camera right now, we can just pass the ROIs and Pupils vectors
     // But in case of stereo cameras, where there are two videoViews, it is necessary to know
     // which videoView gets which two ROIs and pupils (see stereoCameraView for details)
-    videoView->updateViewProcessed(cimg.img, ROIs, Pupils);
+    videoView->updateViewProcessed(cimg.img, ROIs, Pupils, cimg.sharpnessMask);
 }
 
 void SingleCameraView::updateView(const CameraImage &cimg) {
@@ -490,7 +580,7 @@ void SingleCameraView::updateView(const CameraImage &cimg) {
     if(cimg.img.empty())
         return;
         
-    videoView->updateView(cimg.img);
+    videoView->updateView(cimg.img, cimg.sharpnessMask);
 }
 
 void SingleCameraView::updateCameraFPS(double fps) {
@@ -739,6 +829,16 @@ void SingleCameraView::onAutoParamPupSize(int value) {
     videoView->drawOverlay();
 }
 
+void SingleCameraView::onSharpnessGuideThresh(double value) {
+
+    // NOTE: we do not need to set anything on videoView though
+
+    pupilDetection->setSharpnessGuideThresh(value);
+
+    applicationSettings->setValue("sharpnessGuideThresh", value);
+    videoView->drawOverlay();
+}
+
 void SingleCameraView::onFreezeClicked() {
     emit cameraPlaybackChanged();
 }
@@ -747,7 +847,7 @@ void SingleCameraView::onCameraPlaybackChanged() {
     playbackFrozen = !playbackFrozen;
     freezeAct->setChecked(playbackFrozen);
 
-    if(playbackFrozen)
+    if(playbackFrozen && camera->getType() != CameraImageType::SINGLE_IMAGE_FILE)
         setWindowTitle(windowOriginalTitle + " [FREEZED (Shift+F)]");
     else
         setWindowTitle(windowOriginalTitle);
@@ -828,12 +928,24 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
     videoView->refitPupilDetailViews();
 }
 
+// NOTE: this is just added later for display, but only enabled if pupil detection settings has it enabled
 void SingleCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay);
     emit onChangeShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
 }
 
+// IMPORTANT: This practically switches on/off the sharpness map calculation in pupil detection!
+//  (so it shows to the user as a plain GUI feature, but there is actual change in the pupil detection processing
+//  because it needs extra calculation, so only use it when user explicitly needs it for setting focus
+void SingleCameraView::onShowSharpnessGuideOverlay(bool state) {
+    pupilDetection->setSharpnessGuideEnabled(state);
+    showSharpnessGuideOverlay = state;
+    applicationSettings->setValue("SingleCameraView.showSharpnessGuideOverlay", showSharpnessGuideOverlay);
+//    emit onChangeShowSharpnessGuideOverlay(showSharpnessGuideOverlay); // unnecessary
+}
+
+// NOTE: This is just a later added overlay to show sensor center, nothing fancy
 void SingleCameraView::onShowPositioningGuide(bool state) {
     showPositioningGuide = state;
     applicationSettings->setValue("SingleCameraView.showPositioningGuide", showPositioningGuide);
@@ -868,7 +980,7 @@ void SingleCameraView::displayFileCameraFrame(int frameNumber) {
         return; 
       
     cv::Mat temp1 = dynamic_cast<FileCamera*>(camera)->getStillImageSingle(frameNumber);
-    videoView->updateView(temp1);
+    videoView->updateView(temp1, cv::Mat());
 }
 
 void SingleCameraView::onDiscardROISelectionClick(){

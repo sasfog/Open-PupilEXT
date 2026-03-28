@@ -176,8 +176,8 @@ void StereoCameraCalibrationView::updateView(const CameraImage &cimg) {
 
     if(!cimg.img.empty() && !cimg.imgS.empty()) {
 
-        mainVideoView->updateView(cimg.img);
-        secondaryVideoView->updateView(cimg.imgS);
+        mainVideoView->updateView(cimg.img, cimg.sharpnessMask);
+        secondaryVideoView->updateView(cimg.imgS, cimg.sharpnessMaskS);
     }
 }
 

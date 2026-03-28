@@ -152,6 +152,7 @@ void VideoView::clearProcessedOverlayMemory() {
 
 void VideoView::drawOverlay() {
 
+    drawSharpnessGuide();
     drawPositioningGuide();
     drawAutoParamOverlay();
 
@@ -202,7 +203,7 @@ void VideoView::onChangePupilDetectionUsingROI(bool state) {
 }
 
 // GB: This method paints the "overlaying" ROI and pupil outline on the graphicsScene, over the image
-void VideoView::updateViewProcessed(const cv::Mat &img, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
+void VideoView::updateViewProcessed(const cv::Mat &img, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils, const cv::Mat &sharpnessMask) {
 
     // NOTE: the reason we are painting ROI on these images, based on ROI values originating from pupilDetection
     // is that like so we can be the best sure of what ROI we have used when pupilDetection was done
@@ -213,6 +214,10 @@ void VideoView::updateViewProcessed(const cv::Mat &img, const std::vector<cv::Re
         tROIs.push_back(ROIs[z]);
         tPupils.push_back(Pupils[z]);
     }
+
+//    tSharpnessMask = cv::Mat();
+//    cv::cvtColor(sharpnessMask, tSharpnessMask, cv::COLOR_GRAY2BGR);
+    tSharpnessMask = sharpnessMask.clone();
 
     drawOverlay();
     //drawProcessedOverlay();
@@ -228,8 +233,47 @@ void VideoView::setImageROI(const QRect& ROI) {
 }
 
 void VideoView::setSensorSize(const QSize& size) {
-    // we need this to calculate the center of the sensor (map it) on the images for showin the positioning guide
+    // we need this to calculate the center of the sensor (map it) on the images for showing the positioning guide
     sensorSize = size;
+}
+
+void VideoView::drawSharpnessGuide() {
+
+    // to prevent memory leaks and lagging GUI
+    for(std::size_t c=0; c<geBufferSM.size(); c++) {
+        graphicsScene->removeItem(geBufferSM[c]);
+        delete geBufferSM[c];
+    }
+    if(geBufferSM.size()>0)
+        geBufferSM.clear();
+
+    // NOTE: We do not check for an enabled-bool. Only look at the mat. If there is anything, we draw it
+    if(tSharpnessMask.empty())
+        return;
+
+    cv::Mat colorized;
+    cv::cvtColor(tSharpnessMask, colorized, cv::COLOR_GRAY2BGR);
+
+    cv::Mat rgba(tSharpnessMask.size(), CV_8UC4, cv::Scalar(0, 0, 0, 0));
+    rgba.forEach<cv::Vec4b>([](cv::Vec4b &p, const int*) {
+        p = cv::Vec4b(150, 120, 20, 0); // BGR(27, 170, 240); // orange
+    });
+
+    // Copy mask into alpha channel
+    std::vector<cv::Mat> channels;
+    cv::split(rgba, channels);
+    channels[3] = tSharpnessMask;
+    cv::merge(channels, rgba);
+
+    // We need this, to have alpha, to let this be drawn over the image
+    QImage rgba2((uchar*)rgba.data, rgba.cols, rgba.rows, QImage::Format_RGBA8888);
+    QPixmap rgba2_pixmap = QPixmap::fromImage(rgba2);
+
+    geBufferSM.push_back( graphicsScene->addPixmap(rgba2_pixmap) );
+
+    for(std::size_t c=0; c<geBufferSM.size(); c++) {
+        geBufferSM[c]->setZValue(89);
+    }
 }
 
 void VideoView::drawPositioningGuide() {
@@ -528,11 +572,17 @@ void VideoView::drawProcessedOverlay() {
 
 // GB: grabbed imaged without pupilDetection land here (called from camera views)
 // This method paints ROI onto images in cases when pupil detection is on, but the image did not make its way through pupilDetection
-void VideoView::updateView(const cv::Mat &img) {
+void VideoView::updateView(const cv::Mat &img, const cv::Mat &sharpnessMask) {
     imageSize = img.size(); // GB: moved here to let it provide image size even on the first (still) frame
 
     tROIs.clear();
     tPupils.clear();
+
+
+//    tSharpnessMask = cv::Mat();
+//    cv::cvtColor(sharpnessMask, tSharpnessMask, cv::COLOR_GRAY2BGR);
+    tSharpnessMask = sharpnessMask.clone();
+
     drawOverlay();
     //drawUnprocessedOverlay();
 

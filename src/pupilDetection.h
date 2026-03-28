@@ -211,6 +211,16 @@ public:
         //std::cout << "-------------- set single eye identity to " << QString(identity).toStdString() << std::endl;
     };
 
+    /////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////
+
+    bool isSharpnessGuideEnabled() {
+        return sharpnessGuideEnabled;
+    }
+
+    /////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////
+
 private:
 
     Camera *camera;
@@ -292,6 +302,38 @@ private:
         return getCurrentMethod1();
     };
 
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
+    bool sharpnessGuideEnabled = false;
+    double sharpnessGuideThresh = 50.0;
+
+    // This would not need to be a separate function of course, but this way we can
+    //  spare one clone call and a little bit of performance probably
+    double sharpnessTenengradThresh(const cv::Mat& gray) {
+        cv::Mat gx, gy;
+        cv::Sobel(gray, gx, CV_64F, 1, 0, 3);
+        cv::Sobel(gray, gy, CV_64F, 0, 1, 3);
+
+        cv::Mat mag;
+        cv::magnitude(gx, gy, mag);
+
+        cv::Mat mask = mag > sharpnessGuideThresh;
+        return cv::mean(mag, mask)[0];
+    }
+
+    cv::Mat sharpnessTenengradThreshMask(const cv::Mat& gray) {
+        cv::Mat gx, gy;
+        cv::Sobel(gray, gx, CV_64F, 1, 0, 3);
+        cv::Sobel(gray, gy, CV_64F, 0, 1, 3);
+
+        cv::Mat mag;
+        cv::magnitude(gx, gy, mag);
+
+        cv::Mat mask = mag > sharpnessGuideThresh;
+        return mask;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -311,7 +353,6 @@ private:
     QVector<QRectF> pupilTTW_suggestedROIs = {QRectF(), QRectF(), QRectF(), QRectF()};
 
     int pupilTTWminSamples = 5;
-
     float wfac_basic = 3.5f;
     float hfac_basic = 3.0f;
     float wfac_clueless = 5.0f;
@@ -319,6 +360,7 @@ private:
 
     bool pupilTTW_useConfidence = false;
     bool pupilTTW_useOutlineConfidence = false;
+    bool pupilTTW_useAxisRatio = false;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -379,6 +421,17 @@ public slots:
     void setROImirrImageOnePupil2(QRectF roi);
 
     void setSynchronised(bool synchronised);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
+    void setSharpnessGuideEnabled(bool enabled) {
+        sharpnessGuideEnabled = enabled;
+    }
+
+    void setSharpnessGuideThresh(double val) {
+        sharpnessGuideThresh = val;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -454,14 +507,19 @@ public slots:
         //  the midpoint between center of pupil and center of eyeball,
         //  in/as the center of image
 
+        if(!pupilTTW_useConfidence && !pupilTTW_useOutlineConfidence && !pupilTTW_useAxisRatio) {
+            qDebug() << "At least one criterion needs to be set for pupil tracked time window";
+            return;
+        }
+
         // check criteria
         for(int zz = 0; zz < _Pupils.size(); zz++) {
 //        qDebug() << "confidence" << _Pupils[zz].confidence; // NOT ALL ALGS HAVE CONFIDENCE.
 //        qDebug() << "outline_confidence" << _Pupils[zz].outline_confidence; // ALSO MIGHT BE DISABLED
 //            qDebug() << "axis ratio" << (_Pupils[zz].majorAxis() / _Pupils[zz].minorAxis());
             if (    ((pupilTTW_useConfidence && _Pupils[zz].confidence > pupilTTWCriterion_confidence) || !pupilTTW_useConfidence) &&
-                    ((pupilTTW_useOutlineConfidence && _Pupils[zz].outline_confidence > pupilTTWCriterion_outlineConfidence) || !pupilTTW_useOutlineConfidence) //&&
-                //(_Pupils[zz].majorAxis() / _Pupils[zz].minorAxis()) <= pupilTTWCriterion_axisRatio
+                    ((pupilTTW_useOutlineConfidence && _Pupils[zz].outline_confidence > pupilTTWCriterion_outlineConfidence) || !pupilTTW_useOutlineConfidence) &&
+                    ((pupilTTW_useAxisRatio && (_Pupils[zz].majorAxis() / _Pupils[zz].minorAxis()) <= pupilTTWCriterion_axisRatio) || !pupilTTW_useAxisRatio)
                     ) {
 
                 pupilTTW_centers[zz].push_back(_Pupils[zz].center);

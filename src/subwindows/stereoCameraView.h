@@ -57,6 +57,7 @@ private:
     QAction *plotROIAct;
 
     QMenu *autoParamMenu;
+    QMenu *sharpnessGuideMenu;
     QMenu *roiMenu;
 
     //QAction *roiMenuAct;
@@ -91,11 +92,15 @@ private:
     float pupilColorFillThreshold = 0.0;
     QSpinBox *autoParamPupSizeBox;
     QSlider *autoParamSlider;
+    QDoubleSpinBox *sharpnessGuideThreshBox;
+    QSlider *sharpnessGuideSlider;
 
     std::vector<QSize> pupilViewSize;
 
     QAction *showAutoParamAct;
     bool showAutoParamOverlay;
+    QAction *showSharpnessGuideAct;
+    bool showSharpnessGuideOverlay;
 
     QAction *showPositioningGuideAct;
     bool showPositioningGuide;
@@ -161,10 +166,12 @@ public slots:
     void onPupilColorFillThresholdChanged(double value);
 
     void onShowAutoParamOverlay(bool state);
+    void onShowSharpnessGuideOverlay(bool state);
     void onShowPositioningGuide(bool state);
     void onImageROIChanged(const QRect& ROI);
     void onSensorSizeChanged(const QSize& size);
     void onAutoParamPupSize(int value);
+    void onSharpnessGuideThresh(double value);
 
     void onFreezeClicked();
     void onCameraPlaybackChanged();
@@ -175,6 +182,7 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+//    void onChangeShowSharpnessGuideOverlay(bool state); // unnecessary
     void onChangeShowPositioningGuide(bool state);
     void cameraPlaybackChanged();
     void doingPupilDetectionROIediting(bool state);

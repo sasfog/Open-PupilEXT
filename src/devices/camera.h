@@ -30,6 +30,8 @@ struct CameraImage {
     uint64_t timestamp;
     uint64_t frameNumber; // holds the INDEX of image (not starting from 1)
     //std::string filename;
+    mutable cv::Mat sharpnessMask;
+    mutable cv::Mat sharpnessMaskS;
 };
 
 Q_DECLARE_METATYPE(CameraImage)

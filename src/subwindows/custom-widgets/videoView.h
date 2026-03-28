@@ -82,6 +82,7 @@ private:
 
     std::vector<cv::Rect> tROIs;
     std::vector<Pupil> tPupils;
+    cv::Mat tSharpnessMask;
 
     ResizableRectItem *roi1Selection; 
     ResizableRectItem *roi2Selection; 
@@ -89,6 +90,8 @@ private:
     QRectF roi1SelectionRectLastR; // the last saved position. necessary in cases when there is no pupil detection going on, and we are setting a custom ROI, which is not yet committed, but moved on the scene. when image play is on, this variable is needed
     QRectF roi2SelectionRectLastR; 
     void updateViewInternal(const cv::Mat &img);
+
+    std::vector<QGraphicsItem*> geBufferSM;
 
     std::vector<QGraphicsItem*> geBufferPG;
     QRect imageROI = QRect(0,0,0,0);
@@ -136,11 +139,12 @@ protected:
 
 public slots:
 
-    void updateViewProcessed(const cv::Mat &img, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void updateViewProcessed(const cv::Mat &img, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils, const cv::Mat &sharpnessMask);
     void drawUnprocessedOverlay();
     void drawProcessedOverlay();
     void drawOverlay();
     void drawAutoParamOverlay();
+    void drawSharpnessGuide();
     void drawPositioningGuide();
 
     void setSelectionColor1(QColor color);
@@ -149,7 +153,7 @@ public slots:
     void updatePupilViews(const std::vector<QRect> &rects);
     void enablePupilView(bool value);
 
-    void updateView(const cv::Mat &img);
+    void updateView(const cv::Mat &img, const cv::Mat &sharpnessMask);
 
     void setROI1Selection_rat(float roiSize);
     void setROI1Selection_rat(QRectF roiR);

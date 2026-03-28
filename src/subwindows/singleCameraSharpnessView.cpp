@@ -130,7 +130,7 @@ void SingleCameraSharpnessView::onSizeBoxChange() {
 void SingleCameraSharpnessView::updateView(const CameraImage &cimg) {
 
     if(!cimg.img.empty()) {
-        videoView->updateView(cimg.img);
+        videoView->updateView(cimg.img, cimg.sharpnessMask);
         //delete &cimg;
     }
 }

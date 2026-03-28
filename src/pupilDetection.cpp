@@ -282,6 +282,11 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
                     (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber) ||
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == image.frameNumber)
             ) ) ) {
+
+            if(sharpnessGuideEnabled) {
+                cv::Mat Mask = sharpnessTenengradThreshMask(image.img);
+                image.sharpnessMask = Mask.clone();
+            }
             emit processedImageLowFPS(image);
         }
         return;
@@ -413,6 +418,12 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
             ROIs.push_back(roi);
             //ROIs.push_back(cv::Rect(0,0, bwFrame.size().width, bwFrame.size().height));
         }
+
+        if(sharpnessGuideEnabled) {
+            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
+            mimg.sharpnessMask = Mask.clone();
+        }
+
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
@@ -464,6 +475,12 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
                     (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == cimg.frameNumber) ||
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == cimg.frameNumber)
             ) ) ) {
+
+            if(sharpnessGuideEnabled) {
+                cv::Mat Mask = sharpnessTenengradThreshMask(cimg.img);
+                cimg.sharpnessMask = Mask.clone();
+            }
+
             emit processedImageLowFPS(cimg);
         }
         return;
@@ -625,6 +642,12 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
             // ROIs.push_back(cv::Rect(0, 0, bwFrameA.size().width, bwFrameA.size().height));
             // ROIs.push_back(cv::Rect((int)std::ceil(cimg->img.cols/2)+1, 0, bwFrameB.size().width, bwFrameB.size().height));
         }
+
+        if(sharpnessGuideEnabled) {
+            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
+            mimg.sharpnessMask = Mask.clone();
+        }
+
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
@@ -679,6 +702,14 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
                     (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
             ) ) ) {
+
+            if(sharpnessGuideEnabled) {
+                cv::Mat Mask = sharpnessTenengradThreshMask(simg.img);
+                cv::Mat MaskS = sharpnessTenengradThreshMask(simg.imgS);
+                simg.sharpnessMask = Mask.clone();
+                simg.sharpnessMaskS = MaskS.clone();
+            }
+
             emit processedImageLowFPS(simg);
         }
         return;
@@ -846,6 +877,14 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
             //ROIs.push_back(cv::Rect(0,0, bwFrameM.size().width, bwFrameM.size().height));
             //ROIs.push_back(cv::Rect(0,0, bwFrameS.size().width, bwFrameS.size().height));
         }
+
+        if(sharpnessGuideEnabled) {
+            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
+            cv::Mat MaskS = sharpnessTenengradThreshMask(mimg.imgS);
+            mimg.sharpnessMask = Mask.clone();
+            mimg.sharpnessMaskS = MaskS.clone();
+        }
+
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image->
@@ -896,6 +935,14 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
                     (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
             ) ) ) {
+
+            if(sharpnessGuideEnabled) {
+                cv::Mat Mask = sharpnessTenengradThreshMask(simg.img);
+                cv::Mat MaskS = sharpnessTenengradThreshMask(simg.imgS);
+                simg.sharpnessMask = Mask.clone();
+                simg.sharpnessMaskS = MaskS.clone();
+            }
+
             emit processedImageLowFPS(simg);
         }
         return;
@@ -1156,6 +1203,14 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
             ROIs.push_back(roiLS);
 
         }
+
+        if(sharpnessGuideEnabled) {
+            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
+            cv::Mat MaskS = sharpnessTenengradThreshMask(mimg.imgS);
+            mimg.sharpnessMask = Mask.clone();
+            mimg.sharpnessMaskS = MaskS.clone();
+        }
+
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
