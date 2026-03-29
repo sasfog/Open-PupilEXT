@@ -326,7 +326,8 @@ void SingleCameraSettingsDialog::createForm() {
     QString resultingFrameRateString = QString::number(resultingFrameRate);
     if(resultingFrameRate == 9999999)
         resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
-    frameRateValueLabel = new QLabel(resultingFrameRateString);
+    frameRateValueLabel = new QLabel();
+    frameRateValueLabel->setText(resultingFrameRateString);
     imageROIlayoutRow7->addWidget(frameRateLabel);
     imageROIlayoutRow7->addWidget(frameRateValueLabel);
     imageROIlayoutRow7->addStretch();
@@ -716,6 +717,7 @@ void SingleCameraSettingsDialog::autoGainOnce() {
                     gainBox->setEnabled(true);
                     autoGainCheckVal = 0;
                     autoGainCheckOccasions = 0;
+                    //updateFrameRateValue(); // not necessary for gain
                     autoGainTimer->stop();
                 } else
                     autoGainCheckOccasions++;
@@ -770,6 +772,7 @@ void SingleCameraSettingsDialog::autoExposureOnce() {
                     gainBox->setEnabled(true);
                     autoExposureCheckVal = 0;
                     autoExposureCheckOccasions = 0;
+                    updateFrameRateValue();
                     autoExposureTimer->stop();
                 } else
                     autoExposureCheckOccasions++;
@@ -801,7 +804,8 @@ void SingleCameraSettingsDialog::updateFrameRateValue() {
     QString resultingFrameRateString = QString::number(resultingFrameRate);
     if(resultingFrameRate == 9999999)
         resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
-    frameRateValueLabel = new QLabel(resultingFrameRateString);
+    frameRateValueLabel->setText(resultingFrameRateString);
+
 
     qDebug() << "Resulting framerate according to camera wrapper " << resultingFrameRate;
 
@@ -1347,7 +1351,8 @@ void SingleCameraSettingsDialog::SWTframerateLimitEnabledToggled(bool state) {
 
     applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", state);
 
-    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+//    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+    SWTframerateLimitBox->setEnabled(state); // REDUCED TO THIS ONLY. NECESSARY BECAUSE OF "HACKY" CAMERAS
     SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
     if(state)
         setSWTframerateLimitVal(SWTframerateLimitBox->value());

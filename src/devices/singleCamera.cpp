@@ -1568,6 +1568,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         loadCalibrationFile();
     }
 
+    // Try to set expo and gain to manually specified
     error = nullptr;
     arv_camera_set_exposure_mode(camera, ArvExposureMode::ARV_EXPOSURE_MODE_TIMED, &error);
     if(error) {
@@ -1580,6 +1581,14 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         qDebug() << "Could not set gain auto mode off.";
         qDebug() << "Error during aravis API call. Message: " << error->message;
     }
+
+    // Some camera models still dont understand the above calls, so we need to talk to them more objectively
+    int exposureTestIfAutoIsReallyOff = checkExposureTimeIfCompletedAuto();
+    if(exposureTestIfAutoIsReallyOff <= 0)
+        arv_device_set_string_feature_value(arv_camera_get_device(camera), "ExposureAuto", "Off", nullptr);
+    double gainTestIfAutoIsReallyOff = checkGainIfCompletedAuto();
+    if(gainTestIfAutoIsReallyOff <= 0)
+        arv_device_set_string_feature_value(arv_camera_get_device(camera), "GainAuto", "Off", nullptr);
 
     // TODO:
     //  DETERMINE SENSOR RESOLUTION.
@@ -2533,10 +2542,10 @@ bool SingleCamera::isAcquisitionFrameRateAvailableForSWT() {
 //        // IMPORTANT: this seems to be the most trustworthy check for whether its HWT or not:
 //        val = !(getLineSource().startsWith("Line"));
 
-        // This is the check that only proper cameras pass
-        // not a boolean but an On/Off "enum"
-        QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
-        val = (tval == "On");
+//        // This is the check that only proper cameras pass
+//        // not a boolean but an On/Off "enum"
+//        QString tval = arv_camera_get_string(camera, "TriggerMode", &error);
+//        val = (tval == "On");
 
         if(error) {
             qWarning() << "Could not determine TriggerMode.";

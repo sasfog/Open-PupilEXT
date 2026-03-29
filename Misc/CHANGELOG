@@ -68,6 +68,7 @@ Version 0.1.3. beta
 		- Fixed invalid limitation on image ROI x and y during tracking or image recording. ROI location does not disrupt these processes, so should be free to set. However, it would need a brief grabbing stop and restart of frame grabbing, so it is still not generally recommended.
 		- Binning is now only available for setting in the GUI if camera supports that, with different levels available. Now if there is no support, the dropdown widget will appear as greyed out.
 		- Fixed documentation that showed IHT as the command to set hardware triggering framerate. The correct command name was IHF. Similarly corrected documentation for software triggering, wrongly written as IST, now corrected to ISF. 
+		- Bug that caused image reader to get stuck when drag-n-drop tryping to open an empty image folder.
 		- Fixed Exposure and Gain values not updating after Auto Exposure or Auto Gain.
 
 Version 0.1.2. beta

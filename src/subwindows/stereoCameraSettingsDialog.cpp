@@ -382,7 +382,8 @@ void StereoCameraSettingsDialog::createForm() {
     QString resultingFrameRateString = QString::number(resultingFrameRate);
     if(resultingFrameRate == 9999999)
         resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
-    frameRateValueLabel = new QLabel(resultingFrameRateString);
+    frameRateValueLabel = new QLabel();
+    frameRateValueLabel->setText(resultingFrameRateString);
     imageROIlayoutRow7->addWidget(frameRateLabel);
     imageROIlayoutRow7->addWidget(frameRateValueLabel);
     imageROIlayoutRow7->addStretch();
@@ -852,6 +853,7 @@ void StereoCameraSettingsDialog::autoGainOnce() {
                     imageROIheightMaxLabel->setEnabled(!trackingOn);
                     autoGainCheckVal = 0;
                     autoGainCheckOccasions = 0;
+                    //updateFrameRateValue(); // not necessary for gain
                     autoGainTimer->stop();
                 } else
                     autoGainCheckOccasions++;
@@ -906,6 +908,7 @@ void StereoCameraSettingsDialog::autoExposureOnce() {
                     gainBox->setEnabled(true);
                     autoExposureCheckVal = 0;
                     autoExposureCheckOccasions = 0;
+                    updateFrameRateValue();
                     autoExposureTimer->stop();
                 } else
                     autoExposureCheckOccasions++;
@@ -920,7 +923,7 @@ void StereoCameraSettingsDialog::updateFrameRateValue() {
     QString resultingFrameRateString = QString::number(resultingFrameRate);
     if(resultingFrameRate == 9999999)
         resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
-    frameRateValueLabel = new QLabel(resultingFrameRateString);
+    frameRateValueLabel->setText(resultingFrameRateString);
 
     qDebug() << "Resulting framerate according to camera wrapper " << resultingFrameRate;
 
