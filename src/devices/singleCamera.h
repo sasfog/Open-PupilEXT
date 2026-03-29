@@ -51,6 +51,7 @@ public:
 
     ~SingleCamera() override;
 
+    QSize fullSensorResolution;
     QString getFriendlyName();
     QString getFullName();
     QString getDeviceID();
@@ -117,12 +118,15 @@ public:
 private:
 
     QDir settingsDirectory;
+    QSettings *applicationSettings;
 
     uint64 cameraTime;
     uint64 systemTime;
 
     bool hardwareTriggerEnabled;
     QString lineSource;
+
+    void determineFullSensorResolution();
 
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
@@ -211,7 +215,7 @@ public:
 
     ~SingleCamera() override;
 
-
+    QSize fullSensorResolution;
     QString getFriendlyName();
     QString getFullName();
     QString getDeviceID();
@@ -276,6 +280,10 @@ public:
     int getBinningMax();
     double getTemperature();
 
+    QSize getFullSensorResolution() override;
+    int checkExposureTimeIfCompletedAuto();
+    double checkGainIfCompletedAuto();
+
     bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
@@ -288,6 +296,8 @@ public:
 private:
 
     QDir settingsDirectory;
+    QSettings *applicationSettings;
+    int streamBufferSize = 100;
 
     uint64 cameraTime;
     uint64 systemTime;
@@ -297,9 +307,13 @@ private:
 
     bool isGrabbingV = false;
 
+    void determineFullSensorResolution();
     ArvCamera *camera;
+    ArvStream *stream;
     SingleCameraImageEventHandler *cameraImageEventHandler;
     ArvStreamCallbackData callbackData;
+
+    int lastUsedBinningVal = 1;
 
     void resizeStreamBuffer();
 

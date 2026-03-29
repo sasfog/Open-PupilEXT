@@ -121,11 +121,21 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         cameraMap["friendlyName"] =  singleCamera->getFriendlyName();
         cameraMap["cameraCalibrationFileName"] = singleCamera->getCalibrationFilename();
         cameraMap["lineSource"] = singleCamera->getLineSource();
-        cameraMap["binning"] = QString::number(singleCamera->getBinningVal());
+
+        int binningVal = singleCamera->getBinningVal();
+        cameraMap["binning"] = QString::number(binningVal);
         QMap<QString, QString> settingsMap;
         settingsMap["cameraImageType"] = cameraImageType;
-        settingsMap["width"] = QString::number(singleCamera->getImageROIwidthMax());
-        settingsMap["height"] = QString::number(singleCamera->getImageROIheightMax());
+
+//        settingsMap["width"] = QString::number(singleCamera->getImageROIwidthMax());
+//        settingsMap["height"] = QString::number(singleCamera->getImageROIheightMax());
+
+        QSize fullSensorResolution = singleCamera->getFullSensorResolution();
+        cameraMap["fullSensorResolutionWidth"] = QString::number(fullSensorResolution.width()); // IMPORTANT: goes into camera map
+        cameraMap["fullSensorResolutionHeight"] = QString::number(fullSensorResolution.height()); // IMPORTANT: goes into camera map
+        settingsMap["width"] = QString::number(fullSensorResolution.width()/binningVal);
+        settingsMap["height"] = QString::number(fullSensorResolution.height()/binningVal);
+
         settingsMap["gain"] = QString::number(singleCamera->getGainValue());
         settingsMap["exposureTime"] = QString::number(singleCamera->getExposureTimeValue());
          
@@ -158,11 +168,21 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         QDomElement cameraNode = document.createElement("camera");
         // only live camera devices have the calibration file name
         cameraNode.setAttribute("CameraCalibrationFileName", stereoCamera->getCalibrationFilename());
-        cameraNode.setAttribute("LineSource", QString(stereoCamera->getLineSource())); 
-        cameraNode.setAttribute("Binning", stereoCamera->getBinningVal()); 
+        cameraNode.setAttribute("LineSource", QString(stereoCamera->getLineSource()));
+
+        int binningVal = stereoCamera->getBinningVal();
+        cameraNode.setAttribute("Binning", binningVal);
         QDomElement maxImageSize = document.createElement("MaxImageSize");
-        maxImageSize.setAttribute("width", stereoCamera->getImageROIwidthMax()); 
-        maxImageSize.setAttribute("height", stereoCamera->getImageROIheightMax()); 
+
+//        settingsMap["width"] = QString::number(singleCamera->getImageROIwidthMax());
+//        settingsMap["height"] = QString::number(singleCamera->getImageROIheightMax());
+
+        QSize fullSensorResolution = stereoCamera->getFullSensorResolution();
+        cameraNode.setAttribute("fullSensorResolutionWidth", QString::number(fullSensorResolution.width())); // IMPORTANT: goes into camera map
+        cameraNode.setAttribute("fullSensorResolutionHeight", QString::number(fullSensorResolution.height())); // IMPORTANT: goes into camera map
+        maxImageSize.setAttribute("width", QString::number(fullSensorResolution.width()/binningVal));
+        maxImageSize.setAttribute("height", QString::number(fullSensorResolution.height()/binningVal));
+
         cameraNode.appendChild(maxImageSize);
         QDomElement actualImageROI = document.createElement("ImageAcqROI");
         actualImageROI.setAttribute("x", stereoCamera->getImageROIoffsetX()); 

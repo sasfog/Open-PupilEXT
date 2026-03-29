@@ -162,47 +162,48 @@ void SingleCameraImageEventHandler::stream_callback(void *user_data, ArvStreamCa
             g_assert (buffer != NULL);
 
             bs = arv_buffer_get_status(buffer);
-            switch(bs) {
-                case ARV_BUFFER_STATUS_UNKNOWN:
+//            switch(bs) {
+//                case ARV_BUFFER_STATUS_UNKNOWN:
 //                    qDebug() << "ARV_BUFFER_STATUS_UNKNOWN";
-                    break;
-                case ARV_BUFFER_STATUS_SUCCESS:
+//                    break;
+//                case ARV_BUFFER_STATUS_SUCCESS:
 //                    qDebug() << "ARV_BUFFER_STATUS_SUCCESS";
-                    break;
-                case ARV_BUFFER_STATUS_CLEARED:
+//                    break;
+//                case ARV_BUFFER_STATUS_CLEARED:
 //                    qDebug() << "ARV_BUFFER_STATUS_CLEARED";
-                    break;
-                case ARV_BUFFER_STATUS_TIMEOUT:
+//                    break;
+//                case ARV_BUFFER_STATUS_TIMEOUT:
 //                    qDebug() << "ARV_BUFFER_STATUS_TIMEOUT";
-                    break;
-                case ARV_BUFFER_STATUS_MISSING_PACKETS:
+//                    break;
+//                case ARV_BUFFER_STATUS_MISSING_PACKETS:
 //                    qDebug() << "ARV_BUFFER_STATUS_MISSING_PACKETS";
-                    break;
-                case ARV_BUFFER_STATUS_WRONG_PACKET_ID:
+//                    break;
+//                case ARV_BUFFER_STATUS_WRONG_PACKET_ID:
 //                    qDebug() << "ARV_BUFFER_STATUS_WRONG_PACKET_ID";
-                    break;
-                case ARV_BUFFER_STATUS_SIZE_MISMATCH:
+//                    break;
+//                case ARV_BUFFER_STATUS_SIZE_MISMATCH:
 //                    qDebug() << "ARV_BUFFER_STATUS_SIZE_MISMATCH";
-                    break;
-                case ARV_BUFFER_STATUS_FILLING:
+//                    break;
+//                case ARV_BUFFER_STATUS_FILLING:
 //                    qDebug() << "ARV_BUFFER_STATUS_FILLING";
-                    break;
-                case ARV_BUFFER_STATUS_ABORTED:
+//                    break;
+//                case ARV_BUFFER_STATUS_ABORTED:
 //                    qDebug() << "ARV_BUFFER_STATUS_ABORTED";
-                    break;
-                case ARV_BUFFER_STATUS_PAYLOAD_NOT_SUPPORTED:
+//                    break;
+//                case ARV_BUFFER_STATUS_PAYLOAD_NOT_SUPPORTED:
 //                    qDebug() << "ARV_BUFFER_STATUS_PAYLOAD_NOT_SUPPORTED";
-                    break;
-                default:
-                    qDebug() << bs;
-            }
+//                    break;
+//                default:
+//                    qDebug() << bs;
+//            }
 
-            if (arv_buffer_get_status(buffer) != ARV_BUFFER_STATUS_SUCCESS) {
+            if (bs != ARV_BUFFER_STATUS_SUCCESS) {
                 if(callbackData->aboutToStopGrabbing) {
 //                    qDebug() << "Grabbing is stopping. All pending frames are dropped.";
                 } else {
 //                    qDebug() << "Image(s) skipped.";
                     emit ((SingleCameraImageEventHandler*)callbackData->emitter)->imagesSkipped();
+//                    qDebug() << "---------------------------------------------------- HEY HERE IT IS: " << bs;
                 }
                 // circulate buffer to keep receiving images
                 arv_stream_push_buffer(callbackData->stream, buffer);

@@ -69,7 +69,10 @@ public:
     virtual int getImageROIoffsetYInc() = 0;
     virtual QRectF getImageROI() = 0;
 
+    virtual QSize getFullSensorResolution() = 0;
+
     virtual double getResultingFrameRateValue() = 0;
+    virtual int getExposureTimeValue() = 0;
 
     virtual void stopGrabbing() = 0;
     virtual void startGrabbing() = 0;

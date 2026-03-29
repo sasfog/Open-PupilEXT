@@ -114,7 +114,10 @@ public:
     int getImageROIoffsetYInc() override { return 1; };
     QRectF getImageROI() override;
 
+    QSize getFullSensorResolution() override { return QSize(grabberDummy->getImageSize().width, grabberDummy->getImageSize().height); };
+
     double getResultingFrameRateValue() override;
+    int getExposureTimeValue() override { return 9999999; }; // TODO: make real?
 
     bool isTemperatureReadingSupported() override {return false;};
 

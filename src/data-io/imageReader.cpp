@@ -28,7 +28,13 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
     if(imageSource.endsWith(zipSuffix) && QFile(imageSource).exists()) {
         qDebug() << "Image source seems to be a Zip archive.";
         imageReaderSource = IMSOURCE_ZIP;
-        exploreZip(imageSource, subrecordingNumber);
+        try {
+            exploreZip(imageSource, subrecordingNumber);
+        } catch (const std::exception &e) {
+            qWarning() << "ImageReader encountered an error upon exploring the zip file: " << e.what();
+            imageReaderStatus = IMSTATUS_ZIP_UNOPENABLE;
+            return;
+        }
 
     } else if(imageSource.endsWith(videoSuffix) && QFile(imageSource).exists()) {
         qDebug() << "Image source seems to be a video.";

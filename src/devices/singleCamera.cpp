@@ -14,7 +14,10 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         cameraCalibration(new CameraCalibration()),
         calibrationThread(new QThread()),
         hardwareTriggerEnabled(false),
-        lineSource("Line1") {
+        lineSource("Line1"),
+        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+
+    // TODO: NOTE: qsettings is yet unused, but could/should be utilized here. yet only aravis uses it
 
     // TODO: LOOKUP CAMERA
 
@@ -1389,7 +1392,8 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         cameraCalibration(new CameraCalibration()),
         calibrationThread(new QThread()),
         hardwareTriggerEnabled(false),
-        lineSource("Line1") {
+        lineSource("Line1"),
+        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     uint n = arv_get_n_devices();
 
@@ -1452,7 +1456,11 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
     qDebug() << "GenICam XML:\n" << arv_device_get_genicam_xml(arv_camera_get_device(camera), &xmls);
 
 
-
+    int m_streamBufferSize = applicationSettings->value("SingleCamera.Aravis.StreamBufferSize", 100).toInt();
+    if(m_streamBufferSize < 20) {
+        m_streamBufferSize = 20;
+    }
+    streamBufferSize = m_streamBufferSize;
 
 
     GValue v = G_VALUE_INIT;
@@ -1573,6 +1581,14 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         qDebug() << "Error during aravis API call. Message: " << error->message;
     }
 
+    // TODO:
+    //  DETERMINE SENSOR RESOLUTION.
+    //  IMPORTANT BECAUSE GENICAM DOES NOT RESTRICT STATING MEANINGLESS
+    //  VALUES WHEN WE ASK THE CAMERA ABOUT THE MAXIMUM ROI WIDTH POSSIBLE
+    determineFullSensorResolution();
+
+    // TODO: set packet size according to possible on this gige ?
+
     startGrabbing();
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
@@ -1604,12 +1620,13 @@ SingleCamera::~SingleCamera() {
 void SingleCamera::resizeStreamBuffer() {
 
     // yet unnecessary
-//    stopGrabbing();
+    stopGrabbing();
 
     GError *error = nullptr;
 
     // Create the stream object with callback
-    callbackData.stream = arv_camera_create_stream(camera, cameraImageEventHandler->stream_callback, &callbackData, &error);
+    stream = arv_camera_create_stream(camera, cameraImageEventHandler->stream_callback, &callbackData, &error);
+    callbackData.stream = stream;
 
     if (ARV_IS_STREAM (callbackData.stream)) {
         int i;
@@ -1620,8 +1637,9 @@ void SingleCamera::resizeStreamBuffer() {
         payload = arv_camera_get_payload(camera, &error);
         if(!error) {
             // TODO: should be a huge number, e.g. 20-50 ?
-            for (i = 0; i < 20; i++)
-                arv_stream_push_buffer(callbackData.stream, arv_buffer_new(payload, NULL));
+            // TODO: probably set this based on framerate by some rule of thumb?
+            for (i = 0; i < streamBufferSize; i++)
+                arv_stream_push_buffer(stream, arv_buffer_new(payload, NULL));
         }
     }
 
@@ -1708,12 +1726,14 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         auto device = arv_camera_get_device(camera);
 
         // TODO: set line source if not set
-        //setLineSource(lineSource);
+        setLineSource(lineSource);
 
-        //if(state)
+        auto haha = getLineSource();
+
+        if(state)
             arv_device_set_string_feature_value(device, "TriggerSelector", "FrameStart", &error);
-        //else
-        //    arv_device_set_string_feature_value(device, "TriggerSelector", "AcquisitionStart", &error);
+//        else
+//            arv_device_set_string_feature_value(device, "TriggerSelector", "AcquisitionStart", &error);
 
         if(error){
             qDebug() << "Could not set TriggerSelector to value FrameStart.";
@@ -1761,16 +1781,6 @@ void SingleCamera::enableHardwareTrigger(bool state) {
 
         startGrabbing();
 
-        // TODO: for some reason we need this workaround to get things started
-//        setImageROIwidth(getImageROIwidth());
-
-        // DEV
-    //    auto temp = arv_camera_get_integer(camera, "Width", &error);
-    //    arv_camera_set_integer(camera, "Width", temp, &error);
-
-        //stopGrabbing();
-        //startGrabbing();
-
         //if(!state) {
         //    arv_camera_software_trigger(camera, &error);
         //}
@@ -1786,6 +1796,54 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         genericExceptionOccured(e);
     }
 
+}
+
+void SingleCamera::determineFullSensorResolution() {
+
+    int sensorWidth = 32;
+    int sensorHeight = 32;
+
+    GError *error = nullptr;
+    bool success = false;
+
+    try {
+        sensorWidth = arv_camera_get_integer(camera, "SensorWidth", &error);
+        success = (error == nullptr); // set
+
+        sensorHeight = arv_camera_get_integer(camera, "SensorHeight", &error);
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+
+            int binningAtStart = getBinningVal();
+            if(binningAtStart != 1) {
+                setBinningVal(1);
+            }
+
+            sensorWidth = arv_camera_get_integer(camera, "WidthMax", &error);
+            success |= (error == nullptr); // rewrite
+
+            sensorHeight = arv_camera_get_integer(camera, "HeightMax", &error);
+            success &= (error == nullptr); // hold
+
+            if(binningAtStart != 1) {
+                setBinningVal(binningAtStart);
+            }
+        }
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    if(success) {
+        fullSensorResolution = QSize(sensorWidth, sensorHeight);
+        qDebug() << "FULL SENSOR RESOLUTION (not considering binning) = " << fullSensorResolution;
+    } else
+        qDebug() << "Could not obtain sensor resolution";
+
+}
+
+QSize SingleCamera::getFullSensorResolution() {
+    return fullSensorResolution;
 }
 
 bool SingleCamera::isAutoGainAvailable() {
@@ -1859,6 +1917,22 @@ void SingleCamera::autoGainOnce() {
     startGrabbing();
 }
 
+double SingleCamera::checkGainIfCompletedAuto() {
+    GError *error = nullptr;
+    double val = 0;
+    try {
+        const char* mode = arv_device_get_string_feature_value(arv_camera_get_device(camera), "GainAuto", &error);
+        if (g_strcmp0(mode, "Off") == 0) {
+            val = getGainValue();
+        }
+
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
+}
+
 void SingleCamera::autoExposureOnce() {
     try {
         GError *error = nullptr;
@@ -1890,6 +1964,22 @@ void SingleCamera::autoExposureOnce() {
     resizeStreamBuffer();
 
     startGrabbing();
+}
+
+int SingleCamera::checkExposureTimeIfCompletedAuto() {
+    GError *error = nullptr;
+    int val = 0;
+    try {
+        const char* mode = arv_device_get_string_feature_value(arv_camera_get_device(camera), "ExposureAuto", &error);
+        if (g_strcmp0(mode, "Off") == 0) {
+            val = getExposureTimeValue();
+        }
+
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
 }
 
 QString SingleCamera::getFriendlyName() {
@@ -1932,37 +2022,70 @@ QString SingleCamera::getDeviceID() {
 int SingleCamera::getExposureTimeValue() {
     GError *error = nullptr;
     int val = 0;
+    bool success = false; // init
 
     if(!ARV_IS_CAMERA(camera))
         return val;
 
     try {
-        bool canGet = arv_camera_is_exposure_time_available(camera, &error);
-        if(canGet) {
+        success = arv_camera_is_exposure_time_available(camera, &error); // set
+        if(success) {
             // Here we round (to integer amount in microseconds. Should be fine enough I think)
             error = nullptr;
             val = (int)round(arv_camera_get_exposure_time(camera, &error));
         }
-        if(error) {
-            qDebug() << "Could not get exposure time value.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "ExposureTime");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "ExposureTimeAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "ExposureTimeRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                val = (int)round(arv_gc_float_get_value(float_node, &error));
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
+        success = false;
     }
+
+    if(success)
+        qDebug() << "Could get exposure time successfully!";
+
     return val;
 }
 
 int SingleCamera::getExposureTimeMin() {
     GError *error = nullptr;
     int val = 0;
+    bool success = false; // init
 
     if(!ARV_IS_CAMERA(camera))
         return val;
 
     try {
-        bool canGet = arv_camera_is_exposure_time_available(camera, &error);
-        if(canGet) {
+        success = arv_camera_is_exposure_time_available(camera, &error); // set
+        if(success) {
             // Here we round (to integer amount in microseconds. Should be fine enough I think)
             double valMin = 0;
             double valMax = 0;
@@ -1971,26 +2094,59 @@ int SingleCamera::getExposureTimeMin() {
             // extra checks could happen here
             val = (int)round(valMin);
         }
-        if(error) {
-            qDebug() << "Could not get exposure time minimum value.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "ExposureTime");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "ExposureTimeAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "ExposureTimeRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            // TODO: could check min max now
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                val = (int)round(arv_gc_float_get_min(float_node, &error));
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
+        success = false;
     }
+
+    if(success)
+        qDebug() << "Could get exposure time minimum successfully!";
+
     return val;
 }
 
 int SingleCamera::getExposureTimeMax() {
     GError *error = nullptr;
     int val = 0;
+    bool success = false; // init
 
     if(!ARV_IS_CAMERA(camera))
         return val;
 
     try {
-        bool canGet = arv_camera_is_exposure_time_available(camera, &error);
-        if(canGet) {
+        success = arv_camera_is_exposure_time_available(camera, &error); // set
+        if(success) {
             // Here we round (to integer amount in microseconds. Should be fine enough I think)
             double valMin = 0;
             double valMax = 0;
@@ -1999,50 +2155,113 @@ int SingleCamera::getExposureTimeMax() {
             // extra checks could happen here
             val = (int)round(valMax);
         }
-        if(error) {
-            qDebug() << "Could not get exposure time maximum value.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "ExposureTime");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "ExposureTimeAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "ExposureTimeRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                val = (int)round(arv_gc_float_get_max(float_node, &error));
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
+        success = false;
     }
+
+    if(success)
+        qDebug() << "Could get exposure time maximum successfully!";
+
     return val;
 }
 
 double SingleCamera::getGainValue() {
     GError *error = nullptr;
     double val = 0;
+    bool success = false; // init
 
     if(!ARV_IS_CAMERA(camera))
         return val;
 
     try {
-        bool canGet = arv_camera_is_gain_available(camera, &error);
-        if(canGet) {
+        success = arv_camera_is_gain_available(camera, &error); // set
+        if(success) {
             // Here we round (to integer amount in microseconds. Should be fine enough I think)
             error = nullptr;
             val = arv_camera_get_gain(camera, &error);
         }
-        if(error) {
-            qDebug() << "Could not get gain value.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "Gain");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "GainAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "GainRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                val = arv_gc_float_get_value(float_node, &error);
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
+
+    if(success)
+        qDebug() << "Could get gain successfully!";
+
     return val;
 }
 
 double SingleCamera::getGainMin() {
     GError *error = nullptr;
     double val = 0;
+    bool success = false; // init
 
     if(!ARV_IS_CAMERA(camera))
         return val;
 
     try {
-        bool canGet = arv_camera_is_gain_available(camera, &error);
-        if(canGet) {
+        success = arv_camera_is_gain_available(camera, &error); // set
+        if(success) {
             // Here we round (to integer amount in microseconds. Should be fine enough I think)
             double valMin = 0;
             double valMax = 0;
@@ -2051,26 +2270,57 @@ double SingleCamera::getGainMin() {
             // extra checks could happen here
             val = valMin;
         }
-        if(error) {
-            qDebug() << "Could not get gain minimum value.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "Gain");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "GainAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "GainRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                val = arv_gc_float_get_min(float_node, &error);
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
+
+    if(success)
+        qDebug() << "Could get gain minimum successfully!";
+
     return val;
 }
 
 double SingleCamera::getGainMax() {
     GError *error = nullptr;
     double val = 0;
+    bool success = false; // init
 
     if(!ARV_IS_CAMERA(camera))
         return val;
 
     try {
-        bool canGet = arv_camera_is_gain_available(camera, &error);
-        if(canGet) {
+        success = arv_camera_is_gain_available(camera, &error); // set
+        if(success) {
             // Here we round (to integer amount in microseconds. Should be fine enough I think)
             double valMin = 0;
             double valMax = 0;
@@ -2079,66 +2329,159 @@ double SingleCamera::getGainMax() {
             // extra checks could happen here
             val = valMax;
         }
-        if(error) {
-            qDebug() << "Could not get gain maximum value.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
+        success &= (error == nullptr); // hold
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "Gain");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "GainAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "GainRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                val = arv_gc_float_get_max(float_node, &error);
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
+
+    if(success)
+        qDebug() << "Could get gain maximum successfully!";
+
     return val;
 }
 
 void SingleCamera::setGainValue(double value) {
     GError *error = nullptr;
+    bool success = false; // init
+
     try {
-        bool canGet = arv_camera_is_gain_available(camera, &error);
+        success = arv_camera_is_gain_available(camera, &error); // set
         double valMin = 0;
         double valMax = 0;
-        if(canGet) {
+        if(success) {
             error = nullptr;
             arv_camera_get_gain_bounds(camera, &valMin, &valMax, &error);
         }
-        if(error) {
-            qDebug() << "Could not get gain value bounds.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
-        } else if(value <= valMax && value >= valMin) {
+        success &= (error == nullptr); // hold
+        if(success && value <= valMax && value >= valMin) {
             error = nullptr;
             arv_camera_set_gain(camera, value, &error);
-            if(error) {
-                qDebug() << "Could not set gain value.";
-                qDebug() << "Error during aravis API call. Message: " << error->message;
+            success &= (error == nullptr); // hold
+        }
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "Gain");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "GainAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "GainRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
             }
+
+            // TODO: could check min max now
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                arv_gc_float_set_value(float_node, (double)value, &error);
+            }
+            success |= (error == nullptr); // rewrite
         }
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
+        success = false;
     }
+
+    if(success)
+        qDebug() << "Could set gain successfully!";
 }
 
 void SingleCamera::setExposureTimeValue(int value) {
     GError *error = nullptr;
+    bool success = false; // init
+
     try {
-        bool canGet = arv_camera_is_exposure_time_available(camera, &error);
+        success = arv_camera_is_exposure_time_available(camera, &error); // set
         double valMin = 0;
         double valMax = 0;
-        if(canGet) {
+        if(success) {
             error = nullptr;
             arv_camera_get_exposure_time_bounds(camera, &valMin, &valMax, &error);
         }
-        if(error) {
-            qDebug() << "Could not get exposure time value bounds.";
-            qDebug() << "Error during aravis API call. Message: " << error->message;
-        } else if(value <= valMax && value >= valMin) {
+        success &= (error == nullptr); // hold
+        if(success && value <= valMax && value >= valMin) {
             error = nullptr;
             arv_camera_set_exposure_time(camera, (double)value, &error);
-            if(error) {
-                qDebug() << "Could not set exposure time value.";
-                qDebug() << "Error during aravis API call. Message: " << error->message;
-            }
+            success &= (error == nullptr); // hold
         }
+
+        if(!success) {
+            error = nullptr;
+            ArvGc *genicam = arv_device_get_genicam(arv_camera_get_device(camera));
+            ArvGcNode *node;
+            ArvGcFloat *float_node;
+
+            node = arv_gc_get_node(genicam, "ExposureTime");
+            if (node && ARV_IS_GC_FLOAT(node)) {
+                float_node = ARV_GC_FLOAT(node);
+            } else {
+                node = nullptr;
+                node = arv_gc_get_node(genicam, "ExposureTimeAbs");
+                if (node && ARV_IS_GC_FLOAT(node)) {
+                    float_node = ARV_GC_FLOAT(node);
+                } else {
+                    node = nullptr;
+                    node = arv_gc_get_node(genicam, "ExposureTimeRaw");
+                    if (node && ARV_IS_GC_FLOAT(node)) {
+                        float_node = ARV_GC_FLOAT(node);
+                    }
+                }
+            }
+
+            // TODO: could check min max now
+            if(node && arv_gc_feature_node_is_available(ARV_GC_FEATURE_NODE(node), &error) && !error) {
+                arv_gc_float_set_value(float_node, (double)value, &error);
+            }
+            success |= (error == nullptr); // rewrrite
+        }
+
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
+        success = false;
     }
+
+    if(success)
+        qDebug() << "Could set exposure successfully!";
 }
 
 void SingleCamera::loadFromFile(const QString &filename) {
@@ -2307,6 +2650,8 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
     if(!ARV_IS_CAMERA(camera))
         return;
 
+    stopGrabbing();
+
     try {
         arv_camera_set_frame_rate_enable(camera, enabled, &error);
         if(error) {
@@ -2321,9 +2666,12 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
             setAcquisitionFPSValue(getAcquisitionFPSMax());
         }
 
+        resizeStreamBuffer();
     } catch (const std::exception &e) {
         genericExceptionOccured(e);
     }
+
+    startGrabbing();
 }
 
 void SingleCamera::setAcquisitionFPSValue(int value) {
@@ -2429,7 +2777,7 @@ int SingleCamera::getAcquisitionFPSMax() {
 
 double SingleCamera::getResultingFrameRateValue() {
     GError *error = nullptr;
-    int val = 1;
+    int val = 9999999;
 
     if(!ARV_IS_CAMERA(camera))
         return val;
@@ -2447,24 +2795,22 @@ double SingleCamera::getResultingFrameRateValue() {
         } else if(arv_device_is_feature_available(arv_camera_get_device(camera), "ResultingFrameRateRaw", NULL)) {
             arv_device_get_feature_value(arv_camera_get_device(camera), "ResultingFrameRateRaw", &v, &error);
         } else {
-            qDebug() << "Resulting framerate values are not available.";
-            qDebug() << "Could not obtain resulting framerate value. This camera might not support it.";
-            qDebug() << "Falling back to acquisition framerate value.";
-
-            return getAcquisitionFPSValue();
+//            qDebug() << "Resulting framerate values are not available.";
+//            qDebug() << "Could not obtain resulting framerate value. This camera might not support it.";
+//            qDebug() << "Falling back to acquisition framerate value.";
+            g_value_set_double(&v, val);
         }
+        val = g_value_get_double(&v);
 
         if(error) {
-            qWarning() << "Could not obtain resulting framerate value. This camera might not support it.";
-            qWarning() << "Error during aravis API call. Message: " << error->message;
-
-            // TODO
+//            qWarning() << "Could not obtain resulting framerate value. This camera might not support it.";
+//            qWarning() << "Error during aravis API call. Message: " << error->message;
         }
         auto temp = g_value_get_double(&v);
         // additional checks could come here
         if(error) {
-            qWarning() << "Could neither get resulting framerate, nor acquisition framerate.";
-            qWarning() << "Error during aravis API call. Message: " << error->message;
+//            qWarning() << "Could neither get resulting framerate, nor acquisition framerate.";
+//            qWarning() << "Error during aravis API call. Message: " << error->message;
         } else {
             val = (int)temp;
         }
@@ -2687,7 +3033,7 @@ void SingleCamera::startGrabbing() {
     }
     // TODO: here something is wrong in case of gv
     //  arv_gv_stream_start_thread: assertion 'priv->thread == NULL' failed
-    arv_stream_start_thread(callbackData.stream);
+//    arv_stream_start_thread(stream);
 }
 
 void SingleCamera::stopGrabbing() {
@@ -2695,15 +3041,22 @@ void SingleCamera::stopGrabbing() {
         return;
 
     GError *error = nullptr;
+    // DEV
+//    gboolean delete_buffers = true;
+    gboolean delete_buffers = true;
+
+    arv_camera_set_string(camera, "TriggerMode", "Off", &error);
+
+//    while(!callbackData.done) {
+//
+//    }
 
     callbackData.aboutToStopGrabbing = true;
 
-//    arv_stream_stop_thread(callbackData.stream, delete_buffers);
-//    //g_clear_object (&callbackData.stream);
-//    //callbackData.stream = NULL;
-////    arv_stream_set_emit_signals(callbackData.stream, FALSE);
-////    g_object_unref(callbackData.stream);
-//    //g_clear_object (&callbackData.stream);
+    // try to pop the last thing if there is:
+//    arv_stream_try_pop_buffer(callbackData.stream);
+    // but never succeeds
+
 //    callbackData.stream = nullptr;
 //    arv_camera_stop_acquisition(camera, &error);
     // TODO: for some reason it causes errors like the following:
@@ -2718,12 +3071,19 @@ void SingleCamera::stopGrabbing() {
         qDebug() << "Falling back to abort call.";
         arv_camera_abort_acquisition(camera, NULL);
     }
-    gboolean delete_buffers = true;
-    arv_stream_stop_thread(callbackData.stream, delete_buffers);
+//    arv_stream_stop_thread(callbackData.stream, delete_buffers); // ITT ELVILEG JÓ VOLT
+
+
+//    arv_stream_set_emit_signals(callbackData.stream, FALSE);
+////    g_object_unref(callbackData.stream);
+////    //g_clear_object (&callbackData.stream);
+//    arv_stream_stop_thread(stream, delete_buffers);
+////    //g_clear_object (&callbackData.stream);
 
     // DEV ppppppppp
-//    g_object_unref(callbackData.stream);
-//////    resizeStreamBuffer();
+    g_object_unref(stream);
+    //g_clear_object(&callbackData.stream); // never succeeds
+    stream = NULL;
 
     isGrabbingV = false;
     qDebug() << "Stopped grabbing!";
@@ -2886,29 +3246,35 @@ int SingleCamera::getImageROIoffsetYInc() {
 
 // NOTE: Binning affects this
 int SingleCamera::getImageROIwidthMax() {
-    GError *error = nullptr;
-    int val = 0;
 
-    if(!ARV_IS_CAMERA(camera))
-        return val;
+    return (fullSensorResolution.width()/getBinningVal() - getImageROIoffsetX());
 
-    try {
-        gint valMin = 0;
-        gint valMax = 0;
-        arv_camera_get_width_bounds(camera, &valMin, &valMax, &error);
-        // additional checks could come here
-
-        // NOTE: the Aravis library provides the maximum with the offset already subtracted.
-        val = valMax;
-
-        if(error) {
-            qDebug() << "Could not get image acquisition ROI Width maximum.";
-            wrappedErrorOccured(error);
-        }
-    } catch (const std::exception &e) {
-        genericExceptionOccured(e);
-    }
-    return val;
+    // Getting the value from the camera based on genicam is VERY UNRELIABLE.
+    //  Different camera types and brands report different values
+    //  (whether they count in the offset or not, or count in the binning or not)
+//    GError *error = nullptr;
+//    int val = 0;
+//
+//    if(!ARV_IS_CAMERA(camera))
+//        return val;
+//
+//    try {
+//        gint valMin = 0;
+//        gint valMax = 0;
+//        arv_camera_get_width_bounds(camera, &valMin, &valMax, &error);
+//        // additional checks could come here
+//
+//        // NOTE: the Aravis library provides the maximum with the offset already subtracted.
+//        val = valMax;
+//
+//        if(error) {
+//            qDebug() << "Could not get image acquisition ROI Width maximum.";
+//            wrappedErrorOccured(error);
+//        }
+//    } catch (const std::exception &e) {
+//        genericExceptionOccured(e);
+//    }
+//    return val;
 }
 
 int SingleCamera::getImageROIwidthInc() {
@@ -2932,29 +3298,35 @@ int SingleCamera::getImageROIwidthInc() {
 
 // NOTE: Binning affects this
 int SingleCamera::getImageROIheightMax() {
-    GError *error = nullptr;
-    int val = 0;
 
-    if(!ARV_IS_CAMERA(camera))
-        return val;
+    return (fullSensorResolution.height()/getBinningVal() - getImageROIoffsetY());
 
-    try {
-        gint valMin = 0;
-        gint valMax = 0;
-        arv_camera_get_height_bounds(camera, &valMin, &valMax, &error);
-        // additional checks could come here
-
-        // NOTE: the Aravis library provides the maximum with the offset already subtracted.
-        val = valMax;
-
-        if(error) {
-            qDebug() << "Could not get image acquisition ROI Height maximum.";
-            wrappedErrorOccured(error);
-        }
-    } catch (const std::exception &e) {
-        genericExceptionOccured(e);
-    }
-    return val;
+    // Getting the value from the camera based on genicam is VERY UNRELIABLE.
+    //  Different camera types and brands report different values
+    //  (whether they count in the offset or not, or count in the binning or not)
+//    GError *error = nullptr;
+//    int val = 0;
+//
+//    if(!ARV_IS_CAMERA(camera))
+//        return val;
+//
+//    try {
+//        gint valMin = 0;
+//        gint valMax = 0;
+//        arv_camera_get_height_bounds(camera, &valMin, &valMax, &error);
+//        // additional checks could come here
+//
+//        // NOTE: the Aravis library provides the maximum with the offset already subtracted.
+//        val = valMax;
+//
+//        if(error) {
+//            qDebug() << "Could not get image acquisition ROI Height maximum.";
+//            wrappedErrorOccured(error);
+//        }
+//    } catch (const std::exception &e) {
+//        genericExceptionOccured(e);
+//    }
+//    return val;
 }
 
 int SingleCamera::getImageROIheightInc() {
@@ -3219,6 +3591,21 @@ bool SingleCamera::setBinningVal(int value) {
 
     stopGrabbing();
 
+
+
+
+    lastUsedBinningVal = getBinningVal();
+    QRectF currentROI = getImageROI();
+    QRectF newROI = QRectF(
+            currentROI.x() * lastUsedBinningVal/value,
+            currentROI.y() * lastUsedBinningVal/value,
+            currentROI.width() * lastUsedBinningVal/value,
+            currentROI.height() * lastUsedBinningVal/value
+            );
+
+
+
+
     GError *error = nullptr;
     try {
 
@@ -3250,12 +3637,24 @@ bool SingleCamera::setBinningVal(int value) {
         } else if( (value <= valXMax && value >= valXMin) ) {
 
             // May this help?
-            arv_camera_clear_triggers(camera, nullptr);
+//            arv_camera_clear_triggers(camera, nullptr);
 
-            // TODO: better, find common number of available X and Y binning values (if they might differ)
-            arv_camera_set_binning(camera, value, value, &error);
+            if(lastUsedBinningVal > value) {
+                // Shrinking ROI before binning change to smaller
+                arv_camera_set_region(camera, newROI.x(), newROI.y(), newROI.width(), newROI.height(), &error);
 
-            resizeStreamBuffer();
+                // TODO: better, find common number of available X and Y binning values (if they might differ)
+                arv_camera_set_binning(camera, value, value, &error);
+                resizeStreamBuffer();
+            } else {
+                // TODO: better, find common number of available X and Y binning values (if they might differ)
+                arv_camera_set_binning(camera, value, value, &error);
+                resizeStreamBuffer();
+
+                // Growing the ROI after binning change
+                arv_camera_set_region(camera, newROI.x(), newROI.y(), newROI.width(), newROI.height(), &error);
+            }
+
 
             if(error) {
                 qDebug() << "Could not set binning value.";
@@ -3281,7 +3680,7 @@ bool SingleCamera::setImageROIwidth(int width) {
 
     stopGrabbing();
 
-    int maxWidth = getImageROIwidthMax();
+    int maxWidth = getFullSensorResolution().width();
     int offsetX = getImageROIoffsetX();
 
     if(width < 16)
@@ -3294,14 +3693,6 @@ bool SingleCamera::setImageROIwidth(int width) {
     int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX) % getImageROIwidthInc()) : width;
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
-
-    //qDebug() << "width = " << width;
-    //qDebug() << "maxWidth = " << maxWidth;
-    //qDebug() << "offsetX = " << offsetX;
-    //qDebug() << "getImageROIwidthMax() = " << getImageROIwidthMax();
-    //qDebug() << "getImageROIwidthInc() = " << getImageROIwidthInc();
-    //qDebug() << "modVal = " << modVal;
-    //qDebug() << "bestWidth = " << bestWidth;
 
     GError *error = nullptr;
     try {
@@ -3331,7 +3722,7 @@ bool SingleCamera::setImageROIheight(int height) {
 
     stopGrabbing();
 
-    int maxHeight = getImageROIheightMax();
+    int maxHeight = getFullSensorResolution().height();
     int offsetY = getImageROIoffsetY();
 
     if(height < 16)
@@ -3377,7 +3768,7 @@ bool SingleCamera::setImageROIoffsetX(int offsetX) {
     //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     stopGrabbing();
 
-    int maxWidth = getImageROIwidthMax();
+    int maxWidth = getFullSensorResolution().width();
     int width = getImageROIwidth();
 
     if(maxWidth - offsetX < getImageROIoffsetXInc())
@@ -3425,7 +3816,7 @@ bool SingleCamera::setImageROIoffsetY(int offsetY) {
     //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     stopGrabbing();
 
-    int maxHeight = getImageROIheightMax();
+    int maxHeight = getFullSensorResolution().height();
     int height = getImageROIheight();
 
     if(maxHeight - offsetY < getImageROIoffsetYInc())

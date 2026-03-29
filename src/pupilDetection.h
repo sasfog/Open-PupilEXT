@@ -308,6 +308,7 @@ private:
     bool sharpnessGuideEnabled = false;
     double sharpnessGuideThresh = 50.0;
 
+    /*
     // This would not need to be a separate function of course, but this way we can
     //  spare one clone call and a little bit of performance probably
     double sharpnessTenengradThresh(const cv::Mat& gray) {
@@ -321,16 +322,75 @@ private:
         cv::Mat mask = mag > sharpnessGuideThresh;
         return cv::mean(mag, mask)[0];
     }
+    */
 
-    cv::Mat sharpnessTenengradThreshMask(const cv::Mat& gray) {
-        cv::Mat gx, gy;
-        cv::Sobel(gray, gx, CV_64F, 1, 0, 3);
-        cv::Sobel(gray, gy, CV_64F, 0, 1, 3);
+    cv::Mat sharpnessThreshMask(const cv::Mat& input) {
+
+        cv::Mat gray;
+        int maxCurrentDim = std::max(input.cols, input.rows);
+
+        // If already small enough → return shallow copy (no resize)
+        if (maxCurrentDim >= 400) {
+
+            // Compute scale factor
+            double scale = static_cast<double>(400) / maxCurrentDim;
+
+            int newWidth = static_cast<int>(input.cols * scale);
+            int newHeight = static_cast<int>(input.rows * scale);
+
+
+            cv::resize(input, gray, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_AREA);
+        } else {
+            gray = input;
+        }
+
 
         cv::Mat mag;
-        cv::magnitude(gx, gy, mag);
+        cv::Mat mask;
 
-        cv::Mat mask = mag > sharpnessGuideThresh;
+        int sharpnessMethod = 2;
+        // 0 = Tenengrad with Sobel (slow) good
+        // 1 = Laplacian (fast) very noisy
+        // 2 = Brenner (fast) rather good
+
+        if(sharpnessMethod == 0) {
+            cv::Mat gx, gy;
+            cv::Sobel(gray, gx, CV_64F, 1, 0, 3);
+            cv::Sobel(gray, gy, CV_64F, 0, 1, 3);
+
+            cv::magnitude(gx, gy, mag);
+            mask = mag > sharpnessGuideThresh;
+        } else if (sharpnessMethod == 1) {
+            cv::Mat lap;
+            cv::Laplacian(gray, lap, CV_32F);
+
+            mag = cv::abs(lap);
+            mask = mag > sharpnessGuideThresh/2.0;
+        } else {
+            cv::Mat mag = cv::Mat::zeros(gray.size(), CV_32F);
+
+//            for (int y = 0; y < gray.rows; ++y)
+//            {
+//                for (int x = 0; x < gray.cols - 2; ++x)
+//                {
+//                    float diff = float(gray.at<uchar>(y, x+2)) - float(gray.at<uchar>(y, x));
+//                    mag.at<float>(y, x) = diff * diff;
+//                }
+//            }
+
+            int x = 0;
+            float diff;
+            for (int y = 0; y < gray.rows; ++y)
+            {
+                for (x = 0; x < gray.cols - 2; ++x)
+                {
+                    diff = (float)(gray.at<uchar>(y, x+2) - gray.at<uchar>(y, x));
+                    mag.at<float>(y, x) = diff * diff;
+                }
+            }
+            mask = mag > sharpnessGuideThresh/2.0;
+        }
+
         return mask;
     }
 

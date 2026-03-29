@@ -142,9 +142,12 @@ public:
     int getImageROIoffsetYInc() override { return 0; };
     QRectF getImageROI() override;
 
-    double getResultingFrameRateValue() override {return getPlaybackSpeed();};
+    QSize getFullSensorResolution() override { return QSize(imageReader->getImageWidth(), imageReader->getImageHeight()); }; // TODO: read from metadata, and also check with image sizes
 
-    bool isTemperatureReadingSupported() override {return false;};
+    double getResultingFrameRateValue() override { return getPlaybackSpeed(); };
+    int getExposureTimeValue() override { return 9999999; }; // TODO: read from meta snapshot
+
+    bool isTemperatureReadingSupported() override { return false; };
 
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();

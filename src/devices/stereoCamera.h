@@ -57,6 +57,7 @@ public:
 
     ~StereoCamera() override;
 
+    QSize fullSensorResolution;
     bool isOpen() override;
     void close() override;
     CameraImageType getType() override;
@@ -133,12 +134,15 @@ private:
     void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
 
     QDir settingsDirectory;
+    QSettings *applicationSettings;
 
     uint64 cameraMainTime;
     uint64 cameraSecondaryTime;
     uint64 systemTime;
 
     QString lineSource;
+
+    void determineFullSensorResolution();
 
     CBaslerUniversalInstantCameraArray cameras;
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
@@ -210,6 +214,7 @@ public:
 
     ~StereoCamera() override;
 
+    QSize fullSensorResolution;
     bool isOpen() override;
     void close() override;
     CameraImageType getType() override;
@@ -275,6 +280,10 @@ public:
     int getBinningMax();
     std::vector<double> getTemperatures();
 
+    QSize getFullSensorResolution() override;
+    int checkExposureTimeIfCompletedAuto();
+    double checkGainIfCompletedAuto();
+
     bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
@@ -289,6 +298,8 @@ private:
     void attachCameras(const ArvDevice &diMain, const ArvDevice &diSecondary);
 
     QDir settingsDirectory;
+    QSettings *applicationSettings;
+    int streamBufferSize = 100;
 
     uint64 cameraMainTime;
     uint64 cameraSecondaryTime;
@@ -298,6 +309,7 @@ private:
 
     bool isGrabbingV = false;
 
+    void determineFullSensorResolution();
     //CBaslerUniversalInstantCameraArray cameras;
     std::vector<ArvCamera*> cameras;
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;

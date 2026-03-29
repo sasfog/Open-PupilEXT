@@ -321,7 +321,12 @@ void SingleCameraSettingsDialog::createForm() {
 
     QHBoxLayout *imageROIlayoutRow7 = new QHBoxLayout;
     frameRateLabel = new QLabel("Resulting (maximum achievable) framerate:");
-    frameRateValueLabel = new QLabel(QString::number(camera->getResultingFrameRateValue()));
+    // Some cameras simply do not support this feature
+    int resultingFrameRate = camera->getResultingFrameRateValue();
+    QString resultingFrameRateString = QString::number(resultingFrameRate);
+    if(resultingFrameRate == 9999999)
+        resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
+    frameRateValueLabel = new QLabel(resultingFrameRateString);
     imageROIlayoutRow7->addWidget(frameRateLabel);
     imageROIlayoutRow7->addWidget(frameRateValueLabel);
     imageROIlayoutRow7->addStretch();
@@ -381,7 +386,14 @@ void SingleCameraSettingsDialog::createForm() {
 
     HWTradioButton = new QRadioButton("Hardware triggering:", this);
     HWTradioButton->setFixedHeight(20);
-    HWTradioButton->setDisabled(false);
+    // IMPORTANT
+#ifdef USE_PYLON
+//    HWTradioButton->setEnabled(camera->isHardwareTriggerAvailable());
+    HWTradioButton->setEnabled(true);
+#else
+    // TODO: IMPLEMENT HW TRIGGERING PROPERLY
+    HWTradioButton->setEnabled(false);
+#endif
     HWTradioButton->setChecked(camera->isHardwareTriggerEnabled());
 
     HWTMCUframerateLabel = new QLabel(tr("Set framerate to: "));
@@ -659,15 +671,111 @@ void SingleCameraSettingsDialog::loadButtonClick() {
 }
 
 void SingleCameraSettingsDialog::autoGainOnce() {
+    camera->autoExposureOnce();
+    gainBox->blockSignals(true);
+    gainBox->setValue(camera->getExposureTimeValue());
+    gainBox->blockSignals(false);
 
-    camera->autoGainOnce();
-    gainBox->setValue(camera->getGainValue());
+    autoGainTimer = new QTimer(this);
+    autoGainTimer->setInterval(1000); // ms polling
+    autoExposureOnceButton->setEnabled(false);
+    autoGainOnceButton->setEnabled(false);
+    exposureInputBox->setEnabled(false);
+    gainBox->setEnabled(false);
+    binningBox->setEnabled(false);
+    imageROIwidthInputBox->setEnabled(false);
+    imageROIheightInputBox->setEnabled(false);
+    imageROIoffsetXInputBox->setEnabled(false);
+    imageROIoffsetYInputBox->setEnabled(false);
+    imageROIwidthMaxLabel->setEnabled(false);
+    imageROIheightMaxLabel->setEnabled(false);
+
+    // NOTE: could be unique connection, but then it would not work with a lambda.. whatever its
+    //  still good as we grey out the button in the meanwhile, so the timer cannot get set twice
+    connect(autoGainTimer, &QTimer::timeout,
+            this, [this](){
+                autoGainCheckVal = camera->checkGainIfCompletedAuto();
+
+                if(autoGainCheckVal == 0 && autoGainCheckOccasions > 10)
+                    autoGainCheckVal = camera->getGainValue();
+
+                if(autoGainCheckVal != 0 || autoGainCheckOccasions > 10) {
+                    gainBox->blockSignals(true);
+                    gainBox->setValue(autoGainCheckVal);
+                    gainBox->blockSignals(false);
+                    autoExposureOnceButton->setEnabled(camera->isAutoExposureAvailable());
+                    autoGainOnceButton->setEnabled(camera->isAutoGainAvailable());
+                    exposureInputBox->setEnabled(true);
+                    binningBox->setEnabled(camera->isBinningAvailable());
+                    imageROIwidthInputBox->setEnabled(!trackingOn);
+                    imageROIheightInputBox->setEnabled(!trackingOn);
+                    imageROIoffsetXInputBox->setEnabled(true);
+                    imageROIoffsetYInputBox->setEnabled(true);
+                    imageROIwidthMaxLabel->setEnabled(!trackingOn);
+                    imageROIheightMaxLabel->setEnabled(!trackingOn);
+                    gainBox->setEnabled(true);
+                    autoGainCheckVal = 0;
+                    autoGainCheckOccasions = 0;
+                    autoGainTimer->stop();
+                } else
+                    autoGainCheckOccasions++;
+            });
+
+    autoGainTimer->start();
 }
 
 void SingleCameraSettingsDialog::autoExposureOnce() {
-
     camera->autoExposureOnce();
+    exposureInputBox->blockSignals(true);
     exposureInputBox->setValue(camera->getExposureTimeValue());
+    exposureInputBox->blockSignals(false);
+
+    autoExposureTimer = new QTimer(this);
+    autoExposureTimer->setInterval(1000); // ms polling
+    autoExposureOnceButton->setEnabled(false);
+    autoGainOnceButton->setEnabled(false);
+    exposureInputBox->setEnabled(false);
+    gainBox->setEnabled(false);
+    binningBox->setEnabled(false);
+    imageROIwidthInputBox->setEnabled(false);
+    imageROIheightInputBox->setEnabled(false);
+    imageROIoffsetXInputBox->setEnabled(false);
+    imageROIoffsetYInputBox->setEnabled(false);
+    imageROIwidthMaxLabel->setEnabled(false);
+    imageROIheightMaxLabel->setEnabled(false);
+
+    // NOTE: could be unique connection, but then it would not work with a lambda.. whatever its
+    //  still good as we grey out the button in the meanwhile, so the timer cannot get set twice
+    connect(autoExposureTimer, &QTimer::timeout,
+            this, [this](){
+                autoExposureCheckVal = camera->checkExposureTimeIfCompletedAuto();
+
+                if(autoExposureCheckVal == 0 && autoExposureCheckOccasions > 10)
+                    autoExposureCheckVal = camera->getExposureTimeValue();
+
+                if(autoExposureCheckVal != 0 || autoExposureCheckOccasions > 10) {
+                    exposureInputBox->blockSignals(true);
+                    exposureInputBox->setValue(autoExposureCheckVal);
+                    exposureInputBox->blockSignals(false);
+                    autoExposureOnceButton->setEnabled(camera->isAutoExposureAvailable());
+                    autoGainOnceButton->setEnabled(camera->isAutoGainAvailable());
+                    exposureInputBox->setEnabled(true);
+                    binningBox->setEnabled(camera->isBinningAvailable());
+                    imageROIwidthInputBox->setEnabled(!trackingOn);
+                    imageROIheightInputBox->setEnabled(!trackingOn);
+                    imageROIoffsetXInputBox->setEnabled(true);
+                    imageROIoffsetYInputBox->setEnabled(true);
+                    imageROIwidthMaxLabel->setEnabled(!trackingOn);
+                    imageROIheightMaxLabel->setEnabled(!trackingOn);
+                    gainBox->setEnabled(true);
+                    autoExposureCheckVal = 0;
+                    autoExposureCheckOccasions = 0;
+                    autoExposureTimer->stop();
+                } else
+                    autoExposureCheckOccasions++;
+    });
+
+    autoExposureTimer->start();
 }
 
 // Instead of rejecting the dialog, thus closing it, we only hide it and show it again, so that all settings of the current camera are still in the forms
@@ -688,9 +796,14 @@ void SingleCameraSettingsDialog::accept() {
 }
 
 void SingleCameraSettingsDialog::updateFrameRateValue() {
-    frameRateValueLabel->setText(QString::number(camera->getResultingFrameRateValue()));
+    // Some cameras simply do not support this feature
+    int resultingFrameRate = camera->getResultingFrameRateValue();
+    QString resultingFrameRateString = QString::number(resultingFrameRate);
+    if(resultingFrameRate == 9999999)
+        resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
+    frameRateValueLabel = new QLabel(resultingFrameRateString);
 
-    qDebug() << "Resulting framerate " << camera->getResultingFrameRateValue();
+    qDebug() << "Resulting framerate according to camera wrapper " << resultingFrameRate;
 
     // NOTE: updating the maximum values of either HWTMCUframerateBox, or HWTframerateLimitBox or SWTframerateLimitBox
     //  is problematic, as resulting framerate is affected by framerate limit. So it is simply not done. Maximum is set
@@ -795,7 +908,12 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
     SWTradioButton->blockSignals(false);
 
     // IMPORTANT
+#ifdef USE_PYLON
     HWTradioButton->setEnabled(camera->isHardwareTriggerAvailable());
+#else
+    // TODO: IMPLEMENT HW TRIGGERING PROPERLY
+    HWTradioButton->setEnabled(false);
+#endif
 
     if(HWTrunning) {
         stopHardwareTrigger();
@@ -904,6 +1022,9 @@ void SingleCameraSettingsDialog::loadSettings() {
     camera->setAcquisitionFPSValue(HWTframerateLimitBox->value());
 
     // TODO load the pfs file as an backup if no appication settings are available?
+
+    // One last thing: if we have loaded the exposure time value, it might have chenged the resulting framerate, so also refresh that once more
+    updateFrameRateValue();
 }
 
 // Save camera settings to the application settings
@@ -976,21 +1097,21 @@ void SingleCameraSettingsDialog::onSetImageROIoffsetY(int val) {
 
 void SingleCameraSettingsDialog::updateImageROISettingsMax() {
 
+    // IMPORTANT: these maxima ALREADY ACCOUNT FOR binning value, and have offsetX and Y subtracted
     auto wm = camera->getImageROIwidthMax();
     auto hm = camera->getImageROIheightMax();
-
-//    qDebug() << "wm = " << wm;
-//    qDebug() << "hm = " << hm;
+    auto oxm = wm - camera->getImageROIwidth() + camera->getImageROIoffsetX();
+    auto oym = hm - camera->getImageROIheight() + camera->getImageROIoffsetY();
 
     imageROIwidthInputBox->setMaximum(wm);
     imageROIheightInputBox->setMaximum(hm);
-    imageROIoffsetXInputBox->setMaximum(wm - camera->getImageROIwidth());
-    imageROIoffsetYInputBox->setMaximum(hm - camera->getImageROIheight());
+    imageROIoffsetXInputBox->setMaximum(oxm);
+    imageROIoffsetYInputBox->setMaximum(oym);
 
     imageROIwidthMaxLabel->setText(QString("/ ") + QString::number(wm));
     imageROIheightMaxLabel->setText(QString("/ ") + QString::number(hm));
-    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(wm - camera->getImageROIwidth()));
-    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(hm - camera->getImageROIheight()));
+    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(oxm));
+    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(oym));
 }
 
 void SingleCameraSettingsDialog::updateImageROISettingsInc() {
@@ -1067,14 +1188,18 @@ void SingleCameraSettingsDialog::updateSensorSize() {
     if(!camera->isOpen())
         return;
 
-    emit onSensorSizeChanged(QSize(camera->getImageROIwidthMax(), camera->getImageROIheightMax()));
+    QSize fullSensorResolution = camera->getFullSensorResolution();
+    int binningVal = camera->getBinningVal();
+    emit onSensorSizeChanged(QSize(fullSensorResolution.width()/binningVal, fullSensorResolution.height()/binningVal));
 }
 
 void SingleCameraSettingsDialog::updateCamImageRegionsWidget() {
     if(!camera->isOpen())
         return;
 
-    const QSize sensorSize = QSize(camera->getImageROIwidthMax(), camera->getImageROIheightMax() );
+    QSize fullSensorResolution = camera->getFullSensorResolution();
+    int binningVal = camera->getBinningVal();
+    const QSize sensorSize = QSize(fullSensorResolution.width()/binningVal, fullSensorResolution.height()/binningVal);
     const QRect imageAcqROI1Rect = QRect(camera->getImageROIoffsetX(), camera->getImageROIoffsetY(),
                                          camera->getImageROIwidth(), camera->getImageROIheight() );
     camImageRegionsWidget->setImageMaxSize(sensorSize);
@@ -1083,6 +1208,9 @@ void SingleCameraSettingsDialog::updateCamImageRegionsWidget() {
 }
 
 void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
+
+    trackingOn = state;
+
     //hwTriggerGroup->setDisabled(state);
     //analogGroup->setDisabled(state);
 
@@ -1109,8 +1237,8 @@ void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
 //    imageROIoffsetYMaxLabel->setDisabled(state);
 
     if (!camera->isEmulated()){
-        binningLabel->setDisabled(state);
-        binningBox->setDisabled(state);
+        binningLabel->setDisabled(state && camera->isBinningAvailable());
+        binningBox->setDisabled(state && camera->isBinningAvailable());
     }
     else {
         binningLabel->setDisabled(true);
@@ -1129,6 +1257,8 @@ void SingleCameraSettingsDialog::setExposureTimeValue(int value) {
     exposureInputBox->blockSignals(false);
 
     camera->setExposureTimeValue(value);
+
+    // Could have caused the resulting framerate to change
     updateFrameRateValue();
 }
 

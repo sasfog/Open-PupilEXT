@@ -20,7 +20,10 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
             frameCounter(new CameraFrameRateCounter(parent)),
             cameraCalibration(new StereoCameraCalibration()),
             calibrationThread(new QThread()),
-            lineSource("Line1") {
+            lineSource("Line1"),
+            applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+
+    // TODO: NOTE: qsettings is yet unused, but could/should be utilized here. yet only aravis uses it
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
@@ -1763,7 +1766,8 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
                                               frameCounter(new CameraFrameRateCounter(parent)),
                                               cameraCalibration(new StereoCameraCalibration()),
                                               calibrationThread(new QThread()),
-                                              lineSource("Line1") {
+                                              lineSource("Line1"),
+                                              applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
@@ -1821,7 +1825,7 @@ void StereoCamera::resizeStreamBuffer() {
         payload = arv_camera_get_payload(cameras[0], &error);
         if(!error) {
             // TODO: should be a huge number, e.g. 20-50 ?
-            for (i = 0; i < 20; i++)
+            for (i = 0; i < streamBufferSize; i++)
                 arv_stream_push_buffer(callbackData.stream, arv_buffer_new(payload, NULL));
         }
     }
@@ -1908,6 +1912,9 @@ void StereoCamera::attachCameras(const ArvDevice &diMain, const ArvDevice &diSec
 // (one camera will receive a trigger signal before the other)
 void StereoCamera::open(bool enableHardwareTrigger) {
     /*
+     * // kell bele tutira
+    determineFullSensorResolution();
+     * ----------------------------------
 
     if(cameras.GetSize() < 2) {
         std::cerr << "StereoCamera: must have two cameras connected."<< std::endl;
@@ -2134,6 +2141,14 @@ void StereoCamera::open(bool enableHardwareTrigger) {
         genericExceptionOccured(e);
     }
      */
+}
+
+void StereoCamera::determineFullSensorResolution() {
+    // TODO
+}
+
+QSize StereoCamera::getFullSensorResolution() {
+    return fullSensorResolution;
 }
 
 // Synchronize the camera to system time
@@ -2972,6 +2987,22 @@ void StereoCamera::autoGainOnce() {
     startGrabbing();
 }
 
+double StereoCamera::checkGainIfCompletedAuto() {
+    GError *error = nullptr;
+    double val = 0;
+    try {
+        const char* mode = arv_device_get_string_feature_value(arv_camera_get_device(cameras[0]), "GainAuto", &error);
+        if (g_strcmp0(mode, "Off") == 0) {
+            val = getGainValue();
+        }
+
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
+}
+
 // Performs automatically setting of the exposure time value based on the current main camera image
 // Main camera is used to automatically find a exposure time, this value is then applied to the secondary camera
 void StereoCamera::autoExposureOnce() {
@@ -3011,6 +3042,22 @@ void StereoCamera::autoExposureOnce() {
     resizeStreamBuffer();
 
     startGrabbing();
+}
+
+int StereoCamera::checkExposureTimeIfCompletedAuto() {
+    GError *error = nullptr;
+    int val = 0;
+    try {
+        const char* mode = arv_device_get_string_feature_value(arv_camera_get_device(cameras[0]), "ExposureAuto", &error);
+        if (g_strcmp0(mode, "Off") == 0) {
+            val = getExposureTimeValue();
+        }
+
+    } catch (const std::exception &e) {
+        genericExceptionOccured(e);
+    }
+
+    return val;
 }
 
 // The current used linesource as the hardware trigger source
@@ -3898,7 +3945,7 @@ bool StereoCamera::setImageROIwidth(int width) {
 
     stopGrabbing();
 
-    int maxWidth = getImageROIwidthMax();
+    int maxWidth = getFullSensorResolution().width();
     int offsetX = getImageROIoffsetX();
 
     if(width < 16)
@@ -3911,14 +3958,6 @@ bool StereoCamera::setImageROIwidth(int width) {
     int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX) % getImageROIwidthInc()) : width;
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
-
-    //qDebug() << "width = " << width;
-    //qDebug() << "maxWidth = " << maxWidth;
-    //qDebug() << "offsetX = " << offsetX;
-    //qDebug() << "getImageROIwidthMax() = " << getImageROIwidthMax();
-    //qDebug() << "getImageROIwidthInc() = " << getImageROIwidthInc();
-    //qDebug() << "modVal = " << modVal;
-    //qDebug() << "bestWidth = " << bestWidth;
 
     GError *error = nullptr;
     try {
@@ -3950,7 +3989,7 @@ bool StereoCamera::setImageROIheight(int height) {
 
     stopGrabbing();
 
-    int maxHeight = getImageROIheightMax();
+    int maxHeight = getFullSensorResolution().height();
     int offsetY = getImageROIoffsetY();
 
     if(height < 16)
@@ -3998,7 +4037,7 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
     //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     stopGrabbing();
 
-    int maxWidth = getImageROIwidthMax();
+    int maxWidth = getFullSensorResolution().width();
     int width = getImageROIwidth();
 
     if(maxWidth - offsetX < getImageROIoffsetXInc())
@@ -4048,7 +4087,7 @@ bool StereoCamera::setImageROIoffsetY(int offsetY) {
     //  for highspeed eye detection (the way SMI likely does this anyway), feel free to try. Expo timing could fail btw
     stopGrabbing();
 
-    int maxHeight = getImageROIheightMax();
+    int maxHeight = getFullSensorResolution().height();
     int height = getImageROIheight();
 
     if(maxHeight - offsetY < getImageROIoffsetYInc())

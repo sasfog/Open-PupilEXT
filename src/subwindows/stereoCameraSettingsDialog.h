@@ -131,6 +131,15 @@ private:
     QSpinBox *imageROIoffsetYInputBox;
     QComboBox *binningBox;
 
+    QTimer *autoExposureTimer;
+    int autoExposureCheckVal = 0;
+    int autoExposureCheckOccasions = 0;
+    QTimer *autoGainTimer;
+    int autoGainCheckVal = 0;
+    int autoGainCheckOccasions = 0;
+
+    bool trackingOn = false;
+
     QVector<QWidget*> focusChain;
 
     CamImageRegionsWidget *camImageRegionsWidget;

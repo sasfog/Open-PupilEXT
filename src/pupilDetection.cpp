@@ -284,8 +284,9 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
             ) ) ) {
 
             if(sharpnessGuideEnabled) {
-                cv::Mat Mask = sharpnessTenengradThreshMask(image.img);
-                image.sharpnessMask = Mask.clone();
+                cv::Mat Mask = sharpnessThreshMask(image.img);
+//                image.sharpnessMask = Mask.clone();
+                image.sharpnessMask = Mask;
             }
             emit processedImageLowFPS(image);
         }
@@ -420,7 +421,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
         }
 
         if(sharpnessGuideEnabled) {
-            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
+            cv::Mat Mask = sharpnessThreshMask(mimg.img);
             mimg.sharpnessMask = Mask.clone();
         }
 
@@ -477,8 +478,9 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
             ) ) ) {
 
             if(sharpnessGuideEnabled) {
-                cv::Mat Mask = sharpnessTenengradThreshMask(cimg.img);
-                cimg.sharpnessMask = Mask.clone();
+                cv::Mat Mask = sharpnessThreshMask(cimg.img);
+//                cimg.sharpnessMask = Mask.clone();
+                cimg.sharpnessMask = Mask;
             }
 
             emit processedImageLowFPS(cimg);
@@ -644,8 +646,9 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
         }
 
         if(sharpnessGuideEnabled) {
-            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
-            mimg.sharpnessMask = Mask.clone();
+            cv::Mat Mask = sharpnessThreshMask(mimg.img);
+//            mimg.sharpnessMask = Mask.clone();
+            mimg.sharpnessMask = Mask;
         }
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
@@ -704,10 +707,12 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
             ) ) ) {
 
             if(sharpnessGuideEnabled) {
-                cv::Mat Mask = sharpnessTenengradThreshMask(simg.img);
-                cv::Mat MaskS = sharpnessTenengradThreshMask(simg.imgS);
-                simg.sharpnessMask = Mask.clone();
-                simg.sharpnessMaskS = MaskS.clone();
+                cv::Mat Mask = sharpnessThreshMask(simg.img);
+                cv::Mat MaskS = sharpnessThreshMask(simg.imgS);
+//                simg.sharpnessMask = Mask.clone();
+//                simg.sharpnessMaskS = MaskS.clone();
+                simg.sharpnessMask = Mask;
+                simg.sharpnessMaskS = MaskS;
             }
 
             emit processedImageLowFPS(simg);
@@ -879,10 +884,12 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
         }
 
         if(sharpnessGuideEnabled) {
-            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
-            cv::Mat MaskS = sharpnessTenengradThreshMask(mimg.imgS);
-            mimg.sharpnessMask = Mask.clone();
-            mimg.sharpnessMaskS = MaskS.clone();
+            cv::Mat Mask = sharpnessThreshMask(mimg.img);
+            cv::Mat MaskS = sharpnessThreshMask(mimg.imgS);
+//            mimg.sharpnessMask = Mask.clone();
+//            mimg.sharpnessMaskS = MaskS.clone();
+            mimg.sharpnessMask = Mask;
+            mimg.sharpnessMaskS = MaskS;
         }
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
@@ -937,10 +944,12 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
             ) ) ) {
 
             if(sharpnessGuideEnabled) {
-                cv::Mat Mask = sharpnessTenengradThreshMask(simg.img);
-                cv::Mat MaskS = sharpnessTenengradThreshMask(simg.imgS);
-                simg.sharpnessMask = Mask.clone();
-                simg.sharpnessMaskS = MaskS.clone();
+                cv::Mat Mask = sharpnessThreshMask(simg.img);
+                cv::Mat MaskS = sharpnessThreshMask(simg.imgS);
+//                simg.sharpnessMask = Mask.clone();
+//                simg.sharpnessMaskS = MaskS.clone();
+                simg.sharpnessMask = Mask;
+                simg.sharpnessMaskS = MaskS;
             }
 
             emit processedImageLowFPS(simg);
@@ -1205,10 +1214,12 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
         }
 
         if(sharpnessGuideEnabled) {
-            cv::Mat Mask = sharpnessTenengradThreshMask(mimg.img);
-            cv::Mat MaskS = sharpnessTenengradThreshMask(mimg.imgS);
-            mimg.sharpnessMask = Mask.clone();
-            mimg.sharpnessMaskS = MaskS.clone();
+            cv::Mat Mask = sharpnessThreshMask(mimg.img);
+            cv::Mat MaskS = sharpnessThreshMask(mimg.imgS);
+//            mimg.sharpnessMask = Mask.clone();
+//            mimg.sharpnessMaskS = MaskS.clone();
+            mimg.sharpnessMask = Mask;
+            mimg.sharpnessMaskS = MaskS;
         }
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);

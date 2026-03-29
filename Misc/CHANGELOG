@@ -6,6 +6,7 @@ Version 0.1.3. beta
     Added:
 		- Added feature to read and write image recordings into/from .zip archives. Importantly, existing recordings in directories can be zipped (using any common archive manager program) and then be opened with this new functionality. Password protected zip reading and writing is not supported currently.
 		- Added interfacing support for GigE cameras through the Pylon library.
+		- Added feature to provide live thresholded sharpness map overlay on the camera image, similarly to how modern DSLRs show it. This new feature highly improves lens focus setting effectiveness, and ensures a live feedback during image recordings, so that the experimenter can notice out-of-focus eyes quickly.
 		- Added LSL streaming option via liblsl. Yet events are not set streamed (e.g. trigger events).
 		- Added feature to automatically notify the user if the application was started without administrator privileges. A choice is offered to restart the application. Also the popup message can be suppressed for any further restarts if the user decides.
 		- Added popup Warning and Information messages for cases when a loaded image recording does not have (or had an empty) offline event log, or an image recording meta file, respectively.
@@ -14,7 +15,11 @@ Version 0.1.3. beta
 		- Added feature to limit streamed sample rate. Importantly, no interpolation occurs, only decimation /temporal filtering of let-pass eye data output.
 		- Added build manifest for Windows target.
 		- Added Ubuntu .deb packing snippet to cmake script.
-		- Implemented Aravis camera interfacing. Importantly, GigE cameras not yet stable in all cases, frame drops can occur sporadically (rare but persistent).
+		- Implemented Aravis camera interfacing, yet only for single camera setups.
+			Important, known limitations:
+			- GigE cameras might (very rarely) drop frames. Also, expect dropped frames upon camera settings changes.
+			- Some cameras seem to set gain only as a thresholded integer, even if they are supplied with a double value with the correct setter methods.
+			- Some cameras may only work with a very high stream buffer size set. This does not yet have a GUI feature for setting, but you can specify by opening the program configuration .ini file, and modifying the value for this key: "SingleCamera.Aravis.StreamBufferSize". A value of 20 is sufficient usually for USB3Vision cameras from Basler, a value of 50-100 might be necessary for others if you experience camera hangups frequently.
 		- Eye identities ("L" for left or "R" for right, as well as "X" for unknown), and camera identities ("M" for main or "S" for secondary) are now kept track in pupil detection. They are automatically assigned if they are determined by processing mode. In case of single eye processing modes, the eye identity can be specified manually by the user in the pupil detection settings dialog.
 		- Added preliminary support to export sections of existing recordings into animated .gif files for demonstrative use (for presentations, etc.). Yet it only runs on the GUI thread, and so the image reader thread (and pupil detection thread on its end) are not properly connected to it through a qwaitcondition, so on slower machines skipped frames or other irregularities can occur. Threading will be solved later.
 		- Arduino MCU example codes now contain two trigger output pins. Triggering accuracy could still be trusted as the MCU runs at very high clock so consecutive logical ON signals would not make the camera triggers out of sync in our millisecond range of frame timings.
@@ -24,6 +29,7 @@ Version 0.1.3. beta
 		- Added feature to allow user step up/down in QSpinBoxes (numeric up-down boxes) inside camera settings windows with 4 times as large steps, if the Ctrl modifier key is held down. This makes camera ROI settings quicker in some cases.
 		- Added options in pupil detection algorithm settings dialog to configure interpolation method and image size, for doenscaling the eye images right before algorithmic processing. Previously not all was exposed, and not in case of all algorithms - now they are all accessible to the user.
 		- Added minimalistic runtime logging feature. If openable for writing, the program will save its runtime qInfo, qDebug and similar outputs to a "lastrun.txt" file.
+		- Added timed periodic updating (with timeout) of Exposure and Gain values, when Auto Exposure or Auto Gain is used. Accordingly, the user will get feedback upon the auto function ended, and its newly set value will be displayed. The Auto function buttons are greyed out during the auto setting to prevent multiple undesired function starts.
 		
 		
     Changed:
@@ -31,6 +37,8 @@ Version 0.1.3. beta
 		- Image acquisition ROI width, height, offset x, and offset y are not changed by 16 as default, but adaptively according to the actual binning setting, and by retrieving the currently applicable increment value from the camera API.
 		- Importantly, data output management is reformed. Now in tabular (.csv) and streamed tabular output, each data column is automatically named in the following fashion: "<variable>_<dimension>_<eye identity>_<camera identity>" where variable name is in camel case, dimension is the nominal dimension, the eye identity is either "X" or "R" or "L", and camera identity is either "M" or "S". If there is no dimension associated, then only "<variable>_<eye identity>_<camera identity>" will be used as column name. The same variables will be added for each eye (pupil). The only exception is timestmap, which will appear only once per data row. As for LSL V1 "Permissive" output, it is the same. The LSL XDF "Restrictive" output only contains a handful of output variables, and also holds only one timestamp channel. In other streaming output means, in any non-tabular formats (where each eye has an own small tree of variables contained) timestamp may appear for each eye.
 		- Framerate limiting will only appear configurable on GUI if the camera allows it. Note: There are a few cameras however, e.g. Basler daA1280-54um that returns false when asked about framerate limit support, but can still limit the framerate if forcefully set to. Yes there is no whitelist for cameras that are skipped for this parameter check, but could be added later, currently noted as nice-to-have.
+		- The "Shift+F" image freeze feature now adds a "FREEZED" suffix to the camera view windows (if the content is a live camera view, not an offline image recording), to make sure that the user knows the image is frozen on purpose.
+		- Changed names and meaning of these image recording meta fields: Previously width and height referred to maximum image ROI width and height, which was practically the same as the (binning affected) resolution. However, some cameras report their image ROIs differently, and to account for that, the wrapper functions querying possible ROI size were changed. The names and meaning od new fields: fullSensorResolutionWidth, fullSensorResolutionHeight = width and height of the sensor, possible maximum that can be grabbed on, not counting in image ROI offsets (also, naturally not counting extra columns and rows that are not meant to be used in normal operation/factory only); width, height = the binning corrected sensor size, still not counting in image ROI offsets currently set. 
 		- In the camera settings dialogs, the Enter/Return button cycles over numeric input fields, whichever is available for editing. This is now implemented for single camera, stereo camera, and single webcam settings dialods as well. Also, note that numeric changes are already committed on input fields upon typing.
 		- In the camera settings dialogs, the space button press event is now discarded. It could lead to undesired sttings changes if (very likely) pressed without intent.
 		- Raised Qt framework version to 6.8.3 LTS.
@@ -48,7 +56,7 @@ Version 0.1.3. beta
 		...
 	
     Removed:
-		...
+		- Filename and algorithm columns from serialized data output. Algorithm could be re-added later, once the output coulumns will be made user-configurable in the next version.
 	
     Fixed:
 		- Bug that caused numeric values to be saved as binary values (visible as strange characters if viewed in a text editor) in imagerec_meta.xml files accompanying image recordings.
@@ -60,6 +68,7 @@ Version 0.1.3. beta
 		- Fixed invalid limitation on image ROI x and y during tracking or image recording. ROI location does not disrupt these processes, so should be free to set. However, it would need a brief grabbing stop and restart of frame grabbing, so it is still not generally recommended.
 		- Binning is now only available for setting in the GUI if camera supports that, with different levels available. Now if there is no support, the dropdown widget will appear as greyed out.
 		- Fixed documentation that showed IHT as the command to set hardware triggering framerate. The correct command name was IHF. Similarly corrected documentation for software triggering, wrongly written as IST, now corrected to ISF. 
+		- Fixed Exposure and Gain values not updating after Auto Exposure or Auto Gain.
 
 Version 0.1.2. beta
 

@@ -271,8 +271,14 @@ void VideoView::drawSharpnessGuide() {
 
     geBufferSM.push_back( graphicsScene->addPixmap(rgba2_pixmap) );
 
+
+
+    QSizeF viewSize = graphicsView->viewport()->size();
+    QRectF itemRect;
     for(std::size_t c=0; c<geBufferSM.size(); c++) {
         geBufferSM[c]->setZValue(89);
+        itemRect = geBufferSM[c]->boundingRect();
+        geBufferSM[c]-> setScale(viewSize.width() / (float)itemRect.width());
     }
 }
 

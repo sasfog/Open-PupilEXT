@@ -1895,8 +1895,16 @@ void MainWindow::onRecordImageClick() {
                 return;
             }
 
+
+            // TODO: is it okay if we do not know the resulting framerate? E.g. FLIR cameras
+            // Some cameras simply do not support this feature
+            int resultingFrameRate = selectedCamera->getResultingFrameRateValue();
+            QString resultingFrameRateString = QString::number(resultingFrameRate);
+            if(resultingFrameRate == 9999999)
+                resultingFrameRate = (1.0 / (double) selectedCamera->getExposureTimeValue() * 1000*1000);
+
             // TODO: only make record button clickable again, if the last recording has ended (signals in queue were dealt with)
-            imageWriter->prepareForWriting(imageRecordingOutputTarget, stereo, QSize(selectedCamera->getImageROIwidth(), selectedCamera->getImageROIheight()), selectedCamera->getResultingFrameRateValue() );
+            imageWriter->prepareForWriting(imageRecordingOutputTarget, stereo, QSize(selectedCamera->getImageROIwidth(), selectedCamera->getImageROIheight()), resultingFrameRate );
             if (imageWriter->getImageWriterStatus() == ImageWriter::IWSTATUS_ZIP_UNOPENABLE) {
 
                 QMessageBox *msgBox = new QMessageBox(this);
@@ -4053,17 +4061,23 @@ void MainWindow::resetStatus(bool isConnect)
 void MainWindow::onImagesSkipped() {
     bool se = SupportFunctions::readBoolFromQSettings("ignoreFrameSkipWarnings", false, applicationSettings);
     if(imagesSkippedMsgBox != nullptr || se ) {
+        qWarning() << "A frame was skipped, but the explicit warning message was suppressed according to current application configuration.";
         return;
     }
+    QCheckBox *cb = new QCheckBox("Ignore frame skip warnings in the future");
     imagesSkippedMsgBox = new QMessageBox(this);
     imagesSkippedMsgBox->setWindowTitle("Camera image frames skipped");
     imagesSkippedMsgBox->setText("At least one image frame was skipped due to unstable connection or interface failure.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");
     imagesSkippedMsgBox->setMinimumSize(330,240);
     imagesSkippedMsgBox->setIcon(QMessageBox::Warning);
     imagesSkippedMsgBox->setModal(false);
+    imagesSkippedMsgBox->setCheckBox(cb);
     connect(imagesSkippedMsgBox, SIGNAL(accepted()), this, SLOT(onImagesSkippedMsgClose()));
     //connect(imagesSkippedMsgBox,SIGNAL(accepted()),this,SLOT(onImagesSkippedMsgClose()));
     //connect(imagesSkippedMsgBox,SIGNAL(rejected()),this,SLOT(onImagesSkippedMsgClose()));
+    QObject::connect(cb, &QCheckBox::checkStateChanged, [this](Qt::CheckState state){
+        this->applicationSettings->setValue("ignoreFrameSkipWarnings", (state>0));
+    });
     imagesSkippedMsgBox->show();
 }
 
