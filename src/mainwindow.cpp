@@ -871,15 +871,18 @@ void MainWindow::createStatusBar() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+    qDebug() << "MainWindow::closeEvent() called";
     onCameraDisconnectClick();
-
+    qDebug() << "closeEvent(): Disconnected the camera";
     mdiArea->closeAllSubWindows();
+    qDebug() << "closeEvent(): Closed all subwindows";
     if (mdiArea->currentSubWindow()) {
         event->ignore();
     } else {
         writeSettings();
         event->accept();
     }
+    qDebug() << "closeEvent(): Ready to quit gracefully";
 }
 
 void MainWindow::changeEvent(QEvent *event) {
@@ -1831,10 +1834,13 @@ void MainWindow::onRecordImageClick() {
 //        imageWriter->attemptToStop();
 
         QString foundEventLogContent = imageWriter->getFoundOfflineEventLogContent();
-        imageWriter->writeOfflineEventLog(recEventTracker->generateOfflineEventLogContent(
+        QString toBeWrittenEventLogContent = recEventTracker->generateOfflineEventLogContent(
                 imageRecStartTimestamp,
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                foundEventLogContent) );
+                foundEventLogContent);
+        imageWriter->writeOfflineEventLog(toBeWrittenEventLogContent);
+
+        qDebug() << " OFFLINE EVENT LOG CONTENT: " << toBeWrittenEventLogContent;
 
         // in case it is a zip, it closes the file. In a multithread approach, this will have more to do of course
         imageWriter->stopWriting();
@@ -1849,6 +1855,8 @@ void MainWindow::onRecordImageClick() {
 
         if(generalSettingsDialog)
             generalSettingsDialog->setLimitationsWhileImageWriting(false);
+
+        qDebug() << "CLOSED CAMERA PROPERLY";
 
     } else {
         // Activate recording
@@ -2013,17 +2021,6 @@ void MainWindow::onCameraDisconnectClick() {
         sharpnessWindow = nullptr;
     }
 
-    if(recEventTracker) {
-        disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
-        disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
-        disconnect(this, SIGNAL(commitMessageRegisterReset(quint64)), recEventTracker, SLOT(resetBufferMessageRegister(quint64)));
-        disconnect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
-
-        recEventTracker->close();
-        recEventTracker->deleteLater();
-        recEventTracker = nullptr;
-    }
-
     if (calibrationWindow){
         calibrationWindow->deleteLater();
         calibrationWindow = nullptr;
@@ -2044,6 +2041,18 @@ void MainWindow::onCameraDisconnectClick() {
     if(trackingOn) {
         trackAct->setChecked(false);
         onTrackActClick();
+    }
+
+    // NEEDS TO COME HERE, IN ORDER TO LET THE EVENTS BE SAVED ALONGSIDE IMAGE RECORDING
+    if(recEventTracker) {
+        disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
+        disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+        disconnect(this, SIGNAL(commitMessageRegisterReset(quint64)), recEventTracker, SLOT(resetBufferMessageRegister(quint64)));
+        disconnect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
+
+        recEventTracker->close();
+        recEventTracker->deleteLater();
+        recEventTracker = nullptr;
     }
 
     // TODO: figure out a better way, because singleCameraSettingsDialog and the other 2 dialogs ALWAYS exist, they do not get deleted now

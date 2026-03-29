@@ -6,7 +6,7 @@ Version 0.1.3. beta
     Added:
 		- Added feature to read and write image recordings into/from .zip archives. Importantly, existing recordings in directories can be zipped (using any common archive manager program) and then be opened with this new functionality. Password protected zip reading and writing is not supported currently.
 		- Added interfacing support for GigE cameras through the Pylon library.
-		- Added feature to provide live thresholded sharpness map overlay on the camera image, similarly to how modern DSLRs show it. This new feature highly improves lens focus setting effectiveness, and ensures a live feedback during image recordings, so that the experimenter can notice out-of-focus eyes quickly.
+		- Added feature to provide live thresholded sharpness map overlay on the camera image, similarly to how modern DSLRs show it. This new feature highly improves lens focus setting effectiveness, and ensures a live feedback during image recordings, so that the experimenter can notice out-of-focus eyes quickly. The image is downscaled if its higher dimension is larger than a (yet hardcoded) 400 pixels, to ensure eliminate lagging on high resolution images.
 		- Added LSL streaming option via liblsl. Yet events are not set streamed (e.g. trigger events).
 		- Added feature to automatically notify the user if the application was started without administrator privileges. A choice is offered to restart the application. Also the popup message can be suppressed for any further restarts if the user decides.
 		- Added popup Warning and Information messages for cases when a loaded image recording does not have (or had an empty) offline event log, or an image recording meta file, respectively.
@@ -15,7 +15,7 @@ Version 0.1.3. beta
 		- Added feature to limit streamed sample rate. Importantly, no interpolation occurs, only decimation /temporal filtering of let-pass eye data output.
 		- Added build manifest for Windows target.
 		- Added Ubuntu .deb packing snippet to cmake script.
-		- Implemented Aravis camera interfacing, yet only for single camera setups.
+		- Implemented Aravis camera interfacing, yet only for single camera setups, also without triggering.
 			Important, known limitations:
 			- GigE cameras might (very rarely) drop frames. Also, expect dropped frames upon camera settings changes.
 			- Some cameras seem to set gain only as a thresholded integer, even if they are supplied with a double value with the correct setter methods.

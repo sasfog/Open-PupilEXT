@@ -324,16 +324,18 @@ private:
     }
     */
 
+    int sharpnessMaxDim = 400;
+
     cv::Mat sharpnessThreshMask(const cv::Mat& input) {
 
         cv::Mat gray;
         int maxCurrentDim = std::max(input.cols, input.rows);
 
         // If already small enough → return shallow copy (no resize)
-        if (maxCurrentDim >= 400) {
+        if (maxCurrentDim >= sharpnessMaxDim) {
 
             // Compute scale factor
-            double scale = static_cast<double>(400) / maxCurrentDim;
+            double scale = static_cast<double>(sharpnessMaxDim) / maxCurrentDim;
 
             int newWidth = static_cast<int>(input.cols * scale);
             int newHeight = static_cast<int>(input.rows * scale);

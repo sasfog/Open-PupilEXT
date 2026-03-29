@@ -2659,7 +2659,6 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
             qWarning() << "Error during aravis API call. Message: " << error->message;
         }
 
-        // pppppppppppppppppppppp
         // Hack for those cameras that do not use arv_camera_set_frame_rate_enable() but they allow setting the
         //  setAcquisitionFPSValue()
         if(!enabled) {
@@ -3017,13 +3016,9 @@ void SingleCamera::startGrabbing() {
     // TODO: set continous grabbing mode, if not set
 //    arv_camera_set_acquisition_mode(camera, ArvAcquisitionMode::ARV_ACQUISITION_MODE_CONTINUOUS, &error);
 
-    //if(!error)
     callbackData.aboutToStopGrabbing = false;
-////    arv_stream_start_thread(callbackData.stream);
-//    arv_camera_start_acquisition(camera, &error);
 
     arv_camera_start_acquisition(camera, &error);
-    //arv_stream_try_pop_buffer(callbackData.stream);
     if(error) {
         qDebug() << "Could not start grabbing.";
         wrappedErrorOccured(error);
@@ -3031,7 +3026,7 @@ void SingleCamera::startGrabbing() {
         isGrabbingV = true;
         qDebug() << "Started grabbing!";
     }
-    // TODO: here something is wrong in case of gv
+    // IMPORTANT NOTE: NO NEED TO START MANUALLY. IT DOES AUTOMATICALLY ALREADY. MAKES EXCEPTION IF WE DO
     //  arv_gv_stream_start_thread: assertion 'priv->thread == NULL' failed
 //    arv_stream_start_thread(stream);
 }
@@ -3041,28 +3036,11 @@ void SingleCamera::stopGrabbing() {
         return;
 
     GError *error = nullptr;
-    // DEV
-//    gboolean delete_buffers = true;
     gboolean delete_buffers = true;
 
     arv_camera_set_string(camera, "TriggerMode", "Off", &error);
 
-//    while(!callbackData.done) {
-//
-//    }
-
     callbackData.aboutToStopGrabbing = true;
-
-    // try to pop the last thing if there is:
-//    arv_stream_try_pop_buffer(callbackData.stream);
-    // but never succeeds
-
-//    callbackData.stream = nullptr;
-//    arv_camera_stop_acquisition(camera, &error);
-    // TODO: for some reason it causes errors like the following:
-    //  ** (process:8760): CRITICAL **: ...: arv_uv_stream_stop_thread: assertion 'priv->thread == NULL' failed
-    //  ** (process:8760): CRITICAL **: ...: arv_uv_stream_start_thread: assertion 'priv->thread == NULL' failed
-    //  although stop_thread is called, etc. Possible solution?
 
     arv_camera_stop_acquisition(camera, &error);
     if(error) {
@@ -3071,26 +3049,14 @@ void SingleCamera::stopGrabbing() {
         qDebug() << "Falling back to abort call.";
         arv_camera_abort_acquisition(camera, NULL);
     }
-//    arv_stream_stop_thread(callbackData.stream, delete_buffers); // ITT ELVILEG JÓ VOLT
+    // IMPORTANT NOTE: NO NEED TO STOP MANUALLY. IT DOES AUTOMATICALLY ALREADY. MAKES EXCEPTION IF WE DO
+//    arv_stream_stop_thread(callbackData.stream, delete_buffers);
 
-
-//    arv_stream_set_emit_signals(callbackData.stream, FALSE);
-////    g_object_unref(callbackData.stream);
-////    //g_clear_object (&callbackData.stream);
-//    arv_stream_stop_thread(stream, delete_buffers);
-////    //g_clear_object (&callbackData.stream);
-
-    // DEV ppppppppp
     g_object_unref(stream);
-    //g_clear_object(&callbackData.stream); // never succeeds
     stream = NULL;
 
     isGrabbingV = false;
     qDebug() << "Stopped grabbing!";
-
-    // pylon version
-    //if (camera.IsOpen() && camera.IsGrabbing())
-    //    camera.StopGrabbing();
 }
 
 QString SingleCamera::getCalibrationFilename() {

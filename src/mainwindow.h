@@ -241,7 +241,7 @@ private:
     //  instantiation and memory management.
     MCUSettingsDialog *MCUSettingsDialogInst;
     PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
-    SetupGeometryDialog *setupGeometryDialog;
+    SetupGeometryDialog *setupGeometryDialog = nullptr; // very important to keep nullptr by default
     GeneralSettingsDialog *generalSettingsDialog;
     //SubjectSelectionDialog *subjectSelectionDialog;
     SingleCameraSettingsDialog *singleCameraSettingsDialog;

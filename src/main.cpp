@@ -65,7 +65,8 @@ int main(int argc, char *argv[])
 //                std::cout << "Test event caught";
             if(msg == "1000")
                 std::cout << "Test event caught";
-            if (logFile.open(QIODevice::WriteOnly)) {
+//            if (logFile.open(QIODevice::WriteOnly)) {
+            if (logFile.open(QIODevice::Append)) {
                 QTextStream out(&logFile);
                 out << msg << "\n";
             }

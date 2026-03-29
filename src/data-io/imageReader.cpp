@@ -126,6 +126,11 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
         QDir imageSourceDir = QDir(imageSource);
         QList<QFileInfo> fil;
 
+        if(imageSourceDir.entryList(QDir::NoDotAndDotDot | QDir::AllEntries).isEmpty()) {
+            imageReaderStatus = IMSTATUS_ERROR;
+            return;
+        }
+
         //// Needed if we do not use the folder opener dialog, but the file opener dialog instead.
         //QDir imageSourceDirUp = imageSourceDir;
         //imageSourceDirUp.cdUp();
@@ -135,11 +140,21 @@ ImageReader::ImageReader(QString imageSource, int subrecordingNumber, QMutex *im
             stereoMode = true;
             //fileNames[0] = QDir(imageSourceDir.filePath("0")).entryList(QStringList() << "*.*", QDir::Files);
             //fileNames[1] = QDir(imageSourceDir.filePath("1")).entryList(QStringList() << "*.*", QDir::Files);
+
             fil = QDir(imageSourceDir.filePath("0")).entryInfoList(QStringList() << "*.*", QDir::Files);
+            if(fil.isEmpty()) {
+                imageReaderStatus = IMSTATUS_ERROR;
+                return;
+            }
             for (const QFileInfo &fileInfo : fil) {
                 fileNames[0] << fileInfo.absoluteFilePath();
             }
+
             fil = QDir(imageSourceDir.filePath("1")).entryInfoList(QStringList() << "*.*", QDir::Files);
+            if(fil.isEmpty()) {
+                imageReaderStatus = IMSTATUS_ERROR;
+                return;
+            }
             for (const QFileInfo &fileInfo : fil) {
                 fileNames[1] << fileInfo.absoluteFilePath();
             }
