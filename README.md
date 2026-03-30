@@ -8,7 +8,7 @@
   <a href="https://doi.org/10.3389/fnins.2021.676220" alt="DOI (v0.1.1)">
         <img src="https://img.shields.io/badge/DOI-10.3389%2Ffnins.2021.676220-blue"/></a>
   <br>
-  <a href="https://doi.org/articles/10.1145/3797246.3805836" alt="Publication">
+  <a href="https://doi.org/10.1145/3797246.3805836" alt="Publication">
         <img src="https://img.shields.io/badge/ETRA%20%2726%20Proceedings%20abstract-In%20Press%20(v0.1.3b)-green"/></a>
   <a href="https://doi.org/10.1145/3797246.3805836" alt="DOI">
         <img src="https://img.shields.io/badge/DOI-10.1145%2F3797246.3805836-blue"/></a>
