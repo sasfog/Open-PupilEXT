@@ -483,7 +483,7 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
         return;
     }
 
-    if(str[0].toLower() == 'a' && str.size()>=2) { // performing actions just like when interacting with GUI
+    if(str[0].toLower() == 'a' && str.size()>=2) { // performing actions just like when interacting with GUI, specifically for main window
         if(str[1].toLower() == '1' && str.size()>=4) { // open single camera device
             w->PRGopenSingleCamera(str.mid(3, str.length()-3).toLower());
         } else if(str[1].toLower() == '2' && str.size()>=4) { // open stereo camera device
@@ -516,8 +516,23 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             w->PRGforceResetTrialCounter(timestamp);
         }
         return;
-    } 
-    
+    }
+
+    if(str[0].toLower() == 'v' && str.size()>=2) { // performing actions just like when interacting with GUI, specifically for only visualization, on subwindows
+        if(str[1].toLower() == 'c' && str.size()>=4) { // settings of camera views (viewports)
+            if(str[2].toLower() == 's' && str.size()>=5) { // sharpness guide on/off
+                if(str[4].toLower() == '1' ||
+                   (str.size()>=8 && (str.mid(4,4) == "true") ) ) { // on
+                    w->PRGenableSharpnessGuide(true);
+                } else if(str[4].toLower() == '0' ||
+                    (str.size()>=8 && (str.mid(4,5) == "false") ) ) { // off
+                    w->PRGenableSharpnessGuide(false);
+                }
+            }
+        }
+        return;
+    }
+
     if(str[0].toLower() == 'g' && str.size()>=4) { // changing general settings or basic runtime variables
         if(str[1].toLower() == 'p') { // set image output path, no toLower()
             w->PRGsetImageOutputTarget(str.mid(3, str.length()-3));

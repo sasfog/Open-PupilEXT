@@ -814,4 +814,14 @@ void MainWindow::PRGsetBinning(int value) {
     else if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA && dynamic_cast<StereoCamera*>(selectedCamera)->isBinningAvailable())
         stereoCameraSettingsDialog->setBinningValue(value);
 }
+void MainWindow::PRGenableSharpnessGuide(bool state) {
+    if( !selectedCamera ||
+        (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_SINGLE_WEBCAM) ||
+        trackingOn || recordOn || recordImagesOn)
+        return;
+    if((selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA || selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM))
+        singleCameraChildWidget->onShowSharpnessGuideOverlay(state);
+    else if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)
+        stereoCameraChildWidget->onShowSharpnessGuideOverlay(state);
+}
 

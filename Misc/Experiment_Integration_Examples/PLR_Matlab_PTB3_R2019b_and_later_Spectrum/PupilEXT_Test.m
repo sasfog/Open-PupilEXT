@@ -73,5 +73,6 @@ pupilEXT.setSoftwareTriggeringFramerateLimit(50);
 pupilEXT.setExposureTimeMicrosec(4000);
 pupilEXT.setBinning(2);
 pupilEXT.setGain(1.2);
+pupilEXT.setSharpnessGuideEnabled(true);
 
 pupilEXT = pupilEXT.closeHostConnection();

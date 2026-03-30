@@ -398,6 +398,16 @@ classdef PupilEXT
           if ~obj.Enabled, return, end
           obj.sendRaw(['IG ' num2str(gain)]);
       end
+
+      function setSharpnessGuideEnabled(obj, state)
+          if ~obj.Enabled, return, end
+          if state
+            obj.sendRaw('VCS true');
+          else
+            obj.sendRaw('VCS false');
+          end
+      end
+
       
    end
    

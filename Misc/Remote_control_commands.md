@@ -170,3 +170,5 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 `IB <value>` - Set binning, any integer number of 1,2,4 accepted, and will be set according to camera capabilities
 
 `IG <value>` - Set gain, any floating point number is accepted, minimum `0.0`
+
+`VCS <value>` - Enable GUI sharpness guide visualization on active camera view. Either `true` or `false`

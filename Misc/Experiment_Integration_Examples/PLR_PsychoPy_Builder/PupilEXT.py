@@ -309,4 +309,12 @@ class PupilEXT(object):
         if (gain < 0) : return
         if not self.Enabled : return
         self.__sendRaw('IG ' + str(gain))
+
+    def setSharpnessGuideEnabled(self, state):
+        if not self.Enabled : return
+        if state:
+            self.__sendRaw('VCS true')
+        else:
+            self.__sendRaw('VCS false')
+
     

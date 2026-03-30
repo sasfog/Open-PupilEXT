@@ -500,6 +500,7 @@ public slots:
     void PRGsetExposure(int value);
     void PRGsetGain(double value);
     void PRGsetBinning(int value);
+    void PRGenableSharpnessGuide(bool state);
 
     void onImageWriterFailed();
     void onImageWriterFailedMsgClose();
