@@ -55,7 +55,7 @@ QString MetaSnapshotOrganizer::generateSnapshotFileContent(Camera *camera, Image
     QDomElement root = document.createElement("MetaSnapshot");
     document.appendChild(root);
 
-    addInfoNode(document, root, imageWriter, dataWriter, purpose);
+    addInfoNode(document, root, pupilDetection, imageWriter, dataWriter, purpose);
 
     addCameraNode(document, root, camera);
 
@@ -65,7 +65,7 @@ QString MetaSnapshotOrganizer::generateSnapshotFileContent(Camera *camera, Image
     return document.toString();
 }
 
-void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose) {
+void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose) {
     
     QMap<QString, QString> metaSnapshot;
     metaSnapshot["version"] = QString::number(version);
@@ -77,7 +77,7 @@ void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &roo
     metaSnapshot["creationTime"] = QDateTime::currentDateTime().toString("yyyy. MMM dd. hh:mm:ss");
     //metaSnapshot["name"] = QString(fileName);
     metaSnapshot["creationTimeUnix"] = QString::number(QDateTime::currentMSecsSinceEpoch());
-    metaSnapshot["algorithm"] = "test";
+    metaSnapshot["algorithm"] = QString::fromStdString(pupilDetection->getCurrentMethod1()->title().c_str());
     metaSnapshot["type"] = "test";
     if(imageWriter) {
         metaSnapshot["imageOutputDirectory"] = imageWriter->getOpenableDirectoryName();

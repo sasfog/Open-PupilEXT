@@ -196,12 +196,14 @@ public:
 
         // TODO: make usable
         includeShownOverlaysBox = new QCheckBox("Include shown overlays");
+        includeShownOverlaysBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         includeShownOverlaysBox->setChecked(
                 SupportFunctions::readBoolFromQSettings("ExportRecSection.IncludeShownOverlays", true, applicationSettings)
                 );
         //mainLayout->addWidget(includeShownOverlaysBox);
 
         cropToPDROIBox = new QCheckBox("Crop to Pupil Detection ROI (tracking only)");
+        cropToPDROIBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         cropToPDROIBox->setChecked(
                 SupportFunctions::readBoolFromQSettings("ExportRecSection.CropToPDROI", false, applicationSettings)
                 );
@@ -209,12 +211,14 @@ public:
         //mainLayout->addWidget(cropToPDROIBox);
 
         embedFrameInfoBox = new QCheckBox("Embed frame information");
+        embedFrameInfoBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         embedFrameInfoBox->setChecked(
                 SupportFunctions::readBoolFromQSettings("ExportRecSection.EmbedFrameInfo", true, applicationSettings)
         );
         mainLayout->addWidget(embedFrameInfoBox);
 
         uniformPortableImageSizeBox = new QCheckBox("Reduce image size for portability");
+        uniformPortableImageSizeBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         uniformPortableImageSizeBox->setChecked(
                 SupportFunctions::readBoolFromQSettings("ExportRecSection.UniformPortableImageSize", true, applicationSettings)
         );

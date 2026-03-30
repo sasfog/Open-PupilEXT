@@ -385,11 +385,13 @@ private:
 
         QLabel *imageAwareLabel = new QLabel(tr("Image Aware RANSAC:"));
         imageAwareBox = new QCheckBox();
+        imageAwareBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         imageAwareBox->setChecked(ImageAwareSupport);
         optionsLayout->addRow(imageAwareLabel, imageAwareBox);
 
         QLabel *earlyRejectionLabel = new QLabel(tr("Early Rejection:"));
         earlyRejectionBox = new QCheckBox();
+        earlyRejectionBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         earlyRejectionBox->setChecked(EarlyRejection);
         optionsLayout->addRow(earlyRejectionLabel, earlyRejectionBox);
 

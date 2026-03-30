@@ -41,9 +41,10 @@ public:
         mainLayout->addWidget(dialogLabel);
 
         //rememberChoiceBox = new QCheckBox(checkboxText); // "Remember this choice"
+        //rememberChoiceBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         //mainLayout->addWidget(rememberChoiceBox);
 
-        QHBoxLayout *buttonsLayout = new QHBoxLayout(this);
+        QHBoxLayout *buttonsLayout = new QHBoxLayout();
         buttonOption1 = new QPushButton(option1Text);
         buttonOption2 = new QPushButton(option2Text);
         buttonOption3 = new QPushButton(option3Text);

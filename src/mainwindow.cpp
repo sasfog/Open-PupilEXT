@@ -1730,8 +1730,8 @@ void MainWindow::onStreamClick() {
 
 void MainWindow::onRecordClick() {
 
-    if(dataRecordingOutputTarget.isEmpty())
-        return;
+//    if(dataRecordingOutputTarget.isEmpty())
+//        return;
 
     if(recordOn && dataWriter) {
         // Deactivate recording
@@ -4074,6 +4074,7 @@ void MainWindow::onImagesSkipped() {
         return;
     }
     QCheckBox *cb = new QCheckBox("Ignore frame skip warnings in the future");
+    cb->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     imagesSkippedMsgBox = new QMessageBox(this);
     imagesSkippedMsgBox->setWindowTitle("Camera image frames skipped");
     imagesSkippedMsgBox->setText("At least one image frame was skipped due to unstable connection or interface failure.\n\nPlease check camera connection. Be sure to use a power-supply backed (active) cable for long distances, and clean electrical contacts with appropriate materials if necessary.\n\nCameras can consume considerable power during frame grabbing, thus should you also ensure that your power supply has compatible amperage rating for your camera device.");

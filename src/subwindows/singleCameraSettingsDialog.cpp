@@ -350,6 +350,7 @@ void SingleCameraSettingsDialog::createForm() {
     SWTradioButton->setChecked(!camera->isHardwareTriggerEnabled());
 
     SWTframerateLimitEnabled = new QCheckBox("Limit framerate to: ");
+    SWTframerateLimitEnabled->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
@@ -459,6 +460,7 @@ void SingleCameraSettingsDialog::createForm() {
 
 
     HWTframerateLimitEnabled = new QCheckBox("Limit framerate to: ");
+    HWTframerateLimitEnabled->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal

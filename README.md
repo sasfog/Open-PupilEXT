@@ -9,7 +9,7 @@
         <img src="https://img.shields.io/badge/DOI-10.3389%2Ffnins.2021.676220-blue"/></a>
   <br>
   <a href="https://doi.org/articles/10.1145/3797246.3805836" alt="Publication">
-        <img src="https://img.shields.io/badge/ETRA%202026%20Proceedings-Published%20(v0.1.3b)-green"/></a>
+        <img src="https://img.shields.io/badge/ETRA%20%2726%20Proceedings%20abstract-In%20Press%20(v0.1.3b)-green"/></a>
   <a href="https://doi.org/10.1145/3797246.3805836" alt="DOI">
         <img src="https://img.shields.io/badge/DOI-10.1145%2F3797246.3805836-blue"/></a>
   <br>
@@ -29,7 +29,7 @@
 
 # PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
-This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt. The newer community release v0.1.3b is built from the Experimental-Community-Version branch, as described in the ETRA Proceesings LBW "Open-source event-related pupillometry using PupilEXT" contributed by Gábor L. Bényei from the Budapest University of Technology and Economics.<br/>
+This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt. The newer community release v0.1.3b is built from the Experimental-Community-Version branch, as described in the ETRA Proceedings abstract "Open-source event-related pupillometry using PupilEXT" contributed by Gábor L. Bényei and Attila B. Boncsér from the Budapest University of Technology and Economics.<br/>
 
 PupilEXT can record eye images using a stereo camera system or a single camera to measure the pupil diameter in real-time. Additionally, it is possible to analyse externally-recorded images without connected cameras through the PupilEXT interface.<br/>
 
@@ -51,7 +51,7 @@ We aimed to provide a professional open-source pupillometry measurement platform
 - [x]  Professional graphical user interface programmed with QT/C++ 
 - [x]  Supporting stereo camera setups
 - [x]  Supporting single camera setups
-- [x]  Supporting Basler branded cameras for research-grade use. Tested with Basler acA2040-120um, acA1300-200um (see Zandi et al., 2021) and a2A1920-160um, aca1300-200um (see Bényei et al., 2026), acA1300-60gm, daA1280-54um cameras
+- [x]  Supporting Basler branded cameras for research-grade use. Tested with Basler acA2040-120um, acA1300-200um (see Zandi et al., 2021) and a2A1920-160um (see Bényei et al., 2024), aca1300-200um (see Bényei et al., 2026), acA1300-60gm, daA1280-54um cameras
 - [x]  Now with USB3Vision and GigE support
 - [x]  Preliminary support for other camera brands using GenICam standard, via the Aravis library (yet only single cameras)
 - [x]  Also supports any OpenCV-supported USB Video Class (UVC) camera (e.g. webcam) to be suitable for basic educative use as well
@@ -62,7 +62,7 @@ We aimed to provide a professional open-source pupillometry measurement platform
 - [x]  Remote control capability to let an experiment script to control PupilEXT on the host computer (Ready-to-use PsychoPy and Matlab Psychtoolbox examples included)
 - [x]  Different image processing modes to support different physical arrangements of cameras and number of eyes (1/2 cameras x 1/2 eyes)
 - [x]  Stereo camera image acquisition triggering can now be controlled over ethernet to support more cable length
-- [x]  Live streaming pupil detection output
+- [x]  Live streaming pupil detection output, in many different textual formats, and also with Lab Streaming Layer (LSL) support
 - [x]  Ability to start the program using executable arguments (e.g. for scheduled automatic warmup, and auto-config)
 - [x]  Device temperature monitoring and logging
 - [x]  Ability to precisely control even advanced-level image acquisition settings of the camera

@@ -1,8 +1,6 @@
 
 Version 0.1.3. beta
 
-	TODO: NÉV LEGYEN "ECV" végződésű! és a hardware repo is! (?) vagy valahogy mindenképp megkülönböztethető kéne legyen
-
     Added:
 		- Added feature to read and write image recordings into/from .zip archives. Importantly, existing recordings in directories can be zipped (using any common archive manager program) and then be opened with this new functionality. Password protected zip reading and writing is not supported currently.
 		- Added interfacing support for GigE cameras through the Pylon library.
@@ -46,17 +44,16 @@ Version 0.1.3. beta
 		- Raised OpenCV dependency to version 4.11.
 		- Vcpkg baseline commit updated: on 2025.07.16 14:46 CET
 		- Updated license information to properly credit newly added dependencies.
-		- 
 		- Camera temperature checks are now indicated with a questionmark icon if temperature readings could not be obtained from the camera, or if they are invalid.
 		- Updated qcustomplot
-		
-		
+		- Changed updating delay of GUI elements from 33 ms (~30 FPS) to 40 ms (~25 FPS), as it is still the same user experience, but mush less computation sometimes.
 	
     Deprecated:
-		...
+		N/A
 	
     Removed:
 		- Filename and algorithm columns from serialized data output. Algorithm could be re-added later, once the output coulumns will be made user-configurable in the next version.
+		- Subjects selection dialog. Yet meta snapshots contain the recording related information, however they will need amendments in the future.
 	
     Fixed:
 		- Bug that caused numeric values to be saved as binary values (visible as strange characters if viewed in a text editor) in imagerec_meta.xml files accompanying image recordings.

@@ -50,9 +50,12 @@ SingleCameraCalibrationView::SingleCameraCalibrationView(SingleCamera *camera, Q
     QVBoxLayout *checkboxLayout = new QVBoxLayout();
 
     chessboardCheckbox = new QCheckBox("Chessboard");
+    chessboardCheckbox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     chessboardCheckbox->setChecked(true);
     circlesCheckbox = new QCheckBox("Circles");
+    circlesCheckbox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     asymmetricCirclesCheckbox = new QCheckBox("Asymmetric Circles");
+    asymmetricCirclesCheckbox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
 
     patternCheckboxGroup->addButton(chessboardCheckbox);
     patternCheckboxGroup->addButton(circlesCheckbox);
@@ -105,6 +108,7 @@ SingleCameraCalibrationView::SingleCameraCalibrationView(SingleCamera *camera, Q
     QHBoxLayout* verifyLayout = new QHBoxLayout();
 
     verifyFileBox = new QCheckBox("Save verification to file.");
+    verifyFileBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
 
     connect(verifyFileBox, SIGNAL(toggled(bool)), this, SLOT(onVerifyFileChecked(bool)));
 

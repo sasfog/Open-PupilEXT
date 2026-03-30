@@ -179,14 +179,24 @@ void ImagePlaybackControlDialog::createForm() {
     controlLayout->addWidget(playbackFPSVal, 3, 1, 1, 1);
 
     loopBox = new QCheckBox("Loop playback when end is reached");
+    loopBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     loopBox->setChecked(playbackLoop);
     controlLayout->addWidget(loopBox, 4, 0, 1, 2);
 
+//    // DEV
+//    QPalette p = loopBox->palette();
+//    p.setColor(QPalette::Active, QPalette::Base, QColor(255, 255, 255));
+//    p.setColor(QPalette::Button, QColor(255, 255, 255));
+//    loopBox->setAutoFillBackground(true);
+//    loopBox->setPalette(p);
+
     syncRecordCsvBox = new QCheckBox("Start/pause Data Recording in sync");
+    syncRecordCsvBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     syncRecordCsvBox->setChecked(syncRecordCsv);
     controlLayout->addWidget(syncRecordCsvBox, 5, 0, 1, 2);
 
     syncStreamBox = new QCheckBox("Start/pause Data Streaming in sync");
+    syncStreamBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     syncStreamBox->setChecked(syncStream);
     controlLayout->addWidget(syncStreamBox, 6, 0, 1, 2);
 
@@ -428,7 +438,7 @@ void ImagePlaybackControlDialog::readSettings() {
 
     syncRecordCsv = SupportFunctions::readBoolFromQSettings("syncRecordCsv", false, applicationSettings);
     syncStream = SupportFunctions::readBoolFromQSettings("syncStream", false, applicationSettings);
-    playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", true, applicationSettings);
+    playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", false, applicationSettings);
 
 }
 

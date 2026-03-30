@@ -26,13 +26,13 @@
 class MetaSnapshotOrganizer : public QObject {
     Q_OBJECT
 
-    static const int version = 2;
+    static const int version = 3;
 
 public:
 
     enum Purpose {IMAGE_REC = 1, DATA_REC = 2};
 
-    static void addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose);
+    static void addInfoNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose);
     static void addCameraNode(QDomDocument &document, QDomElement &root, Camera *camera);
     static void addPupilDetectionNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, QSettings *applicationSettings);
 

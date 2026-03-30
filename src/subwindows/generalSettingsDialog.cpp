@@ -482,10 +482,12 @@ void GeneralSettingsDialog::createForm() {
     appearanceLayout->addRow(darkAdaptLabel, darkAdaptBox);
 
     alwaysOnTopBox = new QCheckBox("Keep application always on top (needs restart)");
+    alwaysOnTopBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     alwaysOnTopBox->setChecked(getAlwaysOnTop());
     appearanceLayout->addRow(alwaysOnTopBox);
 
     adminWarningBox = new QCheckBox("Show warning on startup if admin privileges missing");
+    adminWarningBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     adminWarningBox->setChecked(getAdminWarning());
     appearanceLayout->addRow(adminWarningBox);
 
@@ -497,6 +499,7 @@ void GeneralSettingsDialog::createForm() {
     QFormLayout *cameraInterfacingLayout = new QFormLayout();
 
     ignoreFrameSkipBox = new QCheckBox("Ignore frame skip warnings");
+    ignoreFrameSkipBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     ignoreFrameSkipBox->setChecked(getIgnoreFrameSkip());
     cameraInterfacingLayout->addRow(ignoreFrameSkipBox);
 

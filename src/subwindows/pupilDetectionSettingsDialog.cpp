@@ -151,16 +151,19 @@ void PupilDetectionSettingsDialog::createForm() {
 
     QLabel *roiPreprocessingLabel = new QLabel(tr("Use PD ROI Area Selection:"));
     roiPreprocessingBox = new QCheckBox();
+    roiPreprocessingBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
     optionsLayout->addRow(roiPreprocessingLabel, roiPreprocessingBox);
 
     QLabel *outlineConfidenceLabel = new QLabel(tr("Compute Additional Outline Confidence:"));
     outlineConfidenceBox = new QCheckBox();
+    outlineConfidenceBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     outlineConfidenceBox->setChecked(pupilDetection->isOutlineConfidenceEnabled());
     optionsLayout->addRow(outlineConfidenceLabel, outlineConfidenceBox);
 
     QLabel *computeBRISQUELabel = new QLabel(tr("Compute BRISQUE Score (slow):"));
     computeBRISQUEBox = new QCheckBox();
+    computeBRISQUEBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     //computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
     computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
     optionsLayout->addRow(computeBRISQUELabel, computeBRISQUEBox);
@@ -173,6 +176,7 @@ void PupilDetectionSettingsDialog::createForm() {
     checkboxGroup->setExclusive(false);
 
     pupilUndistortionBox = new QCheckBox();
+    pupilUndistortionBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     pupilUndistortionBox->setChecked(pupilDetection->isPupilUndistortionEnabled());
     checkboxGroup->addButton(pupilUndistortionBox);
     optionsLayout->addRow(pupilSizeUndistortionLabel, pupilUndistortionBox);
@@ -183,6 +187,7 @@ void PupilDetectionSettingsDialog::createForm() {
     connect(imageUndistortionLabel, SIGNAL(linkActivated(QString)), this, SLOT(onShowHelpDialog()));
 
     imageUndistortionBox = new QCheckBox();
+    imageUndistortionBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
     checkboxGroup->addButton(imageUndistortionBox);
     optionsLayout->addRow(imageUndistortionLabel, imageUndistortionBox);

@@ -326,6 +326,7 @@ void MCUSettingsDialog::createForm() {
     paramLayout->addRow(flowControlLabel, flowControlBox);
 
     localEchoCheckBox = new QCheckBox("Local echo");
+    localEchoCheckBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     paramLayout->addWidget(localEchoCheckBox);
 
     paramFrame->setLayout(paramLayout);

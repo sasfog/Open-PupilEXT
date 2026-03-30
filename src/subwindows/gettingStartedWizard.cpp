@@ -68,7 +68,7 @@ QWizardPage* GettingStartedWizard::createIntro01() {
     QLabel *label = new QLabel(tr("<b>%1 Version: %2 </b> is an open source application for pupillometry.<br><br>"
                                   "Gábor L. Bényei, Diederick C. Niehorster, Marcus Nyström, and Péter Pajkossy (<b>2026</b>). "
                                   "Open-source event-related pupillometry using PupilEXT.</br>"
-                                  " 2026 Symposium on Eye Tracking Research and Applications. DOI:<a href=\"https://doi.org/10.1145/3797246.3805836\">10.1145/3797246.3805836</a>.<br><br>"
+                                  " Proceedings of the 2026 Symposium on Eye Tracking Research and Applications. DOI:<a href=\"https://doi.org/10.1145/3797246.3805836\">10.1145/3797246.3805836</a>.<br><br>"
 //                                  "Gábor L. Bényei, Attila B. Boncsér, Péter Pajkossy (<b>2024</b>). "
 //                                  "Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform.</br>"
 //                                  " ECEM2024, 22nd European Conference on Eye Movements. DOI:<a href=\"https://doi.org/10.13140/RG.2.2.33761.93284\">10.13140/RG.2.2.33761.93284</a>.<br><br>"
