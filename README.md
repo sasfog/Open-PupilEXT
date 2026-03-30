@@ -2,15 +2,22 @@
   <img src="Misc/img/PupilEXT-Logo.png" width="70%" height="25%">
 </div><br/>
 <div align="center">
-  <a href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract" alt="Publication">
-        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Published-green"/></a>
-  <a href="https://doi.org/10.3389/fnins.2021.676220" alt="DOI">
+
+  <a href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract" alt="Publication (v0.1.1b)">
+        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Published%20(v0.1.1b)-green"/></a>
+  <a href="https://doi.org/10.3389/fnins.2021.676220" alt="DOI (v0.1.1)">
         <img src="https://img.shields.io/badge/DOI-10.3389%2Ffnins.2021.676220-blue"/></a>
- <a href="https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE" alt="GNU-GPLv3">
+  <br>
+  <a href="https://doi.org/articles/10.1145/3797246.3805836" alt="Publication">
+        <img src="https://img.shields.io/badge/ETRA%202026%20Proceedings-Published%20(v0.1.3b)-green"/></a>
+  <a href="https://doi.org/10.1145/3797246.3805836" alt="DOI">
+        <img src="https://img.shields.io/badge/DOI-10.1145%2F3797246.3805836-blue"/></a>
+  <br>
+  <a href="https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE" alt="GNU-GPLv3">
         <img src="https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue"/></a>
- <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
-        <img src="https://img.shields.io/badge/Version-0.1.1%20Beta-green"/></a>
- <a href="https://github.com/openPupil/Open-PupilEXT" alt="Contribution">
+  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
+        <img src="https://img.shields.io/badge/Version-0.1.3%20Beta-green"/></a>
+  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Contribution">
         <img src="https://img.shields.io/badge/Contributions-Welcome-green"/></a>
 </div>
 
@@ -22,7 +29,7 @@
 
 # PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
-This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt.<br/>
+This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt. The newer community release v0.1.3b is built from the Experimental-Community-Version branch, as described in the ETRA Proceesings LBW "Open-source event-related pupillometry using PupilEXT" contributed by Gábor L. Bényei from the Budapest University of Technology and Economics.<br/>
 
 PupilEXT can record eye images using a stereo camera system or a single camera to measure the pupil diameter in real-time. Additionally, it is possible to analyse externally-recorded images without connected cameras through the PupilEXT interface.<br/>
 
@@ -31,23 +38,25 @@ We aimed to provide a professional open-source pupillometry measurement platform
 -----
 
 <div align="center">
-<a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Paper]</a>
+<a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Paper (v0.1.1b)]</a>
 <a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Supplementary materials]</a>
 </div>
 
 -----
 
-**Features of PupilEXT (v0.1.2)**
+**Features of PupilEXT (v0.1.3)**
 
 - [x]  High resolution pupillometry
 - [x]  Real-time pupillometry
 - [x]  Professional graphical user interface programmed with QT/C++ 
 - [x]  Supporting stereo camera setups
 - [x]  Supporting single camera setups
-- [x]  Supporting Basler branded cameras for research-grade use. Tested with Basler acA2040-120um, acA1300-200um (see Zandi et al., 2021) and a2A1920-160um
+- [x]  Supporting Basler branded cameras for research-grade use. Tested with Basler acA2040-120um, acA1300-200um (see Zandi et al., 2021) and a2A1920-160um, aca1300-200um (see Bényei et al., 2026), acA1300-60gm, daA1280-54um cameras
+- [x]  Now with USB3Vision and GigE support
+- [x]  Preliminary support for other camera brands using GenICam standard, via the Aravis library (yet only single cameras)
 - [x]  Also supports any OpenCV-supported USB Video Class (UVC) camera (e.g. webcam) to be suitable for basic educative use as well
 - [x]  Offline pupillometry with externally recorded images. Equipped with an easy-to-use graphical user interface to control and visually inspect image recording playback and pupil detection performance frame-by-frame 
-- [x]  Cross-platform software: MacOS, Windows, Linux
+- [x]  Cross-platform software: Windows, MacOS, Linux
 - [x]  Intgrates six leading open-source pupil detection algorithms: Starburst [[1\]](#1), Swirski2D [[2\]](#2), ExCuSe [[3\]](#3), ElSe [[4\]](#4), PuRe [[5\]](#5), and PuReST [[6\]](#6). Now also with automatic parametrization capability
 - [x]  Tracking and storing trial increment/"trigger" events and timestamped textual messages along with recordings
 - [x]  Remote control capability to let an experiment script to control PupilEXT on the host computer (Ready-to-use PsychoPy and Matlab Psychtoolbox examples included)
@@ -61,9 +70,9 @@ We aimed to provide a professional open-source pupillometry measurement platform
 
 For initial testing, we recommend using the provided demo datasets. See section 2.4 in this repository. Pay attention to the image playback speed setting, if you are on a laptop with low computational power.
 
-**IMPORTANT information about the Community Branch of PupilEXT (v0.1.2)**
+**IMPORTANT information about the Community Branch of PupilEXT (v0.1.3)**
 
-This branch contains the Experimental Community Version of PupilEXT, maintained by Gábor Bényei (kheki4) and Attila Boncsér (sasfog). More information can be found in the readme of the project (Link: https://github.com/openPupil/Open-PupilEXT/tree/Experimental-Community-Version/Community).
+This branch contains the Experimental Community Version of PupilEXT, maintained by Gábor Bényei (kheki4). More information can be found in the readme of the project (Link: https://github.com/openPupil/Open-PupilEXT/tree/Experimental-Community-Version/Community).
 
 Note that this version of PupilEXT is subject of ongoing development to further add new features and might contain bugs or other errors. New features have already been developed, but they are under testing.
 
@@ -71,12 +80,15 @@ Planned features are going to be published under the issues page, while a public
 
 Correspondence for this community version can be adressed to:
 Gábor Bényei (kheki4): benyeig@edu.bme.hu
-Attila Boncsér (sasfog): aboncser@edu.bme.hu
 
 **Questions?**
 
 If you have new ideas, questions or want to discuss some extended topics, please use our discussion forum:
 https://github.com/openPupil/Open-PupilEXT/discussions
+
+**!! NEW 03/2026 !!: Release v0.1.3 based on the Experimental-Community-Version branch**
+
+A new release is out after a long break. This version relies on the upgraded Qt 6.8.3 LTS and the Pylon 8.1.0 libraries. Also newly an Aravis (for any GenICam camera) build is available.
 
 **!! NEW 08/2024 !!: Release v0.1.2 based on the Experimental-Community-Version branch**
 
@@ -96,6 +108,8 @@ Link to the GitHub repo of PyPupilEXT: [https://github.com/openPupil/PyPupilEXT]
 
 ## 1. Overview
 PupilEXT is a real-time pupillometry software whose graphical user interface is mainly programmed using C++ (QT. 5.15) and can be used to integrate high-resolution industrial cameras for online measurements. This Repository provides a guide on how to install, set up and use the system for pupillometry. Before using the PupilEXT framework, we recommend reading the work *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"*.
+
+<i>Note: Several sections in this page were last updated for v0.1.1b only.</i>
 
 ### 1.1 Pupillometry setup configuations
 With PupilEXT, you can detect the pupil diameter with three different setup configurations (see Figure). In the stereo camera configuration, the pupil diameter can be recorded directly in millimetres through an internal triangulation procedure. In the simplest case, only one camera must be connected for measuring the pupil diameter in pixels. The conversion from pixels to mm can then manually be performed using a circular reference object. If no camera is available, PupilEXT offers the possibility to load externally recorded images for offline analysis. The externally acquired images can be treated as a live feed, unlocking the full functionality of PupilEXT.
@@ -132,8 +146,8 @@ Please use our discussion forum to share your ideas, setup and experience with P
 https://github.com/openPupil/Open-PupilEXT/discussions
 
 ## 2. Getting started: The easy way
-### 2.1. Installation on MacOS (MacOS 12.7.6 or later)
-The direct installation requires that you have MacOS 12.7.6 or later installed on your machine. If this is not the case, you likely need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on MacOS 12.7.6 or later. You can try on an earlier version of MacOS, but you are not quaranteed to succeed.
+### 2.1. Installation on MacOS (MacOS 12.7.6 or later, for PupilEXT v0.1.1b)
+The direct installation of PupilEXT v0.1.1b requires that you have MacOS 12.7.6 or later installed on your machine. If this is not the case, you likely need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on MacOS 12.7.6 or later. You can try on an earlier version of MacOS, but you are not quaranteed to succeed.
 
 **Step 1: Download and install the Pylon Camera Softwware**
 
@@ -149,11 +163,16 @@ Please test your Baslers camera(s) with the installed Pylon Viewer from Basler (
 
 We have built and deployed PupilEXT for MacOS 12.7.6 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
 
-Download PupilEXT Version 0.1.2 Beta (MacOS) from the release page of the project's GitHub repository:
+Download PupilEXT Version 0.1.1 Beta (MacOS) from the release page of the project's GitHub repository:
 
-https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.2-beta
+https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.1-beta
 
-After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We built and tested the program on a Mac Mini 2014 Late (Intel) with MacOS Monterey (Version 12.7.6). If you run into issues, you need to build PupilEXT from source.
+Or download newer PupilEXT Beta versions (MacOS) from the release page of the Community repository:
+
+https://github.com/sasfog/Open-PupilEXT/releases/tag/v0.1.2-beta
+https://github.com/sasfog/Open-PupilEXT/releases/tag/v0.1.3-beta
+
+After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We built and tested the v0.1.1 program on a Mac Mini 2014 Late (Intel) with MacOS Monterey (Version 12.7.6). If you run into issues, you need to build PupilEXT from source.
 
 <p align="center">
   <img src="Misc/img/PupilEXT_Start_Mac.gif">
@@ -165,7 +184,7 @@ After you have downloaded the software, you can open the dmg file and run PupilE
 
 You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis.
 
-### 2.2. Installation on Windows 10 (64 bit)
+### 2.2. Installation on Windows 10 (64 bit, PupilEXT v0.1.1b)
 **Step 1: Download and install the Pylon Camera Softwware**
 
 Download the Pylon Camera Software Suite (*.exe) from the Basler Website:
@@ -180,16 +199,21 @@ Please test your camera with the installed Pylon Viewer from Basler (see [Basler
 
 For Windows, we have already built the software so that PupilEXT can simply be downloaded and will start without any further dependencies. Unpack the downloaded zip file and open PupilEXT.exe. It should run, as we tested it on several systems. However, if you run into unknown issues, you need to build PupilEXT from source (see instructions below).
 
-Download PupilEXT Version 0.1.2 Beta (Windows) from the release page of the project's GitHub repository:
+Download PupilEXT Version 0.1.1 Beta (Windows) from the release page of the project's GitHub repository:
 
-https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.2-beta
+https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.1-beta
+
+Or download newer PupilEXT Beta versions (Windows) from the release page of the Community repository:
+
+https://github.com/sasfog/Open-PupilEXT/releases/tag/v0.1.2-beta
+https://github.com/sasfog/Open-PupilEXT/releases/tag/v0.1.3-beta
 
 **Step 3: Testing with the demo datasets**
 
 You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis.
 
 ### 2.3. Setup the microcontroller for the stereo camera configuration
-A microcontroller is necessary if a real-time online pupil measurement should be carried out with a stereo camera system. The microcontroller has the task of generating a so-called electrical hardware-trigger, which is used to trigger the image acquisition on the camera (see [Basler-Documentation: Triggering](https://docs.baslerweb.com/triggered-image-acquisition)). The electrical hardware-trigger consists of a timed voltage signal of 3.3 V, which is applied to one of the camera's GPIO-Pins. If a sequence of images need to be acquired with a stable FPS, the hardware-trigger is a PWM-signal with a fixed frequency (see [Basler-Documentation: Trigger-Types](https://docs.baslerweb.com/trigger-selector) and [Basler-Documentation: GPIO Lines](https://docs.baslerweb.com/general-purpose-io-(gpio)-lines)). The advantage of acquiring images through a hardware-trigger signal is that the electrical signal can be connected parallel to both cameras, leading to a highly synchronized image recording. Synchronous image acquisition from both cameras is essential in a stereo camera system; otherwise, the conversion from pixels to mm is not reliable. The PupilEXT v0.1.2 software uses a hardware-trigger from an external microcontroller (STM32 Nucleo or Arduino) to acquire images from the stereo camera system. If you only want to use a single camera for pupil measurement, section 2.3 is not relevant for you.
+A microcontroller is necessary if a real-time online pupil measurement should be carried out with a stereo camera system. The microcontroller has the task of generating a so-called electrical hardware-trigger, which is used to trigger the image acquisition on the camera (see [Basler-Documentation: Triggering](https://docs.baslerweb.com/triggered-image-acquisition)). The electrical hardware-trigger consists of a timed voltage signal of 3.3 V, which is applied to one of the camera's GPIO-Pins. If a sequence of images need to be acquired with a stable FPS, the hardware-trigger is a PWM-signal with a fixed frequency (see [Basler-Documentation: Trigger-Types](https://docs.baslerweb.com/trigger-selector) and [Basler-Documentation: GPIO Lines](https://docs.baslerweb.com/general-purpose-io-(gpio)-lines)). The advantage of acquiring images through a hardware-trigger signal is that the electrical signal can be connected parallel to both cameras, leading to a highly synchronized image recording. Synchronous image acquisition from both cameras is essential in a stereo camera system; otherwise, the conversion from pixels to mm is not reliable. The PupilEXT v0.1.1-v0.1.3 software uses a hardware-trigger from an external microcontroller (STM32 Nucleo or Arduino) to acquire images from the stereo camera system. If you only want to use a single camera for pupil measurement, section 2.3 is not relevant for you.
 
 In this way, the image capture process is as follows: The PupilEXT software sends a command (Protocol) to the microcontroller via USB (uart), aiming to start a logical hardware-trigger signal, which is transmitted from the microcontroller to the camera(s). The captured images are passed directly from the camera to PupilEXT via USB3. In continuous shooting, PupilEXT sends a command to let the microcontroller generate a continuous PWM signal, so there is no need for a single command for each trigger signal. This procedure is standard for all professional stereo camera systems. Hardware trigger signals can also be generated from the camera itself, but there is a risk that due to internal delays, the images will not be captured synchronously. Therefore, adding an external signal generator increases the stability of the system.
 
@@ -493,7 +517,7 @@ PupilEXT needs the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9
 
 **Important Note 3:** If you have run into troubles while setting up the environment, please first check out our new F.A.Q. in: [``Misc/Build_env_FAQ.md``](Misc/Build_env_FAQ.md).
 
-### 3.0 Build PupilEXT with vcpkg manifest (recommended)
+### 3.0 Build PupilEXT with vcpkg manifest (recommended, for v0.1.1b, Last updated: <2023)
 
 The PupilEXT project contains a vcpkg.json file in which all the required C++ libraries are defined. To download and build the libraries, we use the package management software vcpkg (https://vcpkg.io/en/index.html). We have placed the vcpkg GitHub repository as a submodule under [``3rdparty/vcpkg``](3rdparty/vcpkg), meaning that the required libraries will be downloaded automatically to the PupilEXT project folder, regardless of your system. This has the advantage that the PupilEXT folder can be easily deleted when the C++ libraries are no longer needed. However, as the libraries are downloaded and built, care must be taken to ensure that at least 6 GB are available on the disc for the PupilEXT folder (on windows ~13 GB). However, the QT library and the Pylon drivers for the cameras will not be managed via vcpkg, so they have to be downloaded and installed manually (see step 1 and 2).
 
@@ -775,7 +799,7 @@ The last step is to change something in the Pylon library; otherwise, the librar
 
 Now, you should be able to start PupilEXT properly in CLion. Please remember to use the **release** option as in step 5; otherwise, PupilEXT will run in debug mode and will be significantly slower. 
 
-### 3.2 How to build from source on Windows 10
+### 3.2 How to build from source on Windows 10 (for v0.1.1b, Last updated: <2023)
 
 **Step 1: Install Visual Studio 2019**
 
@@ -954,6 +978,7 @@ For debugging porpuses, the Pylon SDK supports emulating camera devices that are
 
 ## 5. Known issues
 see here https://github.com/openPupil/Open-PupilEXT/issues
+and here https://github.com/sasfog/Open-PupilEXT/issues
 
 ## 6. Citation
 Please consider to cite our work if you find this repository or our results useful for your research:
@@ -982,6 +1007,20 @@ TITLE = {Promise of open-source, low-cost pupillometry - Contribution to the Pup
 YEAR={2024}, 
 URL={https://www.doi.org/10.13140/RG.2.2.33761.93284},
 DOI={10.13140/RG.2.2.33761.93284}}
+```
+
+#### Additional citation for Release v0.1.3 beta:
+G. L. Bényei, and D. C. Niehorster, M. Nyström, P. Pajkossy, "Open-source event-related pupillometry using PupilEXT" Proceedings of the 2026 Symposium on Eye Tracking Research and Applications, Jun. 2026, doi: 10.1145/3797246.3805836.
+```bib
+@Misc{10.1145/3797246.3805836,
+AUTHOR = {Gábor L., Bényei and Diederick C., Niehorster and Marcus, Nyström and Péter, Pajkossy},
+TITLE = {Open-source event-related pupillometry using PupilEXT},    
+YEAR={2026}, 
+URL={https://www.doi.org/10.1145/3797246.3805836},
+CONFERENCE={2026 Symposium on Eye Tracking Research and Applications},
+JOURNAL={Proceedings of the 2026 Symposium on Eye Tracking Research and Applications},
+DOI={10.1145/3797246.3805836},
+ISBN={979-8-4007-2519-7/2026/06}}
 ```
 
 ## 7. References
@@ -1022,21 +1061,36 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 ### List of Software Libraries
 
-<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
+<a id="Aravis" href="https://github.com/AravisProject/aravis"><b>Aravis</b></a> is a glib/gobject based library for video acquisition using Genicam cameras. It currently implements the gigabit ethernet and USB3 protocols used by industrial cameras. (License: LGPL-2.1)
 
-<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+<a id="bzip2" href="https://github.com/opencor/bzip2/tree/master"><b>bzip2</b></a> is a program and library for
+lossless, block-sorting data compression. In this project, it is used by QuaZip to access zipped image recordings. ([License](https://github.com/opencor/bzip2/blob/master/LICENSE))
+
+<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="OpenCV" href="https://opencv.org/"><b>OpenCV</b></a> is a highly optimized computer vision library with focus on real-time applications. In this repository it is used for image manipulation and plotting of ellipse pupil detections. (License: Apache 2 / BSD)
 
+<a id="FFmpeg" href="https://ffmpeg.org/"><b>FFmpeg</b></a> is a collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata. (License: LGPL v2.1)
+
 <a id="Glog" href="https://github.com/google/glog"><b>Glog</b></a> is a library for logging. ([License](https://github.com/google/glog/blob/master/COPYING))
+
+<a id="liblsl" href="https://github.com/sccn/liblsl"><b>liblsl</b></a> a.k.a. the lab streaming layer is a simple all-in-one approach to streaming experiment data between applications in a lab, e.g. instrument time series, event markers, audio, and so on. In this project it is used for streaming eye data. ([License](https://github.com/sccn/liblsl/blob/dev/LICENSE))
 
 <a id="Boost" href="https://www.boost.org"><b>Boost</b></a> is a set of various C++ libraries for processing tasks. ([License](https://www.boost.org/users/license.html))
 
-<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is a optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
+<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is an optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
 
 <a id="Eigen" href="https://eigen.tuxfamily.org/index.php?title=Main_Page#License"><b>Eigen</b></a> is a library for linear algebra. ([License](https://eigen.tuxfamily.org/index.php?title=Main_Page#License))
 
 <a id="Spii" href="https://github.com/PetterS/spii"><b>Spii</b></a> is a library for optimisation. ([License](https://github.com/PetterS/spii/blob/master/LICENSE))
+
+<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+
+<a id="QJsonModel" href="https://github.com/dridk/QJsonModel"><b>QJsonModel</b></a> is a JSON tree model class for Qt6/C++17 based on QAbstractItemModel. (License: MIT)
+
+<a id="QuaZip" href="https://github.com/stachenov/quazip"><b>QuaZip</b></a> is is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package (AKA Minizip) using Qt library. ([License](https://github.com/stachenov/quazip/blob/master/COPYING))
+
+<a id="QtOpenGLViewer" href="https://github.com/marcel-goldschen-ohm/QtOpenGLViewer"><b>QtOpenGLViewer</b></a> is a simple 3D/2D OpenGL viewer with mouse rotation, pan, zoom and some object selection. The code portions in this project have been partly modified by Gábor Bényei, otherwise it is the work of the original author. (License: MIT)
 
 <a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
 
@@ -1047,6 +1101,8 @@ PupilEXT integrates several open source libraries. This document provides a list
 <a id="Breeze-Icons" href="https://github.com/KDE/breeze-icons"><b>Breeze Icons</b></a> is a set of icons. ([License](https://github.com/KDE/breeze-icons/blob/master/icons/LICENSE))
 
 The following icon files are modifications of existing icons from the KDE Breeze icon set: 1cam1pup.svg, 1cam2pup.svg, 1cam1pup.svg, 1Mcam1pup.svg, 2cam1pup.svg, 2cam2pup.svg, 2cam2pupNS.svg, media-record-green.svg, camera-video-stereo.svg, crosshairs-gaze-calibration.svg, crosshairs-gaze-validation.svg. These modified files were made by contributor Gábor Bényei, and can be found in the icons folder as resources, licensed in accordance to KDE Breeze license (GNU LESSER GENERAL PUBLIC LICENSE Version 3).
+
+The pictogram vcs-question.svg is derived work, made combining the emblem-question.svg and vcs-conflicting.svg files from the Breeze icon set.
 
 The following icon files are the work of Gábor Bényei, and are declared public domain: computer-connection.svg, equals1b.svg, plus1b.svg, messageEmpty.svg, rs232.svg.
 
