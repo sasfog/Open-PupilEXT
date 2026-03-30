@@ -1080,6 +1080,8 @@ void StereoCameraView::onShowAutoParamOverlay(bool state) {
 //  because it needs extra calculation, so only use it when user explicitly needs it for setting focus
 void StereoCameraView::onShowSharpnessGuideOverlay(bool state) {
     pupilDetection->setSharpnessGuideEnabled(state);
+    videoViewM->setSharpnessGuideEnabled(state);
+    videoViewS->setSharpnessGuideEnabled(state);
     showSharpnessGuideOverlay = state;
     applicationSettings->setValue("StereoCameraView.showSharpnessGuideOverlay", showSharpnessGuideOverlay);
 //    emit onChangeShowSharpnessGuideOverlay(showSharpnessGuideOverlay); // unnecessary

@@ -133,6 +133,8 @@ private:
     bool showPositioningGuide;
     bool pupilDetectionUsingROI;
 
+    bool sharpnessGuideEnabled;
+
 protected:
 
     void resizeEvent(QResizeEvent *event) override;
@@ -182,6 +184,8 @@ public slots:
     void setSensorSize(const QSize& size);
 
     void setAutoParamPupSize(int value);
+
+    void setSharpnessGuideEnabled(bool state);
 
     void showROISelection(bool value);
 

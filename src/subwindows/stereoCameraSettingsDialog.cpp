@@ -808,9 +808,9 @@ void StereoCameraSettingsDialog::loadButtonClick() {
 }
 
 void StereoCameraSettingsDialog::autoGainOnce() {
-    camera->autoExposureOnce();
+    camera->autoGainOnce();
     gainBox->blockSignals(true);
-    gainBox->setValue(camera->getExposureTimeValue());
+    gainBox->setValue(camera->getGainValue());
     gainBox->blockSignals(false);
 
     autoGainTimer = new QTimer(this);

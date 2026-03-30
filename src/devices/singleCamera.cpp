@@ -191,6 +191,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
             emit manualDeviceResetNecessary();
         }
 
+//    return;
         synchronizeTime();
         cameraImageEventHandler->setTimeSynchronization(cameraTime, systemTime);
 
@@ -206,6 +207,8 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         CIntegerParameter heartbeat( camera.GetTLNodeMap(), "HeartbeatTimeout" );
         heartbeat.TrySetValue( 1000, IntegerValueCorrection_Nearest );
 
+        determineFullSensorResolution();
+
         // TODO: Revise if this check is needed at ll! If really needed, make it hang on a
         //  thread, or whatever, but do not obstruct grabbing if not needed to
         //if(camera.CanWaitForFrameTriggerReady()) {
@@ -213,9 +216,10 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         //} else {
         //    std::cout << "Cameras can not be queried whether it is ready to accept the next frame trigger.";
         //}
-    }
-    catch (const GenericException &e) {
+    } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 }
 
@@ -228,9 +232,76 @@ SingleCamera::~SingleCamera() {
     }
 }
 
+void SingleCamera::determineFullSensorResolution() {
+
+    int sensorWidth = 32;
+    int sensorHeight = 32;
+
+    bool success = false;
+
+    try {
+        if( camera.SensorWidth.IsValid() && camera.SensorWidth.IsReadable() &&
+            camera.SensorHeight.IsValid() && camera.SensorHeight.IsReadable()) {
+
+            sensorWidth = camera.SensorWidth.GetValue();
+            sensorHeight = camera.SensorHeight.GetValue();
+            success = true;
+        }
+
+        if(!success) {
+
+            int binningAtStart = getBinningVal();
+            if(binningAtStart != 1) {
+                setBinningVal(1);
+            }
+
+            if( camera.Width.IsValid() && camera.Width.IsReadable() &&
+                camera.Height.IsValid() && camera.Height.IsReadable()) {
+
+                sensorWidth = camera.Width.GetMax();
+                sensorHeight = camera.Height.GetMax();
+                success = true;
+            }
+
+            if(binningAtStart != 1) {
+                setBinningVal(binningAtStart);
+            }
+        }
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
+    }
+
+    if(success) {
+        fullSensorResolution = QSize(sensorWidth, sensorHeight);
+        qDebug() << "FULL SENSOR RESOLUTION (not considering binning) = " << fullSensorResolution;
+    } else
+        qDebug() << "Could not obtain sensor resolution";
+}
+
+QSize SingleCamera::getFullSensorResolution() {
+    return fullSensorResolution;
+}
+
 void SingleCamera::genericExceptionOccured(const GenericException &e) {
     //QThread::msleep(1000);
     qCritical() << "A Pylon exception occurred." << Qt::endl << e.GetDescription();
+    if (camera.IsCameraDeviceRemoved()) {
+
+        // DEV
+        camera.DeviceReset.Execute();
+
+        emit cameraDeviceRemoved();
+        camera.Close();
+        camera.DetachDevice();
+        camera.DestroyDevice();
+    }
+}
+
+void SingleCamera::stdExceptionOccured(const std::exception &e) {
+    //QThread::msleep(1000);
+    qCritical() << "A standard exception occurred." << Qt::endl << e.what();
     if (camera.IsCameraDeviceRemoved()) {
 
         // DEV
@@ -303,6 +374,8 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         } catch (const GenericException &e) {
             qDebug() << e.GetDescription();
             //genericExceptionOccured(e);
+        } catch (const std::exception &e) {
+            //stdExceptionOccured(e);
         }
 
         // TODO: Revise if this check is needed at ll! If really needed, make it hang on a
@@ -314,6 +387,8 @@ void SingleCamera::enableHardwareTrigger(bool state) {
         //}
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 }
 
@@ -326,106 +401,91 @@ bool SingleCamera::isAutoGainAvailable() {
  */
 void SingleCamera::autoGainOnce() {
     try {
-
+        qDebug() << "Gain auto once called";
         if(!camera.IsOpen()) {
             camera.Open();
         }
-
         camera.StopGrabbing();
 
         // Turn test image off.
         camera.TestImageSelector.TrySetValue(TestImageSelector_Off);
         camera.TestPattern.TrySetValue(TestPattern_Off);
 
-        // Only area scan cameras support auto functions.
-        if (camera.DeviceScanType.GetValue() == DeviceScanType_Areascan) {
-            // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-            if (camera.GetSfncVersion() >= Sfnc_2_0_0) {
-                // All area scan cameras support luminance control.
-                // Carry out luminance control by using the "once" gain auto function.
-                // For demonstration purposes only, set the gain to an initial value.
-
-                std::cout << "Starting AutoGain...";
-
-                //camera.Gain.SetToMaximum();
-                //camera.Gain.TrySetToMaximum();
-
-                if (!camera.GainAuto.IsWritable()) {
-                    std::cout << "The camera does not support Gain Auto.";
-                    return;
-                }
-
-                // Maximize the grabbed image area of interest (Image AOI).
-                camera.OffsetX.TrySetToMinimum();
-                camera.OffsetY.TrySetToMinimum();
-                camera.Width.TrySetToMaximum();
-                camera.Height.TrySetToMaximum();
-
-                if (camera.AutoFunctionROISelector.IsWritable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-                {
-                    // Set the Auto Function ROI for luminance statistics.
-                    // We want to use ROI1 for gathering the statistics
-
-                    camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);
-                    camera.AutoFunctionROIUseBrightness.TrySetValue(true);   // ROI 1 is used for brightness control
-                    camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI2);
-                    camera.AutoFunctionROIUseBrightness.TrySetValue(false);   // ROI 2 is not used for brightness control
-
-                    // Set the ROI (in this example the complete sensor is used)
-                    camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);  // configure ROI 1
-                    camera.AutoFunctionROIOffsetX.TrySetValue(camera.OffsetX.GetMin());
-                    camera.AutoFunctionROIOffsetY.TrySetValue(camera.OffsetY.GetMin());
-                    camera.AutoFunctionROIWidth.TrySetValue(camera.Width.GetMax());
-                    camera.AutoFunctionROIHeight.TrySetValue(camera.Height.GetMax());
-                }
-
-                if (camera.GetSfncVersion() >= Sfnc_2_0_0) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-                {
-                    // Set the target value for luminance control.
-                    // A value of 0.3 means that the target brightness is 30 % of the maximum brightness of the raw pixel value read out from the sensor.
-                    // A value of 0.4 means 40 % and so forth.
-                    camera.AutoTargetBrightness.TrySetValue(0.3);
-
-                    // We are going to try GainAuto = Once.
-
-                    std::cout << "Trying 'GainAuto = Once'.";
-                    std::cout << "Initial Gain = " << camera.Gain.GetValue();
-
-                    // Set the gain ranges for luminance control.
-                    camera.AutoGainLowerLimit.TrySetValue(camera.Gain.GetMin());
-                    camera.AutoGainUpperLimit.TrySetValue(camera.Gain.GetMax());
-                }
-
-                camera.GainAuto.TrySetValue(GainAuto_Once);
-
-                // When the "once" mode of operation is selected,
-                // the parameter values are automatically adjusted until the related image property
-                // reaches the target value. After the automatic parameter value adjustment is complete, the auto
-                // function will automatically be set to "off" and the new parameter value will be applied to the
-                // subsequently grabbed images.
-
-                int n = 0;
-                while (camera.GainAuto.GetValue() != GainAuto_Off) {
-                    CBaslerUniversalGrabResultPtr ptrGrabResult;
-                    camera.GrabOne( 5000, ptrGrabResult);
-                    ++n;
-                    //Make sure the loop is exited.
-                    if (n > 100) {
-                        throw TIMEOUT_EXCEPTION( "The adjustment of auto gain did not finish.");
-                    }
-                }
-
-                std::cout << "GainAuto went back to 'Off' after " << n << " frames.";
-                if(camera.Gain.IsReadable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-                {
-                    std::cout << "Final Gain = " << camera.Gain.GetValue();
-                }
-
-                startGrabbing();
-            }
-        } else {
-            qWarning() << "Only area scan cameras support auto functions.";
+        qDebug() << "Gain auto once check";
+        if (!camera.GainAuto.IsWritable()) {
+            qDebug() << "The camera does not support Gain Auto.";
+            return;
         }
+
+        if (camera.AutoFunctionROISelector.IsWritable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
+        {
+            // Set the Auto Function ROI for luminance statistics.
+            // We want to use ROI1 for gathering the statistics
+
+            camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);
+            camera.AutoFunctionROIUseBrightness.TrySetValue(true);   // ROI 1 is used for brightness control
+            camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI2);
+            camera.AutoFunctionROIUseBrightness.TrySetValue(false);   // ROI 2 is not used for brightness control
+
+            // We cannot use the image acquisition ROI for some reason ! It will not run
+            camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);  // configure ROI 1
+            camera.AutoFunctionROIOffsetX.TrySetValue(camera.AutoFunctionROIOffsetX.GetMin());
+            camera.AutoFunctionROIOffsetY.TrySetValue(camera.AutoFunctionROIOffsetY.GetMin());
+            camera.AutoFunctionROIWidth.TrySetValue(camera.AutoFunctionROIWidth.GetMax());
+            camera.AutoFunctionROIHeight.TrySetValue(camera.AutoFunctionROIHeight.GetMax());
+        }
+
+        if (camera.GetSfncVersion() >= Sfnc_2_0_0) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
+        {
+            // Set the target value for luminance control.
+            // A value of 0.3 means that the target brightness is 30 % of the maximum brightness of the raw pixel value read out from the sensor.
+            // A value of 0.4 means 40 % and so forth.
+            camera.AutoTargetBrightness.TrySetValue(0.3);
+            qDebug() << "Trying 'GainAuto = Once'.";
+            qDebug() << "Initial Gain = " << camera.Gain.GetValue();
+
+            // Set the gain ranges for luminance control.
+            camera.AutoGainLowerLimit.TrySetValue(camera.Gain.GetMin());
+            camera.AutoGainUpperLimit.TrySetValue(camera.Gain.GetMax());
+        } else {
+            // Set the target value for luminance control. The value is always expressed
+            // as an 8 bit value regardless of the current pixel data output format,
+            // i.e., 0 -> black, 255 -> white.
+            camera.AutoTargetValue.TrySetValue( 80 );
+            qDebug() << "Trying 'GainAuto = Once'.";
+            qDebug() << "Initial Gain = " << camera.GainRaw.GetValue();
+
+            // Set the gain ranges for luminance control.
+            camera.AutoGainRawLowerLimit.SetToMinimum();
+            camera.AutoGainRawUpperLimit.SetToMaximum();
+        }
+
+        camera.GainAuto.TrySetValue(GainAuto_Once);
+
+        // When the "once" mode of operation is selected,
+        // the parameter values are automatically adjusted until the related image property
+        // reaches the target value. After the automatic parameter value adjustment is complete, the auto
+        // function will automatically be set to "off" and the new parameter value will be applied to the
+        // subsequently grabbed images.
+
+        // TODO: do we even need this anymore
+        int n = 0;
+        while (camera.GainAuto.GetValue() != GainAuto_Off) {
+            CBaslerUniversalGrabResultPtr ptrGrabResult;
+            camera.GrabOne( 5000, ptrGrabResult);
+            ++n;
+            //Make sure the loop is exited.
+            if (n > 100) {
+                throw TIMEOUT_EXCEPTION( "The adjustment of auto gain did not finish.");
+            }
+        }
+
+        std::cout << "GainAuto went back to 'Off' after " << n << " frames.";
+        if (camera.GetSfncVersion() >= Sfnc_2_0_0)
+            qDebug() << "Final gain = " << camera.Gain.GetValue() << " us";
+        else
+            qDebug() << "Final gain = " << camera.GainRaw.GetValue() << " us";
+
     } catch (const TimeoutException &e) {
         // Auto functions did not finish in time.
         // Maybe the cap on the lens is still on or there is not enough light.
@@ -433,7 +493,30 @@ void SingleCamera::autoGainOnce() {
         qWarning() << "Please make sure you remove the cap from the camera lens before running auto gain.";
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
+    startGrabbing();
+}
+
+double SingleCamera::checkGainIfCompletedAuto() {
+
+    double val = 0;
+    try {
+        bool settingDone = (camera.GainAuto.IsReadable() && camera.GainAuto.GetValue() == GainAutoEnums::GainAuto_Off);
+        if(settingDone) {
+            val = getGainValue();
+        }
+
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
+    }
+
+    qDebug() << "checkGainIfCompletedAuto: " << val;
+
+    return val;
 }
 
 bool SingleCamera::isAutoExposureAvailable() {
@@ -445,104 +528,93 @@ bool SingleCamera::isAutoExposureAvailable() {
  */
 void SingleCamera::autoExposureOnce() {
     try {
-
+        qDebug() << "Exposure auto once called";
         if(!camera.IsOpen()) {
             camera.Open();
         }
-
         camera.StopGrabbing();
 
         // Turn test image off.
         camera.TestImageSelector.TrySetValue(TestImageSelector_Off);
         camera.TestPattern.TrySetValue(TestPattern_Off);
 
-        // Only area scan cameras support auto functions.
-        if (camera.DeviceScanType.GetValue() == DeviceScanType_Areascan) {
-            // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-            if (camera.GetSfncVersion() >= Sfnc_2_0_0) {
-                // For demonstration purposes only, set the exposure time to an initial value.
-                //camera.ExposureTime.SetToMinimum();
-                // Carry out luminance control by using the "once" exposure auto function.
-
-
-                if (!camera.ExposureAuto.IsWritable())
-                {
-                    std::cout << "The camera does not support Exposure Auto.";
-                    return;
-                }
-
-                // Maximize the grabbed area of interest (Image AOI).
-                camera.OffsetX.TrySetToMinimum();
-                camera.OffsetY.TrySetToMinimum();
-                camera.Width.SetToMaximum();
-                camera.Height.SetToMaximum();
-
-                if (camera.AutoFunctionROISelector.IsWritable())
-                {
-                    // Set the Auto Function ROI for luminance statistics.
-                    // We want to use ROI1 for gathering the statistics
-                    camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);
-                    camera.AutoFunctionROIUseBrightness.TrySetValue(true);   // ROI 1 is used for brightness control
-                    camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI2);
-                    camera.AutoFunctionROIUseBrightness.TrySetValue(false);   // ROI 2 is not used for brightness control
-
-                    // Set the ROI (in this example the complete sensor is used)
-                    camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);  // configure ROI 1
-                    camera.AutoFunctionROIOffsetX.TrySetValue(camera.OffsetX.GetMin());
-                    camera.AutoFunctionROIOffsetY.TrySetValue(camera.OffsetY.GetMin());
-                    camera.AutoFunctionROIWidth.TrySetValue(camera.Width.GetMax());
-                    camera.AutoFunctionROIHeight.TrySetValue(camera.Height.GetMax());
-                }
-
-                if (camera.GetSfncVersion() >= Sfnc_2_0_0) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-                {
-                    // Set the target value for luminance control.
-                    // A value of 0.3 means that the target brightness is 30 % of the maximum brightness of the raw pixel value read out from the sensor.
-                    // A value of 0.4 means 40 % and so forth.
-                    camera.AutoTargetBrightness.TrySetValue(0.3);
-
-                    // Try ExposureAuto = Once.
-                    qDebug() << "Trying 'ExposureAuto = Once'.";
-                    qDebug() << "Initial exposure time = " << camera.ExposureTime.GetValue() << " us";
-
-                    // Set the exposure time ranges for luminance control.
-                    camera.AutoExposureTimeLowerLimit.TrySetValue(camera.AutoExposureTimeLowerLimit.GetMin());
-                    camera.AutoExposureTimeUpperLimit.TrySetValue(camera.AutoExposureTimeLowerLimit.GetMax());
-
-                    camera.ExposureAuto.TrySetValue(ExposureAuto_Once);
-                }
-
-                // When the "once" mode of operation is selected,
-                // the parameter values are automatically adjusted until the related image property
-                // reaches the target value. After the automatic parameter value adjustment is complete, the auto
-                // function will automatically be set to "off", and the new parameter value will be applied to the
-                // subsequently grabbed images.
-                int n = 0;
-                while (camera.ExposureAuto.GetValue() != ExposureAuto_Off)
-                {
-                    CBaslerUniversalGrabResultPtr ptrGrabResult;
-                    camera.GrabOne(5000, ptrGrabResult);
-                    ++n;
-
-                    //Make sure the loop is exited.
-                    if (n > 100) {
-                        throw TIMEOUT_EXCEPTION( "The adjustment of auto exposure did not finish.");
-                    }
-                }
-
-                qDebug() << "ExposureAuto went back to 'Off' after " << n << " frames.";
-                qDebug() << "Final exposure time = ";
-
-                if (camera.ExposureTime.IsReadable()) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
-                {
-                    qDebug() << camera.ExposureTime.GetValue() << " us";
-                }
-
-                startGrabbing();
-            }
-        } else {
-            qWarning() << "Only area scan cameras support auto functions.";
+        qDebug() << "Exposure auto once check";
+        if (!camera.ExposureAuto.IsWritable()) {
+            qDebug() << "The camera does not support Exposure Auto.";
+            return;
         }
+
+        if (camera.AutoFunctionROISelector.IsWritable())
+        {
+            // Set the Auto Function ROI for luminance statistics.
+            // We want to use ROI1 for gathering the statistics
+            camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);
+            camera.AutoFunctionROIUseBrightness.TrySetValue(true);   // ROI 1 is used for brightness control
+            camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI2);
+            camera.AutoFunctionROIUseBrightness.TrySetValue(false);   // ROI 2 is not used for brightness control
+
+            // We cannot use the image acquisition ROI for some reason ! It will not run
+            camera.AutoFunctionROISelector.TrySetValue(AutoFunctionROISelector_ROI1);  // configure ROI 1
+            camera.AutoFunctionROIOffsetX.TrySetValue(camera.AutoFunctionROIOffsetX.GetMin());
+            camera.AutoFunctionROIOffsetY.TrySetValue(camera.AutoFunctionROIOffsetY.GetMin());
+            camera.AutoFunctionROIWidth.TrySetValue(camera.AutoFunctionROIWidth.GetMax());
+            camera.AutoFunctionROIHeight.TrySetValue(camera.AutoFunctionROIHeight.GetMax());
+        }
+
+        if (camera.GetSfncVersion() >= Sfnc_2_0_0) // Cameras based on SFNC 2.0 or later, e.g., USB cameras
+        {
+            // Set the target value for luminance control.
+            // A value of 0.3 means that the target brightness is 30 % of the maximum brightness of the raw pixel value read out from the sensor.
+            // A value of 0.4 means 40 % and so forth.
+            camera.AutoTargetBrightness.TrySetValue(0.3);
+            qDebug() << "Trying 'ExposureAuto = Once'.";
+            qDebug() << "Initial exposure time = " << camera.ExposureTime.GetValue() << " us";
+
+            // Set the exposure time ranges for luminance control.
+            camera.AutoExposureTimeLowerLimit.TrySetValue(camera.AutoExposureTimeLowerLimit.GetMin());
+            camera.AutoExposureTimeUpperLimit.TrySetValue(camera.AutoExposureTimeUpperLimit.GetMax());
+            camera.ExposureAuto.TrySetValue(ExposureAuto_Once);
+        } else {
+            // Set the target value for luminance control. The value is always expressed
+            // as an 8 bit value regardless of the current pixel data output format,
+            // i.e., 0 -> black, 255 -> white.
+            camera.AutoTargetValue.SetValue( 80 );
+            qDebug() << "Trying 'ExposureAuto = Once'.";
+            qDebug() << "Initial exposure time = ";
+            qDebug() << camera.ExposureTimeAbs.GetValue() << " us";
+
+            // Set the exposure time ranges for luminance control.
+            camera.AutoExposureTimeAbsLowerLimit.SetToMinimum();
+            // Some cameras have a very high upper limit.
+            // To avoid excessive execution times of the sample, we use 1000000 us (1 s) as the upper limit.
+            // If you need longer exposure times, you can set this to the maximum value.
+            camera.AutoExposureTimeAbsUpperLimit.SetValue( 1 * 1000 * 1000, FloatValueCorrection_ClipToRange );
+            camera.ExposureAuto.SetValue( ExposureAuto_Once );
+        }
+
+        // When the "once" mode of operation is selected,
+        // the parameter values are automatically adjusted until the related image property
+        // reaches the target value. After the automatic parameter value adjustment is complete, the auto
+        // function will automatically be set to "off", and the new parameter value will be applied to the
+        // subsequently grabbed images.
+        int n = 0;
+        while (camera.ExposureAuto.GetValue() != ExposureAuto_Off) {
+            CBaslerUniversalGrabResultPtr ptrGrabResult;
+            camera.GrabOne(5000, ptrGrabResult);
+            ++n;
+
+            //Make sure the loop is exited.
+            if (n > 100) {
+                throw TIMEOUT_EXCEPTION( "The adjustment of auto exposure did not finish.");
+            }
+        }
+
+        qDebug() << "ExposureAuto went back to 'Off' after " << n << " frames.";
+        if (camera.GetSfncVersion() >= Sfnc_2_0_0)
+            qDebug() << "Final exposure time = " << camera.ExposureTime.GetValue() << " us";
+        else
+            qDebug() << "Final exposure time = " << camera.ExposureTimeAbs.GetValue() << " us";
+
     } catch (const TimeoutException &e) {
         // Auto functions did not finish in time.
         // Maybe the cap on the lens is still on or there is not enough light.
@@ -550,7 +622,28 @@ void SingleCamera::autoExposureOnce() {
         qWarning() << "Please make sure you remove the cap from the camera lens before running this sample.";
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
+    startGrabbing();
+}
+
+int SingleCamera::checkExposureTimeIfCompletedAuto() {
+
+    int val = 0;
+    try {
+        bool settingDone = (camera.ExposureAuto.IsReadable() && camera.ExposureAuto.GetValue() == ExposureAutoEnums::ExposureAuto_Off);
+        if(settingDone) {
+            val = getExposureTimeValue();
+        }
+
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
+    }
+
+    return val;
 }
 
 QString SingleCamera::getFriendlyName() {
@@ -558,6 +651,8 @@ QString SingleCamera::getFriendlyName() {
         return QString(camera.GetDeviceInfo().GetFriendlyName().c_str());
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return "";
 }
@@ -567,6 +662,8 @@ QString SingleCamera::getFullName() {
         return QString(camera.GetDeviceInfo().GetFullName().c_str());
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return "";
 }
@@ -576,6 +673,8 @@ QString SingleCamera::getDeviceID() {
         return QString(camera.GetDeviceInfo().GetDeviceID().c_str());
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return "";
 }
@@ -593,6 +692,8 @@ int SingleCamera::getExposureTimeValue() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -610,6 +711,8 @@ int SingleCamera::getExposureTimeMin() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -627,6 +730,8 @@ int SingleCamera::getExposureTimeMax() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -642,6 +747,8 @@ double SingleCamera::getGainValue() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -657,6 +764,8 @@ double SingleCamera::getGainMin() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -672,6 +781,8 @@ double SingleCamera::getGainMax() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -701,6 +812,8 @@ void SingleCamera::setGainValue(double value) {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 }
 
@@ -732,6 +845,8 @@ void SingleCamera::setExposureTimeValue(int value) {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 }
 
@@ -741,6 +856,9 @@ void SingleCamera::loadFromFile(const QString &filename) {
     } catch (const GenericException &e) {
         // Error handling.
         qCritical() << "An exception occurred: " << e.GetDescription();
+    } catch (const std::exception &e) {
+        //stdExceptionOccured(e);
+        qCritical() << "An exception occurred: " << e.what();
     }
 
     if(camera.TriggerMode.GetValueOrDefault("Off") == "On") {
@@ -755,21 +873,26 @@ void SingleCamera::saveToFile(const QString &filename) {
     } catch (const GenericException &e) {
         // Error handling.
         qCritical() << "An exception occurred: " << e.GetDescription();
+    } catch (const std::exception &e) {
+        //stdExceptionOccured(e);
+        qCritical() << "An exception occurred: " << e.what();
     }
 }
 
 bool SingleCamera::isEnabledAcquisitionFrameRate() {
     try {
-        if (isAcquisitionFrameRateAvailable()) {
+        if (isAcquisitionFrameRateAvailableForSWT() || isAcquisitionFrameRateAvailableForHWT()) {
             return camera.AcquisitionFrameRateEnable.GetValue();
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return false;
 }
 
-bool SingleCamera::isAcquisitionFrameRateAvailable() {
+bool SingleCamera::isAcquisitionFrameRateAvailableForSWT() {
     try {
         // TODO: IF THE CAMERA TYPE IS ON WHITELIST, FORCEFULLY RETURN TRUE
         //  e.g. daA1280-54um returns false properly, but still it works surprisingly if we forcefully set
@@ -780,6 +903,25 @@ bool SingleCamera::isAcquisitionFrameRateAvailable() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
+    }
+    return false;
+}
+
+bool SingleCamera::isAcquisitionFrameRateAvailableForHWT() {
+    try {
+        // TODO: IF THE CAMERA TYPE IS ON WHITELIST, FORCEFULLY RETURN TRUE
+        //  e.g. daA1280-54um returns false properly, but still it works surprisingly if we forcefully set
+        //  aquisition framerate. So a whitelist could be used, and that camera added to it at least
+
+        if (camera.AcquisitionFrameRateEnable.IsReadable() && camera.AcquisitionFrameRateEnable.IsWritable()) {
+            return true;
+        }
+    } catch(const GenericException &e) {
+        genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return false;
 }
@@ -810,6 +952,8 @@ void SingleCamera::enableAcquisitionFrameRate(bool enabled) {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 }
 
@@ -822,6 +966,8 @@ void SingleCamera::setAcquisitionFPSValue(int value) {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 }
 
@@ -834,6 +980,8 @@ int SingleCamera::getAcquisitionFPSValue() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -847,6 +995,8 @@ int SingleCamera::getAcquisitionFPSMin() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -860,6 +1010,8 @@ int SingleCamera::getAcquisitionFPSMax() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -880,12 +1032,42 @@ double SingleCamera::getResultingFrameRateValue() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
 
 CameraCalibration *SingleCamera::getCameraCalibration() {
     return cameraCalibration;
+}
+
+bool SingleCamera::isHardwareTriggerAvailable() {
+    bool val = false;
+
+    try {
+        GenApi_3_1_Basler_pylon_v3::INodeMap& nodemap = camera.GetNodeMap();
+        // NOTE: for some reason the node name is "TriggerSource" not "TriggerSources"
+        GenApi_3_1_Basler_pylon_v3::CEnumerationPtr triggerSources(nodemap.GetNode("TriggerSource"));
+        if (IsAvailable(triggerSources) && IsReadable(triggerSources)) {
+            GenApi_3_1_Basler_pylon_v3::NodeList_t entries;
+            triggerSources->GetEntries(entries);
+
+            for (GenApi_3_1_Basler_pylon_v3::NodeList_t::const_iterator it = entries.begin(); it != entries.end(); ++it) {
+                GenApi_3_1_Basler_pylon_v3::CEnumEntryPtr entry(*it);
+                if (IsAvailable(entry) && IsReadable(entry) && ((std::string)(entry->GetSymbolic()).c_str()).rfind("Line", 0) == 0) {
+                    val = true;
+                    break;
+                }
+            }
+        }
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
+    }
+    hardwareTriggerEnabled = val; // TODO: get rid of this ?
+    return val;
 }
 
 bool SingleCamera::isHardwareTriggerEnabled() {
@@ -897,30 +1079,89 @@ bool SingleCamera::isHardwareTriggerEnabled() {
  */
 void SingleCamera::synchronizeTime() {
 
-    //GenApi::INodeMap& nodemap = camera.GetNodeMap();
+    bool notSupportedTimestampControl = false;
 
-    // Take a "snapshot" of the camera's current timestamp value
-    //CCommandParameter(nodemap, "GevTimestampControlLatch").Execute();
-    camera.TimestampLatch.Execute();
-    std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
-    std::chrono::time_point<std::chrono::system_clock> epoche = std::chrono::time_point<std::chrono::system_clock>{};
+    try {
+        //GenApi::INodeMap& nodemap = camera.GetNodeMap();
 
-    // Get the timestamp value
-    //cameraTime = CIntegerParameter(nodemap, "GevTimestampValue").GetValue();
-    cameraTime = static_cast<uint64>(camera.TimestampLatchValue.GetValue());
-    systemTime  = std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
-    std::time_t startTime = std::chrono::system_clock::to_time_t(start);
-    std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
+        std::chrono::time_point<std::chrono::system_clock> start;
+        std::chrono::time_point<std::chrono::system_clock> epoche;
 
-    qInfo() << "Camera Synchronize Time";
-    qInfo() << "=========================";
-    qInfo() << "Timestamp Camera: " << cameraTime;
-    qInfo() << "Timestamp System: " << systemTime;
-    qInfo() << "System Epoch: " << std::ctime(&epochTime);
-    qInfo() << "System Time: " << std::ctime(&startTime);
-    qInfo() << "Time from Epoch (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
-    qInfo() << "Time from Epoch (us): " << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count();
-    qInfo() << "=========================";
+        // Take a "snapshot" of the camera's current timestamp value
+        //CCommandParameter(nodemap, "GevTimestampControlLatch").Execute();
+        if (camera.GetDeviceInfo().GetTLType() == "BaslerGigE" || camera.GetDeviceInfo().GetTLType() == "GEV") {
+            // Works for GigE
+
+            qDebug() << "camera.GevTimestampControlLatch.IsValid() = " << camera.GevTimestampControlLatch.IsValid();
+            qDebug() << "GenApi_3_1_Basler_pylon_v3::IsAvailable(camera.GevTimestampControlLatch) = " << GenApi_3_1_Basler_pylon_v3::IsAvailable(camera.GevTimestampControlLatch);
+            qDebug() << "GenApi_3_1_Basler_pylon_v3::IsImplemented(camera.GevTimestampControlLatch) = " << GenApi_3_1_Basler_pylon_v3::IsImplemented(camera.GevTimestampControlLatch);
+
+            // but we need to check if the camera has timestamp control at all
+            if (    camera.GevTimestampControlLatch.IsValid() &&
+                    GenApi_3_1_Basler_pylon_v3::IsAvailable(camera.GevTimestampControlLatch) &&
+                    GenApi_3_1_Basler_pylon_v3::IsImplemented(camera.GevTimestampControlLatch)
+                    ) {
+                camera.GevTimestampControlLatch.Execute();
+                start = std::chrono::system_clock::now();
+                epoche = std::chrono::time_point<std::chrono::system_clock>{};
+
+                cameraTime = static_cast<uint64>(camera.GevTimestampValue.GetValue());
+                systemTime = std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+            } else {
+                notSupportedTimestampControl = true;
+            }
+        } else {
+            // Works for USB3Vision (and possibly others)
+
+            qDebug() << "camera.TimestampLatch.IsValid() = " << camera.TimestampLatch.IsValid();
+            qDebug() << "GenApi_3_1_Basler_pylon_v3::IsAvailable(camera.TimestampLatch) = " << GenApi_3_1_Basler_pylon_v3::IsAvailable(camera.TimestampLatch);
+            qDebug() << "GenApi_3_1_Basler_pylon_v3::IsImplemented(camera.TimestampLatch) = " << GenApi_3_1_Basler_pylon_v3::IsImplemented(camera.TimestampLatch);
+
+            // but we need to check if the camera has timestamp control at all
+            if (    camera.TimestampLatch.IsValid() &&
+                    GenApi_3_1_Basler_pylon_v3::IsAvailable(camera.TimestampLatch) &&
+                    GenApi_3_1_Basler_pylon_v3::IsImplemented(camera.TimestampLatch)
+                    ) {
+                camera.TimestampLatch.Execute();
+                start = std::chrono::system_clock::now();
+                epoche = std::chrono::time_point<std::chrono::system_clock>{};
+
+                // Get the timestamp value
+                //cameraTime = CIntegerParameter(nodemap, "GevTimestampValue").GetValue();
+                cameraTime = static_cast<uint64>(camera.TimestampLatchValue.GetValue());
+                systemTime = std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+            } else {
+                notSupportedTimestampControl = true;
+            }
+        }
+
+        if(notSupportedTimestampControl) {
+            qInfo() << "This camera does not support timestamp control (time synchronization).\n"
+                       "Proceeding now as if the synchronization was 1:1 between camera and this computer";
+            cameraTime = systemTime = std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+        } else {
+            std::time_t startTime = std::chrono::system_clock::to_time_t(start);
+            std::time_t epochTime = std::chrono::system_clock::to_time_t(epoche);
+
+            qInfo() << "Camera Synchronize Time";
+            qInfo() << "================================================================================";
+            qInfo() << "Timestamp Camera: " << cameraTime;
+            qInfo() << "Timestamp System: " << systemTime;
+            qInfo() << "System Epoch: " << std::ctime(&epochTime);
+            qInfo() << "System Time: " << std::ctime(&startTime);
+            qInfo() << "Time from Epoch (ms): "
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count();
+            qInfo() << "Time from Epoch (us): "
+                    << std::chrono::duration_cast<std::chrono::microseconds>(start.time_since_epoch()).count();
+            qInfo() << "================================================================================";
+        }
+
+    } catch(const GenericException &e) {
+//        genericExceptionOccured(e);
+        qInfo() << "An error occured while trying to synchronize time with the camera.";
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
+    }
 }
 
 QString SingleCamera::getLineSource() {
@@ -973,6 +1214,8 @@ int SingleCamera::getImageROIwidth() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -984,6 +1227,8 @@ int SingleCamera::getImageROIheight() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -995,6 +1240,8 @@ int SingleCamera::getImageROIoffsetX() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -1006,6 +1253,8 @@ int SingleCamera::getImageROIoffsetXInc() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -1017,6 +1266,8 @@ int SingleCamera::getImageROIoffsetY() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -1028,6 +1279,8 @@ int SingleCamera::getImageROIoffsetYInc() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -1043,6 +1296,8 @@ int SingleCamera::getImageROIwidthMax() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -1054,6 +1309,8 @@ int SingleCamera::getImageROIwidthInc() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 16;
 }
@@ -1069,6 +1326,8 @@ int SingleCamera::getImageROIheightMax() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 0;
 }
@@ -1081,6 +1340,8 @@ int SingleCamera::getImageROIheightInc() {
         }
     } catch(const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return 16;
 }
@@ -1119,6 +1380,8 @@ bool SingleCamera::isBinningAvailable() {
         }
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 
     return val;
@@ -1132,6 +1395,8 @@ int SingleCamera::getBinningVal() {
     }
     catch (const GenericException &e) {
         return 1;
+    } catch (const std::exception &e) {
+        return 1;
     }
 }
 
@@ -1142,6 +1407,8 @@ int SingleCamera::getBinningMax() {
         return camera.BinningHorizontal.GetMax();
     }
     catch (const GenericException &e) {
+        return 1;
+    } catch (const std::exception &e) {
         return 1;
     }
 }
@@ -1154,6 +1421,8 @@ bool SingleCamera::isTemperatureReadingSupported() {
             return true;
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     return false;
 }
@@ -1174,6 +1443,8 @@ double SingleCamera::getTemperature() {
         d = camera.DeviceTemperature.GetValue();
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
 
     return d;
@@ -1214,33 +1485,47 @@ void SingleCamera::enableSensorLevelBinningIfPossible() {
 }
 
 // NOTE: grabbing "pause" is necessary for setting binning
+// TODO: probably there is some internal inconsistency in the Pylon APi, because e.g.
+//  when an acA1300-60gm is used to switch binning from 1 to 2, or from 2 to 4, the y work, but when
+//  switching from 1 to 4, the ROI shrinks... as if the wrapped function in the background did not wait
+//  till the binning took effect, and set the new (binning-reduced) ROI size too early...?
 bool SingleCamera::setBinningVal(int value) {
 
     bool success = false;
+    try {
+        if (camera.IsGrabbing())
+            camera.StopGrabbing();
 
-    if(camera.IsGrabbing())
-        camera.StopGrabbing();
+        // IMPORTANT: Horizontal binning has to be set first
 
-    // IMPORTANT: Horizontal binning has to be set first
+        // in case of our Basler cameras here, only mode=1,2,4 are only valid values
+        if (isBinningAvailable()) {
 
-    // in case of our Basler cameras here, only mode=1,2,4 are only valid values
-    if(isBinningAvailable()) {
+            enableSensorLevelBinningIfPossible();
 
-        enableSensorLevelBinningIfPossible();
+            int binningMax = getBinningMax();
+            if( binningMax < value) {
+                value = binningMax;
+            }
 
-        if(value==2 || value==3) {
-            success = camera.BinningHorizontal.TrySetValue(2) &&
-                    camera.BinningVertical.TrySetValue(2);
-            qDebug() << "Setting binning to 2 on both axes";
-        } else if(value==4) {
-            success = camera.BinningHorizontal.TrySetValue(4) &&
-                    camera.BinningVertical.TrySetValue(4);
-            qDebug() << "Setting binning to 4 on both axes";
-        } else { //if(value==1) {
-            success = camera.BinningHorizontal.TrySetValue(1) &&
-                    camera.BinningVertical.TrySetValue(1);
-            qDebug() << "Setting binning to 1 (no binning) on both axes";
+            if (value == 2 || value == 3) {
+                success = camera.BinningHorizontal.TrySetValue(2) &&
+                          camera.BinningVertical.TrySetValue(2);
+                qDebug() << "Setting binning to 2 on both axes";
+            } else if (value == 4) {
+                success = camera.BinningHorizontal.TrySetValue(4) &&
+                          camera.BinningVertical.TrySetValue(4);
+                qDebug() << "Setting binning to 4 on both axes";
+            } else { //if(value==1) {
+                success = camera.BinningHorizontal.TrySetValue(1) &&
+                          camera.BinningVertical.TrySetValue(1);
+                qDebug() << "Setting binning to 1 (no binning) on both axes";
+            }
         }
+    } catch (const GenericException &e) {
+        genericExceptionOccured(e);
+    } catch (const std::exception &e) {
+        stdExceptionOccured(e);
     }
     startGrabbing();
     return success;

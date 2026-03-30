@@ -65,7 +65,8 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
         imageProcessed(imageProcessed)
     {
 
-    drawDelay = 33; // ~30fps
+//    drawDelay = 33;  // 30 per second
+    drawDelay = 40; // 25 per second is enough too
 
     // we initialize the algorithms here one time and save them in a list, the created objects are then changed through index change of the list
     populateWithMethods(pupilDetectionMethods1);
@@ -283,11 +284,13 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == image.frameNumber)
             ) ) ) {
 
-            if(sharpnessGuideEnabled) {
+            if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
                 cv::Mat Mask = sharpnessThreshMask(image.img);
 //                image.sharpnessMask = Mask.clone();
                 image.sharpnessMask = Mask;
             }
+            sharpnessLowFPSstate = !sharpnessLowFPSstate;
+
             emit processedImageLowFPS(image);
         }
         return;
@@ -420,10 +423,11 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
             //ROIs.push_back(cv::Rect(0,0, bwFrame.size().width, bwFrame.size().height));
         }
 
-        if(sharpnessGuideEnabled) {
+        if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
             cv::Mat Mask = sharpnessThreshMask(mimg.img);
             mimg.sharpnessMask = Mask.clone();
         }
+        sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
@@ -477,11 +481,12 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == cimg.frameNumber)
             ) ) ) {
 
-            if(sharpnessGuideEnabled) {
+            if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
                 cv::Mat Mask = sharpnessThreshMask(cimg.img);
 //                cimg.sharpnessMask = Mask.clone();
                 cimg.sharpnessMask = Mask;
             }
+            sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
             emit processedImageLowFPS(cimg);
         }
@@ -645,11 +650,12 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
             // ROIs.push_back(cv::Rect((int)std::ceil(cimg->img.cols/2)+1, 0, bwFrameB.size().width, bwFrameB.size().height));
         }
 
-        if(sharpnessGuideEnabled) {
+        if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
             cv::Mat Mask = sharpnessThreshMask(mimg.img);
 //            mimg.sharpnessMask = Mask.clone();
             mimg.sharpnessMask = Mask;
         }
+        sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
@@ -706,7 +712,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
             ) ) ) {
 
-            if(sharpnessGuideEnabled) {
+            if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
                 cv::Mat Mask = sharpnessThreshMask(simg.img);
                 cv::Mat MaskS = sharpnessThreshMask(simg.imgS);
 //                simg.sharpnessMask = Mask.clone();
@@ -714,6 +720,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
                 simg.sharpnessMask = Mask;
                 simg.sharpnessMaskS = MaskS;
             }
+            sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
             emit processedImageLowFPS(simg);
         }
@@ -883,7 +890,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
             //ROIs.push_back(cv::Rect(0,0, bwFrameS.size().width, bwFrameS.size().height));
         }
 
-        if(sharpnessGuideEnabled) {
+        if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
             cv::Mat Mask = sharpnessThreshMask(mimg.img);
             cv::Mat MaskS = sharpnessThreshMask(mimg.imgS);
 //            mimg.sharpnessMask = Mask.clone();
@@ -891,6 +898,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
             mimg.sharpnessMask = Mask;
             mimg.sharpnessMaskS = MaskS;
         }
+        sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
@@ -943,7 +951,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
                     (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
             ) ) ) {
 
-            if(sharpnessGuideEnabled) {
+            if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
                 cv::Mat Mask = sharpnessThreshMask(simg.img);
                 cv::Mat MaskS = sharpnessThreshMask(simg.imgS);
 //                simg.sharpnessMask = Mask.clone();
@@ -951,6 +959,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
                 simg.sharpnessMask = Mask;
                 simg.sharpnessMaskS = MaskS;
             }
+            sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
             emit processedImageLowFPS(simg);
         }
@@ -1213,7 +1222,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
 
         }
 
-        if(sharpnessGuideEnabled) {
+        if(sharpnessGuideEnabled && sharpnessLowFPSstate) {
             cv::Mat Mask = sharpnessThreshMask(mimg.img);
             cv::Mat MaskS = sharpnessThreshMask(mimg.imgS);
 //            mimg.sharpnessMask = Mask.clone();
@@ -1221,6 +1230,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
             mimg.sharpnessMask = Mask;
             mimg.sharpnessMaskS = MaskS;
         }
+        sharpnessLowFPSstate = !sharpnessLowFPSstate;
 
         emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 

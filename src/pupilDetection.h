@@ -325,6 +325,8 @@ private:
     */
 
     int sharpnessMaxDim = 400;
+    // This is a very simple solution to halve the FPS at which sharpness overlay is calculated. Its safer.
+    bool sharpnessLowFPSstate = false;
 
     cv::Mat sharpnessThreshMask(const cv::Mat& input) {
 
@@ -353,7 +355,7 @@ private:
         int sharpnessMethod = 2;
         // 0 = Tenengrad with Sobel (slow) good
         // 1 = Laplacian (fast) very noisy
-        // 2 = Brenner (fast) rather good
+        // 2 = Brenner (fast) rather good, probably the best tradeoff
 
         if(sharpnessMethod == 0) {
             cv::Mat gx, gy;
@@ -390,7 +392,7 @@ private:
                     mag.at<float>(y, x) = diff * diff;
                 }
             }
-            mask = mag > sharpnessGuideThresh/2.0;
+            mask = mag > sharpnessGuideThresh;
         }
 
         return mask;

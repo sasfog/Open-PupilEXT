@@ -58,17 +58,32 @@ int main(int argc, char *argv[])
 {
     try {
 
-        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg){
-            fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
+        try {
             QFile logFile("lastrun.txt");
-//            if(msg == "QFlags<Qt::MouseButton>(LeftButton)")
-//                std::cout << "Test event caught";
-            if(msg == "1000")
-                std::cout << "Test event caught";
-//            if (logFile.open(QIODevice::WriteOnly)) {
-            if (logFile.open(QIODevice::Append)) {
+            if (logFile.open(QIODevice::WriteOnly)) {
                 QTextStream out(&logFile);
-                out << msg << "\n";
+                out << "--------------------------------------------------------------------------------" << "\n";
+                out << "PupilEXT freshly started" << "\n";
+            }
+        } catch(std::exception &e) {
+            std::cout << "Could not start writing the lastrun.txt log file. " << e.what();
+        }
+
+        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg){
+            try {
+                fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
+                QFile logFile("lastrun.txt");
+//                if(msg == "QFlags<Qt::MouseButton>(LeftButton)")
+//                    std::cout << "Test event caught";
+//                if(msg == "1000")
+//                    std::cout << "Test event caught";
+                if (logFile.open(QIODevice::Append)) {
+                    QTextStream out(&logFile);
+                    out << msg << "\n";
+                }
+            } catch(std::exception &e) {
+                // TODO?
+//                std::cout << "Could not write to log file. " << e.what();
             }
         });
 
@@ -120,26 +135,6 @@ int main(int argc, char *argv[])
 //            argvT[14] = (char*)"jpeg";
 //            argvT[15] = nullptr;
 //            //char *argvT[] = {, , };
-//            ExecArgParser* execArgParser = new ExecArgParser(argcT, argvT);
-
-            // DEV DEMO DEE LUND
-            // Test exec args:
-//            int argcT = 14;
-//            char* argvT[14];
-//            argvT[0] = (char*)"blabla";
-//            argvT[1] = (char*)"-setAcquisitionTriggeringMode";
-//            argvT[2] = (char*)"H";
-//            argvT[3] = (char*)"-setExposureTimeMicrosec";
-//            argvT[4] = (char*)"380";
-//            argvT[5] = (char*)"-setGain";
-//            argvT[6] = (char*)"12";
-//            argvT[7] = (char*)"-openSingleCamera";
-//            argvT[8] = (char*)"Basler acA1300-200um (22625200)"; // 22845124
-//            argvT[9] = (char*)"-connectRemoteUDP";
-//            argvT[10] = (char*)"0.0.0.0:6900";
-//            argvT[11] = (char*)"-setImageOutputFormat";
-//            argvT[12] = (char*)"jpeg";
-//            argvT[13] = nullptr;
 //            ExecArgParser* execArgParser = new ExecArgParser(argcT, argvT);
 
             // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)

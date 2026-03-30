@@ -4259,18 +4259,29 @@ void MainWindow::dropEvent(QDropEvent* e)
         openImageFileSource(fileInfo.filePath());
     } else if(fileInfo.isFile()) {
         // TODO: shorter, cleaner, better
-        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "tif" || fileInfo.completeSuffix() == "png"  ||
+        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "tif"  || fileInfo.completeSuffix() == "png"  ||
             fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "jpeg" || fileInfo.completeSuffix() == "jpg" ||
-            fileInfo.completeSuffix() == "jpe" ||  fileInfo.completeSuffix() == "jp2" ||  fileInfo.completeSuffix() == "webp" ||
+            fileInfo.completeSuffix() == "jpe" || fileInfo.completeSuffix() == "jp2"  || fileInfo.completeSuffix() == "webp" ||
             fileInfo.completeSuffix() == "pgm" ||
             fileInfo.fileName() == "imagerec_meta.xml" || fileInfo.fileName() == "offline_event_log.xml" ||
             fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml" ) {
+
+            // Case 1: when the file we grab in, is INSIDE the recording's own folder
 
             if(selectedCamera && selectedCamera->isOpen()) {
                 onCameraDisconnectClick();
             }
             qDebug() << "Attempting to open: " << fileInfo.filePath().chopped(fileInfo.fileName().length());
             openImageFileSource(fileInfo.filePath().chopped(fileInfo.fileName().length()));
+        } else if(fileInfo.completeSuffix() == "zip") {
+
+            // Case 2: when the file we grab in, is the recording itself
+
+            if(selectedCamera && selectedCamera->isOpen()) {
+                onCameraDisconnectClick();
+            }
+            qDebug() << "Attempting to open: " << fileInfo.absoluteFilePath();
+            openImageFileSource(fileInfo.absoluteFilePath());
         }
     }
 

@@ -940,6 +940,7 @@ void SingleCameraView::onShowAutoParamOverlay(bool state) {
 //  because it needs extra calculation, so only use it when user explicitly needs it for setting focus
 void SingleCameraView::onShowSharpnessGuideOverlay(bool state) {
     pupilDetection->setSharpnessGuideEnabled(state);
+    videoView->setSharpnessGuideEnabled(state);
     showSharpnessGuideOverlay = state;
     applicationSettings->setValue("SingleCameraView.showSharpnessGuideOverlay", showSharpnessGuideOverlay);
 //    emit onChangeShowSharpnessGuideOverlay(showSharpnessGuideOverlay); // unnecessary

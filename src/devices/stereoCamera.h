@@ -75,7 +75,8 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate();
-    bool isAcquisitionFrameRateAvailable();
+    bool isAcquisitionFrameRateAvailableForSWT();
+    bool isAcquisitionFrameRateAvailableForHWT();
     bool isEmulated();
     double getResultingFrameRateValue() override;
 
@@ -122,6 +123,10 @@ public:
     int getBinningMax();
     std::vector<double> getTemperatures();
 
+    QSize getFullSensorResolution() override;
+    int checkExposureTimeIfCompletedAuto();
+    double checkGainIfCompletedAuto();
+
     bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
@@ -143,7 +148,6 @@ private:
     QString lineSource;
 
     void determineFullSensorResolution();
-
     CBaslerUniversalInstantCameraArray cameras;
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
     CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
@@ -158,6 +162,7 @@ private:
     void synchronizeTime();
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
+    void stdExceptionOccured(const std::exception &e);
 
     void enableSensorLevelBinningIfPossible();
 

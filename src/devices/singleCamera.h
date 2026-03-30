@@ -71,7 +71,8 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
-    bool isAcquisitionFrameRateAvailable();
+    bool isAcquisitionFrameRateAvailableForSWT();
+    bool isAcquisitionFrameRateAvailableForHWT();
     bool isEmulated();
     double getResultingFrameRateValue() override; // ResultingFrameRate
 
@@ -89,6 +90,7 @@ public:
     double getGainMax();
 
     QString getLineSource();
+    bool isHardwareTriggerAvailable();
     bool isHardwareTriggerEnabled();
 
     CameraCalibration* getCameraCalibration();
@@ -113,6 +115,10 @@ public:
     double getTemperature();
     bool isGrabbing() override;
 
+    QSize getFullSensorResolution() override;
+    int checkExposureTimeIfCompletedAuto();
+    double checkGainIfCompletedAuto();
+
     bool isTemperatureReadingSupported() override;
 
 private:
@@ -127,7 +133,6 @@ private:
     QString lineSource;
 
     void determineFullSensorResolution();
-
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
 
@@ -141,6 +146,7 @@ private:
     void synchronizeTime();
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
+    void stdExceptionOccured(const std::exception &e);
 
     void enableSensorLevelBinningIfPossible();
 

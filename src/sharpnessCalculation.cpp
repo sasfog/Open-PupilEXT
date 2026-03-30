@@ -7,7 +7,8 @@
 // This should be run in a separate thread as the pattern detection is slow
 SharpnessCalculation::SharpnessCalculation(QObject *parent) : QObject(parent) {
 
-    drawDelay = 33;
+//    drawDelay = 33; // 30 per second
+    drawDelay = 40; // 25 per second is enough too
 
     scalingFactor = 0.5; // Scales the image down to increase pattern detection speed, for sharpness calculation, the original resolution is used
 

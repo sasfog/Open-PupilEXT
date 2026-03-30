@@ -167,6 +167,12 @@ void VideoView::setAutoParamPupSize(int value) {
     //drawAutoParamOverlay();
 }
 
+void VideoView::setSharpnessGuideEnabled(bool state) {
+    sharpnessGuideEnabled = state;
+    //drawAutoParamOverlay();
+    drawOverlay();
+}
+
 void VideoView::onShowROI(bool value) {
     showROI = value;
     drawOverlay();
@@ -215,8 +221,6 @@ void VideoView::updateViewProcessed(const cv::Mat &img, const std::vector<cv::Re
         tPupils.push_back(Pupils[z]);
     }
 
-//    tSharpnessMask = cv::Mat();
-//    cv::cvtColor(sharpnessMask, tSharpnessMask, cv::COLOR_GRAY2BGR);
     tSharpnessMask = sharpnessMask.clone();
 
     drawOverlay();
@@ -239,15 +243,20 @@ void VideoView::setSensorSize(const QSize& size) {
 
 void VideoView::drawSharpnessGuide() {
 
-    // to prevent memory leaks and lagging GUI
-    for(std::size_t c=0; c<geBufferSM.size(); c++) {
-        graphicsScene->removeItem(geBufferSM[c]);
-        delete geBufferSM[c];
+    // NOTE: we need this enabled bool in order to let the last received sharpness mask remain on the scene,
+    //  if it is only supplied with a much slower frame rate than how quickly the camera images arrive
+    if(!sharpnessGuideEnabled || (sharpnessGuideEnabled && !tSharpnessMask.empty())) {
+        // to prevent memory leaks and lagging GUI
+        for (std::size_t c = 0; c < geBufferSM.size(); c++) {
+            graphicsScene->removeItem(geBufferSM[c]);
+            delete geBufferSM[c];
+        }
+        if (geBufferSM.size() > 0)
+            geBufferSM.clear();
     }
-    if(geBufferSM.size()>0)
-        geBufferSM.clear();
 
-    // NOTE: We do not check for an enabled-bool. Only look at the mat. If there is anything, we draw it
+    // NOTE: It is now moved above the scene clearer loop, so that the sharpness map can remain visible
+    //  even if received at a slower FPS than actual camera images
     if(tSharpnessMask.empty())
         return;
 
@@ -271,14 +280,14 @@ void VideoView::drawSharpnessGuide() {
 
     geBufferSM.push_back( graphicsScene->addPixmap(rgba2_pixmap) );
 
-
-
-    QSizeF viewSize = graphicsView->viewport()->size();
+//    QSizeF viewSize = graphicsView->viewport()->size();
+    QSizeF viewSize = graphicsScene->sceneRect().size();
     QRectF itemRect;
     for(std::size_t c=0; c<geBufferSM.size(); c++) {
         geBufferSM[c]->setZValue(89);
         itemRect = geBufferSM[c]->boundingRect();
-        geBufferSM[c]-> setScale(viewSize.width() / (float)itemRect.width());
+        geBufferSM[c]->setScale(1);
+        geBufferSM[c]->setScale(viewSize.width() / (float)itemRect.width());
     }
 }
 

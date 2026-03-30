@@ -13,7 +13,8 @@
 CameraCalibration::CameraCalibration(QObject *parent) : QObject(parent), mode(NONE), intrinsicRMSE(0), avgMAE(0), sharpnessThreshold(3), captureCount(0), referenceObjectPoints(1), verifyFrameNumber(0), verifyOutputPath("") {
 
     captureDelay = 500;
-    drawDelay = 33;
+//    drawDelay = 33; // 30 per second
+    drawDelay = 40; // 25 per second is enough too
 
     // Factor which scales down images, increases speed for real time pattern detection, points are later optimized at subpixel on full image
     scalingFactor = 0.5;
