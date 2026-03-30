@@ -98,7 +98,7 @@ public slots:
     virtual void onSetROIClick(float roiSize) = 0;
     virtual void onSaveROIClick() = 0;
     virtual void onResetROIClick() = 0;
-    virtual void void onDiscardROISelectionClick() = 0;
+    virtual void onDiscardROISelectionClick() = 0;
 
     virtual void onDisplayPupilViewClick(bool value) = 0;
     // TODO: REFACTOR
@@ -128,6 +128,7 @@ public slots:
 
     // TODO: REFACTOR
     void onShowAutoParamOverlay(bool state);
+    virtual void onShowSharpnessGuideOverlay(bool state) = 0;
     virtual void onAutoParamPupSize(int value) = 0;
 
     void onFreezeClicked();

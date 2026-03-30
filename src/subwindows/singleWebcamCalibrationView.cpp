@@ -43,9 +43,12 @@ SingleWebcamCalibrationView::SingleWebcamCalibrationView(SingleWebcam *camera, Q
     QVBoxLayout *checkboxLayout = new QVBoxLayout();
 
     chessboardCheckbox = new QCheckBox("Chessboard");
+    chessboardCheckbox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     chessboardCheckbox->setChecked(true);
     circlesCheckbox = new QCheckBox("Circles");
+    circlesCheckbox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     asymmetricCirclesCheckbox = new QCheckBox("Asymmetric Circles");
+    asymmetricCirclesCheckbox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
 
     patternCheckboxGroup->addButton(chessboardCheckbox);
     patternCheckboxGroup->addButton(circlesCheckbox);
@@ -98,6 +101,7 @@ SingleWebcamCalibrationView::SingleWebcamCalibrationView(SingleWebcam *camera, Q
     QHBoxLayout* verifyLayout = new QHBoxLayout();
 
     verifyFileBox = new QCheckBox("Save verification to file.");
+    verifyFileBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
 
     connect(verifyFileBox, SIGNAL(toggled(bool)), this, SLOT(onVerifyFileChecked(bool)));
 
@@ -158,7 +162,7 @@ SingleWebcamCalibrationView::~SingleWebcamCalibrationView() {
 void SingleWebcamCalibrationView::updateView(const CameraImage &cimg) {
 
     if(!cimg.img.empty()) {
-        videoView->updateView(cimg.img);
+        videoView->updateView(cimg.img, cimg.sharpnessMask);
     }
 }
 
@@ -292,8 +296,7 @@ void SingleWebcamCalibrationView::loadConfigFile() {
     QString configFile = camera->getCalibrationFilename();
     //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
     if (QFile::exists(configFile)) {
-        std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
-                  << std::endl;
+        qDebug() << "Found calibration file in settings directory. Loading: " << configFile.toStdString();
         calibrationWorker->loadFromFile(configFile.toStdString().c_str());
         updateSettings();
     }

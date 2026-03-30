@@ -6,8 +6,9 @@
 
 #include <QtCore/QObject>
 #include <QDebug>
-#include <pylon/PylonIncludes.h>
 #include "camera.h"
+
+#include <pylon/PylonIncludes.h>
 
 using namespace Pylon;
 

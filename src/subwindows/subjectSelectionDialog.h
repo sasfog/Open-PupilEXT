@@ -45,7 +45,7 @@ private:
     QPushButton *removeButton;
 
     QSettings *applicationSettings;
-    QString recentPath;
+    QString recentDataWritingDirectory;
 
     QList<QPair<QString, QString>> subjectConfigs;
 

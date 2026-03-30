@@ -13,6 +13,8 @@ SceneImageWidget::SceneImageWidget(QWidget *parent) :
         graphicsView(new QGraphicsView(this)),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
+    graphicsView->setRenderHint(QPainter::Antialiasing, true);
+
     int msize = std::max(graphicsView->width(), graphicsView->height());
 
     bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");

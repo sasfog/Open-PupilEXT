@@ -34,8 +34,10 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     setLayout(layout);
 
     tableContextMenu = new QMenu(this);
+    QAction *tcmAct = new QAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings),"Plot Value", this);
+    tcmAct->setIconVisibleInMenu(true);
     // Caution when adding new actions to this menu, the handler onContextMenuClick depends on the plot value action to be the first
-    tableContextMenu->addAction(new QAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings),"Plot Value", this));
+    tableContextMenu->addAction(tcmAct);
     connect(tableContextMenu, SIGNAL(triggered(QAction*)), this, SLOT(onContextMenuClick(QAction*)));
 
     // TODO: make this menu for header items too (bit complicated), and for each row (cell) make a contextmenu too
@@ -56,30 +58,30 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             numCols=4;
             break;
     }
-    tableModel = new QStandardItemModel(18, numCols, this);
+    tableModel = new QStandardItemModel(PDataTypes::dataTableRows.size(), numCols, this);
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A"));
-            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B"));
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye R"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye L"));
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
             tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Sec."));
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A Main"));
-            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B Main"));
-            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye A Sec."));
-            tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye B Sec."));
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye R Main"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye R Main"));
+            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye L Sec."));
+            tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye L Sec."));
             break;
     }
 
-    for(int v = 0; v < DataTypes::map.size(); v++) {
-        tableModel->setHeaderData(v, Qt::Vertical, DataTypes::map.value((DataTypes::DataType)v));
+    for(int v = 0; v < PDataTypes::dataTableRows.size(); v++) {
+        tableModel->setHeaderData(v, Qt::Vertical, PDataTypes::tyf.at(PDataTypes::dataTableRows[v]));
     }
 
     // Make the table contents read-only in the GUI
@@ -190,37 +192,38 @@ void DataTable::customMenuRequested(QPoint pos){
 
 // Slot handler that receives new pupil data from the pupil detection process
 // New data is only updated in the table at low FPS
-void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
+void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils) {
     // std::cout << "timestamp = " << QString::number(timestamp).toStdString() << "; filename = " << filename.toStdString() << std::endl;
 
     if(resetScheduled)
         reset();
-
-    tableModel->item((int)DataTypes::DataType::TIME_RAW_TIMESTAMP,0)->setText(QString::number(timestamp));
+    // todo: dynamic resolution to find index of PDataType::TIME_RAW_TIMESTAMP
+    tableModel->item(0, 0)->setText(QString::number(timestamp));
 
     // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
     QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
 //    // Display the date/time in the system specific locale format
 //    tableModel->item(0,0)->setText(QLocale::system().toString(date));
-    tableModel->item((int)DataTypes::DataType::TIME,0)->setText(date.toString("hh:mm:ss"));
+    // todo: dynamic resolution to find index of PDataType::P_TIME
+    tableModel->item(1, 0)->setText(date.toString("hh:mm:ss"));
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN], 0);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_A], 0);
-            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_B], 1);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_R], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_L], 1);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN], 0);
             setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC], 1);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN], 1);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC], 2);
-            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC], 3);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_R_MAIN], 0);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_L_MAIN], 1);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_R_SEC], 2);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_L_SEC], 3);
             break;
     }
 
@@ -235,19 +238,27 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
 // TODO: Figure out something cleaner using the key-value map we yet have
 void DataTable::setPupilData(const Pupil &pupil, int columnID) {
 
-    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_X, columnID)->setText(QString::number(pupil.center.x));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_Y, columnID)->setText(QString::number(pupil.center.y));
-    tableModel->item((int)DataTypes::DataType::PUPIL_MAJOR, columnID)->setText(QString::number(pupil.majorAxis()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_MINOR, columnID)->setText(QString::number(pupil.minorAxis()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_WIDTH, columnID)->setText(QString::number(pupil.width()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_HEIGHT, columnID)->setText(QString::number(pupil.height()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_DIAMETER, columnID)->setText(QString::number(pupil.diameter()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_UNDIST_DIAMETER, columnID)->setText(QString::number(pupil.undistortedDiameter));
-    tableModel->item((int)DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER, columnID)->setText(QString::number(pupil.physicalDiameter));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CONFIDENCE, columnID)->setText(QString::number(pupil.confidence));
-    tableModel->item((int)DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE, columnID)->setText(QString::number(pupil.outline_confidence));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CIRCUMFERENCE, columnID)->setText(QString::number(pupil.circumference()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_RATIO, columnID)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
+    // TODO: currently this leaves alone the top 5 rows only because the for-loop skips them, but they could be
+    //  left out even more nicely, by some runtime check of each row...
+    for(int v = 5; v <PDataTypes::dataTableRows.size(); v++) {
+        //tableModel->setHeaderData(v, Qt::Vertical, PDataTypes::tyf.value((PDataTypes::DataType)v));
+        std::cout << QString::number(pupil.getPData(PDataTypes::dataTableRows[v])).toStdString() << std::endl;
+        tableModel->item((int)v, columnID)->setText(QString::number(pupil.getPData(PDataTypes::dataTableRows[v])));
+    }
+
+    //tableModel->item((int)PDataType::PUPIL_CENTER_X, columnID)->setText(QString::number(pupil.center.x));
+    //tableModel->item((int)PDataType::PUPIL_CENTER_Y, columnID)->setText(QString::number(pupil.center.y));
+    //tableModel->item((int)PDataType::PUPIL_MAJOR, columnID)->setText(QString::number(pupil.majorAxis()));
+    //tableModel->item((int)PDataType::PUPIL_MINOR, columnID)->setText(QString::number(pupil.minorAxis()));
+    //tableModel->item((int)PDataType::PUPIL_WIDTH, columnID)->setText(QString::number(pupil.width()));
+    //tableModel->item((int)PDataType::PUPIL_HEIGHT, columnID)->setText(QString::number(pupil.height()));
+    //tableModel->item((int)PDataType::PUPIL_DIAMETER, columnID)->setText(QString::number(pupil.diameter()));
+    //tableModel->item((int)PDataType::PUPIL_UNDIST_DIAMETER, columnID)->setText(QString::number(pupil.undistortedDiameter));
+    //tableModel->item((int)PDataType::PUPIL_PHYSICAL_DIAMETER, columnID)->setText(QString::number(pupil.physicalDiameter));
+    //tableModel->item((int)PDataType::PUPIL_CONFIDENCE, columnID)->setText(QString::number(pupil.confidence));
+    //tableModel->item((int)PDataType::PUPIL_OUTLINE_CONFIDENCE, columnID)->setText(QString::number(pupil.outline_confidence));
+    //tableModel->item((int)PDataType::PUPIL_CIRCUMFERENCE, columnID)->setText(QString::number(pupil.circumference()));
+    //tableModel->item((int)PDataType::PUPIL_RATIO, columnID)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
 
 }
 
@@ -255,21 +266,24 @@ void DataTable::setPupilData(const Pupil &pupil, int columnID) {
 void DataTable::onCameraFPS(double fps) {
     if(resetScheduled)
         reset();
-    tableModel->item((int)DataTypes::DataType::CAMERA_FPS)->setText(QString::number(fps));
+    // todo: dynamic resolution to find index of PDataType::CAMERA_FPS
+    tableModel->item(3, 0)->setText(QString::number(fps));
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFramecount(int framecount) {
     if(resetScheduled)
         reset();
-    tableModel->item((int)DataTypes::DataType::FRAME_NUMBER)->setText(QString::number(framecount));
+    // todo: dynamic resolution to find index of PDataType::FRAME_NUMBER
+    tableModel->item(2, 0)->setText(QString::number(framecount));
 }
 
 // Slot handler receiving processing FPS data from the pupil detection process
 void DataTable::onProcessingFPS(double fps) {
     if(resetScheduled)
         reset();
-    tableModel->item((int)DataTypes::DataType::PUPIL_FPS)->setText(QString::number(fps));
+    // todo: dynamic resolution to find index of PDataType::PUPIL_FPS
+    tableModel->item(4, 0)->setText(QString::number(fps));
 }
 
 // Event handler that is called on click of an action in the context menu of the table
@@ -277,9 +291,9 @@ void DataTable::onProcessingFPS(double fps) {
 // Data inside the action which describes the clicked column is read and the corresponding graphplot is created
 void DataTable::onContextMenuClick(QAction *action) {
 
-    DataTypes::DataType value = (DataTypes::DataType)action->data().toInt();
+    PDataType value = (PDataType)action->data().toInt();
 
-    if(value == DataTypes::DataType::TIME_RAW_TIMESTAMP || value == DataTypes::DataType::TIME)
+    if(value == PDataType::TIME_RAW_TIMESTAMP || value == PDataType::P_TIME)
         return;
 
     emit createGraphPlot(value);
@@ -287,12 +301,12 @@ void DataTable::onContextMenuClick(QAction *action) {
 
 void DataTable::onTableRowDoubleClick(const QModelIndex &modelIndex) {
 
-    DataTypes::DataType value = (DataTypes::DataType)modelIndex.row();
+    PDataType value = (PDataType)modelIndex.row();
 
 //    QString value = modelIndex.data().toString();
 //    // nemtudom jó-e
 
-    if(value == DataTypes::DataType::TIME_RAW_TIMESTAMP || value == DataTypes::DataType::TIME)
+    if(value == PDataType::TIME_RAW_TIMESTAMP || value == PDataType::P_TIME)
         return;
 
     emit createGraphPlot(value);

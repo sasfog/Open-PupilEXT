@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: This file is just a mockup, it might be incorrect. Under development. Not yet used for packaging. Check id fields! -->
+<component type="desktop-application">
+    <id>PupilEXT</id>
+    <metadata_license>FSFAP</metadata_license>
+    <project_license>GPL-3.0</project_license>
+    <name>PupilEXT</name>
+    <summary>PupilEXT open-source pupillometry platform</summary>
+
+    <description>
+        <p>
+            PupilEXT is a free, open-source, cross-platform software to conduct pupillometry research.
+            It can access image streams from various camera devices, and perform pupil tracking on the
+            images either live or offline. Importantly, the software has a streaming feature to allow
+            for human-computer interface research. PupilEXT relies on Qt, and is intended for non-profit
+            research and educational use.
+        </p>
+    </description>
+
+    <launchable type="desktop-id">PupilEXT.desktop</launchable>
+
+    <url type="homepage">http://www.gnome.org/projects/en_US/gnome-power-manager</url>
+    <project_group>GNOME</project_group>
+
+    <provides>
+        <binary>PupilEXT</binary>
+    </provides>
+
+    <releases>
+        <release version="0.1.3" date="2025-08-24">
+            <description>
+                <p>Fixes issues X, Y and Z</p>
+            </description>
+        </release>
+    </releases>
+</component>

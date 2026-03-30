@@ -5,24 +5,14 @@
 
 /*
     Writes all details of the camera settings and pupil detection settings to a "meta file" in human-readable format
+    To be used only in case od dataWriter. ImageWriter now has its own channeling of writing the file content.
 */
 
-void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
+void MetaSnapshotOrganizer::writeSnapshotFile(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
 
     qDebug() << fileName;
-    QDomDocument document;
-    QDomElement root = document.createElement("MetaSnapshot");
-    document.appendChild(root);
-
-    addInfoNode(document, root, imageWriter, dataWriter, purpose, fileName);
-
-    addCameraNode(document, root, camera);
-
-    if(pupilDetection && pupilDetection->isTrackingOn())
-        addPupilDetectionNode(document, root, pupilDetection, applicationSettings);
     
-    QString payload = document.toString();
-
+    QString payload = generateSnapshotFileContent(camera, imageWriter, pupilDetection, dataWriter, purpose, applicationSettings);
 
 //    bool changedGiven = false;
 //    QString changedPath;
@@ -59,7 +49,23 @@ void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, 
     
 }
 
-void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose, QString fileName) {
+QString MetaSnapshotOrganizer::generateSnapshotFileContent(Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
+
+    QDomDocument document;
+    QDomElement root = document.createElement("MetaSnapshot");
+    document.appendChild(root);
+
+    addInfoNode(document, root, pupilDetection, imageWriter, dataWriter, purpose);
+
+    addCameraNode(document, root, camera);
+
+    if(pupilDetection && pupilDetection->isTrackingOn())
+        addPupilDetectionNode(document, root, pupilDetection, applicationSettings);
+
+    return document.toString();
+}
+
+void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose) {
     
     QMap<QString, QString> metaSnapshot;
     metaSnapshot["version"] = QString::number(version);
@@ -69,9 +75,9 @@ void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &roo
         metaSnapshot["purpose"] = "imagerec";
     }
     metaSnapshot["creationTime"] = QDateTime::currentDateTime().toString("yyyy. MMM dd. hh:mm:ss");
-    metaSnapshot["name"] = QString(fileName);
+    //metaSnapshot["name"] = QString(fileName);
     metaSnapshot["creationTimeUnix"] = QString::number(QDateTime::currentMSecsSinceEpoch());
-    metaSnapshot["algorithm"] = "test";
+    metaSnapshot["algorithm"] = QString::fromStdString(pupilDetection->getCurrentMethod1()->title().c_str());
     metaSnapshot["type"] = "test";
     if(imageWriter) {
         metaSnapshot["imageOutputDirectory"] = imageWriter->getOpenableDirectoryName();
@@ -115,21 +121,31 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         cameraMap["friendlyName"] =  singleCamera->getFriendlyName();
         cameraMap["cameraCalibrationFileName"] = singleCamera->getCalibrationFilename();
         cameraMap["lineSource"] = singleCamera->getLineSource();
-        cameraMap["binning"] = singleCamera->getBinningVal();
+
+        int binningVal = singleCamera->getBinningVal();
+        cameraMap["binning"] = QString::number(binningVal);
         QMap<QString, QString> settingsMap;
         settingsMap["cameraImageType"] = cameraImageType;
-        settingsMap["width"] = singleCamera->getImageROIwidthMax();
-        settingsMap["height"] = singleCamera->getImageROIheightMax();
-        settingsMap["gain"] = singleCamera->getGainValue();
-        settingsMap["exposureTime"] = singleCamera->getExposureTimeValue();
+
+//        settingsMap["width"] = QString::number(singleCamera->getImageROIwidthMax());
+//        settingsMap["height"] = QString::number(singleCamera->getImageROIheightMax());
+
+        QSize fullSensorResolution = singleCamera->getFullSensorResolution();
+        cameraMap["fullSensorResolutionWidth"] = QString::number(fullSensorResolution.width()); // IMPORTANT: goes into camera map
+        cameraMap["fullSensorResolutionHeight"] = QString::number(fullSensorResolution.height()); // IMPORTANT: goes into camera map
+        settingsMap["width"] = QString::number(fullSensorResolution.width()/binningVal);
+        settingsMap["height"] = QString::number(fullSensorResolution.height()/binningVal);
+
+        settingsMap["gain"] = QString::number(singleCamera->getGainValue());
+        settingsMap["exposureTime"] = QString::number(singleCamera->getExposureTimeValue());
          
         
 
         QMap<QString, QString> acqRoiMap;
-        acqRoiMap["x"] = singleCamera->getImageROIoffsetX();
-        acqRoiMap["y"] = singleCamera->getImageROIoffsetY(); 
-        acqRoiMap["width"] = singleCamera->getImageROIwidth(); 
-        acqRoiMap["height"] = singleCamera->getImageROIheight(); 
+        acqRoiMap["x"] = QString::number(singleCamera->getImageROIoffsetX());
+        acqRoiMap["y"] = QString::number(singleCamera->getImageROIoffsetY());
+        acqRoiMap["width"] = QString::number(singleCamera->getImageROIwidth());
+        acqRoiMap["height"] = QString::number(singleCamera->getImageROIheight());
         
 
 
@@ -152,11 +168,21 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         QDomElement cameraNode = document.createElement("camera");
         // only live camera devices have the calibration file name
         cameraNode.setAttribute("CameraCalibrationFileName", stereoCamera->getCalibrationFilename());
-        cameraNode.setAttribute("LineSource", QString(stereoCamera->getLineSource())); 
-        cameraNode.setAttribute("Binning", stereoCamera->getBinningVal()); 
+        cameraNode.setAttribute("LineSource", QString(stereoCamera->getLineSource()));
+
+        int binningVal = stereoCamera->getBinningVal();
+        cameraNode.setAttribute("Binning", binningVal);
         QDomElement maxImageSize = document.createElement("MaxImageSize");
-        maxImageSize.setAttribute("width", stereoCamera->getImageROIwidthMax()); 
-        maxImageSize.setAttribute("height", stereoCamera->getImageROIheightMax()); 
+
+//        settingsMap["width"] = QString::number(singleCamera->getImageROIwidthMax());
+//        settingsMap["height"] = QString::number(singleCamera->getImageROIheightMax());
+
+        QSize fullSensorResolution = stereoCamera->getFullSensorResolution();
+        cameraNode.setAttribute("fullSensorResolutionWidth", QString::number(fullSensorResolution.width())); // IMPORTANT: goes into camera map
+        cameraNode.setAttribute("fullSensorResolutionHeight", QString::number(fullSensorResolution.height())); // IMPORTANT: goes into camera map
+        maxImageSize.setAttribute("width", QString::number(fullSensorResolution.width()/binningVal));
+        maxImageSize.setAttribute("height", QString::number(fullSensorResolution.height()/binningVal));
+
         cameraNode.appendChild(maxImageSize);
         QDomElement actualImageROI = document.createElement("ImageAcqROI");
         actualImageROI.setAttribute("x", stereoCamera->getImageROIoffsetX()); 
@@ -177,7 +203,8 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         FileCamera *fileCamera = dynamic_cast<FileCamera *>(camera);
         QDomElement cameraNode = document.createElement("camera");
         // only live camera devices have the calibration file name
-        cameraNode.setAttribute("ImageDirectory", fileCamera->getImageDirectoryName()); 
+//        cameraNode.setAttribute("ImageDirectory", fileCamera->getImageDirectoryName());
+        cameraNode.setAttribute("ImageDirectory", "__DEV__"); // TODO: use imageReader, once we make it a real thread-safe, singleton class (alongside with pupilDetection, imageWriter, and dataWriter)
 
         QDomElement imageSize = document.createElement("ImageSize");
         imageSize.setAttribute("width", fileCamera->getImageWidth()); 
@@ -252,16 +279,16 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjAMain.appendChild(id);
 
             
-            discreteMap["x"] = pupilDetection->getROIsingleImageOnePupil().x();
-            discreteMap["y"] = pupilDetection->getROIsingleImageOnePupil().y();
-            discreteMap["width"] = pupilDetection->getROIsingleImageOnePupil().width();
-            discreteMap["height"] = pupilDetection->getROIsingleImageOnePupil().height();
+            discreteMap["x"] = QString::number(pupilDetection->getROIsingleImageOnePupil().x());
+            discreteMap["y"] = QString::number(pupilDetection->getROIsingleImageOnePupil().y());
+            discreteMap["width"] = QString::number(pupilDetection->getROIsingleImageOnePupil().width());
+            discreteMap["height"] = QString::number(pupilDetection->getROIsingleImageOnePupil().height());
 
             
-            rationalMap["x"] = rationalROI.x();
-            rationalMap["y"] = rationalROI.y();
-            rationalMap["width"] = rationalROI.width();
-            rationalMap["height"] = rationalROI.height();
+            rationalMap["x"] = QString::number(rationalROI.x());
+            rationalMap["y"] = QString::number(rationalROI.y());
+            rationalMap["width"] = QString::number(rationalROI.width());
+            rationalMap["height"] = QString::number(rationalROI.height());
             
             
             addMapToNode(document, discreteMap, discreteROIObj);
@@ -290,15 +317,15 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjAMain = document.createElement("Main");
             viewObjBMain = document.createElement("Main");
             
-            viewObjAMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilA().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilA().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilA().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilA().height()); 
+            viewObjAMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilR().x());
+            viewObjAMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilR().y());
+            viewObjAMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilR().width());
+            viewObjAMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilR().height());
 
-            viewObjBMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilB().x()); 
-            viewObjBMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilB().y()); 
-            viewObjBMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilB().width()); 
-            viewObjBMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilB().height()); 
+            viewObjBMain.setAttribute("x", pupilDetection->getROIsingleImageTwoPupilL().x());
+            viewObjBMain.setAttribute("y", pupilDetection->getROIsingleImageTwoPupilL().y());
+            viewObjBMain.setAttribute("width", pupilDetection->getROIsingleImageTwoPupilL().width());
+            viewObjBMain.setAttribute("height", pupilDetection->getROIsingleImageTwoPupilL().height());
 
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
@@ -328,15 +355,15 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjAMain = document.createElement("Main");
             viewObjASec = document.createElement("Sec");
             
-            viewObjAMain.setAttribute("x", pupilDetection->getROIstereoImageOnePupil1().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROIstereoImageOnePupil1().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROIstereoImageOnePupil1().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROIstereoImageOnePupil1().height()); 
+            viewObjAMain.setAttribute("x", pupilDetection->getROIstereoImageOnePupilM().x());
+            viewObjAMain.setAttribute("y", pupilDetection->getROIstereoImageOnePupilM().y());
+            viewObjAMain.setAttribute("width", pupilDetection->getROIstereoImageOnePupilM().width());
+            viewObjAMain.setAttribute("height", pupilDetection->getROIstereoImageOnePupilM().height());
 
-            viewObjASec.setAttribute("x", pupilDetection->getROIstereoImageOnePupil2().x()); 
-            viewObjASec.setAttribute("y", pupilDetection->getROIstereoImageOnePupil2().y()); 
-            viewObjASec.setAttribute("width", pupilDetection->getROIstereoImageOnePupil2().width()); 
-            viewObjASec.setAttribute("height", pupilDetection->getROIstereoImageOnePupil2().height()); 
+            viewObjASec.setAttribute("x", pupilDetection->getROIstereoImageOnePupilS().x());
+            viewObjASec.setAttribute("y", pupilDetection->getROIstereoImageOnePupilS().y());
+            viewObjASec.setAttribute("width", pupilDetection->getROIstereoImageOnePupilS().width());
+            viewObjASec.setAttribute("height", pupilDetection->getROIstereoImageOnePupilS().height());
 
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);
@@ -351,25 +378,25 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             viewObjBMain = document.createElement("Main");
             viewObjBSec = document.createElement("Sec");
             
-            viewObjAMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilA1().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilA1().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilA1().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilA1().height()); 
+            viewObjAMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilRM().x());
+            viewObjAMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilRM().y());
+            viewObjAMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilRM().width());
+            viewObjAMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilRM().height());
 
-            viewObjASec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilA2().x()); 
-            viewObjASec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilA2().y()); 
-            viewObjASec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilA2().width()); 
-            viewObjASec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilA2().height()); 
+            viewObjASec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilRS().x());
+            viewObjASec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilRS().y());
+            viewObjASec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilRS().width());
+            viewObjASec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilRS().height());
 
-            viewObjBMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilB1().x()); 
-            viewObjBMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilB1().y()); 
-            viewObjBMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilB1().width()); 
-            viewObjBMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilB1().height()); 
+            viewObjBMain.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilLM().x());
+            viewObjBMain.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilLM().y());
+            viewObjBMain.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilLM().width());
+            viewObjBMain.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilLM().height());
 
-            viewObjBSec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilB2().x()); 
-            viewObjBSec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilB2().y()); 
-            viewObjBSec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilB2().width()); 
-            viewObjBSec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilB2().height()); 
+            viewObjBSec.setAttribute("x", pupilDetection->getROIstereoImageTwoPupilLS().x());
+            viewObjBSec.setAttribute("y", pupilDetection->getROIstereoImageTwoPupilLS().y());
+            viewObjBSec.setAttribute("width", pupilDetection->getROIstereoImageTwoPupilLS().width());
+            viewObjBSec.setAttribute("height", pupilDetection->getROIstereoImageTwoPupilLS().height());
 
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);

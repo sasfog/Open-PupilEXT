@@ -1,8 +1,10 @@
 #pragma once
 
 /**
-    Under construction
+    @author Gabor Benyei
 */
+
+// UNDER CONSTRUCTION
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QGraphicsScene>
@@ -15,7 +17,7 @@
 #include <QtWidgets/qsizegrip.h>
 #include "../devices/camera.h"
 #include "imageGraphicsItem.h"
-#include "ResizableRectItem.h"
+#include "custom-widgets/ResizableRectItem.h"
 #include <QtWidgets/QHBoxLayout>
 
 #include "../pupilDetection.h"

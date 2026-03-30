@@ -4,17 +4,24 @@
     @authors Moritz Lode, Bényei Gábor, Attila Boncser
 */
 
-
-#include "camera.h"
 #include <QtCore/QObject>
-#include <pylon/PylonIncludes.h>
-#include <pylon/BaslerUniversalInstantCameraArray.h>
+#include "camera.h"
 #include "../frameRateCounter.h"
 #include "stereoCameraImageEventHandler.h"
-#include "cameraConfigurationEventHandler.h"
 #include "../stereoCameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
+
+
+#ifdef USE_PYLON
+
+#include "cameraConfigurationEventHandler.h"
 #include "hardwareTriggerConfiguration.h"
+
+#include <pylon/PylonIncludes.h>
+#include <pylon/BaslerUniversalInstantCameraArray.h>
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
 
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
@@ -45,13 +52,12 @@ class StereoCamera : public Camera {
 
 public:
 
-    explicit StereoCamera(QObject *parent);
-
-    explicit StereoCamera(const String_t &fullnameRight, const String_t &fullnameLeft, QObject* parent=0);
-    explicit StereoCamera(const CDeviceInfo &diRight, const CDeviceInfo &diLeft, QObject* parent=0);
+    explicit StereoCamera(QObject *parent= 0);
+    //explicit StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, QObject* parent=0);
 
     ~StereoCamera() override;
 
+    QSize fullSensorResolution;
     bool isOpen() override;
     void close() override;
     CameraImageType getType() override;
@@ -69,8 +75,17 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate();
+    bool isAcquisitionFrameRateAvailableForSWT();
+    bool isAcquisitionFrameRateAvailableForHWT();
     bool isEmulated();
-    double getResultingFrameRateValue();
+    double getResultingFrameRateValue() override;
+
+    // AFAIK it is always supported by Basler cameras.
+    // Prepping is already done properly in the corresponding method performing this auto function.
+    static bool isAutoGainAvailable() { return true; };
+    static bool isAutoExposureAvailable() { return true; };
+
+    bool isBinningAvailable();
 
     int getAcquisitionFPSValue();
     int getAcquisitionFPSMin();
@@ -80,41 +95,59 @@ public:
     double getGainMin();
     double getGainMax();
 
-    void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
+    void attachCameras(const QString &friendlyNameMain, const QString &friendlyNameSecondary);
     void open(bool enableHardwareTrigger);
 
-    String_t getLineSource();
+    QString getLineSource();
 
     StereoCameraCalibration *getCameraCalibration();
     QString getCalibrationFilename();
 
-    void loadMainFromFile(const String_t &filename);
-    //void loadSecondaryFromFile(const String_t &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
-    void saveMainToFile(const String_t &filename);
-    //void saveSecondaryToFile(const String_t &filename);
+    void loadMainFromFile(const QString &filename);
+    //void loadSecondaryFromFile(const QString &filename); // removed this as stereo camera configuration is only set by main and secondary is adapted
+    void saveMainToFile(const QString &filename);
+    //void saveSecondaryToFile(const QString &filename);
 
     int getImageROIwidth() override; 
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 
+    int getImageROIoffsetXInc() override;
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override;
     int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIwidthInc() override;
     int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightInc() override;
     QRectF getImageROI() override;
     int getBinningVal();
+    int getBinningMax();
     std::vector<double> getTemperatures();
+
+    QSize getFullSensorResolution() override;
+    int checkExposureTimeIfCompletedAuto();
+    double checkGainIfCompletedAuto();
+
+    bool isTemperatureReadingSupported() override;
 
     bool isGrabbing() override;
 
 private:
 
+    // We only let Pylon type input from within the class. Calls from outside are only to use friendly names with serial number
+    //  This is a preparatory step to later enable easier implementation of a general genicam camera wrapper
+//    explicit StereoCamera(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary, QObject* parent=0);
+    void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
+
     QDir settingsDirectory;
+    QSettings *applicationSettings;
 
     uint64 cameraMainTime;
     uint64 cameraSecondaryTime;
     uint64 systemTime;
 
-    String_t lineSource;
+    QString lineSource;
 
+    void determineFullSensorResolution();
     CBaslerUniversalInstantCameraArray cameras;
     StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
     CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
@@ -129,6 +162,9 @@ private:
     void synchronizeTime();
     void loadCalibrationFile();
     void genericExceptionOccured(const GenericException &e);
+    void stdExceptionOccured(const std::exception &e);
+
+    void enableSensorLevelBinningIfPossible();
 
     void safelyCloseCameras();
 
@@ -136,7 +172,7 @@ public slots:
 
     void setGainValue(double value);
     void setExposureTimeValue(int value);
-    void setLineSource(String_t value);
+    void setLineSource(QString value);
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
     void resynchronizeTime();
@@ -147,10 +183,10 @@ public slots:
     bool setImageROIoffsetX(int offsetX);
     bool setImageROIoffsetY(int offsetY);
 
-    bool setImageROIwidthEmu(int width);
-    bool setImageROIheightEmu(int height);
-    bool setImageROIoffsetXEmu(int offsetX);
-    bool setImageROIoffsetYEmu(int offsetY);
+    //bool setImageROIwidthEmu(int width);
+    //bool setImageROIheightEmu(int height);
+    //bool setImageROIoffsetXEmu(int offsetX);
+    //bool setImageROIoffsetYEmu(int offsetY);
 
 signals:
 
@@ -159,4 +195,182 @@ signals:
     void cameraDeviceRemoved();
     void imagesSkipped();
 
+    // TODO: implement to Pylon too
+    void deviceWasReset();
+    void manualDeviceResetNecessary();
+
 };
+
+#else
+
+// NOTE: has to happen, because aravis includes glib-2.0, and there
+//  the definition "signals" is clashing with the Qt definition
+#undef signals
+#include <arv.h>
+#define signals Q_SIGNALS
+
+class StereoCamera : public Camera {
+Q_OBJECT
+
+public:
+
+    explicit StereoCamera(QObject *parent= 0);
+    //explicit StereoCamera(const QString &friendlyNameMain, const QString &friendlyNameSecondary, QObject* parent=0);
+
+    ~StereoCamera() override;
+
+    QSize fullSensorResolution;
+    bool isOpen() override;
+    void close() override;
+    CameraImageType getType() override;
+
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
+    std::vector<QString> getFriendlyNames();
+    // TODO: getfullnames?
+    // TODO: getdeviceids?
+
+    void autoGainOnce();
+    void autoExposureOnce();
+
+    int getExposureTimeValue();
+    int getExposureTimeMin();
+    int getExposureTimeMax();
+
+    bool isEnabledAcquisitionFrameRate();
+    bool isAcquisitionFrameRateAvailableForSWT();
+    bool isAcquisitionFrameRateAvailableForHWT();
+    bool isEmulated();
+    double getResultingFrameRateValue() override;
+
+    // TODO DEV !!!
+    bool isAutoGainAvailable();
+    bool isAutoExposureAvailable();
+
+    bool isBinningAvailable();
+    // TODO END
+
+    int getAcquisitionFPSValue();
+    int getAcquisitionFPSMin();
+    int getAcquisitionFPSMax();
+
+    double getGainValue();
+    double getGainMin();
+    double getGainMax();
+
+    void attachCameras(const QString &friendlyNameMain, const QString &friendlyNameSecondary);
+    void open(bool enableHardwareTrigger);
+
+    QString getLineSource();
+
+    StereoCameraCalibration *getCameraCalibration();
+    QString getCalibrationFilename();
+
+    void loadMainFromFile(const QString &filename);
+    void saveMainToFile(const QString &filename);
+
+    int getImageROIwidth() override;
+    int getImageROIheight() override;
+    int getImageROIoffsetX() override;
+    int getImageROIoffsetXInc() override;
+    int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override;
+    int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIwidthInc() override;
+    int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightInc() override;
+    QRectF getImageROI() override;
+    int getBinningVal();
+    int getBinningMax();
+    std::vector<double> getTemperatures();
+
+    QSize getFullSensorResolution() override;
+    int checkExposureTimeIfCompletedAuto();
+    double checkGainIfCompletedAuto();
+
+    bool isTemperatureReadingSupported() override;
+
+    bool isGrabbing() override;
+
+    // TODO
+    void wrappedErrorOccured(GError *error);
+    // TODO
+    void manualResetDevice() {}; // needed for GigE devices, that can get stuck in an error state sometimes
+
+private:
+
+    void attachCameras(const ArvDevice &diMain, const ArvDevice &diSecondary);
+
+    QDir settingsDirectory;
+    QSettings *applicationSettings;
+    int streamBufferSize = 100;
+
+    uint64 cameraMainTime;
+    uint64 cameraSecondaryTime;
+    uint64 systemTime;
+
+    QString lineSource;
+
+    bool isGrabbingV = false;
+
+    void determineFullSensorResolution();
+    //CBaslerUniversalInstantCameraArray cameras;
+    std::vector<ArvCamera*> cameras;
+    StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
+//    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
+//    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
+//    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
+//    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
+    ArvStreamCallbackData callbackData;
+
+    void resizeStreamBuffer();
+
+    CameraFrameRateCounter *frameCounter;
+    StereoCameraCalibration *cameraCalibration;
+    QThread *calibrationThread;
+
+    void synchronizeTime();
+    void loadCalibrationFile();
+
+    void enableSensorLevelBinningIfPossible();
+
+    void genericExceptionOccured(const std::exception &e, const GError &lastAravisError);
+    void genericExceptionOccured(const std::exception &e, bool deviceRemoved = false);
+
+    // TODO
+//    void safelyCloseCameras();
+
+public slots:
+
+    void setGainValue(double value);
+    void setExposureTimeValue(int value);
+    void setLineSource(QString value);
+    void enableAcquisitionFrameRate(bool enabled);
+    void setAcquisitionFPSValue(int value);
+    void resynchronizeTime();
+
+    bool setBinningVal(int value);
+    bool setImageROIwidth(int width);
+    bool setImageROIheight(int height);
+    bool setImageROIoffsetX(int offsetX);
+    bool setImageROIoffsetY(int offsetY);
+
+    //bool setImageROIwidthEmu(int width);
+    //bool setImageROIheightEmu(int height);
+    //bool setImageROIoffsetXEmu(int offsetX);
+    //bool setImageROIoffsetYEmu(int offsetY);
+
+signals:
+
+    void fps(double fps);
+    void framecount(int framecount);
+    void cameraDeviceRemoved();
+    void imagesSkipped();
+
+    void deviceWasReset();
+    void manualDeviceResetNecessary();
+
+};
+
+#endif

@@ -9,7 +9,7 @@
 #include "../pupil-detection-methods/Pupil.h"
 #include "../devices/camera.h"
 #include "../pupilDetection.h"
-#include "../dataTypes.h"
+#include "../pDataTypes.h"
 
 
 /**
@@ -55,7 +55,7 @@ private:
 
 public slots:
 
-    void onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename);
+    void onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils);
 
     void onCameraFPS(double fps);
     void onCameraFramecount(int framecount);
@@ -70,6 +70,6 @@ public slots:
 
 signals:
 
-    void createGraphPlot(DataTypes::DataType value);
+    void createGraphPlot(PDataType value);
 
 };

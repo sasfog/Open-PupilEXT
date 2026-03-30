@@ -9,9 +9,11 @@
 #include "devices/singleCamera.h"
 #include "devices/stereoCamera.h"
 #include "subwindows/pupilDetectionSettingsDialog.h"
+#include "subwindows/setupGeometryDialog.h"
 #include "subwindows/singleCameraView.h"
-#include "dataWriter.h"
-#include "imageWriter.h"
+#include "data-io/dataWriter.h"
+#include "data-io/imageWriter.h"
+#include "data-io/recSectionExporter.h"
 #include "subwindows/generalSettingsDialog.h"
 #include "subwindows/subjectSelectionDialog.h"
 #include "subwindows/stereoCameraSettingsDialog.h"
@@ -20,17 +22,16 @@
 #include <QMainWindow>
 #include <QMdiSubWindow>
 #include <QSettings>
-#include <pylon/TlFactory.h>
 
 #include "supportFunctions.h"
 #include "metaSnapshotOrganizer.h"
-#include "dataStreamer.h"
-#include "camTempMonitor.h"
+#include "data-io/dataStreamer.h"
+#include "devices/camTempMonitor.h"
 #include "subwindows/imagePlaybackControlDialog.h"
 #include "subwindows/remoteCCDialog.h"
 #include "subwindows/streamingSettingsDialog.h"
-#include "connPoolCOM.h"
-#include "connPoolUDP.h"
+#include "data-io/connPoolCOM.h"
+#include "data-io/connPoolUDP.h"
 #include "devices/singleWebcam.h"
 #include "subwindows/singleWebcamSettingsDialog.h"
 #include "subwindows/singleWebcamCalibrationView.h"
@@ -42,11 +43,47 @@
 #include "recEventTracker.h"
 #include "SVGIconColorAdjuster.h"
 #include "playbackSynchroniser.h"
-#include "dataTypes.h"
+#include "pDataTypes.h"
 #include "subwindows/sceneImageView.h"
 #include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
+#include "subwindows/openZipChoiceDialog.h"
+#include "subwindows/threeChoiceDialog.h"
+#include "subwindows/exportRecSectionDialog.h"
+#include "adminPrivileges.h"
 
+#ifdef USE_PYLON
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
+#endif
+
+
+class MouseLeaveCatchFilter : public QObject {
+Q_OBJECT
+public:
+    explicit MouseLeaveCatchFilter(QObject *parent = nullptr) : QObject(parent) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        if (auto menu = qobject_cast<QMenu*>(watched)) {
+            if (event->type() == QEvent::Leave) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            } else if (event->type() == QEvent::HoverLeave) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            } else if (event->type() == QEvent::FocusAboutToChange) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            } else if (event->type() == QEvent::FocusOut) {
+                // Ignore leave event to prevent hiding
+                return true; // Block the event
+            }
+        }
+        return QObject::eventFilter(watched, event);
+    }
+};
 
 /**
     Main interface of the software
@@ -70,9 +107,10 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
-    bool eventFilter(QObject *obj, QEvent *event);
-    void dragEnterEvent(QDragEnterEvent* e);
-    void dropEvent(QDropEvent* e);
+    bool eventFilter(QObject *obj, QEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent* e) override;
+    //void dragMoveEvent(QDragMoveEvent* e) override; // likely not necessary
+    void dropEvent(QDropEvent* e) override;
 
 private:
  
@@ -81,10 +119,15 @@ private:
     QSettings *applicationSettings;
     QDir settingsDirectory;
 
-    QString pupilDetectionDataFile;
-    QString outputDirectory;
-    QString imageDirectory;
-    QString recentPath; 
+    // Store separately these
+    QString recentImageReadingDirectory;
+    QString recentImageWritingDirectory;
+    QString recentDataWritingDirectory;
+
+    QString dataRecordingOutputTarget;
+    QString imageRecordingOutputTarget;
+    //QString imageDirectory;
+    //QString recentPath;
 
     QMdiArea *mdiArea;
     QToolBar *toolBar;
@@ -96,8 +139,10 @@ private:
     RestorableQMdiSubWindow *sceneImageWindow;
 
     QIcon fileOpenIcon;
+    QIcon exportRecSectionIcon;
     QIcon cameraSerialConnectionIcon;
     QIcon pupilDetectionSettingsIcon;
+    QIcon setupGeometryIcon;
     QIcon remoteCCIcon;
     QIcon generalSettingsIcon;
     QIcon singleCameraIcon;
@@ -106,15 +151,18 @@ private:
     QIcon cameraSettingsIcon2;
     QIcon calibrateIcon;
     QIcon sharpnessIcon;
-    QIcon subjectsIcon;
+    //QIcon subjectsIcon;
     QIcon outputDataFileIcon;
     QIcon streamingSettingsIcon;
     QIcon imagePlaybackControlIcon;
     QIcon dataTableIcon;
     QIcon sceneImageViewIcon;
+    QIcon archiveIcon;
+    QIcon videoFileIcon;
 
     QMenu *windowMenu;
-    QMenu *baslerCamerasMenu;
+    QMenu *cameraMenu;
+    QMenu *singleCamerasMenu;
 //    QMenu *openCVCamerasMenu;
 
     QAction *cameraViewAct;
@@ -128,7 +176,8 @@ private:
     QAction *recordAct;
     QAction *calibrateAct;
     QAction *logFileAct;
-    QAction *outputDirectoryAct;
+//    QAction *outputDirectoryAct;
+    QAction *imageRecordingOutputAct;
     QAction *recordImagesAct;
 
 //    QAction *closeAct;
@@ -140,14 +189,14 @@ private:
     QAction *nextAct;
     QAction *previousAct;
     QAction *windowMenuSeparatorAct;
-    QAction *subjectsAct;
+    //QAction *subjectsAct;
     QAction *sharpnessAct;
 
     QLabel *serialStatusIcon;
     QLabel *hwTriggerStatusIcon;
     QLabel *warmedUpStatusIcon;
     QLabel *calibrationStatusIcon;
-    QLabel *subjectConfigurationLabel;
+    //QLabel *subjectConfigurationLabel;
     QLabel *currentStatusMessageLabel;
     
     // TODO: Move trackingOn into class instance, and get rid of others, use nullptr check instead. better like that I think. Also
@@ -157,6 +206,7 @@ private:
     //bool playImagesOn = false; // NOTE: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
     bool cameraPlaying = true;
+    bool exportingRecSection = false;
 
     void loadIcons();
     void createActions();
@@ -166,7 +216,11 @@ private:
 
     QWidget* activeMdiChild() const;
 
-    static Pylon::DeviceInfoList_t enumerateCameraDevices();
+#ifdef USE_PYLON
+    Pylon::DeviceInfoList_t enumerateCameraDevices();
+#else
+    uint enumerateCameraDevices();
+#endif
 
     Camera *selectedCamera;
 
@@ -175,6 +229,8 @@ private:
 
     DataWriter *dataWriter;
     ImageWriter *imageWriter;
+    RecSectionExporter *recSectionExporter;
+    QThread *imageWriterThread;
 
     bool streamOn = false;
 
@@ -185,8 +241,9 @@ private:
     //  instantiation and memory management.
     MCUSettingsDialog *MCUSettingsDialogInst;
     PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
+    SetupGeometryDialog *setupGeometryDialog = nullptr; // very important to keep nullptr by default
     GeneralSettingsDialog *generalSettingsDialog;
-    SubjectSelectionDialog *subjectSelectionDialog;
+    //SubjectSelectionDialog *subjectSelectionDialog;
     SingleCameraSettingsDialog *singleCameraSettingsDialog;
     StereoCameraSettingsDialog *stereoCameraSettingsDialog;
     RemoteCCDialog *remoteCCDialog;
@@ -210,6 +267,7 @@ private:
     QSpinBox *webcamDeviceBox;
 
     QAction *fileOpenAct; // GB: made global to let it disable when image directory is already open
+    QAction *exportRecSectionAct;
     QAction *toggleFullscreenAct;
     QAction *streamingSettingsAct;
     QAction *streamAct;
@@ -238,6 +296,8 @@ private:
     PlaybackSynchroniser *playbackSynchroniser;
 
     QMessageBox *imagesSkippedMsgBox = nullptr;
+    QMessageBox *imageWriterFailedMsgBox = nullptr;
+    QMessageBox *deviceWasResetMsgBox = nullptr;
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
@@ -249,10 +309,14 @@ private:
 
     void resetStatus(bool isConnect);
 
-    void openImageDirectory(QString imageDirectory);
-    void setRecentPath(QString path);
+    void openImageFileSource(QString imageSource, int subrecordingNumber);
 
-    void connectCameraPlaybackChangedSlots();
+    void setRecentImageReadingDirectory(QString path);
+    void setRecentImageWritingDirectory(QString path);
+    void setRecentDataWritingDirectory(QString path);
+
+    void connectCameraPlaybackChangedSlotsForCameraViews();
+    void connectCameraPlaybackChangedSlotsForCameraSettings();
 
 private slots:
 
@@ -264,6 +328,8 @@ private slots:
 
     void onDeviceWarmupHasDeltaTimeData();
     void onDeviceWarmedUp();
+    void onDeviceWarmUpReadingsInvalid();
+    void onDeviceWarmUpReadingsUnavailable();
     void onDeviceWarmedUpReset();
 
     void onWebcamStartedToOpen();
@@ -273,18 +339,22 @@ private slots:
     void onCameraCalibrationEnabled();
     void onCameraCalibrationDisabled();
 
-    void onOpenImageDirectory();
+    void onOpenImageRecordingClicked();
+    void onExportRecSectionClicked();
+    void onExportAllowedToEnd();
 
     void onCameraClick();
+    void onImageRecordingOutputClick();
     void onCameraDisconnectClick();
     void onCameraSettingsClick();
     void onSingleCameraSettingsClick();
     void onStereoCameraSettingsClick();
 
     void onCalibrateClick();
-    void onSubjectsClick();
+    //void onSubjectsClick();
 
     void onTrackActClick();
+    void updateRois(); // DEV
     void onRecordClick();
 
     void onGeneralSettingsChange();
@@ -298,17 +368,19 @@ private slots:
     void singleCameraSelected(QAction *action);
     void stereoCameraSelected();
 
-    void onCreateGraphPlot(const DataTypes::DataType &value);
+    void onCreateGraphPlot(const PDataType &value);
 
     void dataTableClick();
     void sceneImageViewClick();
     void toggleFullscreen();
 
     void setLogFile();
-    void setOutputDirectory();
+    void imageRecordingOutputDirectorySelected();
+    void imageRecordingOutputZipSelected();
+    void imageRecordingOutputVideoSelected();
 
     void updateMenus();
-    void updateBaslerCamerasMenu();
+    void updateSingleCamerasMenu();
 //    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();
@@ -318,7 +390,7 @@ private slots:
 //    void closeActiveSubWindow();
 //    void closeAllSubWindows();
 
-    void onSubjectsSettingsChange(QString subject);
+    //void onSubjectsSettingsChange(QString subject);
     void onSharpnessClick();
 
     void offerResetApplicationSettings();
@@ -357,6 +429,10 @@ private slots:
     void onStreamingUDPDisconnect();
     void onStreamingCOMConnect();
     void onStreamingCOMDisconnect();
+#ifdef USE_LSL
+    void onStreamingLSLConnect();
+    void onStreamingLSLDisconnect();
+#endif
 
     void onImagesSkipped();
     void onImagesSkippedMsgClose();
@@ -385,7 +461,7 @@ public slots:
     void PRGincrementTrialCounter(const quint64 &timestamp);
     void PRGforceResetTrialCounter(const quint64 &timestamp);
     // NOTE: there is no programmatic implementation for resetting the message register. It can be done by sending a blank message
-    void PRGsetOutPath(const QString &str);
+    void PRGsetImageOutputTarget(QString str);
     void PRGsetCsvPathAndName(const QString &str);
     
     void PRGsetGlobalDelimiter(const QString &str);
@@ -393,6 +469,7 @@ public slots:
     void PRGsetPupilDetectionAlgorithm(const QString &alg);
     void PRGsetPupilDetectionUsingROI(const QString &state);
     void PRGsetPupilDetectionCompOutlineConf(const QString &state);
+    void PRGsetPupilDetectionCompBRISQUE(const QString &state);
     void PRGconnectRemoteUDP(QString conf);
     void PRGconnectRemoteCOM(QString conf);
     void PRGconnectStreamUDP(QString conf);
@@ -404,24 +481,38 @@ public slots:
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
     void PRGdisconnectMicrocontroller();
+#ifdef USE_LSL
+    void PRGdisconnectStreamLSL();
+    void PRGconnectStreamLSL(QString conf);
+#endif
 
     void PRGenableHWT(bool state);
     void PRGstartHWT();
     void PRGstopHWT();
     void PRGsetHWTlineSource(int lineSourceNum);
-    void PRGsetHWTruntime(float runtimeMinutes);
-    void PRGsetHWTframerate(int fps);
+    void PRGsetHWTMCUruntime(float runtimeMinutes);
+    void PRGsetHWTMCUframerate(int fps);
+    void PRGenableHWTframerateLimiting(const QString &state);
+    void PRGsetHWTframerateLimitVal(int fps);
     void PRGenableSWTframerateLimiting(const QString &state);
-    void PRGsetSWTframerate(int fps);
+    void PRGsetSWTframerateLimitVal(int fps);
 
     void PRGsetExposure(int value);
     void PRGsetGain(double value);
+    void PRGsetBinning(int value);
+    void PRGenableSharpnessGuide(bool state);
+
+    void onImageWriterFailed();
+    void onImageWriterFailedMsgClose();
+    //void onImageWriterStopDone();
+    void onCameraUnexpectedlyDisconnected();
+    void onDeviceWasReset();
+    void onDeviceWasResetMsgClose();
+    void onManualDeviceResetNecessary();
 
     void onCameraFreezePressed();
 
     void onCameraPlaybackChanged();
-
-    void onCameraUnexpectedlyDisconnected();
 
     void onStereoCamerasOpened();
     void onStereoCamerasClosed();
@@ -439,3 +530,6 @@ signals:
     void playbackStopApproved();
 
 };
+
+
+

@@ -10,7 +10,7 @@ RecEventTracker::RecEventTracker(QObject *parent) : QObject(parent),
 }
 
 // storage mode (vectors filled and can be read anytime)
-RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QObject(parent),
+RecEventTracker::RecEventTracker(const QString &offlineEventLogContent, QObject *parent) : QObject(parent),
                                                                              applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
 {
 
@@ -18,7 +18,7 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
 
     // std::cout << "RecEventTracker(const QString& fileName, QObject *parent = 0)" << std::endl;
     // std::cout << "File name = " << fileName.toStdString() << std::endl;
-
+    /*
     dataFile = new QFile(fileName);
     int numLines = 0;
     // NOTE: not necessarily an error if this file does not exist
@@ -29,15 +29,16 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
         dataFile = nullptr;
         return;
     }
+    */
 
     int errLn;
     int errCol;
     QString errStr;
     QDomDocument domDocument;
-    if (!domDocument.setContent(dataFile, true, &errStr, &errLn,
+    if (!domDocument.setContent(offlineEventLogContent, true, &errStr, &errLn,
                                 &errCol))
     {
-        std::cout << tr("Could open offline event log XML file, but persing failed at: line %1, column %2\nError: %3")
+        std::cout << tr("Could open offline event log XML file, but parsing failed at: line %1, column %2\nError: %3")
                          .arg(errLn)
                          .arg(errCol)
                          .arg(errStr)
@@ -48,7 +49,7 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
     QDomElement root = domDocument.documentElement();
     if (root.tagName() != "RecordedEvents")
     {
-        std::cout << "Could open offline event log XML file, but it does not contain recorded events.";
+        qDebug() << "Could open offline event log XML file, but it does not contain recorded events.";
         return;
     }
 
@@ -122,7 +123,7 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
         child = child.nextSiblingElement("Message");
     }
 
-    dataFile->close();
+    //dataFile->close();
     storageReady = true;
 }
 
@@ -218,6 +219,7 @@ RecEventTracker::~RecEventTracker()
 
 void RecEventTracker::close()
 {
+    /*
     if (dataFile)
     {
         dataFile->close();
@@ -225,9 +227,11 @@ void RecEventTracker::close()
     }
     delete dataFile;
     dataFile = nullptr;
+     */
 }
 
-void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName) {
+/*
+void RecEventTracker::writeOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName) {
 
     std::cout << fileName.toStdString() << std::endl;
 
@@ -238,13 +242,12 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     //if(changedGiven)
     //    QMessageBox::warning(nullptr, "Path name changed", "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
 
-
     QByteArray textContent;
 
     dataFile = new QFile(fileName);
-    bool exists = dataFile->exists();
+    bool existing = dataFile->exists();
 
-    if(exists) {
+    if(existing) {
         std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << "" << std::endl;
     }
 
@@ -258,25 +261,42 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         return;
     }
 
-    //bool readable = dataFile->isReadable();
-    //textContent = dataFile->readAll();
+    QString fileContent = generateOfflineEventLogContent(timestampFrom, timestampTo, foundEventLogContent);
+
+    QTextStream textStream(dataFile);
+    textStream.seek(0); // rewrite the file
+
+    // NOTE: the line below (XML processing instruction)  is not automatically added for some reason..
+    // BUT if we add it like this, it will cumulatively add to the next file write, and it causes problems.. so we do not add it
+    //*textStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    textStream << fileContent;
+    dataFile->close();
+}
+*/
+
+QString RecEventTracker::generateOfflineEventLogContent(uint64 timestampFrom, uint64 timestampTo, QString foundEventLogContent) {
+
+    bool couldOpenExisting = !foundEventLogContent.isEmpty();
+
+    QByteArray textContent;
 
     QDomDocument document;
     QDomElement root;
     bool existingRead = false;
-    if(exists) {
+    if(couldOpenExisting) {
         QString errorString;
         int errorLine;
         int errorColumn;
-        existingRead = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
-        if (!existingRead) {
+        //couldOpenExisting = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
+        couldOpenExisting = document.setContent(foundEventLogContent, false, &errorString, &errorLine, &errorColumn);
+        if (!couldOpenExisting) {
             qDebug() << errorLine;
             qDebug() << errorColumn;
             qDebug() << errorString;
         }
     }
 
-    if(exists && existingRead) {
+    if(couldOpenExisting) {
         root = document.firstChildElement();
         QString temp_str = root.attribute("Version", "");
         foundEventLogVersion = 1;
@@ -300,7 +320,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     QDomElement currObj;
 
     // NOTE: Should this range inclusive on both sides? (Should be low inclusive high exclusive?) But now it surely prevents data loss
-    for (size_t i = 0; i < trialIncrements.size(); i++) {
+    for (int i = 0; i < trialIncrements.size(); i++) {
         if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp < timestampTo) {
             currObj = document.createElement("TrialIncrement");
             currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp));
@@ -308,7 +328,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             root.appendChild(currObj);
         }
     }
-    for (size_t i = 0; i < temperatureChecks.size(); i++) {
+    for (int i = 0; i < temperatureChecks.size(); i++) {
         if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp < timestampTo) {
             currObj = document.createElement("CameraTempCheck");
             currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp));
@@ -318,7 +338,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             root.appendChild(currObj);
         }
     }
-    for (size_t i = 0; i < messages.size(); i++) {
+    for (int i = 0; i < messages.size(); i++) {
         if (messages[i].timestamp >= timestampFrom && messages[i].timestamp < timestampTo) {
             currObj = document.createElement("Message");
             currObj.setAttribute("TimestampMs", QString::number(messages[i].timestamp));
@@ -330,14 +350,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     // NOTE: search intervals are only inclusive on the left, but exclusive on the right. Consider this
     // TODO: clear file even if appended, as new XML is flushed into it
 
-    QTextStream textStream(dataFile);
-    textStream.seek(0); // rewrite the file
-
-    // NOTE: the line below (XML processing instruction)  is not automatically added for some reason..
-    // BUT if we add it like this, it will cumulatively add to the next file write, and it causes problems.. so we do not add it
-    //*textStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-    textStream << document.toString();
-    dataFile->close();
+    return document.toString();
 }
 
 uint RecEventTracker::getLastCommissionedTrialNumber()
@@ -387,11 +400,12 @@ bool RecEventTracker::isReady()
 }
 uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp)
 {
-    for (size_t i = trialIncrements.size(); i >= 0; i--)
-        if (trialIncrements[i].timestamp < timestamp)
-        {
+    // NOTE: DO NOT USE size_t here ! it is UNSIGNED, and upon underflow, it will allow the loop to refer to invalid memory
+    for (int i = (trialIncrements.size()-1); i >= 0; i--) {
+        if (trialIncrements[i].timestamp < timestamp) {
             return trialIncrements[i].trialNumber;
         }
+    }
     // qDebug() << "No trial found, returning assumed trial number 1";
     return 1;
 }
@@ -441,6 +455,21 @@ RecEventTracker::TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 t
     return (emptyElem);
 }
 
+// TODO: when playback, store the last index, and start lookup only from that index, to spare calculation
+RecEventTracker::GazeTarget RecEventTracker::getGazeTarget(quint64 timestamp)
+{
+    GazeTarget emptyElem;
+    if (gazeTargets.size() < 1)
+        return emptyElem;
+
+    for(int i = (gazeTargets.size()-1); i >= 0; i--) {
+        if (gazeTargets[i].timestamp <= timestamp) {
+            return gazeTargets[i];
+        }
+    }
+    return (emptyElem);
+}
+
 /*
 Message RecEventTracker::getMessage(quint64 timestamp)
 {
@@ -448,7 +477,7 @@ Message RecEventTracker::getMessage(quint64 timestamp)
     if (messages.size() < 1)
         return emptyElem;
 
-    size_t i = 1;
+    int i = 1;
     while (i <= messages.size())
     { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC2019 x86_amd64
         if (messages[messages.size() - i].timestamp < timestamp)
@@ -491,6 +520,10 @@ void RecEventTracker::addTrialIncrement(quint64 timestamp, uint trialNumber)
     // NOTE: there is no increment here, so properly monotonically increasing trial numbering should be cared for in the caller class
 }
 
+void RecEventTracker::addGazeTarget(quint64 timestamp, uint id, uint x, uint y) {
+    gazeTargets.push_back(GazeTarget{timestamp, id, x, y});
+}
+
 void RecEventTracker::addMessage(const quint64 &timestamp, const QString &str)
 {
     messages.push_back(Message{timestamp, str});
@@ -522,6 +555,6 @@ QChar RecEventTracker::determineDelimiter(QString _text)
 getout:
 
     // if (delimiter == 'E')
-    //     throw new Exception();
+    //     throw std::runtime_error("delimiter error");
     return delimiter;
 }

@@ -236,6 +236,7 @@ void MCUSettingsDialog::createForm() {
     udpPortBox->setSingleStep(1);
     udpPortBox->setValue(udpPort);
     udpPortBox->setMinimumWidth(70);
+    //udpPortBox->setContentsMargins(0,30,0,0);
 
     UDPRow1Layout->addWidget(udpPortLabel);
     UDPRow1Layout->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Fixed));
@@ -250,6 +251,7 @@ void MCUSettingsDialog::createForm() {
 
     UDPGroup->setLayout(UDPLayout);
     mainLayout->addWidget(UDPGroup);
+    //UDPGroup->setMinimumHeight(90);
 
 
     COMRadioButton = new QRadioButton("Connect via COM / Serial cable (or USB for emulated serial)");
@@ -324,6 +326,7 @@ void MCUSettingsDialog::createForm() {
     paramLayout->addRow(flowControlLabel, flowControlBox);
 
     localEchoCheckBox = new QCheckBox("Local echo");
+    localEchoCheckBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     paramLayout->addWidget(localEchoCheckBox);
 
     paramFrame->setLayout(paramLayout);

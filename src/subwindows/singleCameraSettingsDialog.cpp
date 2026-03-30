@@ -28,9 +28,9 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
     }
 
 #ifdef Q_OS_WIN // Q_OS_MACOS
-    setMinimumSize(500, 630);
+    setMinimumSize(500, 680);
 #else
-    setMinimumSize(500, 720);
+    setMinimumSize(500, 770);
 #endif
 
     setWindowTitle(QString("[%1] Camera Settings").arg(camera->getFriendlyName()));
@@ -39,6 +39,94 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
 
     loadSettings();
     updateForms();
+
+    installEventFilter(this);
+}
+
+bool SingleCameraSettingsDialog::eventFilter(QObject *obj, QEvent *event) {
+
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+        //qDebug() << "Keypress: " << keyEvent->key();
+
+        if (    keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Plus ||
+                keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Minus
+                ) {
+            // Handle increment and decrement
+            // Special: the numeric entry boxes can also be used with
+            // Moreover, if the CTRL is held, the steps are grown fourfold
+
+            int stepToCommit = 1;
+            if(keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Plus)
+                stepToCommit = 1;
+            else if(keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Minus)
+                stepToCommit = -1;
+            else if(keyEvent->modifiers() & Qt::ControlModifier)
+                stepToCommit *= 4;
+
+            if(exposureInputBox->hasFocus()) {
+                exposureInputBox->stepBy(stepToCommit);
+            } else if(imageROIwidthInputBox->hasFocus()) {
+                imageROIwidthInputBox->stepBy(stepToCommit);
+            } else if(imageROIheightInputBox->hasFocus()) {
+                imageROIheightInputBox->stepBy(stepToCommit);
+            } else if(imageROIoffsetXInputBox->hasFocus()) {
+                imageROIoffsetXInputBox->stepBy(stepToCommit);
+            } else if(imageROIoffsetYInputBox->hasFocus()) {
+                imageROIoffsetYInputBox->stepBy(stepToCommit);
+            } else if(gainBox->hasFocus()) {
+                gainBox->stepBy(stepToCommit);
+            }
+            return true;
+
+        } else if (keyEvent->key() == Qt::Key_F){
+            // Handle freeze key for the camera view window
+            emit cameraPlaybackChanged();
+            return false;
+
+        } else if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return){
+            // We would normally interpret this as committing the value when a field is edited, BUT
+            //  as they are already reacting to the input on every keypress, we rather use the enter/return
+            //  key events as the "hop to the next entry field" interaction. However, we need to have a specific
+            //  order in which we want to hop around. This is the chain, looping over when someone hits many enters
+
+            // First just find where we are in the chain
+            int whichIndexWeHave = -1;
+            for(int i=0; i<focusChain.size(); i++) {
+                if(focusChain[i]->hasFocus()) {
+                    whichIndexWeHave = i;
+                }
+            }
+            if(whichIndexWeHave < 0)
+                return false;
+
+            // Then try to find the next one in the chain that is Enabled, and set focus on it
+            bool haveAlreadyLoopedOnce = false;
+            for(int j=0; j<focusChain.size(); j++) {
+
+                int suspectedIndex = whichIndexWeHave + j+1;
+                if(suspectedIndex >= focusChain.size())
+                    suspectedIndex -= focusChain.size();
+
+                if(focusChain[suspectedIndex]->isEnabled()) {
+                    focusChain[suspectedIndex]->setFocus();
+                    return true;
+                }
+            }
+            return true;
+
+        } else if (keyEvent->key() == Qt::Key_Space){
+            // This key always does something that the user did not want. Just discard the event.
+            //  E.g. ticking a checkbox or changing a radiobutton, ..
+            return true;
+
+        }
+        return false;
+
+    } else {
+        return false;
+    }
 }
 
 void SingleCameraSettingsDialog::createForm() {
@@ -49,8 +137,8 @@ void SingleCameraSettingsDialog::createForm() {
 
     MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed only for Hardware-triggered image acquisition)");
     QFormLayout *MCUConnGroupLayout = new QFormLayout();
-    MCUConnGroupLayout->setMargin(10);
-    MCUConnGroupLayout->setContentsMargins(5,5,5,5);
+    //MCUConnGroupLayout->setMargin(10);
+    MCUConnGroupLayout->setContentsMargins(10,10,10,10);
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     MCUConfigButton = new QPushButton();
@@ -91,7 +179,7 @@ void SingleCameraSettingsDialog::createForm() {
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
-    exposureInputLayout->setMargin(0);
+    //exposureInputLayout->setMargin(0);
     exposureInputLayout->setContentsMargins(0,0,0,0);
     exposureLabel = new QLabel(tr("Exposure [µs]:"));
     exposureLabel->setFixedWidth(100);
@@ -109,6 +197,7 @@ void SingleCameraSettingsDialog::createForm() {
     exposureInputLayout->addWidget(autoExposureOnceButton);
     exposureInputLayout->addStretch();
     acquisitionLayout->addLayout(exposureInputLayout);
+    autoExposureOnceButton->setEnabled(camera->isAutoExposureAvailable());
 
     QHBoxLayout *imageROIlayoutHBlock = new QHBoxLayout;
 
@@ -117,7 +206,7 @@ void SingleCameraSettingsDialog::createForm() {
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
-    imageROIlayoutRow1->setMargin(0);
+    //imageROIlayoutRow1->setMargin(0);
     imageROIlayoutRow1->setContentsMargins(0,0,0,0);
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
     imageROIwidthLabel->setMinimumWidth(120);
@@ -135,7 +224,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
-    imageROIlayoutRow2->setMargin(0);
+    //imageROIlayoutRow2->setMargin(0);
     imageROIlayoutRow2->setContentsMargins(0,0,0,0);
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
     imageROIheightLabel->setMinimumWidth(120);
@@ -153,7 +242,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
-    imageROIlayoutRow3->setMargin(0);
+    //imageROIlayoutRow3->setMargin(0);
     imageROIlayoutRow3->setContentsMargins(0,0,0,0);
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
     imageROIoffsetXLabel->setMinimumWidth(120);
@@ -171,7 +260,7 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
-    imageROIlayoutRow4->setMargin(0);
+    //imageROIlayoutRow4->setMargin(0);
     imageROIlayoutRow4->setContentsMargins(0,0,0,0);
     //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
@@ -190,7 +279,8 @@ void SingleCameraSettingsDialog::createForm() {
     imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow4);
 
     QVBoxLayout *imageROIlayoutNestedVBlock2 = new QVBoxLayout;
-    imageROIlayoutNestedVBlock2->setMargin(0);
+    //imageROIlayoutNestedVBlock2->setMargin(0);
+    imageROIlayoutNestedVBlock2->setContentsMargins(0,0,0,0);
 
     camImageRegionsWidget = new CamImageRegionsWidget(this);
     camImageRegionsWidget->setFixedHeight(80);
@@ -201,23 +291,28 @@ void SingleCameraSettingsDialog::createForm() {
     acquisitionLayout->addLayout(imageROIlayoutHBlock);
 
     QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
-    imageROIlayoutRow5->setMargin(0);
+    //imageROIlayoutRow5->setMargin(0);
     imageROIlayoutRow5->setContentsMargins(0,0,0,0);
     binningLabel = new QLabel(tr("Binning:"));
     binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
     binningBox->addItem(QString("1 (no binning)"));
-    binningBox->addItem(QString("2"));
-    binningBox->addItem(QString("4"));
+    int binningMax = camera->getBinningMax();
+    if(binningMax >= 2)
+        binningBox->addItem(QString("2"));
+    if(binningMax >= 4)
+        binningBox->addItem(QString("4"));
     binningBox->setMinimumWidth(140);
     imageROIlayoutRow5->addWidget(binningLabel);
     imageROIlayoutRow5->addWidget(binningBox);
     imageROIlayoutRow5->addStretch();
     acquisitionLayout->addLayout(imageROIlayoutRow5);
+    binningBox->setEnabled(camera->isBinningAvailable());
 
     /////////////////////////////////////////////////
     QHBoxLayout *imageROIlayoutRow6 = new QHBoxLayout;
-    imageROIlayoutRow6->setMargin(0);
+    //imageROIlayoutRow6->setMargin(0);
+    imageROIlayoutRow6->setContentsMargins(0,0,0,0);
     QFrame *line2 = new QFrame();
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Raised);
@@ -226,7 +321,13 @@ void SingleCameraSettingsDialog::createForm() {
 
     QHBoxLayout *imageROIlayoutRow7 = new QHBoxLayout;
     frameRateLabel = new QLabel("Resulting (maximum achievable) framerate:");
-    frameRateValueLabel = new QLabel(QString::number(camera->getResultingFrameRateValue()));
+    // Some cameras simply do not support this feature
+    int resultingFrameRate = camera->getResultingFrameRateValue();
+    QString resultingFrameRateString = QString::number(resultingFrameRate);
+    if(resultingFrameRate == 9999999)
+        resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
+    frameRateValueLabel = new QLabel();
+    frameRateValueLabel->setText(resultingFrameRateString);
     imageROIlayoutRow7->addWidget(frameRateLabel);
     imageROIlayoutRow7->addWidget(frameRateValueLabel);
     imageROIlayoutRow7->addStretch();
@@ -240,45 +341,44 @@ void SingleCameraSettingsDialog::createForm() {
 
     triggerGroup = new QGroupBox("3. Image Acquisition Triggering and Framerate setting");
     QFormLayout *triggerGroupLayout = new QFormLayout();
-    triggerGroupLayout->setMargin(10);
-    triggerGroupLayout->setContentsMargins(5,5,5,5);
+    //triggerGroupLayout->setMargin(10);
+    triggerGroupLayout->setContentsMargins(10,10,10,10);
 
     SWTradioButton = new QRadioButton("Software triggering:", this);
     SWTradioButton->setFixedHeight(20);
     SWTradioButton->setDisabled(false);
     SWTradioButton->setChecked(!camera->isHardwareTriggerEnabled());
 
-    // This would normally never be used in case of hardware triggering, so it is moved to the "software triggering"
-    // section and kept disabled
-    SWTframerateEnabled = new QCheckBox("Limit framerate to: ");
+    SWTframerateLimitEnabled = new QCheckBox("Limit framerate to: ");
+    SWTframerateLimitEnabled->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    SWTframerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
-    SWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
-    SWTframerateBox = new QSpinBox();
-    SWTframerateLayout = new QHBoxLayout;
-    SWTframerateLayout->setContentsMargins(0,0,0,0);
+    SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+    SWTframerateLimitEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
+    SWTframerateLimitBox = new QSpinBox();
+    SWTframerateLimitLayout = new QHBoxLayout;
+    SWTframerateLimitLayout->setContentsMargins(0,0,0,0);
     QSpacerItem *sp4 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    SWTframerateLayout->addSpacerItem(sp4);
-    SWTframerateLayout->addWidget(SWTframerateEnabled);
-    SWTframerateLayout->addWidget(SWTframerateBox);
-    SWTframerateLayout->addStretch();
-    // SWTframerateLayout->addSpacerItem(sp);
-    SWTframerateBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
-    SWTframerateBox->setMaximum(std::numeric_limits<short>::max());
-    SWTframerateBox->setSingleStep(1);
-    SWTframerateBox->setValue(camera->getAcquisitionFPSValue());
+    SWTframerateLimitLayout->addSpacerItem(sp4);
+    SWTframerateLimitLayout->addWidget(SWTframerateLimitEnabled);
+    SWTframerateLimitLayout->addWidget(SWTframerateLimitBox);
+    SWTframerateLimitLayout->addStretch();
+    // SWTframerateLimitLayout->addSpacerItem(sp);
+    SWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
+    SWTframerateLimitBox->setMaximum(std::numeric_limits<short>::max());
+    SWTframerateLimitBox->setSingleStep(1);
+    SWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
     // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
     // It is necessary because opening the camera once as part of stereo will wipe this internal
     // setting of the camera to false (it has to, to let it see the ResultingFramerate)
-    SWTframerateBox->setEnabled(camera->isEnabledAcquisitionFrameRate()); //
-    SWTframerateBox->setFixedWidth(60);
+    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT()); //
+    SWTframerateLimitBox->setFixedWidth(60);
 //    camera->enableAcquisitionFrameRate(false); //
 
-    triggerGroupLayout->addRow(SWTradioButton, SWTframerateLayout);
+    triggerGroupLayout->addRow(SWTradioButton, SWTframerateLimitLayout);
 
     /////////////////////////////////////////////////
     QFrame *line = new QFrame();
@@ -288,19 +388,26 @@ void SingleCameraSettingsDialog::createForm() {
 
     HWTradioButton = new QRadioButton("Hardware triggering:", this);
     HWTradioButton->setFixedHeight(20);
-    HWTradioButton->setDisabled(false);
+    // IMPORTANT
+#ifdef USE_PYLON
+//    HWTradioButton->setEnabled(camera->isHardwareTriggerAvailable());
+    HWTradioButton->setEnabled(true);
+#else
+    // TODO: IMPLEMENT HW TRIGGERING PROPERLY
+    HWTradioButton->setEnabled(false);
+#endif
     HWTradioButton->setChecked(camera->isHardwareTriggerEnabled());
 
-    HWTframerateLabel = new QLabel(tr("Set framerate to: "));
-    HWTframerateBox = new QSpinBox();
-    HWTframerateLayout = new QHBoxLayout;
+    HWTMCUframerateLabel = new QLabel(tr("Set framerate to: "));
+    HWTMCUframerateBox = new QSpinBox();
+    HWTMCUframerateLayout = new QHBoxLayout;
     QSpacerItem *sp5 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     // HWTframerateLayout->addSpacerItem(sp);
-    HWTframerateBox->setMinimum(1);
-    HWTframerateBox->setMaximum(5000);
-    HWTframerateBox->setSingleStep(1);
-    HWTframerateBox->setEnabled(false);
-    HWTframerateBox->setFixedWidth(60);
+    HWTMCUframerateBox->setMinimum(1);
+    HWTMCUframerateBox->setMaximum(5000);
+    HWTMCUframerateBox->setSingleStep(1);
+    HWTMCUframerateBox->setEnabled(false);
+    HWTMCUframerateBox->setFixedWidth(60);
     QSpacerItem *sp7 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     HWTstartStopButton = new QPushButton("Start Image Acquisition");
@@ -309,21 +416,21 @@ void SingleCameraSettingsDialog::createForm() {
     HWTstartStopButton->setMinimumHeight(22);
     HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && MCUSettings->isConnected());
 
-    HWTframerateLayout->addSpacerItem(sp5);
-    HWTframerateLayout->addWidget(HWTframerateLabel);
-    HWTframerateLayout->addWidget(HWTframerateBox);
-    HWTframerateLayout->addSpacerItem(sp7);
-    HWTframerateLayout->addWidget(HWTstartStopButton);
+    HWTMCUframerateLayout->addSpacerItem(sp5);
+    HWTMCUframerateLayout->addWidget(HWTMCUframerateLabel);
+    HWTMCUframerateLayout->addWidget(HWTMCUframerateBox);
+    HWTMCUframerateLayout->addSpacerItem(sp7);
+    HWTMCUframerateLayout->addWidget(HWTstartStopButton);
 //    HWTframerateLayout->addStretch();
 
-    triggerGroupLayout->addRow(HWTradioButton, HWTframerateLayout);
+    triggerGroupLayout->addRow(HWTradioButton, HWTMCUframerateLayout);
 
     HWTgroupLayout = new QFormLayout();
-    HWTgroupLayout->setMargin(0);
+    //HWTgroupLayout->setMargin(0);
     HWTgroupLayout->setContentsMargins(0,0,0,0);
 
     QSpacerItem *sp6 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    HWTlineSourceLabel = new QLabel(tr("Source: "));
+    HWTlineSourceLabel = new QLabel(tr("Line source: "));
     HWTlineSourceBox = new QComboBox();
     HWTlineSourceBox->addItem(QString("Select"));
     for(int i=1; i<5;i++) {
@@ -331,27 +438,65 @@ void SingleCameraSettingsDialog::createForm() {
     }
     HWTlineSourceBox->setFixedWidth(80);
 
-    HWTtimeSpanLabel = new QLabel(tr("Runtime [min] (0=inf.): "));
+    HWTMCUtimeSpanLabel = new QLabel(tr("Runtime [min] (0=inf.): "));
     QSpacerItem *sp1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    HWTtimeSpanBox = new QDoubleSpinBox();
-    HWTtimeSpanBox->setMinimum(0);
-    HWTtimeSpanBox->setMaximum(std::numeric_limits<double>::max());
-    HWTtimeSpanBox->setSingleStep(0.1);
-    HWTtimeSpanBox->setEnabled(false);
-    HWTtimeSpanBox->setFixedWidth(70);
+    HWTMCUtimeSpanBox = new QDoubleSpinBox();
+    HWTMCUtimeSpanBox->setMinimum(0);
+    HWTMCUtimeSpanBox->setMaximum(std::numeric_limits<double>::max());
+    HWTMCUtimeSpanBox->setSingleStep(0.1);
+    HWTMCUtimeSpanBox->setEnabled(false);
+    HWTMCUtimeSpanBox->setFixedWidth(70);
 
     QHBoxLayout *HWTrow1 = new QHBoxLayout;
     HWTrow1->addSpacerItem(sp6);
     HWTrow1->addWidget(HWTlineSourceLabel);
     HWTrow1->addWidget(HWTlineSourceBox);
     HWTrow1->addSpacerItem(sp1);
-    HWTrow1->addWidget(HWTtimeSpanLabel);
-    HWTrow1->addWidget(HWTtimeSpanBox);
+    HWTrow1->addWidget(HWTMCUtimeSpanLabel);
+    HWTrow1->addWidget(HWTMCUtimeSpanBox);
     HWTgroupLayout->addRow(HWTrow1);
+
+
+
+
+    HWTframerateLimitEnabled = new QCheckBox("Limit framerate to: ");
+    HWTframerateLimitEnabled->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
+    // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
+    // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
+    // It is necessary because opening the camera once as part of stereo will wipe this internal
+    // setting of the camera to false (it has to, to let it see the ResultingFramerate)
+    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT()); // This is only for the default state
+    HWTframerateLimitEnabled->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
+    //HWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
+    HWTframerateLimitBox = new QSpinBox();
+    HWTframerateLimitLayout = new QHBoxLayout;
+    HWTframerateLimitLayout->setContentsMargins(0,10,0,0);
+//    HWTframerateLimitLayout->setContentsMargins(0,0,0,0);
+    QSpacerItem *sp4b = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
+    HWTframerateLimitLayout->addSpacerItem(sp4b);
+    HWTframerateLimitLayout->addWidget(HWTframerateLimitEnabled);
+    HWTframerateLimitLayout->addWidget(HWTframerateLimitBox);
+    HWTframerateLimitLayout->addStretch();
+    // HWTframerateLimitLayout->addSpacerItem(sp);
+    HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
+    HWTframerateLimitBox->setMaximum(std::numeric_limits<short>::max()); // NOTE: NEVER CHANGE
+    HWTframerateLimitBox->setSingleStep(1);
+    HWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
+    // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
+    // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
+    // It is necessary because opening the camera once as part of stereo will wipe this internal
+    // setting of the camera to false (it has to, to let it see the ResultingFramerate)
+    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT()); //
+    HWTframerateLimitBox->setFixedWidth(60);
+//    camera->enableAcquisitionFrameRate(false); //
+
+    HWTgroupLayout->addRow(HWTframerateLimitLayout);
+
+
 
     triggerGroupLayout->addItem(HWTgroupLayout);
 
-    HWTframerateLayout->setEnabled(camera->isHardwareTriggerEnabled());
+    HWTMCUframerateLayout->setEnabled(camera->isHardwareTriggerEnabled());
     HWTgroupLayout->setEnabled(camera->isHardwareTriggerEnabled());
 
     triggerGroup->setLayout(triggerGroupLayout);
@@ -382,6 +527,7 @@ void SingleCameraSettingsDialog::createForm() {
     gainLayout->addWidget(gainBox);
     gainLayout->addWidget(autoGainOnceButton);
     analogLayout->addRow(gainLabel, gainLayout);
+    autoGainOnceButton->setEnabled(camera->isAutoGainAvailable());
 
     analogGroup->setLayout(analogLayout);
     //analogGroup->setDisabled(true);
@@ -410,6 +556,18 @@ void SingleCameraSettingsDialog::createForm() {
 
     setLayout(mainLayout);
 
+    focusChain.push_back(exposureInputBox);
+    focusChain.push_back(imageROIwidthInputBox);
+    focusChain.push_back(imageROIheightInputBox);
+    focusChain.push_back(imageROIoffsetXInputBox);
+    focusChain.push_back(imageROIoffsetYInputBox);
+    focusChain.push_back(SWTframerateLimitBox);
+    focusChain.push_back(HWTMCUframerateBox);
+    focusChain.push_back(HWTMCUtimeSpanBox);
+    focusChain.push_back(HWTframerateLimitBox);
+    focusChain.push_back(gainBox);
+
+
     updateImageROISettingsMax();
     updateImageROISettingsValues();
 
@@ -424,8 +582,11 @@ void SingleCameraSettingsDialog::createForm() {
     connect(imageROIoffsetXInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetX(int)));
     connect(imageROIoffsetYInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetY(int)));
 
-    connect(SWTframerateEnabled, SIGNAL(toggled(bool)), this, SLOT(SWTframerateEnabledToggled(bool)));
-    connect(SWTframerateBox, SIGNAL(valueChanged(int)), this, SLOT(setAcquisitionFPSValue(int)));
+    connect(SWTframerateLimitEnabled, SIGNAL(toggled(bool)), this, SLOT(SWTframerateLimitEnabledToggled(bool)));
+    connect(SWTframerateLimitBox, SIGNAL(valueChanged(int)), this, SLOT(setSWTframerateLimitVal(int)));
+
+    connect(HWTframerateLimitEnabled, SIGNAL(toggled(bool)), this, SLOT(HWTframerateLimitEnabledToggled(bool)));
+    connect(HWTframerateLimitBox, SIGNAL(valueChanged(int)), this, SLOT(setHWTframerateLimitVal(int)));
 
     connect(HWTlineSourceBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLineSourceChange(int)));
     connect(HWTradioButton, SIGNAL(toggled(bool)), this, SLOT(onHWTenabledChange(bool)));
@@ -447,13 +608,21 @@ void SingleCameraSettingsDialog::updateForms() {
     updateHWTStartStopRelatedWidgets();
     updateMCUConnDisconnButtonState();
 
-    SWTframerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
-    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", camera->isEnabledAcquisitionFrameRate());
+    SWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
     if(!HWTrunning) {
-        SWTframerateBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
-        SWTframerateBox->setMaximum(camera->getAcquisitionFPSMax());
-        SWTframerateBox->setValue(camera->getAcquisitionFPSValue());
+        SWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
+        SWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
     }
+    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
+
+    HWTframerateLimitEnabled->setChecked(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateLimitEnabled", camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
+    if(HWTrunning) {
+        HWTframerateLimitBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin())); // NOTE: Max is never changed!
+        HWTframerateLimitBox->setValue(camera->getAcquisitionFPSValue());
+    }
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
 
     gainBox->setMinimum(camera->getGainMin());
     gainBox->setMaximum(camera->getGainMax());
@@ -463,15 +632,18 @@ void SingleCameraSettingsDialog::updateForms() {
     exposureInputBox->setMaximum(camera->getExposureTimeMax());
     exposureInputBox->setValue(camera->getExposureTimeValue());
 
-    SWTradioButton->setChecked(!camera->isHardwareTriggerEnabled());
-    HWTradioButton->setChecked(camera->isHardwareTriggerEnabled());
+    // It is safer to call the radio toggle than set things here. Otherwise the SWT framerate limit can get stuck over HWT
+//    SWTradioButton->setChecked(!camera->isHardwareTriggerEnabled());
+//    HWTradioButton->setChecked(camera->isHardwareTriggerEnabled());
+    onHWTenabledChange(camera->isHardwareTriggerEnabled());
 
     // Note: is this surely good here?
     if(camera->isHardwareTriggerEnabled()) {
-        HWTlineSourceBox->setCurrentText(QString::fromStdString(camera->getLineSource().c_str()));
+        HWTlineSourceBox->setCurrentText(camera->getLineSource());
     }
 
     lastUsedBinningVal = camera->getBinningVal();
+
 }
 
 // Selects a output filename and saves a Basler camera specific pfs file containing its configuration
@@ -486,7 +658,7 @@ void SingleCameraSettingsDialog::saveButtonClick() {
             filename = filename + ".pfs";
         }
 
-        camera->saveToFile(filename.toStdString().c_str());
+        camera->saveToFile(filename);
     }
 }
 
@@ -496,21 +668,119 @@ void SingleCameraSettingsDialog::loadButtonClick() {
 
     if(!filename.isEmpty()) {
 
-        camera->loadFromFile(filename.toStdString().c_str());
+        camera->loadFromFile(filename);
         updateForms();
     }
 }
 
 void SingleCameraSettingsDialog::autoGainOnce() {
-
     camera->autoGainOnce();
+    gainBox->blockSignals(true);
     gainBox->setValue(camera->getGainValue());
+    gainBox->blockSignals(false);
+
+    autoGainTimer = new QTimer(this);
+    autoGainTimer->setInterval(1000); // ms polling
+    autoExposureOnceButton->setEnabled(false);
+    autoGainOnceButton->setEnabled(false);
+    exposureInputBox->setEnabled(false);
+    gainBox->setEnabled(false);
+    binningBox->setEnabled(false);
+    imageROIwidthInputBox->setEnabled(false);
+    imageROIheightInputBox->setEnabled(false);
+    imageROIoffsetXInputBox->setEnabled(false);
+    imageROIoffsetYInputBox->setEnabled(false);
+    imageROIwidthMaxLabel->setEnabled(false);
+    imageROIheightMaxLabel->setEnabled(false);
+
+    // NOTE: could be unique connection, but then it would not work with a lambda.. whatever its
+    //  still good as we grey out the button in the meanwhile, so the timer cannot get set twice
+    connect(autoGainTimer, &QTimer::timeout,
+            this, [this](){
+                autoGainCheckVal = camera->checkGainIfCompletedAuto();
+
+                if(autoGainCheckVal == 0 && autoGainCheckOccasions > 10)
+                    autoGainCheckVal = camera->getGainValue();
+
+                if(autoGainCheckVal != 0 || autoGainCheckOccasions > 10) {
+                    gainBox->blockSignals(true);
+                    gainBox->setValue(autoGainCheckVal);
+                    gainBox->blockSignals(false);
+                    autoExposureOnceButton->setEnabled(camera->isAutoExposureAvailable());
+                    autoGainOnceButton->setEnabled(camera->isAutoGainAvailable());
+                    exposureInputBox->setEnabled(true);
+                    binningBox->setEnabled(camera->isBinningAvailable());
+                    imageROIwidthInputBox->setEnabled(!trackingOn);
+                    imageROIheightInputBox->setEnabled(!trackingOn);
+                    imageROIoffsetXInputBox->setEnabled(true);
+                    imageROIoffsetYInputBox->setEnabled(true);
+                    imageROIwidthMaxLabel->setEnabled(!trackingOn);
+                    imageROIheightMaxLabel->setEnabled(!trackingOn);
+                    gainBox->setEnabled(true);
+                    autoGainCheckVal = 0;
+                    autoGainCheckOccasions = 0;
+                    //updateFrameRateValue(); // not necessary for gain
+                    autoGainTimer->stop();
+                } else
+                    autoGainCheckOccasions++;
+            });
+
+    autoGainTimer->start();
 }
 
 void SingleCameraSettingsDialog::autoExposureOnce() {
-
     camera->autoExposureOnce();
+    exposureInputBox->blockSignals(true);
     exposureInputBox->setValue(camera->getExposureTimeValue());
+    exposureInputBox->blockSignals(false);
+
+    autoExposureTimer = new QTimer(this);
+    autoExposureTimer->setInterval(1000); // ms polling
+    autoExposureOnceButton->setEnabled(false);
+    autoGainOnceButton->setEnabled(false);
+    exposureInputBox->setEnabled(false);
+    gainBox->setEnabled(false);
+    binningBox->setEnabled(false);
+    imageROIwidthInputBox->setEnabled(false);
+    imageROIheightInputBox->setEnabled(false);
+    imageROIoffsetXInputBox->setEnabled(false);
+    imageROIoffsetYInputBox->setEnabled(false);
+    imageROIwidthMaxLabel->setEnabled(false);
+    imageROIheightMaxLabel->setEnabled(false);
+
+    // NOTE: could be unique connection, but then it would not work with a lambda.. whatever its
+    //  still good as we grey out the button in the meanwhile, so the timer cannot get set twice
+    connect(autoExposureTimer, &QTimer::timeout,
+            this, [this](){
+                autoExposureCheckVal = camera->checkExposureTimeIfCompletedAuto();
+
+                if(autoExposureCheckVal == 0 && autoExposureCheckOccasions > 10)
+                    autoExposureCheckVal = camera->getExposureTimeValue();
+
+                if(autoExposureCheckVal != 0 || autoExposureCheckOccasions > 10) {
+                    exposureInputBox->blockSignals(true);
+                    exposureInputBox->setValue(autoExposureCheckVal);
+                    exposureInputBox->blockSignals(false);
+                    autoExposureOnceButton->setEnabled(camera->isAutoExposureAvailable());
+                    autoGainOnceButton->setEnabled(camera->isAutoGainAvailable());
+                    exposureInputBox->setEnabled(true);
+                    binningBox->setEnabled(camera->isBinningAvailable());
+                    imageROIwidthInputBox->setEnabled(!trackingOn);
+                    imageROIheightInputBox->setEnabled(!trackingOn);
+                    imageROIoffsetXInputBox->setEnabled(true);
+                    imageROIoffsetYInputBox->setEnabled(true);
+                    imageROIwidthMaxLabel->setEnabled(!trackingOn);
+                    imageROIheightMaxLabel->setEnabled(!trackingOn);
+                    gainBox->setEnabled(true);
+                    autoExposureCheckVal = 0;
+                    autoExposureCheckOccasions = 0;
+                    updateFrameRateValue();
+                    autoExposureTimer->stop();
+                } else
+                    autoExposureCheckOccasions++;
+    });
+
+    autoExposureTimer->start();
 }
 
 // Instead of rejecting the dialog, thus closing it, we only hide it and show it again, so that all settings of the current camera are still in the forms
@@ -531,34 +801,30 @@ void SingleCameraSettingsDialog::accept() {
 }
 
 void SingleCameraSettingsDialog::updateFrameRateValue() {
-    frameRateValueLabel->setText(QString::number(camera->getResultingFrameRateValue()));
+    // Some cameras simply do not support this feature
+    int resultingFrameRate = camera->getResultingFrameRateValue();
+    QString resultingFrameRateString = QString::number(resultingFrameRate);
+    if(resultingFrameRate == 9999999)
+        resultingFrameRateString = "N/A (max. " + QString::number((int)(1.0 / (double) camera->getExposureTimeValue() * 1000*1000)) + ")";
+    frameRateValueLabel->setText(resultingFrameRateString);
 
-    std::cout << "resulting framerate " << camera->getResultingFrameRateValue() << std::endl;
 
-    // commented out, reason:
-    // TODO: problematic, as resulting framerate is affected by framerate limit, which creates a "loop" of events,
-    // setting the max on gui as the current fps
-    //HWTframerateBox->setMaximum(static_cast<int>(floor(camera->getResultingFrameRateValue())));
-    //SWTframerateBox->setMaximum(static_cast<int>(floor(camera->getResultingFrameRateValue())));
+    qDebug() << "Resulting framerate according to camera wrapper " << resultingFrameRate;
 
-    // instead:
-    int supposedMaxFPS = static_cast<int>(floor(camera->getAcquisitionFPSMax()));
-    if(/*!camera->isOpen() ||*/ supposedMaxFPS <= 0) {
-        supposedMaxFPS = std::numeric_limits<short>::max();
-    }
-    HWTframerateBox->setMaximum(supposedMaxFPS);
-    SWTframerateBox->setMaximum(supposedMaxFPS);
+    // NOTE: updating the maximum values of either HWTMCUframerateBox, or HWTframerateLimitBox or SWTframerateLimitBox
+    //  is problematic, as resulting framerate is affected by framerate limit. So it is simply not done. Maximum is set
+    //  only once, and the actual value is not as important, physical limitations will apply anyhow.
 }
 
 void SingleCameraSettingsDialog::onLineSourceChange(int index) {
     if(index!=0) {
-        camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
-        HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
-        HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
+        camera->setLineSource(HWTlineSourceBox->itemText(index));
+        HWTMCUframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTMCUtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
         HWTstartStopButton->setEnabled(MCUSettings->isConnected());
     } else {
-        HWTframerateBox->setEnabled(false);
-        HWTtimeSpanBox->setEnabled(false);
+        HWTMCUframerateBox->setEnabled(false);
+        HWTMCUtimeSpanBox->setEnabled(false);
         HWTstartStopButton->setEnabled(false);
     }
 }
@@ -577,15 +843,15 @@ void SingleCameraSettingsDialog::HWTstartStopButtonClicked() {
 // Corrected by Gabor Benyei: the second parameter is expected in microseconds on the microcontroller side (".attach_us" needs microseconds)
 void SingleCameraSettingsDialog::startHardwareTrigger() {
 
-    double runtime = HWTtimeSpanBox->value();
-    double fps = HWTframerateBox->value();
+    double runtime = HWTMCUtimeSpanBox->value();
+    double fps = HWTMCUframerateBox->value();
 
     // Calculate the delay and number of frames from the input values
     int delay = (int) (((1000.0f / fps) * 1000.0f) / 2.0f);
     int count = (int) ((runtime * 60000000) / (delay * 2)); // corrected following SBelgers in previous commit
 
     QString cmd = "<TX" + QString::number(count) + "X" + QString::number(delay) + ">";
-    std::cout << "Sending hardware trigger command: " << cmd.toStdString() << std::endl;
+    qDebug() << "Sending hardware trigger command: " << cmd.toStdString();
 
     emit onHardwareTriggerEnable();
     emit onHardwareTriggerStart(cmd);
@@ -606,16 +872,16 @@ void SingleCameraSettingsDialog::stopHardwareTrigger() {
 
 void SingleCameraSettingsDialog::updateHWTStartStopRelatedWidgets() {
     if(HWTrunning) {
-        HWTframerateBox->setEnabled(false);
+        HWTMCUframerateBox->setEnabled(false);
         HWTlineSourceBox->setEnabled(false);
-        HWTtimeSpanBox->setEnabled(false);
+        HWTMCUtimeSpanBox->setEnabled(false);
         HWTstartStopButton->setText("Stop Image Acquisition");
         HWTstartStopButton->setStyleSheet(
                 "QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
     } else {
-        HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTMCUframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
         HWTlineSourceBox->setEnabled(camera->isHardwareTriggerEnabled());
-        HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTMCUtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
         HWTstartStopButton->setText("Start Image Acquisition");
         HWTstartStopButton->setStyleSheet(
                 "QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
@@ -647,29 +913,54 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
     SWTradioButton->blockSignals(false);
     SWTradioButton->blockSignals(false);
 
+    // IMPORTANT
+#ifdef USE_PYLON
+    HWTradioButton->setEnabled(camera->isHardwareTriggerAvailable());
+#else
+    // TODO: IMPLEMENT HW TRIGGERING PROPERLY
+    HWTradioButton->setEnabled(false);
+#endif
+
     if(HWTrunning) {
         stopHardwareTrigger();
     }
 
-    SWTframerateEnabled->setEnabled(!state);
-    SWTframerateBox->setEnabled(!state && camera->isEnabledAcquisitionFrameRate());
-    if(state || !SWTframerateEnabled->isChecked()) {
-        //camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
-        setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+    //SWTframerateLimitEnabled->setEnabled(!state);
+    SWTframerateLimitEnabled->setEnabled(!state && camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
+    SWTframerateLimitBox->setEnabled(!state && camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+
+    //HWTframerateLimitEnabled->setEnabled(state);
+    HWTframerateLimitEnabled->setEnabled(state && camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
+    HWTframerateLimitBox->setEnabled(state && camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
+
+    // TODO: something strange is happening here. Why do we need this piece of code below anyway?
+    //  once we set the value in GUI (and in the camera accordingly) to the max possible, we cannot change
+    //  it back when the radio buttons are clicked back.
+//    if(state || !SWTframerateEnabled->isChecked()) {
+//        //camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+//        setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+//    } else {
+//        setAcquisitionFPSValue(SWTframerateBox->value());
+//    }
+    // I rather changed to this:
+    if(!state && SWTframerateLimitEnabled->isChecked()) {
+        camera->setAcquisitionFPSValue(SWTframerateLimitBox->value());
+    } else if(state && HWTframerateLimitEnabled->isChecked()) {
+        camera->setAcquisitionFPSValue(HWTframerateLimitBox->value());
     } else {
-        setAcquisitionFPSValue(SWTframerateBox->value());
+        camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
     }
 
-    HWTframerateLayout->setEnabled(state);
+    HWTMCUframerateLayout->setEnabled(state);
     HWTgroupLayout->setEnabled(state); // Note: not sure if this does anything
-    HWTframerateLabel->setEnabled(state);
+    HWTMCUframerateLabel->setEnabled(state);
     HWTlineSourceLabel->setEnabled(state);
-    HWTtimeSpanLabel->setEnabled(state);
+    HWTMCUtimeSpanLabel->setEnabled(state);
     HWTlineSourceBox->setEnabled(state);
     HWTstartStopButton->setEnabled(state && MCUSettings->isConnected());
 
-    HWTtimeSpanBox->setEnabled(state);
-    HWTframerateBox->setEnabled(state);
+    HWTMCUtimeSpanBox->setEnabled(state);
+    HWTMCUframerateBox->setEnabled(state);
     camera->enableHardwareTrigger(state);
 
     if(state) {
@@ -682,15 +973,15 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
 
 void SingleCameraSettingsDialog::loadSettings() {
 
-    SWTradioButton->setChecked(!SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled(), applicationSettings));
-    HWTradioButton->setChecked(SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled(), applicationSettings));
+    SWTradioButton->setChecked(!SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.HWTenabled", camera->isHardwareTriggerEnabled(), applicationSettings));
+    HWTradioButton->setChecked(SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.HWTenabled", camera->isHardwareTriggerEnabled(), applicationSettings));
     camera->enableHardwareTrigger(HWTradioButton->isChecked());
 
-    HWTlineSourceBox->setCurrentText(applicationSettings->value("SingleCameraSettingsDialog.lineSource", QString::fromStdString(camera->getLineSource().c_str())).toString());
-    camera->setLineSource(HWTlineSourceBox->currentText().toStdString().c_str());
+    HWTlineSourceBox->setCurrentText(applicationSettings->value("SingleCameraSettingsDialog.lineSource", camera->getLineSource()).toString());
+    camera->setLineSource(HWTlineSourceBox->currentText());
 
-    HWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.hwTriggerFramerate", HWTframerateBox->value()).toInt());
-    HWTtimeSpanBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.hwTriggerTime", HWTtimeSpanBox->value()).toDouble());
+    HWTMCUframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.HWTMCUtriggerFramerate", HWTMCUframerateBox->value()).toInt());
+    HWTMCUtimeSpanBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.HWTMCUtriggerTime", HWTMCUtimeSpanBox->value()).toDouble());
 
     gainBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.analogGain", camera->getGainValue()).toDouble());
     camera->setGainValue(gainBox->value());
@@ -699,13 +990,20 @@ void SingleCameraSettingsDialog::loadSettings() {
     camera->setExposureTimeValue(exposureInputBox->value());
 
     int lastUsedBinningVal = applicationSettings->value("SingleCameraSettingsDialog.binningVal", camera->getBinningVal()).toInt();
-    camera->setBinningVal(lastUsedBinningVal);
-    int tempidx = 0;
-    if(lastUsedBinningVal==2 || lastUsedBinningVal==3)
-        tempidx = 1;
-    else if(lastUsedBinningVal==4)
-        tempidx = 2;
-    binningBox->setCurrentIndex(tempidx);
+    if(lastUsedBinningVal != 1 && camera->isBinningAvailable()) {
+        camera->setBinningVal(lastUsedBinningVal);
+        int tempidx = 0;
+        if (lastUsedBinningVal == 2 || lastUsedBinningVal == 3)
+            tempidx = 1;
+        else if (lastUsedBinningVal == 4)
+            tempidx = 2;
+        tempidx = std::min(tempidx, binningBox->count()-1); // To prevent reference to nonexistent item, for any case
+        binningBox->setCurrentIndex(tempidx);
+    } else {
+        lastUsedBinningVal = 1;
+        binningBox->setCurrentIndex(0);
+        applicationSettings->setValue("SingleCameraSettingsDialog.binningVal", lastUsedBinningVal);
+    }
 
     imageROIwidthInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIwidth", camera->getImageROIwidthMax() ).toInt());
     imageROIheightInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIheight", camera->getImageROIheightMax()).toInt());
@@ -713,29 +1011,42 @@ void SingleCameraSettingsDialog::loadSettings() {
     imageROIoffsetYInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIoffsetY", 0).toInt());
 
     // The safest is to enable limiting by default, as first opening a high speed hi-res camera can just freeze the computer
-    bool m_SWTframerateEnabled = SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.SWTframerateEnabled", true, applicationSettings);
-    SWTframerateEnabled->setChecked(m_SWTframerateEnabled);
-    camera->enableAcquisitionFrameRate(m_SWTframerateEnabled);
-
+    bool m_SWTframerateLimitEnabled = SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.SWTframerateLimitEnabled", true, applicationSettings);
+    SWTframerateLimitEnabled->setChecked(m_SWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForSWT());
+    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
+    camera->enableAcquisitionFrameRate(m_SWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForSWT());
     // 50 FPS is good for a first start, for the same reasons
-    SWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.acquisitionFramerate", "50").toInt());
-    camera->setAcquisitionFPSValue(SWTframerateBox->value());
+    SWTframerateLimitBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.SWTframerateLimitVal", "50").toInt());
+    camera->setAcquisitionFPSValue(SWTframerateLimitBox->value());
+
+    bool m_HWTframerateLimitEnabled = SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.HWTframerateLimitEnabled", true, applicationSettings);
+    HWTframerateLimitEnabled->setChecked(m_HWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForHWT());
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
+    camera->enableAcquisitionFrameRate(m_HWTframerateLimitEnabled && camera->isAcquisitionFrameRateAvailableForHWT());
+    // 50 FPS is good for a first start, for the same reasons
+    HWTframerateLimitBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.HWTframerateLimitVal", "50").toInt());
+    camera->setAcquisitionFPSValue(HWTframerateLimitBox->value());
 
     // TODO load the pfs file as an backup if no appication settings are available?
+
+    // One last thing: if we have loaded the exposure time value, it might have chenged the resulting framerate, so also refresh that once more
+    updateFrameRateValue();
 }
 
 // Save camera settings to the application settings
 // Also saves camera settings as pfs file into the application settings directory
 void SingleCameraSettingsDialog::saveSettings() {
 
-    applicationSettings->setValue("SingleCameraSettingsDialog.hwTriggerEnabled", HWTradioButton->isChecked());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTenabled", HWTradioButton->isChecked());
     applicationSettings->setValue("SingleCameraSettingsDialog.lineSource", HWTlineSourceBox->currentText());
-    applicationSettings->setValue("SingleCameraSettingsDialog.hwTriggerFramerate", HWTframerateBox->value());
-    applicationSettings->setValue("SingleCameraSettingsDialog.hwTriggerTime", HWTtimeSpanBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTMCUtriggerFramerate", HWTMCUframerateBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTMCUtriggerTime", HWTMCUtimeSpanBox->value());
     applicationSettings->setValue("SingleCameraSettingsDialog.analogGain", gainBox->value());
     applicationSettings->setValue("SingleCameraSettingsDialog.analogExposure", exposureInputBox->value());
-    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", SWTframerateEnabled->isChecked());
-    applicationSettings->setValue("SingleCameraSettingsDialog.acquisitionFramerate", SWTframerateBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", SWTframerateLimitEnabled->isChecked());
+    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateLimitVal", SWTframerateLimitBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateEnabled", HWTframerateLimitEnabled->isChecked());
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateLimitVal", HWTframerateLimitBox->value());
 
     applicationSettings->setValue("SingleCameraSettingsDialog.binningVal", lastUsedBinningVal);
     applicationSettings->setValue("SingleCameraSettingsDialog.imageROIwidth", imageROIwidthInputBox->value());
@@ -748,7 +1059,7 @@ void SingleCameraSettingsDialog::saveSettings() {
     QString configFile = settingsDirectory.filePath(camera->getFriendlyName() + ".pfs");
     configFile.replace(" ", "");
     std::cout<<"Saving config to settings directory: "<< configFile.toStdString() <<std::endl;
-    camera->saveToFile(configFile.toStdString().c_str());
+    camera->saveToFile(configFile);
 }
 
 void SingleCameraSettingsDialog::onSettingsChange() {
@@ -792,15 +1103,29 @@ void SingleCameraSettingsDialog::onSetImageROIoffsetY(int val) {
 
 void SingleCameraSettingsDialog::updateImageROISettingsMax() {
 
-    imageROIwidthInputBox->setMaximum(camera->getImageROIwidthMax());
-    imageROIheightInputBox->setMaximum(camera->getImageROIheightMax());
-    imageROIoffsetXInputBox->setMaximum(camera->getImageROIwidthMax() - camera->getImageROIwidth());
-    imageROIoffsetYInputBox->setMaximum(camera->getImageROIheightMax() - camera->getImageROIheight());
+    // IMPORTANT: these maxima ALREADY ACCOUNT FOR binning value, and have offsetX and Y subtracted
+    auto wm = camera->getImageROIwidthMax();
+    auto hm = camera->getImageROIheightMax();
+    auto oxm = wm - camera->getImageROIwidth() + camera->getImageROIoffsetX();
+    auto oym = hm - camera->getImageROIheight() + camera->getImageROIoffsetY();
 
-    imageROIwidthMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIwidthMax()));
-    imageROIheightMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax()));
-    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIwidthMax() - camera->getImageROIwidth()));
-    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax() - camera->getImageROIheight()));
+    imageROIwidthInputBox->setMaximum(wm);
+    imageROIheightInputBox->setMaximum(hm);
+    imageROIoffsetXInputBox->setMaximum(oxm);
+    imageROIoffsetYInputBox->setMaximum(oym);
+
+    imageROIwidthMaxLabel->setText(QString("/ ") + QString::number(wm));
+    imageROIheightMaxLabel->setText(QString("/ ") + QString::number(hm));
+    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(oxm));
+    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(oym));
+}
+
+void SingleCameraSettingsDialog::updateImageROISettingsInc() {
+
+    imageROIwidthInputBox->setSingleStep(camera->getImageROIwidthInc());
+    imageROIheightInputBox->setSingleStep(camera->getImageROIheightInc());
+    imageROIoffsetXInputBox->setSingleStep(camera->getImageROIoffsetXInc());
+    imageROIoffsetYInputBox->setSingleStep(camera->getImageROIoffsetYInc());
 }
 
 void SingleCameraSettingsDialog::updateImageROISettingsValues() {
@@ -820,6 +1145,13 @@ void SingleCameraSettingsDialog::updateImageROISettingsValues() {
     emit onImageROIChanged(QRect(offsetX, offsetY, width, height));
 }
 
+void SingleCameraSettingsDialog::setBinningValue(int value) {
+    if(value==2 && binningBox->count()>=2)
+        binningBox->setCurrentIndex(1);
+    else if(value>=3 && binningBox->count()>=3)
+        binningBox->setCurrentIndex(2);
+}
+
 void SingleCameraSettingsDialog::onBinningModeChange(int index) {
     int binningVal = 1;
     if(index==1)
@@ -829,7 +1161,10 @@ void SingleCameraSettingsDialog::onBinningModeChange(int index) {
 
     camera->setBinningVal(binningVal);
 
+    // TODO: Min and SingleStep values for the ROI setting boxes could be updated and set per current binning
+
     if(lastUsedBinningVal > binningVal) {
+        updateImageROISettingsInc();
         //qDebug() << "Inflating image ROI";
         // First set maximum values for the widgets
         // (first setting the actual value would take no effect as the maximum does not let it happen)
@@ -843,6 +1178,7 @@ void SingleCameraSettingsDialog::onBinningModeChange(int index) {
         updateImageROISettingsMax();
         // Then set maximum values for the widgets (e.g. first setting the maximum
         // would auto-reset the value if that was a bigger number... and that would cause strange behaviour of the GUI)
+        updateImageROISettingsInc();
     }
 
     // GB NOTE: here we could tell cameraview that it should expect different image size. But it is now programmed to be adaptive
@@ -858,14 +1194,18 @@ void SingleCameraSettingsDialog::updateSensorSize() {
     if(!camera->isOpen())
         return;
 
-    emit onSensorSizeChanged(QSize(camera->getImageROIwidthMax(), camera->getImageROIheightMax()));
+    QSize fullSensorResolution = camera->getFullSensorResolution();
+    int binningVal = camera->getBinningVal();
+    emit onSensorSizeChanged(QSize(fullSensorResolution.width()/binningVal, fullSensorResolution.height()/binningVal));
 }
 
 void SingleCameraSettingsDialog::updateCamImageRegionsWidget() {
     if(!camera->isOpen())
         return;
 
-    const QSize sensorSize = QSize(camera->getImageROIwidthMax(), camera->getImageROIheightMax() );
+    QSize fullSensorResolution = camera->getFullSensorResolution();
+    int binningVal = camera->getBinningVal();
+    const QSize sensorSize = QSize(fullSensorResolution.width()/binningVal, fullSensorResolution.height()/binningVal);
     const QRect imageAcqROI1Rect = QRect(camera->getImageROIoffsetX(), camera->getImageROIoffsetY(),
                                          camera->getImageROIwidth(), camera->getImageROIheight() );
     camImageRegionsWidget->setImageMaxSize(sensorSize);
@@ -874,6 +1214,9 @@ void SingleCameraSettingsDialog::updateCamImageRegionsWidget() {
 }
 
 void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
+
+    trackingOn = state;
+
     //hwTriggerGroup->setDisabled(state);
     //analogGroup->setDisabled(state);
 
@@ -885,19 +1228,23 @@ void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
     imageROIwidthInputBox->setDisabled(state);
     imageROIheightLabel->setDisabled(state);
     imageROIheightInputBox->setDisabled(state);
-    imageROIoffsetXLabel->setDisabled(state);
-    imageROIoffsetXInputBox->setDisabled(state);
-    imageROIoffsetYLabel->setDisabled(state);
-    imageROIoffsetYInputBox->setDisabled(state);
+
+    // NOTE: Removed, because ROI location can still be set! Why shouldn't it be?
+//    imageROIoffsetXLabel->setDisabled(state);
+//    imageROIoffsetXInputBox->setDisabled(state);
+//    imageROIoffsetYLabel->setDisabled(state);
+//    imageROIoffsetYInputBox->setDisabled(state);
 
     imageROIwidthMaxLabel->setDisabled(state);
     imageROIheightMaxLabel->setDisabled(state);
-    imageROIoffsetXMaxLabel->setDisabled(state);
-    imageROIoffsetYMaxLabel->setDisabled(state);
+
+    // NOTE: Removed, because ROI location can still be set! Why shouldn't it be?
+//    imageROIoffsetXMaxLabel->setDisabled(state);
+//    imageROIoffsetYMaxLabel->setDisabled(state);
 
     if (!camera->isEmulated()){
-        binningLabel->setDisabled(state);
-        binningBox->setDisabled(state);
+        binningLabel->setDisabled(state && camera->isBinningAvailable());
+        binningBox->setDisabled(state && camera->isBinningAvailable());
     }
     else {
         binningLabel->setDisabled(true);
@@ -916,6 +1263,8 @@ void SingleCameraSettingsDialog::setExposureTimeValue(int value) {
     exposureInputBox->blockSignals(false);
 
     camera->setExposureTimeValue(value);
+
+    // Could have caused the resulting framerate to change
     updateFrameRateValue();
 }
 
@@ -930,12 +1279,23 @@ void SingleCameraSettingsDialog::setGainValue(double value) {
     updateFrameRateValue();
 }
 
-void SingleCameraSettingsDialog::setAcquisitionFPSValue(int value) {
+void SingleCameraSettingsDialog::setSWTframerateLimitVal(int value) {
 
     // this is necessary if we programmatically set it
-    SWTframerateBox->blockSignals(true);
-    SWTframerateBox->setValue(value);
-    SWTframerateBox->blockSignals(false);
+    SWTframerateLimitBox->blockSignals(true);
+    SWTframerateLimitBox->setValue(value);
+    SWTframerateLimitBox->blockSignals(false);
+
+    camera->setAcquisitionFPSValue(value);
+    updateFrameRateValue();
+}
+
+void SingleCameraSettingsDialog::setHWTframerateLimitVal(int value) {
+
+    // this is necessary if we programmatically set it
+    HWTframerateLimitBox->blockSignals(true);
+    HWTframerateLimitBox->setValue(value);
+    HWTframerateLimitBox->blockSignals(false);
 
     camera->setAcquisitionFPSValue(value);
     updateFrameRateValue();
@@ -969,31 +1329,51 @@ void SingleCameraSettingsDialog::setHWTlineSource(int lineSourceNum) {
     HWTlineSourceBox->setCurrentIndex(lineSourceNum);
 }
 
-void SingleCameraSettingsDialog::setHWTruntime(double runtimeMinutes) {
+void SingleCameraSettingsDialog::setHWTMCUruntime(double runtimeMinutes) {
     if(HWTrunning)
         return;
-    HWTtimeSpanBox->setValue(runtimeMinutes);
+    HWTMCUtimeSpanBox->setValue(runtimeMinutes);
 }
 
-void SingleCameraSettingsDialog::setHWTframerate(int fps) {
+void SingleCameraSettingsDialog::setHWTMCUframerate(int fps) {
     if(HWTrunning)
         return;
-    HWTframerateBox->setValue(fps);
+    HWTMCUframerateBox->setValue(fps);
 }
 
-void SingleCameraSettingsDialog::SWTframerateEnabledToggled(bool state) {
+void SingleCameraSettingsDialog::SWTframerateLimitEnabledToggled(bool state) {
 
     // this is necessary if we programmatically set it
-    SWTframerateEnabled->blockSignals(true);
-    SWTframerateEnabled->setChecked(state);
-    SWTframerateEnabled->blockSignals(false);
+    SWTframerateLimitEnabled->blockSignals(true);
+    SWTframerateLimitEnabled->setChecked(state);
+    SWTframerateLimitEnabled->blockSignals(false);
 
     camera->enableAcquisitionFrameRate(state);
     updateFrameRateValue();
 
     applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", state);
 
-    SWTframerateBox->setEnabled(state);
+//    SWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForSWT());
+    SWTframerateLimitBox->setEnabled(state); // REDUCED TO THIS ONLY. NECESSARY BECAUSE OF "HACKY" CAMERAS
+    SWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForSWT()); // This is needed too
     if(state)
-        setAcquisitionFPSValue(SWTframerateBox->value());
+        setSWTframerateLimitVal(SWTframerateLimitBox->value());
+}
+
+void SingleCameraSettingsDialog::HWTframerateLimitEnabledToggled(bool state) {
+
+    // this is necessary if we programmatically set it
+    HWTframerateLimitEnabled->blockSignals(true);
+    HWTframerateLimitEnabled->setChecked(state);
+    HWTframerateLimitEnabled->blockSignals(false);
+
+    camera->enableAcquisitionFrameRate(state);
+    updateFrameRateValue();
+
+    applicationSettings->setValue("SingleCameraSettingsDialog.HWTframerateEnabled", state);
+
+    HWTframerateLimitBox->setEnabled(camera->isEnabledAcquisitionFrameRate() && camera->isAcquisitionFrameRateAvailableForHWT());
+    HWTframerateLimitEnabled->setEnabled(camera->isAcquisitionFrameRateAvailableForHWT()); // This is needed too
+    if(state)
+        setHWTframerateLimitVal(HWTframerateLimitBox->value());
 }

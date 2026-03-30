@@ -10,7 +10,7 @@
 #include <QtWidgets/qstatusbar.h>
 #include <QtWidgets/QLabel>
 
-#include "videoView.h"
+#include "custom-widgets/videoView.h"
 #include "../pupilDetection.h"
 #include "../devices/stereoCamera.h"
 
@@ -37,6 +37,8 @@ public:
 
 private:
 
+    QString windowOriginalTitle;
+
     Camera *camera;
     PupilDetection *pupilDetection;
 
@@ -55,6 +57,7 @@ private:
     QAction *plotROIAct;
 
     QMenu *autoParamMenu;
+    QMenu *sharpnessGuideMenu;
     QMenu *roiMenu;
 
     //QAction *roiMenuAct;
@@ -62,8 +65,8 @@ private:
     QAction *smallROIAct;
     QAction *middleROIAct;
 
-    VideoView *mainVideoView;
-    VideoView *secondaryVideoView;
+    VideoView *videoViewM;
+    VideoView *videoViewS;
 
     QStatusBar *statusBar;
     QLabel *cameraFPSValue;
@@ -89,17 +92,21 @@ private:
     float pupilColorFillThreshold = 0.0;
     QSpinBox *autoParamPupSizeBox;
     QSlider *autoParamSlider;
+    QDoubleSpinBox *sharpnessGuideThreshBox;
+    QSlider *sharpnessGuideSlider;
 
     std::vector<QSize> pupilViewSize;
 
     QAction *showAutoParamAct;
     bool showAutoParamOverlay;
+    QAction *showSharpnessGuideAct;
+    bool showSharpnessGuideOverlay;
 
     QAction *showPositioningGuideAct;
     bool showPositioningGuide;
 
-    QRectF tempROIs[4]; // 0 -> mainVideoView.ROI1Selection, 1 -> secondaryVideoView->ROI1Selection
-                        // 2 -> mainVideoView.ROI2Selection, 3 -> secondaryVideoView->ROI2Selection
+    QRectF tempROIs[4]; // 0 -> videoViewM.ROI1Selection, 1 -> videoViewS->ROI1Selection
+                        // 2 -> videoViewM.ROI2Selection, 3 -> videoViewS->ROI2Selection
     
     void updateProcModeLabel();
 
@@ -107,8 +114,8 @@ private:
     bool isAutoParamModificationEnabled();
 
     void paintEvent(QPaintEvent *event) override {
-        mainVideoView->drawOverlay();
-        secondaryVideoView->drawOverlay();
+        videoViewM->drawOverlay();
+        videoViewS->drawOverlay();
     };
 
 public slots:
@@ -145,10 +152,10 @@ public slots:
 
     void onPupilDetectionMenuClick();
 
-    void saveMainROI1Selection(QRectF roi);
-    void saveMainROI2Selection(QRectF roi);
-    void saveSecondaryROI1Selection(QRectF roi);
-    void saveSecondaryROI2Selection(QRectF roi);
+    void saveMainROI1Selection(QRectF roi_rat);
+    void saveMainROI2Selection(QRectF roi_rat);
+    void saveSecondaryROI1Selection(QRectF roi_rat);
+    void saveSecondaryROI2Selection(QRectF roi_rat);
 
     void displayFileCameraFrame(int frameNumber);
 
@@ -159,10 +166,12 @@ public slots:
     void onPupilColorFillThresholdChanged(double value);
 
     void onShowAutoParamOverlay(bool state);
+    void onShowSharpnessGuideOverlay(bool state);
     void onShowPositioningGuide(bool state);
     void onImageROIChanged(const QRect& ROI);
     void onSensorSizeChanged(const QSize& size);
     void onAutoParamPupSize(int value);
+    void onSharpnessGuideThresh(double value);
 
     void onFreezeClicked();
     void onCameraPlaybackChanged();
@@ -173,6 +182,7 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+//    void onChangeShowSharpnessGuideOverlay(bool state); // unnecessary
     void onChangeShowPositioningGuide(bool state);
     void cameraPlaybackChanged();
     void doingPupilDetectionROIediting(bool state);

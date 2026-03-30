@@ -11,8 +11,9 @@
 #include <QtCore/qfileinfo.h>
 #include <cmath>
 #include <QRectF>
+#include <QVector3D>
 #include <QColor>
-#include "subwindows/outputDataRuleDialog.h"
+#include "subwindows/twoChoiceCheckboxDialog.h"
 #include <opencv2/core/mat.hpp>
 
 /**
@@ -20,11 +21,109 @@
     Various little functions that are needed here and there, e.g. checking and simplifying strings of filenames and paths before using them for I/O
 
 */
+
+// NOTE: Option "BOTH" could also have been here, but then even deeper if/else's
+//  and averaging would be needed ...and even more spaghetti
+// TODO: USE OTHER, BROADER-SCOPE ENUMS INSTEAD OF THESE
+enum LSL_XDF_Eye {XDF_LEFT = 1, XDF_RIGHT = 2};
+enum LSL_XDF_Camera {XDF_MAIN = 1, XDF_SECONDARY = 2};
+
 class SupportFunctions : public QObject
 {
     Q_OBJECT
 
 public:
+
+    //static double avgec(double a, double b) {
+    //    if(a == -1.0)
+    //        return b;
+    //    if(b == -1.0)
+    //        return a;
+    //    return (a+b)/2.0;
+    //}
+
+    static QString makeUniqueLSLSourceID() {
+        QString bs = qgetenv("USER");
+        if (bs.isEmpty())
+            bs = qgetenv("USERNAME");
+
+        QString sourceID = "PupilEXT";
+        if (!bs.isEmpty()) {
+            QString temp = QString::number(qHash(bs));
+            sourceID.append("-" + temp.mid(temp.length()-7, 6));
+        } else
+            sourceID.append("-123456");
+
+        return sourceID;
+    }
+
+    static QVariant toVariantFromWrapped(QString valueInStr, bool *ok) {
+        *ok = false;
+        valueInStr = valueInStr.replace(" ","");
+        //qDebug() << valueInStr;
+
+        if(valueInStr.startsWith("QVector3D")) {
+            valueInStr = valueInStr.remove(0, 10);
+            valueInStr = valueInStr.remove(valueInStr.length()-1, 1);
+
+            QStringList strings = valueInStr.split(",");
+
+            if(strings.length() == 3) {
+                *ok = true;
+                return (QVariant)QVector3D(strings[0].toFloat(ok), strings[1].toFloat(ok), strings[2].toFloat(ok));
+            }
+        } else if(valueInStr.startsWith("QList<CameraConnectorPin>")) {
+
+            // BUG TODO: this might read as this, but save as QList<int> or QList<QVariant>
+
+            valueInStr = valueInStr.remove(0, 25);
+            valueInStr = valueInStr.remove(valueInStr.length()-1, 1);
+
+            QStringList strings = valueInStr.split(",");
+            QList<int> result;
+            for(int h = 0; h < strings.length(); h++) {
+                result.append(strings[0].toInt(ok));
+            }
+
+            return QVariant::fromValue(result);
+        }
+        return QVariant();
+    }
+
+    static QString camelCaseToFriendly(const QString& s)
+    {
+        // //QRegularExpression regexp("[A-Z][a-z]*|\\d+[a-z]+|\\d+");
+        QRegularExpression regexp("[A-Z]{2,}(?=[A-Z][a-z])|[A-Z][a-z]+|\\d+[a-z]+|\\d+|[A-Z]");
+        // QRegularExpression regexp("[A-Z]{2,}(?=[A-Z][a-z])|[A-Z][a-z]+|\d+[a-z]+|\d+|[A-Z]");
+        QRegularExpressionMatchIterator match = regexp.globalMatch(s);
+        QStringList strings;
+
+        while(match.hasNext())
+            strings.append(match.next().capturedTexts());
+
+        QString result = strings.join(" ");
+
+        // NOTE: For some reason, the output does not correspond to what should be expected
+        // as e.g. seen on https://regex101.com/ for this expression. So here is a workaround
+        bool hooked = false;
+        int i = result.length()-4;
+        while(i > 0) {
+            if(result[i]==" " && result[i+1].isUpper() && (hooked || (result[i+2]==" " && result[i+3].isUpper())) ) {
+                result = result.remove(i,1);
+                i--;
+                hooked = true;
+            } else {
+                hooked = false;
+            }
+            i--;
+        }
+        if(result.toUpper() == result) {
+            result = result.replace(" ","");
+        }
+
+        return result;
+    }
+
     static QString simplifyReceivedMessage(QString str)
     {
         // remove CR, LF and other strange characters
@@ -73,7 +172,7 @@ public:
         // [^a-zA-Z0-9_:]
         // [-`~!@#$%^&*()—+=|:;<>«»,.?/{}'"\[\]\]
 //        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
-        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_ :]")), "_");
+        str2.replace(QRegularExpression(QString::fromUtf8("[^a-zA-Z0-9_ :]")), "_");
         // NOTE: we leave whitespaces as well. this may be changed later,
         // but if we would like to change whitespaces in path, that is probably a lot of work, as
         // e.g. the user name on the computer can contain a whitespace, thus all the user wants to save will be
@@ -188,21 +287,22 @@ public:
         return workCopy;
     };
 
-    static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
+    static QString prepareOutputFileDirForImageWriter(QString filePathAndname, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
-        if(directory.isEmpty()) {
-            return QString();
+        if(filePathAndname.isEmpty()) {
+            return filePathAndname;
         }
 
-        if(directory[directory.length()-1] == '/') {
-            directory.chop(1);
-        }
+        // TODO: use QFileInfo method
+        QString fileName = filePathAndname.mid(filePathAndname.lastIndexOf("/")+1, filePathAndname.length()-(filePathAndname.lastIndexOf("/")));
+        //QString containingDirectory = filePathAndname.mid(0, filePathAndname.lastIndexOf("/"));
 
+        QString suffix = QFileInfo(filePathAndname).suffix();
         // bool changedGiven = false;
         QString changedPath;
         bool newNodeCreated = false;
-        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath, newNodeCreated);
+        bool pathWriteable = SupportFunctions::preparePath(QFileInfo(filePathAndname).absolutePath(), changedGiven, changedPath, newNodeCreated);
         if(!pathWriteable) {
             // TODO: Throw exception?
             changedGiven = true;
@@ -216,20 +316,45 @@ public:
             msgBox->setModal(false);
             msgBox->show();
 
-            directory = changedPath;
+            filePathAndname = changedPath + "/" + fileName;
+        }
+
+        //QStringList fileNamesInThatFolder = QFileInfo(filePathAndname).dir().entryList(QDir::Files | QDir::NoDotAndDotDot); // (QDir::AllEntries | QDir::NoDotAndDotDot)
+        //auto offlineEventLogsFound = fileNamesInThatFolder.filter(QRegularExpression("_Run\\d+$"));
+
+        // If it ends with a _RunI<number>, chop that part,
+        //  but only chop if anything remains.
+        QRegularExpression rgp("_RunI\\d+$");
+        QString fileNameBase = fileName.mid(0, fileName.lastIndexOf("."));
+        auto hhhh = rgp.match(fileNameBase).hasMatch();
+        auto iiii = fileNameBase.lastIndexOf("_");
+        if(rgp.match(fileNameBase).hasMatch() && fileNameBase.lastIndexOf("_") != 0 ) {
+            fileNameBase = fileNameBase.mid(0, fileNameBase.lastIndexOf("_"));
+            fileName = fileNameBase + "." + suffix;
+            filePathAndname = QFileInfo(filePathAndname).absolutePath() + "/" + fileName;
         }
 
         // QDir outputDirectory = QDir(directory);
-        bool exists = QDir(directory).exists();
-        bool hasContent = !QDir(directory).isEmpty();
+        bool exists = QFile(filePathAndname).exists();
+
+        // IMPORTANT: We do not check for content if there is a file at the location. Reasons:
+        //  - Each recording attempt should be taken as a separate recording for clarity, even if the last result was empty.
+        //  - Video writing can only happen into a new file, appending is not supported. This means that deleting any existing
+        //   empty files shoudl also happen here (or if the user does not have privileges to do so, its handling should
+        //   also happen here). To get around all this headache, just treat empty recordings as existing ones.
+        //bool hasContent = QFile(filePathAndname).size() > 0;
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
-        if(!exists) {
-// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
-//            outputDirectory.mkdir(".");
-            QDir().mkpath(directory);
-        } else if(hasContent && imageWriterDataRule == "ask") {
-            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
+        if(exists && /*hasContent &&*/ imageWriterDataRule == "ask" && suffix != "mkv") {
+            TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
+                    "Image output archive already exists",
+                    "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
+                    "Append to existing",
+                    "Keep existing and save new as well",
+                    "Remember this choice",
+                    QSize(450,150),
+                    true,
+                    parent);
             dialog->setModal(true);
             // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
@@ -237,13 +362,110 @@ public:
                 auto resp = dialog->getResponse();
                 bool rememberChoice = dialog->getRememberChoice();
 
-                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
                     imageWriterDataRule = "append";
-                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
+                } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2)*/ {
                     imageWriterDataRule = "new";
                 }
 
-                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                if((resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1 || resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) && rememberChoice) {
+                    applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
+                }
+            }
+        }
+
+        if(exists && /*hasContent &&*/ (imageWriterDataRule == "new" ||  suffix == "mkv")) {
+            bool nameInvented = false;
+            int nameIter = 1;
+            QString tryBase = filePathAndname.chopped(4);
+            tryBase = SupportFunctions::stripIfInventedName(tryBase);
+            // TODO: proper exception handling
+            while(!nameInvented) {
+                nameIter++;
+//                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
+                filePathAndname = tryBase + "_RunI" + QString::number(nameIter) + "." + suffix;
+//                nameInvented = !outputDirectory.exists();
+                nameInvented = !QFile(filePathAndname).exists();
+                if(nameIter >=65000)
+                    filePathAndname = tryBase + "_TooManyRunsI";
+            }
+        }
+        //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
+//        return outputDirectory.absolutePath();
+        return filePathAndname;
+    };
+
+    static QString prepareOutputDirForImageWriter(QString destination, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
+        QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
+
+        if(destination.isEmpty()) {
+            return destination;
+        }
+
+        if(destination[destination.length()-1] == '/') {
+            destination.chop(1);
+        }
+
+        // bool changedGiven = false;
+        QString changedPath;
+        bool newNodeCreated = false;
+        bool pathWriteable = SupportFunctions::preparePath(destination, changedGiven, changedPath, newNodeCreated);
+
+        if(!pathWriteable) {
+            // TODO: Throw exception?
+            changedGiven = true;
+            return QString();
+        }
+        if(changedGiven) {
+            QMessageBox *msgBox = new QMessageBox(parent);
+            msgBox->setWindowTitle("Path name changed");
+            msgBox->setText("The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
+            destination = changedPath;
+        }
+
+        // If it ends with a _RunI<number>, chop that part,
+        //  but only chop if anything remains.
+        QRegularExpression rgp("_RunI\\d+$");
+        if(rgp.match(destination).hasMatch() && destination.lastIndexOf("/")+1 < destination.lastIndexOf("_") ) {
+            destination = destination.mid(0, destination.lastIndexOf("_"));
+        }
+
+        // QDir outputDirectory = QDir(directory);
+        bool exists = QDir(destination).exists();
+        bool hasContent = !QDir(destination).isEmpty();
+        // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
+        if(!exists) {
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//            outputDirectory.mkdir(".");
+            QDir().mkpath(destination);
+        } else if(hasContent && imageWriterDataRule == "ask") {
+            TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
+                    "Image output folder already exists",
+                    "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
+                    "Append to existing",
+                    "Keep existing and save new as well",
+                    "Remember this choice",
+                    QSize(450,150),
+                    true,
+                    parent);
+            dialog->setModal(true);
+            // dialog->raise();
+            if(dialog->exec() == QDialog::Accepted)
+            {
+                auto resp = dialog->getResponse();
+                bool rememberChoice = dialog->getRememberChoice();
+
+                if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
+                    imageWriterDataRule = "append";
+                } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2)*/ {
+                    imageWriterDataRule = "new";
+                }
+
+                if((resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1 || resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) && rememberChoice) {
                     applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
                 }
             }
@@ -252,25 +474,25 @@ public:
         if(exists && hasContent && imageWriterDataRule == "new") {
             bool nameInvented = false;
             int nameIter = 1;
-            QString tryBase = directory;
+            QString tryBase = destination;
             tryBase = SupportFunctions::stripIfInventedName(tryBase);
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
 //                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
-                directory = tryBase + "_RunI" + QString::number(nameIter);
+                destination = tryBase + "_RunI" + QString::number(nameIter);
 //                nameInvented = !outputDirectory.exists();
-                nameInvented = !QDir(directory).exists();
+                nameInvented = !QDir(destination).exists();
                 if(nameIter >=65000)
-                    directory = tryBase + "_TooManyRunsI";
+                    destination = tryBase + "_TooManyRunsI";
             }
             // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
 //            outputDirectory.mkdir(".");
-            QDir().mkpath(directory);
+            QDir().mkpath(destination);
         }
         //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
 //        return outputDirectory.absolutePath();
-        return directory;
+        return destination;
     };
 
     static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
@@ -297,7 +519,15 @@ public:
         bool hasContent = dataFile.size() != 0;
 
         if(exists && hasContent && dataWriterDataRule == "ask") {
-            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Data recording output file already exists", parent);
+            TwoChoiceCheckboxDialog *dialog = new TwoChoiceCheckboxDialog(
+                    "Data recording output file already exists",
+                    "Existing data was found under the target path/name you specified. Please choose whether you would like to append to the existing recording or keep it and save the new recording with an automatically generated different path/name?",
+                    "Append to existing",
+                    "Keep existing and save new as well",
+                    "Remember this choice",
+                    QSize(450,150),
+                    true,
+                    parent);
             dialog->setModal(true);
             // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
@@ -305,13 +535,13 @@ public:
                 auto resp = dialog->getResponse();
                 bool rememberChoice = dialog->getRememberChoice();
 
-                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1) {
                     dataWriterDataRule = "append";
-                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
+                } else /*if(resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2)*/ {
                     dataWriterDataRule = "new";
                 }
 
-                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                if((resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_1 || resp == TwoChoiceCheckboxDialog::TwoChoiceCheckboxResponse::OPTION_2) && rememberChoice) {
                     applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
                 }
             }
@@ -456,10 +686,10 @@ public:
 
     static QColor changeColors(QColor color, bool doLighten, bool isEnabled) {
 
-        if(color == Qt::darkRed) {
-            qDebug() << "valami";
-            qDebug() << color.valueF();
-        }
+        //if(color == Qt::darkRed) {
+        //    qDebug() << "valami";
+        //    qDebug() << color.valueF();
+        //}
 
         // invert only the HSV "value"/intensity value (mirror it to 0.5 on a 0.0-1.0 range)
         if(doLighten && color.valueF() <= 0.52f) {
@@ -552,7 +782,7 @@ public:
     // ultimately causing any state to be read as true
     static bool readBoolFromQSettings(QString keyString, bool defaultState, QSettings *applicationSettings) {
         const QByteArray readData = applicationSettings->value(keyString, QString::number((int)defaultState)).toByteArray();
-        //std::cout << m_metaSnapshotsEnabled.toStdString() << std::endl; //
+
         if (readData.isEmpty()) {
             return defaultState;
         }

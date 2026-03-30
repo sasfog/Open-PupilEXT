@@ -24,8 +24,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
         currentCameraFPS(0.0),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-
     setWindowTitle("Stereo camera view");
+    windowOriginalTitle = windowTitle();
 
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -81,6 +81,14 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
+
+    showSharpnessGuideAct = plotMenu->addAction(tr("Show Sharpness Guide Overlay"));
+    showSharpnessGuideAct->setCheckable(true);
+    showSharpnessGuideAct->setChecked(showSharpnessGuideOverlay && pupilDetection->isSharpnessGuideEnabled());
+//    showSharpnessGuideAct->setEnabled(true);
+    showSharpnessGuideAct->setStatusTip(tr("Display edges in focus."));
+    plotMenu->addAction(showSharpnessGuideAct);
+    connect(showSharpnessGuideAct, SIGNAL(toggled(bool)), this, SLOT(onShowSharpnessGuideOverlay(bool)));
 
     showPositioningGuideAct = plotMenu->addAction(tr("Show Camera Positioning Guide"));
     showPositioningGuideAct->setCheckable(true);
@@ -225,9 +233,69 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     act4->setDefaultWidget(autoParamSliderWidget);
     autoParamMenu->addAction(act4);
 
+    // TODO: remove?
+    autoParamPupSizeBox->setValue(50);
+    autoParamSlider->setValue(50);
 
-    //autoParamPupSizeBox->setValue(50);
-    //autoParamSlider->setValue(50);
+    //////////
+
+    pupilDetectionMenu->addSeparator();
+
+    sharpnessGuideMenu = pupilDetectionMenu->addMenu(tr("&Sharpness estimation"));
+    sharpnessGuideMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/adjustlevels.svg"), applicationSettings));
+    // TODO: should be enabled if either visualization or the computation (pup data output) is enabled
+    //  and will need a reupdate accordingly, whenever any of these two is changed from any point of the GUI...
+//    sharpnessGuideMenu->setEnabled(pupilDetection->isSharpnessGuideEnabled() && ... );
+
+    QWidget *sharpnessGuideWidget = new QWidget();
+    QHBoxLayout *sharpnessGuideLayout = new QHBoxLayout();
+    sharpnessGuideLayout->setContentsMargins(8,0,8,0);
+
+    QLabel *sharpnessGuideLabel = new QLabel("Sharpness low threshold:", this);
+    sharpnessGuideLabel->setFixedWidth(150);
+
+    sharpnessGuideThreshBox = new QDoubleSpinBox();
+    sharpnessGuideThreshBox->setMinimum(10.0);
+    sharpnessGuideThreshBox->setMaximum(100.0);
+    sharpnessGuideThreshBox->setSingleStep(5.0);
+
+    sharpnessGuideLayout->addWidget(sharpnessGuideLabel);
+    sharpnessGuideLayout->addWidget(sharpnessGuideThreshBox);
+    sharpnessGuideWidget->setLayout(sharpnessGuideLayout);
+
+    QWidgetAction *act3b = new QWidgetAction(sharpnessGuideMenu);
+    act3b->setCheckable(false);
+    act3b->setDefaultWidget(sharpnessGuideWidget);
+    sharpnessGuideMenu->addAction(act3b);
+
+    QWidget *sharpnessGuideSliderWidget = new QWidget();
+    QHBoxLayout *sharpnessGuideSliderLayout = new QHBoxLayout();
+    sharpnessGuideSliderLayout->setContentsMargins(8,0,8,0);
+
+    sharpnessGuideSlider = new QSlider();
+    sharpnessGuideSlider->setOrientation(Qt::Horizontal);
+    sharpnessGuideSlider->setMinimum(10);
+    sharpnessGuideSlider->setMaximum(100);
+    //sharpnessGuideSlider->setSingleStep(10);
+    sharpnessGuideSlider->setFocusPolicy(Qt::StrongFocus);
+    sharpnessGuideSlider->setTickPosition(QSlider::TicksBelow);
+    sharpnessGuideSlider->setTickInterval(5);
+    sharpnessGuideSlider->setSingleStep(1);
+
+    sharpnessGuideSliderLayout->addWidget(sharpnessGuideSlider);
+    sharpnessGuideSliderWidget->setLayout(sharpnessGuideSliderLayout);
+
+    QWidgetAction *act4b = new QWidgetAction(sharpnessGuideMenu);
+    act4b->setCheckable(false);
+    act4b->setDefaultWidget(sharpnessGuideSliderWidget);
+    sharpnessGuideMenu->addAction(act4b);
+
+    // TODO: remove?
+    sharpnessGuideThreshBox->setValue(50);
+    sharpnessGuideSlider->setValue(50);
+
+    //////////
+
     toolBar->addAction(pupilDetectionMenuAct);
     toolBar->addSeparator();
 
@@ -254,12 +322,12 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     QHBoxLayout *videoViewLayout = new QHBoxLayout();
 
     // GB NOTE: first just create the videoView instances like for single ROIs, and then we can change
-    mainVideoView = new VideoView();
-    videoViewLayout->addWidget(mainVideoView);
-    secondaryVideoView = new VideoView();
-    videoViewLayout->addWidget(secondaryVideoView);
-    mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
-    secondaryVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
+    videoViewM = new VideoView();
+    videoViewLayout->addWidget(videoViewM);
+    videoViewS = new VideoView();
+    videoViewLayout->addWidget(videoViewS);
+    videoViewM->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
+    videoViewS->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
     layout->addLayout(videoViewLayout);
 
     statusBar = new QStatusBar();
@@ -338,20 +406,21 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
 
-    connect(this, SIGNAL (onShowROI(bool)), mainVideoView, SLOT (onShowROI(bool)));
-    connect(this, SIGNAL (onShowROI(bool)), secondaryVideoView, SLOT (onShowROI(bool)));
-    connect(this, SIGNAL (onShowPupilCenter(bool)), mainVideoView, SLOT (onShowPupilCenter(bool)));
-    connect(this, SIGNAL (onShowPupilCenter(bool)), secondaryVideoView, SLOT (onShowPupilCenter(bool)));
-    connect(this, SIGNAL (onChangePupilColorFill(int)), mainVideoView, SLOT (onChangePupilColorFill(int)));
-    connect(this, SIGNAL (onChangePupilColorFill(int)), secondaryVideoView, SLOT (onChangePupilColorFill(int)));
-    connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), mainVideoView, SLOT (onChangePupilColorFillThreshold(float)));
-    connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), secondaryVideoView, SLOT (onChangePupilColorFillThreshold(float)));
-    connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), mainVideoView, SLOT (onChangeShowAutoParamOverlay(bool)));
-    connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), secondaryVideoView, SLOT (onChangeShowAutoParamOverlay(bool)));
-    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), mainVideoView, SLOT (onChangeShowPositioningGuide(bool)));
-    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), secondaryVideoView, SLOT (onChangeShowPositioningGuide(bool)));
-    connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), mainVideoView, SLOT (onChangePupilDetectionUsingROI(bool)));
-    connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), secondaryVideoView, SLOT (onChangePupilDetectionUsingROI(bool)));
+    connect(this, SIGNAL (onShowROI(bool)), videoViewM, SLOT (onShowROI(bool)));
+    connect(this, SIGNAL (onShowROI(bool)), videoViewS, SLOT (onShowROI(bool)));
+    connect(this, SIGNAL (onShowPupilCenter(bool)), videoViewM, SLOT (onShowPupilCenter(bool)));
+    connect(this, SIGNAL (onShowPupilCenter(bool)), videoViewS, SLOT (onShowPupilCenter(bool)));
+    connect(this, SIGNAL (onChangePupilColorFill(int)), videoViewM, SLOT (onChangePupilColorFill(int)));
+    connect(this, SIGNAL (onChangePupilColorFill(int)), videoViewS, SLOT (onChangePupilColorFill(int)));
+    connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), videoViewM, SLOT (onChangePupilColorFillThreshold(float)));
+    connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), videoViewS, SLOT (onChangePupilColorFillThreshold(float)));
+    connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), videoViewM, SLOT (onChangeShowAutoParamOverlay(bool)));
+    connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), videoViewS, SLOT (onChangeShowAutoParamOverlay(bool)));
+    // NOTE: no need to tell videoView to show sharpness guide. It will show whenever the mask it receives from pupildetection is not empty
+    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), videoViewM, SLOT (onChangeShowPositioningGuide(bool)));
+    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), videoViewS, SLOT (onChangeShowPositioningGuide(bool)));
+    connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), videoViewM, SLOT (onChangePupilDetectionUsingROI(bool)));
+    connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), videoViewS, SLOT (onChangePupilDetectionUsingROI(bool)));
 
     connect(pupilColorFillBox, SIGNAL (currentIndexChanged(int)), this, SLOT (onPupilColorFillChanged(int)));
     connect(pupilColorFillThresholdBox, SIGNAL (valueChanged(double)), this, SLOT (onPupilColorFillThresholdChanged(double)));
@@ -359,6 +428,12 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), autoParamSlider, SLOT(setValue(int)));
     connect(autoParamSlider, SIGNAL(valueChanged(int)), autoParamPupSizeBox, SLOT(setValue(int)));
     connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), this, SLOT(onAutoParamPupSize(int)));
+
+    // We need this new style signal-slot connection, in order to use the convenience of
+    //  type conversions (because Slider needs integer, but DoubleSpinBox emits double)
+    connect(sharpnessGuideThreshBox, &QDoubleSpinBox::valueChanged, sharpnessGuideSlider, &QSlider::setValue);
+    connect(sharpnessGuideSlider, &QSlider::valueChanged, sharpnessGuideThreshBox, &QDoubleSpinBox::setValue);
+    connect(sharpnessGuideThreshBox, SIGNAL(valueChanged(double)), this, SLOT(onSharpnessGuideThresh(double)));
 
     // NOTE: currently it loads the settings (for loading ROI settings), so the loadSettings call at the end is not necessary
     updateForPupilDetectionProcMode();
@@ -389,6 +464,10 @@ void StereoCameraView::loadSettings() {
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
 
+    showSharpnessGuideOverlay = SupportFunctions::readBoolFromQSettings("StereoCameraView.showSharpnessGuideOverlay", false, applicationSettings);
+    showSharpnessGuideAct->setChecked(showSharpnessGuideOverlay);
+    onShowSharpnessGuideOverlay(showSharpnessGuideOverlay);
+
     showPositioningGuide = SupportFunctions::readBoolFromQSettings("StereoCameraView.showPositioningGuide", false, applicationSettings);
     if(camera->getType() == STEREO_IMAGE_FILE) {
         showPositioningGuideAct->setDisabled(true);
@@ -407,36 +486,45 @@ void StereoCameraView::loadSettings() {
 //    autoParamPupSizeBox->blockSignals(false);
 //    autoParamSlider->blockSignals(false);
 
+    int sharpnessGuideThresh = applicationSettings->value("sharpnessGuideThresh", 50).toInt();
+    //    // GB: workaround to set values for auto param pup. size box and slider, without causing a cascade of events due to value change
+    //    autoParamPupSizeBox->blockSignals(true);
+    sharpnessGuideSlider->blockSignals(true);
+    sharpnessGuideThreshBox->setValue(sharpnessGuideThresh);
+    sharpnessGuideSlider->setValue((int)sharpnessGuideThresh); // NOTE: this likely resets. rather temporarily block signals for one of these?
+    //    autoParamPupSizeBox->blockSignals(false);
+    sharpnessGuideSlider->blockSignals(false);
+
     pupilColorFill = (ColorFill)applicationSettings->value("StereoCameraView.pupilColorFill", pupilColorFill).toInt();
     pupilColorFillThreshold = applicationSettings->value("StereoCameraView.pupilColorFillThreshold", pupilColorFillThreshold).toFloat();;
     
     
     ProcMode val = pupilDetection->getCurrentProcMode();
 
-    QRectF roiMain1R;
-    QRectF roiMain2R;
-    QRectF roiSecondary1R;
-    QRectF roiSecondary2R;
+    QRectF roiRM_rat;
+    QRectF roiLM_rat;
+    QRectF roiRS_rat;
+    QRectF roiLS_rat;
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
-        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
+        roiRM_rat = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupilM.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
+        roiRS_rat = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupilS.rational", QRectF(VideoView::defaultROImiddleR)).toRectF();
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA1.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
-        roiMain2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
-        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA2.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
-        roiSecondary2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
+        roiRM_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilRM.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roiLM_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilLM.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
+        roiRS_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilRS.rational", QRectF(VideoView::defaultROIleftHalfR)).toRectF();
+        roiLS_rat = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilLS.rational", QRectF(VideoView::defaultROIrightHalfR)).toRectF();
     }
 
-    mainVideoView->setROI1SelectionR(roiMain1R);
-    mainVideoView->setROI2SelectionR(roiMain2R);
-    secondaryVideoView->setROI1SelectionR(roiSecondary1R);
-    secondaryVideoView->setROI2SelectionR(roiSecondary2R);
+    videoViewM->setROI1Selection_rat(roiRM_rat);
+    videoViewM->setROI2Selection_rat(roiLM_rat);
+    videoViewS->setROI1Selection_rat(roiRS_rat);
+    videoViewS->setROI2Selection_rat(roiLS_rat);
 
     // these are needed in order to save the ROI even if QSettings is reset and the default roi value is set
-    mainVideoView->saveROI1Selection();
-    mainVideoView->saveROI2Selection();
-    secondaryVideoView->saveROI1Selection();
-    secondaryVideoView->saveROI2Selection();
+    videoViewM->saveROI1Selection();
+    videoViewM->saveROI2Selection();
+    videoViewS->saveROI1Selection();
+    videoViewS->saveROI2Selection();
 
 //    videoView->setAutoParamPupSize(applicationSettings->value("autoParamPupSizePercent", 50).toInt());
 }
@@ -483,8 +571,8 @@ void StereoCameraView::onPupilDetectionStop() {
 
     connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
 
-    mainVideoView->clearProcessedOverlayMemory();
-    secondaryVideoView->clearProcessedOverlayMemory();
+    videoViewM->clearProcessedOverlayMemory();
+    videoViewS->clearProcessedOverlayMemory();
 }
 
 void StereoCameraView::updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
@@ -515,8 +603,8 @@ void StereoCameraView::updateView(const CameraImage &cimg, const int &procMode, 
         secondaryViewPupils.push_back(Pupils[3]); //B2
     }
 
-    mainVideoView->updateViewProcessed(cimg.img, mainViewROIs, mainViewPupils);
-    secondaryVideoView->updateViewProcessed(cimg.imgSecondary, secondaryViewROIs, secondaryViewPupils);
+    videoViewM->updateViewProcessed(cimg.img, mainViewROIs, mainViewPupils, cimg.sharpnessMask);
+    videoViewS->updateViewProcessed(cimg.imgS, secondaryViewROIs, secondaryViewPupils, cimg.sharpnessMaskS);
 }
 
 
@@ -533,8 +621,8 @@ void StereoCameraView::updateView(const CameraImage &cimg) {
     //      Display the date/time in the system specific locale format
     // statusBar->showMessage(QLocale::system().toString(date));
     
-    mainVideoView->updateView(cimg.img);
-    secondaryVideoView->updateView(cimg.imgSecondary);
+    videoViewM->updateView(cimg.img, cimg.sharpnessMask);
+    videoViewS->updateView(cimg.imgS, cimg.sharpnessMaskS);
 }
 
 void StereoCameraView::updateCameraFPS(double fps) {
@@ -621,35 +709,35 @@ void StereoCameraView::updatePupilView(const CameraImage &cimg, const int &procM
         }
 
         // Create a ROI around the pupil big enough to make changes visible
-        mainVideoView->updatePupilViews(targetsMain);
-        secondaryVideoView->updatePupilViews(targetsSecondary);
+        videoViewM->updatePupilViews(targetsMain);
+        videoViewS->updatePupilViews(targetsSecondary);
     }
 }
 
 // Fit button click, adjusts the camera-view to the current window size
 void StereoCameraView::onFitClick() {
 
-    mainVideoView->fitView();
-    secondaryVideoView->fitView();
+    videoViewM->fitView();
+    videoViewS->fitView();
 }
 
 // Show the camera-view with its real resolution without scaling to the window size
 void StereoCameraView::on100pClick() {
 
-    mainVideoView->showFullView();
-    secondaryVideoView->showFullView();
+    videoViewM->showFullView();
+    videoViewS->showFullView();
 }
 
 // Zoom in
 void StereoCameraView::onZoomPlusClick() {
-    mainVideoView->zoomInView();
-    secondaryVideoView->zoomInView();
+    videoViewM->zoomInView();
+    videoViewS->zoomInView();
 }
 
 // Zoom out
 void StereoCameraView::onZoomMinusClick() {
-    mainVideoView->zoomOutView();
-    secondaryVideoView->zoomOutView();
+    videoViewM->zoomOutView();
+    videoViewS->zoomOutView();
 }
 
 // Activates the pupil lens view
@@ -657,24 +745,24 @@ void StereoCameraView::onDisplayPupilViewClick(bool value) {
     displayPupilView = value;
     if(displayPupilView)
         initPupilViewSize = false;
-    mainVideoView->enablePupilView(displayPupilView);
-    secondaryVideoView->enablePupilView(displayPupilView);
+    videoViewM->enablePupilView(displayPupilView);
+    videoViewS->enablePupilView(displayPupilView);
 }
 
 // Opens the ROI selection
 void StereoCameraView::onSetROIClick(float roiSize) {
 
-    tempROIs[0] = mainVideoView->getROI1SelectionR();
-    tempROIs[1] = secondaryVideoView->getROI1SelectionR();
-    mainVideoView->setROI1SelectionR(roiSize);
-    secondaryVideoView->setROI1SelectionR(roiSize);
-    if(mainVideoView->getDoubleROI()){
-        tempROIs[2] = mainVideoView->getROI2SelectionR();
-        mainVideoView->setROI2SelectionR(roiSize);
+    tempROIs[0] = videoViewM->getROI1Selection_rat();
+    tempROIs[1] = videoViewS->getROI1Selection_rat();
+    videoViewM->setROI1Selection_rat(roiSize);
+    videoViewS->setROI1Selection_rat(roiSize);
+    if(videoViewM->getDoubleROI()){
+        tempROIs[2] = videoViewM->getROI2Selection_rat();
+        videoViewM->setROI2Selection_rat(roiSize);
     }
-    if(secondaryVideoView->getDoubleROI()){
-        tempROIs[3] = secondaryVideoView->getROI2SelectionR();
-        secondaryVideoView->setROI2SelectionR(roiSize);
+    if(videoViewS->getDoubleROI()){
+        tempROIs[3] = videoViewS->getROI2Selection_rat();
+        videoViewS->setROI2Selection_rat(roiSize);
     }
 
     if(roiSize == -1.0) {// "Custom"
@@ -684,20 +772,20 @@ void StereoCameraView::onSetROIClick(float roiSize) {
         toolBar->addAction(discardROISelection);
         toolBar->addAction(saveROI);
 
-        mainVideoView->showROISelection(true);
-        secondaryVideoView->showROISelection(true);
+        videoViewM->showROISelection(true);
+        videoViewS->showROISelection(true);
 
         smallROIAct->setEnabled(false);
         middleROIAct->setEnabled(false);
         customROIAct->setEnabled(false);
     } else {
-        mainVideoView->saveROI1Selection();
-        secondaryVideoView->saveROI1Selection();
-        if(mainVideoView->getDoubleROI()){
-            mainVideoView->saveROI2Selection();
+        videoViewM->saveROI1Selection();
+        videoViewS->saveROI1Selection();
+        if(videoViewM->getDoubleROI()){
+            videoViewM->saveROI2Selection();
         }
-        if(secondaryVideoView->getDoubleROI()){
-            secondaryVideoView->saveROI2Selection();
+        if(videoViewS->getDoubleROI()){
+            videoViewS->saveROI2Selection();
         }
     }
     this->update();
@@ -708,16 +796,16 @@ void StereoCameraView::onSetROIClick(float roiSize) {
 void StereoCameraView::onSaveROIClick() {
     bool s1, s2, s3, s4;
     s1=s2=s3=s4=false;
-    s1 = mainVideoView->saveROI1Selection();
-    s2 = secondaryVideoView->saveROI1Selection();
-    if(mainVideoView->getDoubleROI())
-        s3 = mainVideoView->saveROI2Selection();
-    if(secondaryVideoView->getDoubleROI())
-        s4 = secondaryVideoView->saveROI2Selection();
+    s1 = videoViewM->saveROI1Selection();
+    s2 = videoViewS->saveROI1Selection();
+    if(videoViewM->getDoubleROI())
+        s3 = videoViewM->saveROI2Selection();
+    if(videoViewS->getDoubleROI())
+        s4 = videoViewS->saveROI2Selection();
     
     if( s1 || s2 || s3 || s4 ) {
-        mainVideoView->showROISelection(false);
-        secondaryVideoView->showROISelection(false);
+        videoViewM->showROISelection(false);
+        videoViewS->showROISelection(false);
         toolBar->removeAction(resetROI);
         toolBar->removeAction(saveROI);
         toolBar->removeAction(discardROISelection);
@@ -727,16 +815,16 @@ void StereoCameraView::onSaveROIClick() {
     middleROIAct->setEnabled(true);
     customROIAct->setEnabled(true);
 
-    mainVideoView->drawOverlay();
-    secondaryVideoView->drawOverlay();
+    videoViewM->drawOverlay();
+    videoViewS->drawOverlay();
 
     emit doingPupilDetectionROIediting(false);
 }
 
 // Reset/Discard the current ROI selection dialog
 void StereoCameraView::onResetROIClick() {
-    mainVideoView->resetROISelection();
-    secondaryVideoView->resetROISelection();
+    videoViewM->resetROISelection();
+    videoViewS->resetROISelection();
 }
 
 // Changes pupil color fill of the videoView
@@ -777,63 +865,63 @@ void StereoCameraView::onPlotROIClick(bool value) {
 
 // Saves the ROI selection to the application wide settings (which are persisted to file)
 // saves main view, roi nr 1
-void StereoCameraView::saveMainROI1Selection(QRectF roiR) {
+void StereoCameraView::saveMainROI1Selection(QRectF roi_rat) {
     qDebug() << "Saving Main ROI 1 selection" << Qt::endl;
 
-    QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF imageSize = videoViewM->getImageSize();
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil1.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil1.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilM.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilM.discrete", roi);
         //qDebug() << "Pupil, viewpoint 1" << Qt::endl;
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA1.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA1.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRM.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRM.discrete", roi);
         //qDebug() << "Pupil A, viewpoint 1" << Qt::endl;
     }
 }
 
 // Saves the ROI selection to the application wide settings (which are persisted to file)
 // saves secondary view, roi nr 1
-void StereoCameraView::saveSecondaryROI1Selection(QRectF roiR) {
+void StereoCameraView::saveSecondaryROI1Selection(QRectF roi_rat) {
     qDebug() << "Saving Secondary ROI 1 selection" << Qt::endl;
 
-    QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF imageSize = videoViewM->getImageSize();
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil2.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupil2.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilS.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageOnePupilS.discrete", roi);
         //qDebug() << "Pupil, viewpoint 2" << Qt::endl;
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA2.rational", roiR);
-        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilA2.discrete", roiD);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRS.rational", roi_rat);
+        applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilRS.discrete", roi);
         //qDebug() << "Pupil A, viewpoint 2" << Qt::endl;
     }
 }
 
-void StereoCameraView::saveMainROI2Selection(QRectF roiR) {
+void StereoCameraView::saveMainROI2Selection(QRectF roi_rat) {
     qDebug() << "Saving Main ROI 2 selection" << Qt::endl;
     
-    QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF imageSize = videoViewM->getImageSize();
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
     // STEREO_IMAGE_TWO_PUPIL
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilB1.rational", roiR);
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilB1.discrete", roiD);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLM.rational", roi_rat);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLM.discrete", roi);
     //qDebug() << "Pupil B, viewpoint 1" << Qt::endl;
 }
 
-void StereoCameraView::saveSecondaryROI2Selection(QRectF roiR) {
+void StereoCameraView::saveSecondaryROI2Selection(QRectF roi_rat) {
     qDebug() << "Saving Secondary ROI 2 selection" << Qt::endl;
 
-    QRectF imageSize = mainVideoView->getImageSize();
-    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+    QRectF imageSize = videoViewM->getImageSize();
+    QRectF roi = QRectF(roi_rat.x() * imageSize.width(), roi_rat.y() * imageSize.height(), roi_rat.width() * imageSize.width(), roi_rat.height() * imageSize.height());
     // STEREO_IMAGE_TWO_PUPIL
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilB2.rational", roiR);
-    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilB2.discrete", roiD);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLS.rational", roi_rat);
+    applicationSettings->setValue("StereoCameraView.ROIstereoImageTwoPupilLS.discrete", roi);
     //qDebug() << "Pupil B, viewpoint 2" << Qt::endl; 
 }
 
@@ -856,15 +944,26 @@ void StereoCameraView::onPupilDetectionConfigChanged(QString config) {
 
 void StereoCameraView::onAutoParamPupSize(int value) {
 
-    mainVideoView->setAutoParamPupSize(value);
-    secondaryVideoView->setAutoParamPupSize(value);
+    videoViewM->setAutoParamPupSize(value);
+    videoViewS->setAutoParamPupSize(value);
 
     pupilDetection->setAutoParamPupSizePercent((float)value);
     pupilDetection->setAutoParamScheduled(true);
 
     applicationSettings->setValue("autoParamPupSizePercent", value); 
-    mainVideoView->drawOverlay();
-    secondaryVideoView->drawOverlay();
+    videoViewM->drawOverlay();
+    videoViewS->drawOverlay();
+}
+
+void StereoCameraView::onSharpnessGuideThresh(double value) {
+
+    // NOTE: we do not need to set anything on videoView though
+
+    pupilDetection->setSharpnessGuideThresh(value);
+
+    applicationSettings->setValue("sharpnessGuideThresh", value);
+    videoViewM->drawOverlay();
+    videoViewS->drawOverlay();
 }
 
 void StereoCameraView::onFreezeClicked() {
@@ -874,102 +973,121 @@ void StereoCameraView::onFreezeClicked() {
 void StereoCameraView::onCameraPlaybackChanged() {
     playbackFrozen = !playbackFrozen;
     freezeAct->setChecked(playbackFrozen);
+
+    if(playbackFrozen && camera->getType() != CameraImageType::STEREO_IMAGE_FILE)
+        setWindowTitle(windowOriginalTitle + " [FREEZED (Shift+F)]");
+    else
+        setWindowTitle(windowOriginalTitle);
 }
 
 void StereoCameraView::updateForPupilDetectionProcMode() {
 
-    disconnect(mainVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupil1(QRectF)));
-    disconnect(mainVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
-    disconnect(secondaryVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupil2(QRectF)));
-    disconnect(secondaryVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
+    disconnect(videoViewM, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupilM(QRectF)));
+    disconnect(videoViewM, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
+    disconnect(videoViewS, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupilS(QRectF)));
+    disconnect(videoViewS, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
 
-    disconnect(mainVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilA1(QRectF))); 
-    disconnect(mainVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
-    disconnect(mainVideoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilB1(QRectF)));
-    disconnect(mainVideoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveMainROI2Selection(QRectF)));
-    disconnect(secondaryVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilA2(QRectF)));
-    disconnect(secondaryVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
-    disconnect(secondaryVideoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilB2(QRectF)));
-    disconnect(secondaryVideoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveSecondaryROI2Selection(QRectF)));
+    disconnect(videoViewM, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilRM(QRectF)));
+    disconnect(videoViewM, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
+    disconnect(videoViewM, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilRS(QRectF)));
+    disconnect(videoViewM, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveMainROI2Selection(QRectF)));
+    disconnect(videoViewS, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilRS(QRectF)));
+    disconnect(videoViewS, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
+    disconnect(videoViewS, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilLS(QRectF)));
+    disconnect(videoViewS, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveSecondaryROI2Selection(QRectF)));
 
     ProcMode val = pupilDetection->getCurrentProcMode();
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
         //qDebug() << "STEREO_IMAGE_ONE_PUPIL" << Qt::endl;
-        mainVideoView->setDoubleROI(false);
-        secondaryVideoView->setDoubleROI(false);
-        mainVideoView->setSelectionColor1(QColor(0,0,255,76)); // Qt::blue
-        secondaryVideoView->setSelectionColor1(QColor(0,255,0,76)); // Qt::green
-        mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
-        secondaryVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
+        videoViewM->setDoubleROI(false);
+        videoViewS->setDoubleROI(false);
+        videoViewM->setSelectionColor1(QColor(0, 0, 255, 76)); // Qt::blue
+        videoViewS->setSelectionColor1(QColor(0, 255, 0, 76)); // Qt::green
+        videoViewM->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
+        videoViewS->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
 
-        connect(mainVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupil1(QRectF)));
-        connect(mainVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
-        connect(secondaryVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupil2(QRectF)));
-        connect(secondaryVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
+        connect(videoViewM, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupilM(QRectF)));
+        connect(videoViewM, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
+        connect(videoViewS, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageOnePupilS(QRectF)));
+        connect(videoViewS, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
 
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
         //qDebug() << "STEREO_IMAGE_TWO_PUPIL" << Qt::endl;
-        mainVideoView->setDoubleROI(true);
-        secondaryVideoView->setDoubleROI(true);
-        mainVideoView->setSelectionColor1(QColor(0,0,255,76)); // Qt::blue
-        mainVideoView->setSelectionColor2(QColor(0,255,0,76)); // Qt::green
-        secondaryVideoView->setSelectionColor1(QColor(144, 55, 212, 76)); // purple
-        secondaryVideoView->setSelectionColor2(QColor(214, 140, 49,76)); // orange
-        mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
-        mainVideoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
-        secondaryVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
-        secondaryVideoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
+        videoViewM->setDoubleROI(true);
+        videoViewS->setDoubleROI(true);
+        videoViewM->setSelectionColor1(QColor(0, 0, 255, 76)); // Qt::blue
+        videoViewM->setSelectionColor2(QColor(0, 255, 0, 76)); // Qt::green
+        videoViewS->setSelectionColor1(QColor(144, 55, 212, 76)); // purple
+        videoViewS->setSelectionColor2(QColor(214, 140, 49, 76)); // orange
+        videoViewM->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
+        videoViewM->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
+        videoViewS->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
+        videoViewS->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
 
-        connect(mainVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilA1(QRectF))); 
-        connect(mainVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
-        connect(mainVideoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilB1(QRectF)));
-        connect(mainVideoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveMainROI2Selection(QRectF)));
-        connect(secondaryVideoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilA2(QRectF)));
-        connect(secondaryVideoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
-        connect(secondaryVideoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilB2(QRectF)));
-        connect(secondaryVideoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveSecondaryROI2Selection(QRectF)));
+        connect(videoViewM, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilRM(QRectF)));
+        connect(videoViewM, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveMainROI1Selection(QRectF)));
+        connect(videoViewM, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilLM(QRectF)));
+        connect(videoViewM, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveMainROI2Selection(QRectF)));
+        connect(videoViewS, SIGNAL (onROI1Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilRS(QRectF)));
+        connect(videoViewS, SIGNAL (onROI1Selection_rat(QRectF)), this, SLOT (saveSecondaryROI1Selection(QRectF)));
+        connect(videoViewS, SIGNAL (onROI2Selection(QRectF)), pupilDetection, SLOT (setROIstereoImageTwoPupilLS(QRectF)));
+        connect(videoViewS, SIGNAL (onROI2Selection_rat(QRectF)), this, SLOT (saveSecondaryROI2Selection(QRectF)));
 
     }  else {
         //qDebug() << "Processing mode is undetermined" << Qt::endl;
     }
 
-    mainVideoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
-    secondaryVideoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
+    videoViewM->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
+    videoViewS->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
     loadSettings(); // same as onSettingsChange()
 
     // The following ones are NEEDED HERE, because they need to happen after we loaded new ROIs using loadSettings();
     // But they are also be needed for setting the right colour of the ROI rectangles, as these calls also do that
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        mainVideoView->onROI1Change();
-        secondaryVideoView->onROI1Change();
+        videoViewM->onROI1Change();
+        videoViewS->onROI1Change();
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        mainVideoView->onROI1Change();
-        mainVideoView->onROI2Change();
-        secondaryVideoView->onROI1Change();
-        secondaryVideoView->onROI2Change();
+        videoViewM->onROI1Change();
+        videoViewM->onROI2Change();
+        videoViewS->onROI1Change();
+        videoViewS->onROI2Change();
     }  else {
         //qDebug() << "Processing mode is undetermined" << Qt::endl;
     }
 
     updateProcModeLabel();
 
-//    mainVideoView->update();
-//    secondaryVideoView->update();
+//    videoViewM->update();
+//    videoViewS->update();
 
     // at last, we update the videoView to redraw the ROI overlay
-    mainVideoView->drawOverlay();
-    secondaryVideoView->drawOverlay();
+    videoViewM->drawOverlay();
+    videoViewS->drawOverlay();
 
-    mainVideoView->refitPupilDetailViews();
-    secondaryVideoView->refitPupilDetailViews();
+    videoViewM->refitPupilDetailViews();
+    videoViewS->refitPupilDetailViews();
 }
 
+// NOTE: this is just added later for display, but only enabled if pupil detection settings has it enabled
 void StereoCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("StereoCameraView.showAutoParamOverlay", showAutoParamOverlay);
     emit onChangeShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
 }
 
+// IMPORTANT: This practically switches on/off the sharpness map calculation in pupil detection!
+//  (so it shows to the user as a plain GUI feature, but there is actual change in the pupil detection processing
+//  because it needs extra calculation, so only use it when user explicitly needs it for setting focus
+void StereoCameraView::onShowSharpnessGuideOverlay(bool state) {
+    pupilDetection->setSharpnessGuideEnabled(state);
+    videoViewM->setSharpnessGuideEnabled(state);
+    videoViewS->setSharpnessGuideEnabled(state);
+    showSharpnessGuideOverlay = state;
+    applicationSettings->setValue("StereoCameraView.showSharpnessGuideOverlay", showSharpnessGuideOverlay);
+//    emit onChangeShowSharpnessGuideOverlay(showSharpnessGuideOverlay); // unnecessary
+}
+
+// NOTE: This is just a later added overlay to show sensor center, nothing fancy
 void StereoCameraView::onShowPositioningGuide(bool state) {
     showPositioningGuide = state;
     applicationSettings->setValue("StereoCameraView.showPositioningGuide", showPositioningGuide);
@@ -977,13 +1095,13 @@ void StereoCameraView::onShowPositioningGuide(bool state) {
 }
 
 void StereoCameraView::onImageROIChanged(const QRect& ROI) {
-    mainVideoView->setImageROI(ROI);
-    secondaryVideoView->setImageROI(ROI);
+    videoViewM->setImageROI(ROI);
+    videoViewS->setImageROI(ROI);
 }
 
 void StereoCameraView::onSensorSizeChanged(const QSize& size) {
-    mainVideoView->setSensorSize(size);
-    secondaryVideoView->setSensorSize(size);
+    videoViewM->setSensorSize(size);
+    videoViewS->setSensorSize(size);
 }
 
 void StereoCameraView::updateProcModeLabel() {
@@ -1004,17 +1122,17 @@ void StereoCameraView::displayFileCameraFrame(int frameNumber) {
         return;
       
     std::vector<cv::Mat> temp2 = dynamic_cast<FileCamera*>(camera)->getStillImageStereo(frameNumber);
-    mainVideoView->updateView(temp2[0]);
-    secondaryVideoView->updateView(temp2[1]);
+    videoViewM->updateView(temp2[0], cv::Mat());
+    videoViewS->updateView(temp2[1], cv::Mat());
 }
 
 void StereoCameraView::onDiscardROISelectionClick(){
-    mainVideoView->setROI1SelectionR(tempROIs[0]);
-    secondaryVideoView->setROI1SelectionR(tempROIs[1]);
-    if(mainVideoView->getDoubleROI())
-        mainVideoView->setROI2SelectionR(tempROIs[2]);
-    if(secondaryVideoView->getDoubleROI())
-        secondaryVideoView->setROI2SelectionR(tempROIs[3]);
+    videoViewM->setROI1Selection_rat(tempROIs[0]);
+    videoViewS->setROI1Selection_rat(tempROIs[1]);
+    if(videoViewM->getDoubleROI())
+        videoViewM->setROI2Selection_rat(tempROIs[2]);
+    if(videoViewS->getDoubleROI())
+        videoViewS->setROI2Selection_rat(tempROIs[3]);
     onSaveROIClick();
 }
 

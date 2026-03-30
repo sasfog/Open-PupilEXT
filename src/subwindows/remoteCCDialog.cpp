@@ -483,12 +483,12 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
         return;
     }
 
-    if(str[0].toLower() == 'a' && str.size()>=2) { // performing actions just like when interacting with GUI
+    if(str[0].toLower() == 'a' && str.size()>=2) { // performing actions just like when interacting with GUI, specifically for main window
         if(str[1].toLower() == '1' && str.size()>=4) { // open single camera device
             w->PRGopenSingleCamera(str.mid(3, str.length()-3).toLower());
         } else if(str[1].toLower() == '2' && str.size()>=4) { // open stereo camera device
             QString twoNames = str.mid(3, str.length()-3).toLower();
-            QRegExp separator("[,|;]");
+            QRegularExpression separator("[,|;]");
             QStringList subStrings = twoNames.split(separator);
             if(subStrings.length() >= 2)
                 w->PRGopenStereoCamera(subStrings[0], subStrings[1]);
@@ -516,11 +516,26 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             w->PRGforceResetTrialCounter(timestamp);
         }
         return;
-    } 
-    
+    }
+
+    if(str[0].toLower() == 'v' && str.size()>=2) { // performing actions just like when interacting with GUI, specifically for only visualization, on subwindows
+        if(str[1].toLower() == 'c' && str.size()>=4) { // settings of camera views (viewports)
+            if(str[2].toLower() == 's' && str.size()>=5) { // sharpness guide on/off
+                if(str[4].toLower() == '1' ||
+                   (str.size()>=8 && (str.mid(4,4) == "true") ) ) { // on
+                    w->PRGenableSharpnessGuide(true);
+                } else if(str[4].toLower() == '0' ||
+                    (str.size()>=8 && (str.mid(4,5) == "false") ) ) { // off
+                    w->PRGenableSharpnessGuide(false);
+                }
+            }
+        }
+        return;
+    }
+
     if(str[0].toLower() == 'g' && str.size()>=4) { // changing general settings or basic runtime variables
         if(str[1].toLower() == 'p') { // set image output path, no toLower()
-            w->PRGsetOutPath(str.mid(3, str.length()-3));
+            w->PRGsetImageOutputTarget(str.mid(3, str.length()-3));
         } else if(str[1].toLower() == 'l') { // set logfile and path name, no toLower()
             w->PRGsetCsvPathAndName(str.mid(3, str.length()-3));
         } else if(str[1].toLower() == 'c') { // set global delimiter character, no toLower()
@@ -534,17 +549,20 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
     if(str[0].toLower() == 'p' && str.size()>=4) { // changing pupil detection settings
         if(str[1].toLower() == 'a') { // set pupil detection algorithm
             w->PRGsetPupilDetectionAlgorithm(str.mid(3, str.length()-3).toLower());
-        } else if(str[1].toLower() == 'r') { // Use ROI Area Selection
+        } else if(str[1].toLower() == 'r') { // Use PD ROI Area Selection
             w->PRGsetPupilDetectionUsingROI(str.mid(3, str.length()-3).toLower());
         } else if(str[1].toLower() == 'o') { // Compute Additional Outline Confidence
             w->PRGsetPupilDetectionCompOutlineConf(str.mid(3, str.length()-3).toLower());
+        } else if(str[1].toLower() == 'b') { // Compute BRISQUE
+            w->PRGsetPupilDetectionCompBRISQUE(str.mid(3, str.length()-3).toLower());
         }
         return;
     }
 
     if(str[0].toLower() == 'i' && str.size()>=3) { // changing camera-related and Image acquisition settings
         if(str[1].toLower() == 't' && str.size()>=4) { // set image acquisition triggering mode
-            if(str[3].toLower() == 'h') { // hardware-based triggering
+            if(str[3].toLower() == '1' || str[3].toLower() == 'h' ||
+                (str.size()>=7 && (str.mid(3,4) == "true") ) ) { // hardware-based triggering
                 w->PRGenableHWT(true);
             } else if(str[3].toLower() == 's') { // software-based triggering
                 w->PRGenableHWT(false);
@@ -561,23 +579,29 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                 float val = str.mid(4, str.length()-4).toFloat(&ok);
                 if(!ok || (ok && val < 0.0f))
                     return;
-                w->PRGsetHWTruntime(val);
+                w->PRGsetHWTMCUruntime(val);
             } else if(str[2].toLower() == 'f' && str.size()>=5) {
                 bool ok;
                 int val = str.mid(4, str.length()-4).toInt(&ok);
                 if(!ok || (ok && val <= 0))
                     return;
-                w->PRGsetHWTframerate(val);
+                w->PRGsetHWTMCUframerate(val);
+            } else if(str[2].toLower() == 'v' && str.size()>=5) {
+                bool ok;
+                int val = str.mid(4, str.length()-4).toInt(&ok);
+                if(!ok || (ok && val <= 0))
+                    return;
+                w->PRGsetHWTframerateLimitVal(val);
             }
         } else if(str[1].toLower() == 's') { // set software-based triggering settings
-            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // enable sofwtare triggering framerate limiting
+            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // enable software triggering framerate limiting
                 w->PRGenableSWTframerateLimiting(str.mid(4, str.length()-4).toLower());
-            } else if(str[2].toLower() == 'f' && str.size()>=5) {
+            } else if((str[2].toLower() == 'f' || str[2].toLower() == 'v') && str.size()>=5) {
                 bool ok;
                 int val = str.mid(4, str.length()-4).toInt(&ok);
                 if(!ok || (ok && val <= 0))
                     return;
-                w->PRGsetSWTframerate(val);
+                w->PRGsetSWTframerateLimitVal(val);
             }
         } else if(str[1].toLower() == 'e' && str.size()>=4) { // set exposure
             bool ok;
@@ -585,9 +609,15 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             if(!ok || (ok && val <= 0))
                 return;
             w->PRGsetExposure(val);
-        } else if(str[1].toLower() == 'g' && str.size()>=4) { // set gain
+        } else if(str[1].toLower() == 'b' && str.size()>=4) { // set binning
             bool ok;
             int val = str.mid(3, str.length()-3).toDouble(&ok);
+            if(!ok || (ok && val <= 0))
+                return;
+            w->PRGsetBinning(val);
+        } else if(str[1].toLower() == 'g' && str.size()>=4) { // set gain
+            bool ok;
+            double val = str.mid(3, str.length()-3).toDouble(&ok);
             if(!ok || (ok && val <= 0))
                 return;
             w->PRGsetGain(val);
@@ -614,11 +644,21 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                     w->PRGconnectStreamUDP(str.mid(8, str.length()-8));
                 else if(str.size()>8 && str.mid(4,3).toLower() == "com")
                     w->PRGconnectStreamCOM(str.mid(8, str.length()-8).toUpper());
+#ifdef USE_LSL
+                else if(str.size()>8 && str.mid(4,3).toLower() == "lsl") // if no configuration string is supplied
+                    w->PRGconnectStreamLSL(str.mid(8, str.length()-8).toUpper());
+                else if(str.mid(4,3).toLower() == "lsl") // if a configuration string is supplied (data container and desired srate)
+                    w->PRGconnectStreamLSL("");
+#endif
             } else if(str.size()>=6 && str[2].toLower() == 'd') {
                 if(str.mid(4,3).toLower() == "udp")
                     w->PRGdisconnectStreamUDP();
                 else if(str.size()>=6 && str.mid(4,3).toLower() == "com")
                     w->PRGdisconnectStreamCOM();
+#ifdef USE_LSL
+                else if(str.size()>=6 && str.mid(4,3).toLower() == "lsl")
+                    w->PRGdisconnectStreamLSL();
+#endif
             }
         } else if(str[1].toLower() == 'm') { // for Microcontroller ("camera serial") connection
             if(str[2].toLower() == 'c' ) {

@@ -48,16 +48,16 @@ PupilDetectionSettingsDialog::~PupilDetectionSettingsDialog() {
 void PupilDetectionSettingsDialog::createForm() {
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setMargin(10);
+    //mainLayout->setMargin(10);
     mainLayout->setContentsMargins(10,10,10,10);
     QHBoxLayout *mainLayoutInner = new QHBoxLayout();
-    mainLayoutInner->setMargin(0);
+    //mainLayoutInner->setMargin(0);
     mainLayoutInner->setContentsMargins(0,0,0,0);
     QVBoxLayout *mainLayoutInnerCol1 = new QVBoxLayout();
-    mainLayoutInnerCol1->setMargin(0);
+    //mainLayoutInnerCol1->setMargin(0);
     mainLayoutInnerCol1->setContentsMargins(0,5,0,5);
     QVBoxLayout *mainLayoutInnerCol2 = new QVBoxLayout();
-    mainLayoutInnerCol2->setMargin(0);
+    //mainLayoutInnerCol2->setMargin(0);
     mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
     procModeGroup = new QGroupBox("Pupil detection via image processing");
@@ -117,6 +117,17 @@ void PupilDetectionSettingsDialog::createForm() {
     procModeBoxLayout->addRow(layoutRow1);
 
 
+    QLabel *singleEyeIdentityLabel = new QLabel(tr("Single eye identity:"));
+    singleEyeIdentityBox = new QComboBox();
+    singleEyeIdentityBox->setFixedWidth(40);
+    singleEyeIdentityBox->addItem(QString::fromStdString("X"));
+    singleEyeIdentityBox->addItem(QString::fromStdString("R"));
+    singleEyeIdentityBox->addItem(QString::fromStdString("L"));
+    //singleEyeIdentityBox->setCurrentText(QString(pupilDetection->getEyeIdentities()[0]));
+    singleEyeIdentityBox->setCurrentText("X");
+    procModeBoxLayout->addRow(singleEyeIdentityLabel, singleEyeIdentityBox);
+
+
     procModeGroup->setLayout(procModeBoxLayout);
     mainLayoutInnerCol1->addWidget(procModeGroup);
 
@@ -138,15 +149,24 @@ void PupilDetectionSettingsDialog::createForm() {
 
     QFormLayout *optionsLayout = new QFormLayout();
 
-    QLabel *roiPreprocessingLabel = new QLabel(tr("Use ROI Area Selection:"));
+    QLabel *roiPreprocessingLabel = new QLabel(tr("Use PD ROI Area Selection:"));
     roiPreprocessingBox = new QCheckBox();
+    roiPreprocessingBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
     optionsLayout->addRow(roiPreprocessingLabel, roiPreprocessingBox);
 
     QLabel *outlineConfidenceLabel = new QLabel(tr("Compute Additional Outline Confidence:"));
     outlineConfidenceBox = new QCheckBox();
+    outlineConfidenceBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     outlineConfidenceBox->setChecked(pupilDetection->isOutlineConfidenceEnabled());
     optionsLayout->addRow(outlineConfidenceLabel, outlineConfidenceBox);
+
+    QLabel *computeBRISQUELabel = new QLabel(tr("Compute BRISQUE Score (slow):"));
+    computeBRISQUEBox = new QCheckBox();
+    computeBRISQUEBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
+    //computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
+    computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
+    optionsLayout->addRow(computeBRISQUELabel, computeBRISQUEBox);
 
 
     QLabel *pupilSizeUndistortionLabel = new QLabel(tr("Undistort individual pupil size (fast) [<a href=\"http://mock.link\">?</a>]:"));
@@ -156,20 +176,22 @@ void PupilDetectionSettingsDialog::createForm() {
     checkboxGroup->setExclusive(false);
 
     pupilUndistortionBox = new QCheckBox();
+    pupilUndistortionBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     pupilUndistortionBox->setChecked(pupilDetection->isPupilUndistortionEnabled());
     checkboxGroup->addButton(pupilUndistortionBox);
     optionsLayout->addRow(pupilSizeUndistortionLabel, pupilUndistortionBox);
-    connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
+    connect(pupilUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onPupilUndistortionClick(Qt::CheckState)));
 
 
     QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) (single camera only) [<a href=\"http://mock.link\">?</a>]:"));
     connect(imageUndistortionLabel, SIGNAL(linkActivated(QString)), this, SLOT(onShowHelpDialog()));
 
     imageUndistortionBox = new QCheckBox();
+    imageUndistortionBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
     checkboxGroup->addButton(imageUndistortionBox);
     optionsLayout->addRow(imageUndistortionLabel, imageUndistortionBox);
-    connect(imageUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onImageUndistortionClick(int)));
+    connect(imageUndistortionBox, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(onImageUndistortionClick(Qt::CheckState)));
 
     optionsGroup->setLayout(optionsLayout);
     mainLayoutInnerCol1->addWidget(optionsGroup);
@@ -260,6 +282,7 @@ void PupilDetectionSettingsDialog::updateForm() {
     algorithmBox->setCurrentText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
     outlineConfidenceBox->setChecked(pupilDetection->isOutlineConfidenceEnabled());
+    computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
 
     pupilUndistortionBox->setChecked(pupilDetection->isPupilUndistortionEnabled());
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
@@ -271,6 +294,21 @@ void PupilDetectionSettingsDialog::updateForm() {
         procModeGroup->setDisabled(true);
     } else {
         procModeGroup->setDisabled(false);
+    }
+
+    // Algorithms should not be changeable if tracking is on
+    algorithmBox->setEnabled(!pupilDetection->isTrackingOn());
+
+    if(pupilDetection->getCurrentProcMode() == SINGLE_IMAGE_ONE_PUPIL || pupilDetection->getCurrentProcMode() == STEREO_IMAGE_ONE_PUPIL) {
+        singleEyeIdentityBox->setEnabled(true);
+        singleEyeIdentityBox->blockSignals(true);
+        singleEyeIdentityBox->setCurrentText(QString(pupilDetection->getEyeIdentities()[0]));
+        singleEyeIdentityBox->blockSignals(false);
+    } else {
+        singleEyeIdentityBox->setEnabled(false);
+        singleEyeIdentityBox->blockSignals(true);
+        singleEyeIdentityBox->setCurrentText("X");
+        singleEyeIdentityBox->blockSignals(false);
     }
 }
 
@@ -292,19 +330,34 @@ void PupilDetectionSettingsDialog::loadSettings() {
     if(!pupilDetection->isTrackingOn() && pupilDetection->hasOpenCamera()) {
         // Note: workaround: these should not stay "undetermined" at any time, so use meaningful default values, even though they could be changed in GUI
         if(!pupilDetection->isStereo()) {
-            pupilDetection->setCurrentProcMode(applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt());
+            auto procMode = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt();
+            pupilDetection->setCurrentProcMode(procMode);
             //std::cout << "LOADED SINGLE CAM PROC MODE" << std::endl;
+            if(procMode == SINGLE_IMAGE_ONE_PUPIL) {
+                auto identity = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.singleEyeIdentity",'X').toChar();
+                if(identity != 'R' &&  identity != 'L')
+                    identity = 'X';
+                pupilDetection->setSingleEyeIdentity(identity);
+            }
         } else {
-            pupilDetection->setCurrentProcMode(applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt());
+            auto procMode = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt();
+            pupilDetection->setCurrentProcMode(procMode);
             //std::cout << "LOADED STEREO CAM PROC MODE" << std::endl;
+            if(procMode == STEREO_IMAGE_ONE_PUPIL) {
+                auto identity = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.singleEyeIdentity",'X').toChar();
+                if(identity != 'R' &&  identity != 'L')
+                    identity = 'X';
+                pupilDetection->setSingleEyeIdentity(identity);
+            }
         }
     }
 
     pupilDetection->setAlgorithm(applicationSettings->value("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText()).toString());
 //    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked(), applicationSettings));
 //    pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked(), applicationSettings));
-    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", true, applicationSettings));
     pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", true, applicationSettings));
+    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", true, applicationSettings));
+    pupilDetection->enableComputeBRISQUE(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.computeBRISQUE", false, applicationSettings));
     pupilDetection->enablePupilUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked(), applicationSettings));
     pupilDetection->enableImageUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked(), applicationSettings));
 
@@ -320,14 +373,17 @@ void PupilDetectionSettingsDialog::saveUniversalSettings() {
     if(!pupilDetection->isTrackingOn() && procModeBox->currentIndex()!=0) {
         if(!pupilDetection->isStereo()) {
             applicationSettings->setValue("PupilDetectionSettingsDialog.singleCam.procMode", procModeBox->currentIndex());
+            applicationSettings->setValue("PupilDetectionSettingsDialog.singleCam.singleEyeIdentity", singleEyeIdentityBox->currentText()[0]);
         } else {
             applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", procModeBox->currentIndex());
+            applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.singleEyeIdentity", singleEyeIdentityBox->currentText()[0]);
         }
     }
 
     applicationSettings->setValue("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText());
-    applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked());
+    applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked());
+    applicationSettings->setValue("PupilDetectionSettingsDialog.computeBRISQUE", computeBRISQUEBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked());
 }
@@ -338,23 +394,50 @@ void PupilDetectionSettingsDialog::onProcModeSelection(int idx) {
     if(idx == 0) {
         iLabelFakeButton->setIcon(procModeIcon_undetermined);
         procModeInfoLabel->setText("Here you can specify how many eyes the program should look for \nwhen performing pupil detection, depending on physical arrangement \nof the camera(s) and eye(s).");
+        singleEyeIdentityBox->setEnabled(false);
+        singleEyeIdentityBox->blockSignals(true);
+        singleEyeIdentityBox->setCurrentText("X");
+        singleEyeIdentityBox->blockSignals(false);
     } else if(idx == 1) {
         iLabelFakeButton->setIcon(procModeIcon_1cam1pup);
         procModeInfoLabel->setText("Detecting one pupil from a single camera viewpoint. \n(Low CPU load)"); // This way no eye distance can be measured optically.
+        singleEyeIdentityBox->setEnabled(true);
+        singleEyeIdentityBox->blockSignals(true);
+        QChar identity = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.singleEyeIdentity",'X').toChar();
+        if(identity != 'R' &&  identity != 'L')
+            identity = 'X';
+        singleEyeIdentityBox->setCurrentText(identity);
+        singleEyeIdentityBox->blockSignals(false);
     } else if(idx == 2) {
         iLabelFakeButton->setIcon(procModeIcon_1cam2pup);
         procModeInfoLabel->setText("Detecting both pupils from a single camera viewpoint. \n(Medium CPU load)"); // This way no eye distance can be measured optically.
+        singleEyeIdentityBox->setEnabled(false);
+        singleEyeIdentityBox->blockSignals(true);
+        singleEyeIdentityBox->setCurrentText("X");
+        singleEyeIdentityBox->blockSignals(false);
     } else if(idx == 3) {
         iLabelFakeButton->setIcon(procModeIcon_2cam1pup);
         procModeInfoLabel->setText("Detecting one pupil from two cameras, producing a stereoscopic \npair of viewpoints. (Medium CPU load)");
+        singleEyeIdentityBox->setEnabled(true);
+        singleEyeIdentityBox->blockSignals(true);
+        QChar identity = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.singleEyeIdentity",'X').toChar();
+        if(identity != 'R' &&  identity != 'L')
+            identity = 'X';
+        singleEyeIdentityBox->setCurrentText(identity);
+        singleEyeIdentityBox->blockSignals(false);
     } else if(idx == 4) {
         iLabelFakeButton->setIcon(procModeIcon_2cam2pup);
         procModeInfoLabel->setText("Detecting both pupils from two cameras, producing stereoscopic \npairs of viewpoints. (High CPU load)");
-    } 
+        singleEyeIdentityBox->setEnabled(false);
+        singleEyeIdentityBox->blockSignals(true);
+        singleEyeIdentityBox->setCurrentText("X");
+        singleEyeIdentityBox->blockSignals(false);
+    }
     // else if(idx == 5) {
     //     iLabel->setPixmap(procModePixmap_1Mcam1pup);
     //     procModeInfoLabel->setText("Detecting one pupil from a single camera, but through two different \nviewpoints via an image splitter arrangement of a knife edge prism and \ntwo mirrors. (Medium CPU load)");
     // } //else {}
+
 }
 
 // Show and hide the algorithm specific settings depending on the current algorithm selection
@@ -378,7 +461,6 @@ void PupilDetectionSettingsDialog::onAlgorithmSelection(int idx) {
 void PupilDetectionSettingsDialog::applyButtonClick() {
 
     bool procModeChanged = (lastKnownProcMode != procModeBox->currentIndex());
-
     if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn() && procModeChanged) {
         pupilDetection->setCurrentProcMode(procModeBox->currentIndex());
         lastKnownProcMode = (ProcMode)procModeBox->currentIndex();
@@ -387,9 +469,27 @@ void PupilDetectionSettingsDialog::applyButtonClick() {
         procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());
     }
 
+    QChar lastKnownSingleEyeIdentity = 'X';
+    if(!pupilDetection->isStereo() && pupilDetection->getCurrentProcMode() == SINGLE_IMAGE_ONE_PUPIL) {
+        lastKnownSingleEyeIdentity = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.singleEyeIdentity",'X').toChar();
+    } else if(pupilDetection->getCurrentProcMode() == STEREO_IMAGE_ONE_PUPIL) {
+        lastKnownSingleEyeIdentity = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.singleEyeIdentity",'X').toChar();
+    }
+    if(lastKnownSingleEyeIdentity != 'R' &&  lastKnownSingleEyeIdentity != 'L')
+        lastKnownSingleEyeIdentity = 'X';
+    bool singleEyeIdentityChanged = (lastKnownSingleEyeIdentity != singleEyeIdentityBox->currentText()[0]);
+    if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn() && singleEyeIdentityChanged) {
+        auto singleEyeIdentity = singleEyeIdentityBox->currentText()[0];
+        pupilDetection->setSingleEyeIdentity(singleEyeIdentity);
+        emit pupilDetectionSingleEyeIdentityChanged(singleEyeIdentity);
+    } else {
+        singleEyeIdentityBox->setCurrentText(pupilDetection->getEyeIdentities()[0]);
+    }
+
     pupilDetection->setAlgorithm(algorithmBox->currentText());
-    pupilDetection->enableOutlineConfidence(outlineConfidenceBox->isChecked());
     pupilDetection->enableROIPreProcessing(roiPreprocessingBox->isChecked());
+    pupilDetection->enableOutlineConfidence(outlineConfidenceBox->isChecked());
+    pupilDetection->enableComputeBRISQUE(computeBRISQUEBox->isChecked());
     pupilDetection->enablePupilUndistortion(pupilUndistortionBox->isChecked());
     pupilDetection->enableImageUndistortion(imageUndistortionBox->isChecked());
 
@@ -424,14 +524,14 @@ void PupilDetectionSettingsDialog::onSettingsChange() {
     updateProcModeCompatibility();
 }
 
-void PupilDetectionSettingsDialog::onPupilUndistortionClick(int state) {
+void PupilDetectionSettingsDialog::onPupilUndistortionClick(Qt::CheckState state) {
 
     if(state == Qt::Checked) {
         imageUndistortionBox->setChecked(false);
     }
 }
 
-void PupilDetectionSettingsDialog::onImageUndistortionClick(int state) {
+void PupilDetectionSettingsDialog::onImageUndistortionClick(Qt::CheckState state) {
 
     if(state == Qt::Checked) {
         pupilUndistortionBox->setChecked(false);

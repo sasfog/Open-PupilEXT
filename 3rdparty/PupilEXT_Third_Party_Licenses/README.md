@@ -15,10 +15,17 @@ PupilEXT integrates several open source libraries. This document provides a list
 * [Swirski3D](#Swirski3D)
 
 **List of Software Libraries**
+* [Aravis](#Aravis)
+* [bzip2](#bzip2)
 * [QT](#QT)
 * [QCustomPlot](#QCustomPlot)
+* [QJsonModel](#QJsonModel)
+* [QuaZip](#QuaZip)
+* [QtOpenGLViewer](#QtOpenGLViewer)
 * [OpenCV](#OpenCV)
+* [FFmpeg](#FFmpeg)
 * [Glog](#Glog)
+* [liblsl](#liblsl)
 * [Boost](#Boost)
 * [Ceres-Solver](#Ceres-Solver)
 * [Eigen](#Eigen)
@@ -47,21 +54,37 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 ## List of Software Libraries
 
-<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
-<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+<a id="Aravis" href="https://github.com/AravisProject/aravis"><b>Aravis</b></a> is a glib/gobject based library for video acquisition using Genicam cameras. It currently implements the gigabit ethernet and USB3 protocols used by industrial cameras. (License: LGPL-2.1)
+
+<a id="bzip2" href="https://github.com/opencor/bzip2/tree/master"><b>bzip2</b></a> is a program and library for
+lossless, block-sorting data compression. In this project, it is used by QuaZip to access zipped image recordings. ([License](https://github.com/opencor/bzip2/blob/master/LICENSE))
+
+<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="OpenCV" href="https://opencv.org/"><b>OpenCV</b></a> is a highly optimized computer vision library with focus on real-time applications. In this repository it is used for image manipulation and plotting of ellipse pupil detections. (License: Apache 2 / BSD)
 
+<a id="FFmpeg" href="https://ffmpeg.org/"><b>FFmpeg</b></a> is a collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata. (License: LGPL v2.1)
+
 <a id="Glog" href="https://github.com/google/glog"><b>Glog</b></a> is a library for logging. ([License](https://github.com/google/glog/blob/master/COPYING))
+
+<a id="liblsl" href="https://github.com/sccn/liblsl"><b>liblsl</b></a> a.k.a. the lab streaming layer is a simple all-in-one approach to streaming experiment data between applications in a lab, e.g. instrument time series, event markers, audio, and so on. In this project it is used for streaming eye data. ([License](https://github.com/sccn/liblsl/blob/dev/LICENSE))
 
 <a id="Boost" href="https://www.boost.org"><b>Boost</b></a> is a set of various C++ libraries for processing tasks. ([License](https://www.boost.org/users/license.html))
 
-<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is a optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
+<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is an optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
 
 <a id="Eigen" href="https://eigen.tuxfamily.org/index.php?title=Main_Page#License"><b>Eigen</b></a> is a library for linear algebra. ([License](https://eigen.tuxfamily.org/index.php?title=Main_Page#License))
 
 <a id="Spii" href="https://github.com/PetterS/spii"><b>Spii</b></a> is a library for optimisation. ([License](https://github.com/PetterS/spii/blob/master/LICENSE))
+
+<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+
+<a id="QJsonModel" href="https://github.com/dridk/QJsonModel"><b>QJsonModel</b></a> is a JSON tree model class for Qt6/C++17 based on QAbstractItemModel. (License: MIT)
+
+<a id="QuaZip" href="https://github.com/stachenov/quazip"><b>QuaZip</b></a> is is the C++ wrapper for Gilles Vollant's ZIP/UNZIP package (AKA Minizip) using Qt library. ([License](https://github.com/stachenov/quazip/blob/master/COPYING))
+
+<a id="QtOpenGLViewer" href="https://github.com/marcel-goldschen-ohm/QtOpenGLViewer"><b>QtOpenGLViewer</b></a> is a simple 3D/2D OpenGL viewer with mouse rotation, pan, zoom and some object selection. The code portions in this project have been partly modified by Gábor Bényei, otherwise it is the work of the original author. (License: MIT)
 
 <a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
 
@@ -72,6 +95,8 @@ PupilEXT integrates several open source libraries. This document provides a list
 <a id="Breeze-Icons" href="https://github.com/KDE/breeze-icons"><b>Breeze Icons</b></a> is a set of icons. ([License](https://github.com/KDE/breeze-icons/blob/master/icons/LICENSE))
 
 The following icon files are modifications of existing icons from the KDE Breeze icon set: 1cam1pup.svg, 1cam2pup.svg, 1cam1pup.svg, 1Mcam1pup.svg, 2cam1pup.svg, 2cam2pup.svg, 2cam2pupNS.svg, media-record-green.svg, camera-video-stereo.svg, crosshairs-gaze-calibration.svg, crosshairs-gaze-validation.svg. These modified files were made by contributor Gábor Bényei, and can be found in the icons folder as resources, licensed in accordance to KDE Breeze license (GNU LESSER GENERAL PUBLIC LICENSE Version 3).
+
+The pictogram vcs-question.svg is derived work, made combining the emblem-question.svg and vcs-conflicting.svg files from the Breeze icon set.
 
 The following icon files are the work of Gábor Bényei, and are declared public domain: computer-connection.svg, equals1b.svg, plus1b.svg, messageEmpty.svg, rs232.svg.
 

@@ -14,12 +14,12 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 
-#include "IPCtrl.h"
-#include "../connPoolCOM.h"
-#include "../connPoolUDP.h"
+#include "custom-widgets/IPCtrl.h"
+#include "../data-io/connPoolCOM.h"
+#include "../data-io/connPoolUDP.h"
 
 #include "../pupilDetection.h"
-#include "../dataStreamer.h"
+#include "../data-io/dataStreamer.h"
 
 /**
     In this dialog the user can specify the means of streaming pupil detection output to another machine.
@@ -37,15 +37,20 @@ public:
         ConnPoolCOM *connPoolCOM,
         ConnPoolUDP *connPoolUDP,
         PupilDetection *pupilDetection,
-        DataStreamer *dataStreamer,
+        //DataStreamer *dataStreamer,
         QWidget *parent = nullptr);
 
     ~StreamingSettingsDialog() override;
+
+    //void closeEvent(QCloseEvent *);
 
     int getConnPoolUDPIndex();
     int getConnPoolCOMIndex();
     DataStreamer::DataContainer getDataContainerUDP();
     DataStreamer::DataContainer getDataContainerCOM();
+#ifdef USE_LSL
+    DataStreamer::DataContainer getDataContainerLSL();
+#endif
 
 private:
 
@@ -56,16 +61,19 @@ private:
     int connPoolCOMIndex = -1;
 
     PupilDetection *pupilDetection;
-    DataStreamer *dataStreamer;
+    //DataStreamer *dataStreamer;
 
 
     void createForm();
+    void connectSignals();
 
     QSettings *applicationSettings;
 
+    QLabel *udpSampleRateLabel;
     QLabel *udpIpLabel;
     QLabel *udpPortLabel;
 
+    QSpinBox *udpSampleRateBox;
     IPCtrl *udpIpBox;
     QSpinBox *udpPortBox;
 
@@ -80,6 +88,7 @@ private:
 
     QPushButton *refreshButton;
 
+    QLabel *comSampleRateLabel;
     QLabel *comPortLabel;
     QLabel *baudRateLabel;
     QLabel *dataBitsLabel;
@@ -90,12 +99,40 @@ private:
     QComboBox *dataContainerCOMBox;
     QLabel *dataContainerCOMLabel;
 
+    QSpinBox *comSampleRateBox;
     QComboBox *serialPortInfoListBox;
     QComboBox *baudRateBox;
     QComboBox *dataBitsBox;
     QComboBox *flowControlBox;
     QComboBox *parityBox;
     QComboBox *stopBitsBox;
+
+    // NOTE leave it here, it holds a note for the user
+    QGroupBox *lslGroup;
+#ifdef USE_LSL
+    bool LSLconnected = false;
+
+    QLabel *lslSampleRateLabel;
+    QSpinBox *lslSampleRateBox;
+    QComboBox *dataContainerLSLBox;
+    QLabel *dataContainerLSLLabel;
+
+    QWidget *lslRestrictiveOptionsSectionW;
+    QLabel *specXDFeyeLabel;
+    QComboBox *specXDFeyeBox;
+    QLabel *specXDFcameraLabel;
+    QComboBox *specXDFcameraBox;
+    QLabel *specXDFpupDataLabel;
+    QComboBox *specXDFpupDataBox;
+    QLabel *specXDFconfLabel;
+    QComboBox *specXDFconfBox;
+
+    QLabel *LSLSourceIDLabel;
+    QLineEdit *LSLSourceIDBox;
+
+    QPushButton *connectLSLButton;
+    QPushButton *disconnectLSLButton;
+#endif
 
     QPushButton *connectUDPButton;
     QPushButton *disconnectUDPButton;
@@ -121,6 +158,16 @@ public slots:
     bool isUDPConnected();
     bool isCOMConnected();
 
+#ifdef USE_LSL
+    bool isLSLConnected(); // Sounds strange, but this is by far more clean in the coding point of view
+    void onConnectLSLClick();
+    void disconnectLSL();
+    void connectLSL();
+    void saveLSLSettings();
+    void setLimitationsWhileConnectedLSL(bool state);
+    void setLimitationsWhileStreamingLSL(bool state);
+#endif
+
     void onConnectUDPClick();
     void disconnectUDP();
     void onConnectCOMClick();
@@ -129,10 +176,14 @@ public slots:
     void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
 
+    void saveUDPSettings();
+    void saveCOMSettings();
+
     void setLimitationsWhileConnectedUDP(bool state);  
-    void setLimitationsWhileStreamingUDP(bool state);  
-    void setLimitationsWhileConnectedCOM(bool state);  
-    void setLimitationsWhileStreamingCOM(bool state); 
+    void setLimitationsWhileStreamingUDP(bool state);
+    void setLimitationsWhileConnectedCOM(bool state);
+    void setLimitationsWhileStreamingCOM(bool state);
+    void setLimitationsWhileStreamingAny(bool state);
 
     //void setLimitationsWhileStreaming(bool state);
 
@@ -141,6 +192,10 @@ signals:
     void onUDPDisconnect();
     void onCOMConnect();
     void onCOMDisconnect();
+#ifdef USE_LSL
+    void onLSLConnect();
+    void onLSLDisconnect();
+#endif
     //void onConnStateChanged();
 
 };

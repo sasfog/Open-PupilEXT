@@ -13,13 +13,13 @@
 #include <QtWidgets/QPushButton>
 #include <QtCore/QSettings>
 
-#include "playbackDial.h"
-#include "playbackSlider.h"
+#include "custom-widgets/playbackDial.h"
+#include "custom-widgets/playbackSlider.h"
 #include "../devices/fileCamera.h"
 #include "../pupilDetection.h"
 
 #include "../recEventTracker.h"
-#include "timestampSpinBox.h"
+#include "custom-widgets/timestampSpinBox.h"
 
 #include <QKeyEvent> // DEV
 
@@ -76,8 +76,8 @@ private:
     QSpinBox* playbackFPSVal;
 
     QGroupBox *infoGroup;
-    //QLineEdit *timestampVal;
-    TimestampSpinBox *timestampVal;
+    //QLineEdit *timestampBox;
+    TimestampSpinBox *timestampBox;
     QSpinBox *selectedFrameBox;
     QLabel *timestampHumanValLabel;
     QLabel *numImagesTotalLabel;
@@ -105,6 +105,11 @@ private:
     QCheckBox *syncRecordCsvBox;
     QCheckBox *syncStreamBox;
 
+    bool exportingRecSection = false;
+    int exportSectionFromFrame = 1;
+    int exportSectionToFrame = 2;
+    int playbackSpeedBeforeExport = 30;
+
     void createForm();
     void enableWidgets();
     void disableWidgets();
@@ -131,12 +136,14 @@ public slots:
     void onPlaybackPauseApproved();
     void onPlaybackStopApproved();
 
+    void startExportRecSection();
+    void endExportRecSection();
+
 private slots:
     void onStartPauseButtonClick();
     void onStopButtonClick();
     void onEndReached();
     void onFinished();
-
     
     void updateInfoInternal(int frameNumber);
 
@@ -170,6 +177,9 @@ signals:
 
     void cameraPlaybackChanged();
     void cameraPlaybackPositionChanged();
+
+    void exportAllowedToStart();
+    void exportAllowedToEnd();
 
 };
 

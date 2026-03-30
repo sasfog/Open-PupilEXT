@@ -48,8 +48,9 @@ private:
     QPushButton *applyCloseButton;
     
     QComboBox *algorithmBox;
-    QCheckBox *outlineConfidenceBox;
     QCheckBox *roiPreprocessingBox;
+    QCheckBox *outlineConfidenceBox;
+    QCheckBox *computeBRISQUEBox;
     QCheckBox *pupilUndistortionBox;
     QCheckBox *imageUndistortionBox;
 
@@ -64,6 +65,7 @@ private:
     QGroupBox *procModeGroup;
     QLabel *procModeInfoLabel;
     QComboBox *procModeBox;
+    QComboBox *singleEyeIdentityBox;
 
     ProcMode lastKnownProcMode = ProcMode::UNDETERMINED;
 
@@ -80,12 +82,13 @@ private slots:
     void applyCloseButtonClick();
     void onShowHelpDialog();
 
-    void onPupilUndistortionClick(int state);
-    void onImageUndistortionClick(int state);
+    void onPupilUndistortionClick(Qt::CheckState state);
+    void onImageUndistortionClick(Qt::CheckState state);
 
     void onProcModeSelection(int idx);
     void updateProcModeEnabled();
     void updateProcModeCompatibility();
+    //void onSingleEyeIdentitySelection(int idx);
 
 public slots:
 
@@ -94,5 +97,6 @@ public slots:
 
 signals:
     void pupilDetectionProcModeChanged(int val);
+    void pupilDetectionSingleEyeIdentityChanged(QChar val); // TODO: not yet used. Could be important later
 
 };

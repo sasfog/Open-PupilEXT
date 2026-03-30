@@ -26,10 +26,12 @@ enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_
 struct CameraImage {
     int type;
     mutable cv::Mat img;
-    mutable cv::Mat imgSecondary;
+    mutable cv::Mat imgS;
     uint64_t timestamp;
     uint64_t frameNumber; // holds the INDEX of image (not starting from 1)
-    std::string filename;
+    //std::string filename;
+    mutable cv::Mat sharpnessMask;
+    mutable cv::Mat sharpnessMaskS;
 };
 
 Q_DECLARE_METATYPE(CameraImage)
@@ -58,17 +60,28 @@ public:
     virtual int getImageROIwidth() = 0;
     virtual int getImageROIheight() = 0;
     virtual int getImageROIwidthMax() = 0;
+    virtual int getImageROIwidthInc() = 0;
     virtual int getImageROIheightMax() = 0;
-    virtual int getImageROIoffsetX() = 0; 
-    virtual int getImageROIoffsetY() = 0;  
+    virtual int getImageROIheightInc() = 0;
+    virtual int getImageROIoffsetX() = 0;
+    virtual int getImageROIoffsetXInc() = 0;
+    virtual int getImageROIoffsetY() = 0;
+    virtual int getImageROIoffsetYInc() = 0;
     virtual QRectF getImageROI() = 0;
+
+    virtual QSize getFullSensorResolution() = 0;
+
+    virtual double getResultingFrameRateValue() = 0;
+    virtual int getExposureTimeValue() = 0;
 
     virtual void stopGrabbing() = 0;
     virtual void startGrabbing() = 0;
 
     virtual bool isGrabbing() = 0;
+    virtual bool isTemperatureReadingSupported() = 0;
 
 signals:
+//Q_SIGNALS:
 
     void onNewGrabResult(CameraImage grabResult);
 

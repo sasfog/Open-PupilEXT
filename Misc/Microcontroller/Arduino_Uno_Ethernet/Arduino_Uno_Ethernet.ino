@@ -12,6 +12,7 @@
 
 #define LED_PIN LED_BUILTIN
 #define TRIGGER_PIN 9 
+#define TRIGGER_PIN_2 8 
 
 #define ETH_CS_PIN 10 // configure the CS pin
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; // You can provide an own mac address but it is not important
@@ -121,6 +122,7 @@ void setup() {
 
   pinMode(LED_PIN, OUTPUT);
   pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(TRIGGER_PIN_2, OUTPUT);
 
   Serial.begin(SERIAL_BAUD_RATE);
 
@@ -134,6 +136,7 @@ void setup() {
   
   digitalWrite(LED_PIN, LOW);
   digitalWrite(TRIGGER_PIN, LOW);
+  digitalWrite(TRIGGER_PIN_2, LOW);
   LEDTicksCount = 0;
   
   Serial.print("Program started! \n");
@@ -144,11 +147,13 @@ void makeTick() {
 
   if(RisingOrFalling) {
     digitalWrite(TRIGGER_PIN, HIGH);
+    digitalWrite(TRIGGER_PIN_2, HIGH);
     digitalWrite(LED_PIN, HIGH);
     LEDTicksCount++;
     RisingOrFalling = false;
   } else {
     digitalWrite(TRIGGER_PIN, LOW);
+    digitalWrite(TRIGGER_PIN_2, LOW);
     digitalWrite(LED_PIN, LOW);
     //LEDTicksCount++;
     RisingOrFalling = true;

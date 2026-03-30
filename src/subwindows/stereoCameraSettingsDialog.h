@@ -13,9 +13,15 @@
 #include "../devices/camera.h"
 #include "../devices/stereoCamera.h"
 #include "MCUSettingsDialog.h"
-#include "../camImageRegionsWidget.h"
+#include "custom-widgets/camImageRegionsWidget.h"
 #include "../SVGIconColorAdjuster.h"
 #include "stereoCameraView.h"
+
+#ifdef USE_PYLON
+#include <pylon/TlFactory.h>
+//#include <pylon/PylonIncludes.h>
+#include <pylon/gige/GigETransportLayer.h>
+#endif
 
 /**
     Custom widget for configuring a stereo camera setup, main and secondary camera are selected and opened, hardware trigger established and camera settings configured.
@@ -39,12 +45,17 @@ public:
 protected:
 
     void reject() override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 
     StereoCamera *camera;
 
-    Pylon::DeviceInfoList_t lstDevices;
+#ifdef USE_PYLON
+    Pylon::DeviceInfoList_t allDevices;
+#else
+    QVector<ArvDevice*> allDevices;
+#endif
 
     QDir settingsDirectory;
     QSettings *applicationSettings;
@@ -68,20 +79,20 @@ private:
 
     QLabel *frameRateValueLabel;
     QRadioButton *SWTradioButton;
-    QCheckBox *SWTframerateEnabled;
-    QSpinBox *SWTframerateBox;
+    QCheckBox *SWTframerateLimitEnabled;
+    QSpinBox *SWTframerateLimitBox;
 
     QPushButton *MCUConfigButton;
     QFormLayout *HWTgroupLayout;
-    QLabel *HWTframerateLabel;
+    QLabel *HWTMCUframerateLabel;
     QLabel *HWTlineSourceLabel;
-    QLabel *HWTtimeSpanLabel;
+    QLabel *HWTMCUtimeSpanLabel;
     QComboBox *HWTlineSourceBox;
     bool HWTrunning = false;
     QRadioButton *HWTradioButton;
-    QHBoxLayout *HWTframerateLayout;
-    QSpinBox *HWTframerateBox;
-    QDoubleSpinBox *HWTtimeSpanBox;
+    QHBoxLayout *HWTMCUframerateLayout;
+    QSpinBox *HWTMCUframerateBox;
+    QDoubleSpinBox *HWTMCUtimeSpanBox;
 
     QGroupBox *MCUConnGroup;
     QPushButton *MCUConnDisconnButton;
@@ -94,7 +105,12 @@ private:
     void loadSettings();
     void saveSettings();
 
-    QHBoxLayout *SWTframerateLayout;
+    QHBoxLayout *SWTframerateLimitLayout;
+
+    QCheckBox *HWTframerateLimitEnabled;
+    QSpinBox *HWTframerateLimitBox;
+    QHBoxLayout *HWTframerateLimitLayout;
+
     QLabel *frameRateLabel;
     QLabel *exposureLabel;
 
@@ -115,6 +131,17 @@ private:
     QSpinBox *imageROIoffsetYInputBox;
     QComboBox *binningBox;
 
+    QTimer *autoExposureTimer;
+    int autoExposureCheckVal = 0;
+    int autoExposureCheckOccasions = 0;
+    QTimer *autoGainTimer;
+    int autoGainCheckVal = 0;
+    int autoGainCheckOccasions = 0;
+
+    bool trackingOn = false;
+
+    QVector<QWidget*> focusChain;
+
     CamImageRegionsWidget *camImageRegionsWidget;
 
     int lastUsedBinningVal = 0;
@@ -130,11 +157,14 @@ public slots:
     void startHardwareTrigger();
     void stopHardwareTrigger();
     void setHWTlineSource(int lineSourceNum);
-    void setHWTruntime(double runtimeMinutes);
-    void setHWTframerate(int fps);
+    void setHWTMCUruntime(double runtimeMinutes);
+    void setHWTMCUframerate(int fps);
+
+    void setHWTframerateLimitVal(int fps); // new
 
     void setExposureTimeValue(int value);
     void setGainValue(double value);
+    void setBinningValue(int value);
 
     void updateForms();
 
@@ -168,6 +198,7 @@ private slots:
     void MCUConnDisconnButtonClicked();
 
     void updateImageROISettingsMax();
+    void updateImageROISettingsInc();
 
     void updateHWTStartStopRelatedWidgets();
     void updateMCUConnDisconnButtonState();
@@ -176,6 +207,8 @@ public slots:
     void openStereoCamera(const QString &camName1, const QString &camName2);
     void connectMCU();
     void startHWT();
+
+    void HWTframerateLimitEnabledToggled(bool state);
 
 signals:
     void onMCUConfig();
@@ -190,5 +223,7 @@ signals:
 
     void stereoCamerasOpened();
     void stereoCamerasClosed();
+
+    void cameraPlaybackChanged();
 
 };

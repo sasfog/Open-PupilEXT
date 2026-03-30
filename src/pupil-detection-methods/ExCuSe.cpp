@@ -18,9 +18,18 @@ using namespace std;
 using namespace cv;
 
 #define MAX_LINE 10000
-#define IMG_SIZE 680 //400
-#define DEF_SIZE 800 //800
+//#define IMG_SIZE 680 //400
+//#define DEF_SIZE 800 //800 // GB: TOTO check if this fits when automatically assigned to IMG_SIZE
 //#define MAX_RADI 50
+
+
+ExCuSe::ExCuSe() : imgSize(680), defSize(680) {
+    mDesc = "ExCuSe (Fuhl et al. 2015)";
+    mTitle = "ExCuSe";
+}
+
+ExCuSe::~ExCuSe() {
+}
 
 static void bwselect(cv::Mat *strong, cv::Mat *weak, cv::Mat *check)
 {
@@ -625,7 +634,7 @@ static void remove_points_with_low_angle(cv::Mat *edge, int start_xx, int end_xx
         }
 }
 
-static std::vector<std::vector<cv::Point>> get_curves(cv::Mat *pic, cv::Mat *edge, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range)
+static std::vector<std::vector<cv::Point>> get_curves(cv::Mat *pic, cv::Mat *edge, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range, int imgSize)
 {
 
     std::vector<std::vector<cv::Point>> all_curves;
@@ -651,19 +660,20 @@ static std::vector<std::vector<cv::Point>> get_curves(cv::Mat *pic, cv::Mat *edg
 
     all_curves.clear();
 
-    bool check[IMG_SIZE][IMG_SIZE];
+    //bool check[IMG_SIZE][IMG_SIZE];
+    bool *check = new bool[imgSize*imgSize]; // to short-make "2d" allocable at runtime
 
-    for (int i = 0; i < IMG_SIZE; i++)
-        for (int j = 0; j < IMG_SIZE; j++)
-            check[i][j] = 0;
+    for (int i = 0; i < imgSize; i++)
+        for (int j = 0; j < imgSize; j++)
+            check[i*imgSize +j] = 0;
 
     for (int i = start_x; i < end_x; i++)
         for (int j = start_y; j < end_y; j++)
         {
 
-            if (edge->data[(edge->cols * (j)) + (i)] == 255 && !check[i][j])
+            if (edge->data[(edge->cols * (j)) + (i)] == 255 && !check[i*imgSize +j])
             {
-                check[i][j] = 1;
+                check[i*imgSize +j] = 1;
 
                 curve.clear();
                 curve_idx = 0;
@@ -684,10 +694,10 @@ static std::vector<std::vector<cv::Point>> get_curves(cv::Mat *pic, cv::Mat *edg
                         {
 
                             if (akt_pos.x + k1 >= start_x && akt_pos.x + k1 < end_x && akt_pos.y + k2 >= start_y && akt_pos.y + k2 < end_y)
-                                if (!check[akt_pos.x + k1][akt_pos.y + k2])
+                                if (!check[(akt_pos.x + k1)*imgSize +(akt_pos.y + k2)])
                                     if (edge->data[(edge->cols * (akt_pos.y + k2)) + (akt_pos.x + k1)] == 255)
                                     {
-                                        check[akt_pos.x + k1][akt_pos.y + k2] = 1;
+                                        check[(akt_pos.x + k1)*imgSize +(akt_pos.y + k2)] = 1;
 
                                         mean_p.x += akt_pos.x + k1;
                                         mean_p.y += akt_pos.y + k2;
@@ -816,10 +826,12 @@ static std::vector<std::vector<cv::Point>> get_curves(cv::Mat *pic, cv::Mat *edg
     imshow("ddd",m);
     */
 
+    delete[] check;
+
     return all_curves;
 }
 
-static cv::RotatedRect find_best_edge(cv::Mat *pic, cv::Mat *edge, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range)
+static cv::RotatedRect find_best_edge(cv::Mat *pic, cv::Mat *edge, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range, int imgSize)
 {
 
     cv::RotatedRect ellipse;
@@ -829,7 +841,7 @@ static cv::RotatedRect find_best_edge(cv::Mat *pic, cv::Mat *edge, int start_x, 
     ellipse.size.height = 0.0;
     ellipse.size.width = 0.0;
 
-    std::vector<std::vector<cv::Point>> all_curves = get_curves(pic, edge, start_x, end_x, start_y, end_y, mean_dist, inner_color_range);
+    std::vector<std::vector<cv::Point>> all_curves = get_curves(pic, edge, start_x, end_x, start_y, end_y, mean_dist, inner_color_range, imgSize);
 
     if (all_curves.size() == 1)
     {
@@ -856,7 +868,7 @@ static cv::RotatedRect find_best_edge(cv::Mat *pic, cv::Mat *edge, int start_x, 
     return ellipse;
 }
 
-static int calc_pos(int *hist, int mini, int max_region_hole, int min_region_size, int real_hist_sz)
+static int calc_pos(int *hist, int mini, int max_region_hole, int min_region_size, int real_hist_sz, int defSize)
 {
     int pos = 0;
 
@@ -866,7 +878,7 @@ static int calc_pos(int *hist, int mini, int max_region_hole, int min_region_siz
     int hole_size = 0;
     bool region_start = false;
 
-    for (int i = 0; i < DEF_SIZE; i++)
+    for (int i = 0; i < defSize; i++)
     {
         if (hist[i] > mini && !region_start)
         {
@@ -914,7 +926,7 @@ static int calc_pos(int *hist, int mini, int max_region_hole, int min_region_siz
     return pos;
 }
 
-static cv::Point th_angular_histo(cv::Mat *pic, cv::Mat *pic_th, int start_x, int end_x, int start_y, int end_y, int th, double th_histo, int max_region_hole, int min_region_size)
+static cv::Point th_angular_histo(cv::Mat *pic, cv::Mat *pic_th, int start_x, int end_x, int start_y, int end_y, int th, double th_histo, int max_region_hole, int min_region_size, int defSize)
 {
     cv::Point pos(0, 0);
 
@@ -935,12 +947,12 @@ static cv::Point th_angular_histo(cv::Mat *pic, cv::Mat *pic_th, int start_x, in
     int min_l, min_lb, min_b, min_br;
     int pos_l, pos_lb, pos_b, pos_br;
 
-    int hist_l[DEF_SIZE];
-    int hist_lb[DEF_SIZE];
-    int hist_b[DEF_SIZE];
-    int hist_br[DEF_SIZE];
+    int *hist_l = new int[defSize];
+    int *hist_lb = new int[defSize];
+    int *hist_b = new int[defSize];
+    int *hist_br = new int[defSize];
 
-    for (int i = 0; i < DEF_SIZE; i++)
+    for (int i = 0; i < defSize; i++)
     {
         hist_l[i] = 0;
         hist_lb[i] = 0;
@@ -964,8 +976,8 @@ static cv::Point th_angular_histo(cv::Mat *pic, cv::Mat *pic_th, int start_x, in
                 idx_lb = (pic->cols / 2) + (i - (pic->cols / 2)) + (j);
                 idx_br = (pic->cols / 2) + (i - (pic->cols / 2)) + (pic->rows - j);
 
-                if (j >= 0 && j < DEF_SIZE && i >= 0 && i < DEF_SIZE && idx_lb >= 0 && idx_lb < DEF_SIZE &&
-                    idx_br >= 0 && idx_br < DEF_SIZE)
+                if (j >= 0 && j < defSize && i >= 0 && i < defSize && idx_lb >= 0 && idx_lb < defSize &&
+                    idx_br >= 0 && idx_br < defSize)
                 {
 
                     if (++hist_l[j] > max_l)
@@ -989,10 +1001,10 @@ static cv::Point th_angular_histo(cv::Mat *pic, cv::Mat *pic_th, int start_x, in
     min_b = max_b - floor(max_b * th_histo);
     min_br = max_br - floor(max_br * th_histo);
 
-    pos_l = calc_pos(hist_l, min_l, max_region_hole, min_region_size, pic->rows);
-    pos_lb = calc_pos(hist_lb, min_lb, max_region_hole, min_region_size, pic->cols + pic->rows);
-    pos_b = calc_pos(hist_b, min_b, max_region_hole, min_region_size, pic->cols);
-    pos_br = calc_pos(hist_br, min_br, max_region_hole, min_region_size, pic->cols + pic->rows);
+    pos_l = calc_pos(hist_l, min_l, max_region_hole, min_region_size, pic->rows, defSize);
+    pos_lb = calc_pos(hist_lb, min_lb, max_region_hole, min_region_size, pic->cols + pic->rows, defSize);
+    pos_b = calc_pos(hist_b, min_b, max_region_hole, min_region_size, pic->cols, defSize);
+    pos_br = calc_pos(hist_br, min_br, max_region_hole, min_region_size, pic->cols + pic->rows, defSize);
 
     /*
     std::cout<<"min_l: "<<min_l<<" min_lb: "<<min_lb<<std::endl;
@@ -1033,6 +1045,11 @@ static cv::Point th_angular_histo(cv::Mat *pic, cv::Mat *pic_th, int start_x, in
     cv::ellipse(*pic, cv::RotatedRect(pos, cv::Size2f(5,5),0), CV_RGB(255,255,255));
     imshow("angular",*pic);
     */
+
+    delete[] hist_l;
+    delete[] hist_lb;
+    delete[] hist_b;
+    delete[] hist_br;
 
     return pos;
 }
@@ -1302,7 +1319,7 @@ static void rays(cv::Mat *th_edges, int end_x, int end_y, cv::Point *pos, int *r
         }
 }
 
-static void zero_around_region_th_border(cv::Mat *pic, cv::Mat *edges, cv::Mat *th_edges, int th, int edge_to_th, double mean_dist, double area, cv::RotatedRect *pos)
+static void zero_around_region_th_border(cv::Mat *pic, cv::Mat *edges, cv::Mat *th_edges, int th, int edge_to_th, double mean_dist, double area, cv::RotatedRect *pos, int imgSize)
 {
 
     int ret[8];
@@ -1345,7 +1362,7 @@ static void zero_around_region_th_border(cv::Mat *pic, cv::Mat *edges, cv::Mat *
         }
 
     //remove_points_with_low_angle(th_edges, start_x, end_x, start_y, end_y);
-    std::vector<std::vector<cv::Point>> all_curves = get_curves(pic, th_edges, start_x, end_x, start_y, end_y, mean_dist, 0);
+    std::vector<std::vector<cv::Point>> all_curves = get_curves(pic, th_edges, start_x, end_x, start_y, end_y, mean_dist, 0, imgSize);
 
     //std::cout<<"all curves:"<<all_curves.size()<<std::endl;
 
@@ -1486,15 +1503,15 @@ static void optimize_pos(cv::Mat *pic, double area, cv::Point *pos)
     }
 }
 
-static cv::RotatedRect runexcuse(cv::Mat *pic, cv::Mat *pic_th, cv::Mat *th_edges, int good_ellipse_threshold, int max_ellipse_radi)
+static cv::RotatedRect runexcuse(cv::Mat *pic, cv::Mat *pic_th, cv::Mat *th_edges, int good_ellipse_threshold, int max_ellipse_radi, int imgSize, int defSize)
 {
     //mean under mean
     //mean_under_mean(pic, 5);
     cv::normalize(*pic, *pic, 0, 255, cv::NORM_MINMAX, CV_8U);
 
     double border = 0.1;
-    int peek_detector_factor = 10;
-    int bright_region_th = 199;
+    int peek_detector_factor = 10; // might need to be adjustable due to skin colour changes (that shift mean gray).. ?
+    int bright_region_th = 199; // might need to be adjustable due to skin colour changes (that shift mean gray).. ?
     double mean_dist = 3;
     int inner_color_range = 5;
     double th_histo = 0.5;
@@ -1553,7 +1570,7 @@ static cv::RotatedRect runexcuse(cv::Mat *pic, cv::Mat *pic_th, cv::Mat *th_edge
     if (peek_found)
     {
         edges_only_tried = true;
-        ellipse = find_best_edge(pic, &detected_edges, start_x, end_x, start_y, end_y, mean_dist, inner_color_range);
+        ellipse = find_best_edge(pic, &detected_edges, start_x, end_x, start_y, end_y, mean_dist, inner_color_range, imgSize);
 
         if (ellipse.center.x <= 0 || ellipse.center.x >= pic->cols || ellipse.center.y <= 0 || ellipse.center.y >= pic->rows)
         {
@@ -1568,7 +1585,7 @@ static cv::RotatedRect runexcuse(cv::Mat *pic, cv::Mat *pic_th, cv::Mat *th_edge
 
     if (!peek_found)
     {
-        pos = th_angular_histo(pic, pic_th, start_x, end_x, start_y, end_y, threshold_up, th_histo, max_region_hole, min_region_size);
+        pos = th_angular_histo(pic, pic_th, start_x, end_x, start_y, end_y, threshold_up, th_histo, max_region_hole, min_region_size, defSize);
 
         ellipse.center.x = pos.x;
         ellipse.center.y = pos.y;
@@ -1579,7 +1596,7 @@ static cv::RotatedRect runexcuse(cv::Mat *pic, cv::Mat *pic_th, cv::Mat *th_edge
 
     if (pos.x == 0 && pos.y == 0 && !edges_only_tried)
     {
-        ellipse = find_best_edge(pic, &detected_edges, start_x, end_x, start_y, end_y, mean_dist, inner_color_range);
+        ellipse = find_best_edge(pic, &detected_edges, start_x, end_x, start_y, end_y, mean_dist, inner_color_range, imgSize);
         peek_found = true;
     }
 
@@ -1592,7 +1609,7 @@ static cv::RotatedRect runexcuse(cv::Mat *pic, cv::Mat *pic_th, cv::Mat *th_edge
         ellipse.angle = 0.0;
         ellipse.size.height = 0.0;
         ellipse.size.width = 0.0;
-        zero_around_region_th_border(pic, &detected_edges, th_edges, threshold_up, edge_to_th, mean_dist, area_edges, &ellipse);
+        zero_around_region_th_border(pic, &detected_edges, th_edges, threshold_up, edge_to_th, mean_dist, area_edges, &ellipse, imgSize);
     }
 
     //if(ellipse.size.height>0 && ellipse.size.width>0.0){
@@ -1632,14 +1649,14 @@ Pupil ExCuSe::run(const Mat &frame)
 
     Mat downscaled = frame;
     float scalingRatio = 1.0;
-    if (frame.rows > IMG_SIZE || frame.cols > IMG_SIZE)
+    if (frame.rows > imgSize || frame.cols > imgSize)
     {
         // return ellipse;
         // Downscaling
-        float rw = IMG_SIZE / (float)frame.cols;
-        float rh = IMG_SIZE / (float)frame.rows;
+        float rw = (float)imgSize / (float)frame.cols;
+        float rh = (float)imgSize / (float)frame.rows;
         scalingRatio = min<float>(min<float>(rw, rh), 1.0);
-        cv::resize(frame, downscaled, Size(), scalingRatio, scalingRatio, INTER_LINEAR);
+        cv::resize(frame, downscaled, Size(), scalingRatio, scalingRatio, interMethod);
     }
 
     Mat target;
@@ -1648,7 +1665,7 @@ Pupil ExCuSe::run(const Mat &frame)
     Mat pic_th = Mat::zeros(target.rows, target.cols, CV_8U);
     Mat th_edges = Mat::zeros(target.rows, target.cols, CV_8U);
 
-    cv::RotatedRect ellipse = runexcuse(&target, &pic_th, &th_edges, good_ellipse_threshold, max_ellipse_radi);
+    cv::RotatedRect ellipse = runexcuse(&target, &pic_th, &th_edges, good_ellipse_threshold, max_ellipse_radi, imgSize, defSize);
     cv::RotatedRect scaledEllipse(cv::Point2f(ellipse.center.x / scalingRatio, ellipse.center.y / scalingRatio), cv::Size2f(ellipse.size.width / scalingRatio, ellipse.size.height / scalingRatio), ellipse.angle);
 
     return Pupil(scaledEllipse);

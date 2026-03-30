@@ -77,7 +77,7 @@ public:
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(infoLabel);
-#if _DEBUG
+#ifdef QT_DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
@@ -385,11 +385,13 @@ private:
 
         QLabel *imageAwareLabel = new QLabel(tr("Image Aware RANSAC:"));
         imageAwareBox = new QCheckBox();
+        imageAwareBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         imageAwareBox->setChecked(ImageAwareSupport);
         optionsLayout->addRow(imageAwareLabel, imageAwareBox);
 
         QLabel *earlyRejectionLabel = new QLabel(tr("Early Rejection:"));
         earlyRejectionBox = new QCheckBox();
+        earlyRejectionBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
         earlyRejectionBox->setChecked(EarlyRejection);
         optionsLayout->addRow(earlyRejectionLabel, earlyRejectionBox);
 

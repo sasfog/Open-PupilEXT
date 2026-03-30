@@ -17,9 +17,11 @@
 #include "MCUSettingsDialog.h"
 #include "../SVGIconColorAdjuster.h"
 #include "../devices/singleWebcam.h"
-#include "../camImageRegionsWidget.h"
+#include "custom-widgets/camImageRegionsWidget.h"
 
+#ifdef USE_PYLON
 using namespace Pylon;
+#endif
 
 /**
     Settings widget/window for the configuration of a single camera (Basler)
@@ -38,6 +40,7 @@ public:
 protected:
 
     void reject() override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 
@@ -59,20 +62,20 @@ private:
 
     QLabel *frameRateValueLabel;
     QRadioButton *SWTradioButton;
-    QCheckBox *SWTframerateEnabled;
-    QSpinBox *SWTframerateBox;
+    QCheckBox *SWTframerateLimitEnabled;
+    QSpinBox *SWTframerateLimitBox;
 
     QPushButton *MCUConfigButton;
     QFormLayout *HWTgroupLayout;
-    QLabel *HWTframerateLabel;
+    QLabel *HWTMCUframerateLabel;
     QLabel *HWTlineSourceLabel;
-    QLabel *HWTtimeSpanLabel;
+    QLabel *HWTMCUtimeSpanLabel;
     QComboBox *HWTlineSourceBox;
     bool HWTrunning = false;
     QRadioButton *HWTradioButton;
-    QHBoxLayout *HWTframerateLayout;
-    QSpinBox *HWTframerateBox;
-    QDoubleSpinBox *HWTtimeSpanBox;
+    QHBoxLayout *HWTMCUframerateLayout;
+    QSpinBox *HWTMCUframerateBox;
+    QDoubleSpinBox *HWTMCUtimeSpanBox;
 
     QGroupBox *MCUConnGroup;
     QPushButton *MCUConnDisconnButton;
@@ -85,7 +88,12 @@ private:
     void loadSettings();
     void saveSettings();
 
-    QHBoxLayout *SWTframerateLayout;
+    QHBoxLayout *SWTframerateLimitLayout;
+
+    QCheckBox *HWTframerateLimitEnabled;
+    QSpinBox *HWTframerateLimitBox;
+    QHBoxLayout *HWTframerateLimitLayout;
+
     QLabel *frameRateLabel;
     QLabel *exposureLabel;
 
@@ -106,6 +114,17 @@ private:
     QSpinBox *imageROIoffsetYInputBox;
     QComboBox *binningBox;
 
+    QTimer *autoExposureTimer;
+    int autoExposureCheckVal = 0;
+    int autoExposureCheckOccasions = 0;
+    QTimer *autoGainTimer;
+    int autoGainCheckVal = 0;
+    int autoGainCheckOccasions = 0;
+
+    bool trackingOn = false;
+
+    QVector<QWidget*> focusChain;
+
     CamImageRegionsWidget *camImageRegionsWidget;
 
     int lastUsedBinningVal = 0;
@@ -120,13 +139,15 @@ public slots:
     void startHardwareTrigger();
     void stopHardwareTrigger();
     void setHWTlineSource(int lineSourceNum);
-    void setHWTruntime(double runtimeMinutes);
-    void setHWTframerate(int fps);
+    void setHWTMCUruntime(double runtimeMinutes);
+    void setHWTMCUframerate(int fps);
 
-    void setAcquisitionFPSValue(int value);
+    void setSWTframerateLimitVal(int fps); // new
+    void setHWTframerateLimitVal(int fps); // new
 
     void setExposureTimeValue(int value);
     void setGainValue(double value);
+    void setBinningValue(int value);
 
     void updateForms();
 
@@ -153,6 +174,7 @@ private slots:
     void MCUConnDisconnButtonClicked();
 
     void updateImageROISettingsMax();
+    void updateImageROISettingsInc();
 
     void updateHWTStartStopRelatedWidgets();
     void updateMCUConnDisconnButtonState();
@@ -161,7 +183,8 @@ public slots:
     void connectMCU();
     void startHWT();
 
-    void SWTframerateEnabledToggled(bool state);
+    void SWTframerateLimitEnabledToggled(bool state);
+    void HWTframerateLimitEnabledToggled(bool state); // new
     void onHWTenabledChange(bool state);
 
 signals:
@@ -174,5 +197,7 @@ signals:
 
     void onImageROIChanged(QRect rect);
     void onSensorSizeChanged(QSize size);
+
+    void cameraPlaybackChanged();
 
 };

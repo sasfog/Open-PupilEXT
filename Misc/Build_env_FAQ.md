@@ -71,6 +71,32 @@ SOLUTION:
 - (Windows-specific:) The library also likely uses a .dll file from Qt, for release build a QtWhatever.dll and for debug build a QtWhateverd.dll. These also need to be copied to the Open-PupilEXT/build/src/Release and Open-PupilEXT/build/src/Debug from the Qt compiled library collection, found under the folder where you installed Qt.
 
 ---
+
+PROBLEM:
+
+Any arbitrary vcpkg package is "not found", so cannot be downloaded.
+
+SOLUTION:
+
+Likely, your vcpkg submodule inside the project is not up to date (relative to your local state of the PupilEXT repo), and likely an older version of vcpkg in general. Try running bootstrap-vcpkg bat or sh script inside your 3rdparty/vcpkg folder. If that did anything, try loading/configuring cmake (preparatory-step of compiling) again. If the bootstrap script did not do anything, but instead said that your local vcpkg submodule is up-to-date (but evidently it is old, as its date is years old) then likely your head is detached in your local copy of vcpkg, and needs to be checked out to a recent (needed) version of vcpkg. Check the details yourself, and resolve upcoming steps as necessary.
+
+---
+
+PROBLEM:
+
+Cannot upgrade vcpkg, git says head detached.
+
+SOLUTION:
+
+When in a terminal window inside 3rdparty/vcpkg directory, use git checkout to the exact commit hash that you find in your downloaded PupilEXT project vcpkg.json, mentioned as the builtin-baseline, e.g.: `git checkout b509a07261b982f35c663bf638aae5f77877d207`
+
+And then run the bootstrap-vcpkg script in 3rdparty/vcpkg directory:
+`./bootstrap-vcpkg.sh`
+
+And then install the dependencies on that vcpkg state:
+`./vcpkg install`
+
+---
 ---
 ### Windows-specific:
 
@@ -188,6 +214,142 @@ If your Clion has already memorized that your last opened project was this one, 
 (Source of solution to clearing auto project open: https://youtrack.jetbrains.com/issue/CPP-21985/CLion-crashes-when-reopening-last-projects-Linux#focus=Comments-27-4371764.0-0, last accessed: 2024.08.14.)
 
 ---
+
+PROBLEM:
+
+Error during vcpkg install, stating (for example) "libusb currently requires the following programs from the system package manager: autoconf automake autoconf-archive".
+
+SOLUTION:
+
+You likely also need pkg-config, so install that. And then just install the said missing dependencies, using:
+`sudo apt-get install autoconf automake autoconf-archive`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building libusb:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install libtool libudev-dev`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building gettext:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install bison`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building glib:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install python3 python3-distutils`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building cairo:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install gperf libx11-dev libxft-dev x11proto-xext-dev libxext-dev`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building libsystemd:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install python3-pip
+sudo pip3 install Jinja2`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building at-spi2-core:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install libxtst-dev`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Error during vcpkg install, stating "building gtk3:x64-linux failed with: BUILD_FAILED".
+
+SOLUTION:
+
+It is the best to check the error log for that specific vcpkg package build process (inside /vcpkg/buildtrees). 
+But likely the following installs will resolve the issue in the specific case:
+`sudo apt-get install libxrandr-dev`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Vcpkg install stops because opencv build cannot succeed, as it does not find ffmpeg.
+
+SOLUTION:
+
+You likely need to get pkg-config:
+`sudo apt-get install pkg-config`
+...and then separately install or "reinstall" the needed dependencies with the reinstall command:
+`sudo apt-get install ffmpeg libavformat-dev libavcodec-dev libswscale-dev libavresample-dev`
+...and then you can try again with the:
+`sudo ./vcpkg install`
+
+---
+
+PROBLEM:
+
+Build fails due to something in connection with opengl linking.
+
+SOLUTION:
+
+Try installing the following:
+`sudo apt-get install openglew-dev libgl-dev libgl1 libgl1-mesa-dev mesa-utils freeglut3 freeglut3-dev mesa-common-dev`
+
+---
 ---
 
 ## MacOS-specific:
@@ -216,5 +378,12 @@ SOLUTION:
 
 Add a new mirror and let it find there, e.g. using: `open -a qtinstall.app --args --mirror https://ftp.fau.de/qtproject/` 
 
+---
 
+PROBLEM:
 
+Linking errors occur during compilation, stating "Undefined symbols for architecture arm64" in case of targeting MacOS with Apple Silicon architecture.
+
+SOLUTION:
+
+It does not mean that a dependency cannot ever be found or compiled for arm64. However, it means that some symbols could not be resolved during linking. It is most likely that linker does not see the needed .a or .dylib files. It is a possible solution to specify these libraries as to be directly linked against the project. This means finding the location of the said file(s) containing the needed linkable implementation(s), and add them to the list in PupilEXT/src/CMakeLists.txt, extending the already specified list of several libraries, that will be given to the target_link_libraries CMake call. These library files are likely in the vcpkg_installed directory of the project. Please see the already existing conditionally reachable pieces of code for extending the list of linked libraries for Apple arm64 architecture. These could theoretically be seeked by a previous call of find_package in PupilEXT/CMakeLists.txt, however in practice some of them might be better managable by simply mentioning their relative location within the project directory structure. There is no exact library name mentioned in the linker error message, however you can likely find out easily which library the function should be findable in, by just googling the needed function name. If not, try performing a detailed (within-file) search within the vcpkg_installed directory, to hopefully find the .a files in which they are defined - e.g. Notepad++ is a possible tool for this.

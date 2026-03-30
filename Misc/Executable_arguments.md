@@ -25,13 +25,17 @@ First all provided arguments are sorted to fit in a predefined order, which then
 -setHWTLineSource
 -setHWTRuntimeLength
 -setHWTFramerate
+-setHardwareTriggeringFramerateLimitingEnabled
+-setHardwareTriggeringFramerateLimit
 -startHardwareTriggering
 -setSoftwareTriggeringFramerateLimitingEnabled
 -setSoftwareTriggeringFramerateLimit
+-setBinning
 -setGain
 -setPDAlgorithm
 -setPDUsingROI
 -setPDComputeOutlineConf
+-setPDComputeBRISQUE
 -startTracking
 -setImageOutputPath
 -setImageOutputFormat
@@ -41,6 +45,7 @@ First all provided arguments are sorted to fit in a predefined order, which then
 -startDataRecording
 -connectStreamUDP
 -connectStreamCOM
+-connectStreamLSL
 -startStreaming
 -connectRemoteUDP
 -connectRemoteCOM
@@ -87,13 +92,15 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 
 `-setPDAlgorithm "<algorithm>"` - Set pupil detection algorithm. Accepted algorithms: `else` or `excuse` or `pure` or `purest` or `starburst` or `swirski2d`.
 
-`-setPDUsingROI "<state>"` - Use ROI Area Selection. Either `true` or `false`.
+`-setPDUsingROI "<state>"` - Use PD ROI Area Selection. Either `true` or `false`.
 
 `-setPDComputeOutlineConf "<value>"` - Compute Additional Outline Confidence. Either "true" or "false".
 
+`-setPDComputeBRISQUE "<value>"` - Compute BRISQUE Score. Might make proccessing significantly slower. Either "true" or "false".
+
 `-startTracking` - Start pupil tracking. A camera needs to be opened beforehand.
 
-`-setImageOutputPath "<path>"` - Set image recording output path. Make sure you do not use special characters as they may be restricted for use by the operating system in folder names.
+`-setImageOutputPath "<path>"` - Set image recording output path. Make sure you do not use special characters as they may be restricted for use by the operating system in folder names. If a path to a .zip file is specified, a zip archive will be created (or appended to).
 
 `-setImageOutputFormat "<format>"` - Set image recording output format. Format name should be provided: `tiff` or `png` or `bmp` or `jpeg` or `webp` or `pgm`. Cannot be altered while an image recording is going on.
 
@@ -107,7 +114,21 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 
 `-connectStreamUDP "<IP>;<port>"` - Establish connection for pupil data streaming target using a UDP port.
 
+`-connectStreamUDP "<IP>;<port>;<container>"` - Establish connection for pupil data streaming target using a UDP port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`.
+
+`-connectStreamUDP "<IP>;<port>;<container>;<srate>"` - Establish connection for pupil data streaming target using a UDP port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`, at a desired maximal sample rate. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
 `-connectStreamCOM "<port>;<baud>"` - Establish connection for pupil data streaming target using a COM/serial port.
+
+`-connectStreamCOM "<port>;<baud>;<container>"` - Establish connection for pupil data streaming target using a COM/serial port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`.
+
+`-connectStreamCOM "<port>;<baud>;<container>;<srate>"` - Establish connection for pupil data streaming target using a COM/serial port, in a data container format of either `CSV`, `JSON`, `XML` or `YAML`, at a desired maximal sample rate. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
+
+`-connectStreamLSL` - Prepare for streaming pupil data using Lab Streaming Layer (LSL).
+
+`-connectStreamLSL "<container>"` - Prepare for streaming pupil data using Lab Streaming Layer (LSL), in a data container format of either `LSL_XDF`, `LSL_V1`. The former denotes the XDF compliant LSL streaming format (see: https://github.com/sccn/xdf/wiki/Gaze-Meta-Data), while the latter denotes a custom format of PupilEXT that depends on the actual camera configuration.
+
+`-connectStreamLSL "<container>;<srate>"` - Prepare for streaming pupil data using Lab Streaming Layer (LSL), in a data container format of either `LSL_XDF`, `LSL_V1`, at a desired maximal sample rate. The former denotes the XDF compliant LSL streaming format (see: https://github.com/sccn/xdf/wiki/Gaze-Meta-Data), while the latter denotes a custom format of PupilEXT that depends on the actual camera configuration. Defining a low sample rate limit only decimates eye data if that is generated at a faster rate, and importantly no interpolation is performed.
 
 `-startStreaming` - Start data streaming. Streaming target should be available and its port is opened for listening.
 
@@ -121,20 +142,26 @@ PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTrig
 
 `-setAcquisitionTriggeringMode "<mode>"` - Set Image Acquisition triggering mode. Valid inputs are: `H` for hardware-based and: `S` for software-based image acquisition triggering
 
-`-startHardwareTriggering` - Start hardware triggering
+`-startHardwareTriggering` - Start hardware triggering (generated by the MCU)
 
-`-stopHardwareTriggering` - Stop hardware triggering
+`-stopHardwareTriggering` - Stop hardware triggering (generated by the MCU)
 
 `-setHardwareTriggeringLineSource "<value>"` - Set hardware triggering line source, valid values are: `1`, `2`, `3`, `4`
 
-`-setHardwareTriggeringRuntimeLength "<value>"` - Set hardware triggering runtime length in minutes, any positive floating point number is accepted. Value `0` can be used to set infinite triggering
+`-setHardwareTriggeringRuntimeLength "<value>"` - Set hardware triggering runtime length in minutes (for the image acquisition triggers generated by the MCU upon request), any positive floating point number is accepted. Value `0` can be used to set infinite triggering
 
-`-setHardwareTriggeringFramerate "<value>"` - Set hardware triggering framerate, any >=1 positive integer number is accepted
+`-setHardwareTriggeringFramerate "<value>"` - Set hardware triggering framerate (which is generated by the MCU upon request), any >=1 positive integer number is accepted
+
+`-setHardwareTriggeringFramerateLimitingEnabled "<value>"` - Enable framerate limiting for hardware triggering. Typically used if the camera image acquisition is not triggered by the MCU, but a circuitry tapping onto illuminator flashes of an external device, in case of a co-recording. Either `true` or `false`
+
+`-setHardwareTriggeringFramerateLimit "<value>"` - Set hardware triggering framerate limit, any >=1 positive integer number is accepted
 
 `-setSoftwareTriggeringFramerateLimitingEnabled "<value>"` - Enable framerate limiting for software triggering. Either `true` or `false`
 
 `-setSoftwareTriggeringFramerateLimit "<value>"` - Set software triggering framerate limit, any >=1 positive integer number is accepted
 
 `-setExposureTimeMicrosec "<value>"` - Set exposure in microseconds, any positive floating point number is accepted
+
+`-setBinning "<value>"` - Set binning, any integer number of 1,2,4 accepted, and will be set according to camera capabilities
 
 `-setGain "<value>"` - Set gain, any floating point number is accepted, minimum `0.0`

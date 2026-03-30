@@ -9,7 +9,7 @@
 #include "qcustomplot/qcustomplot.h"
 #include "../pupil-detection-methods/Pupil.h"
 #include "../pupilDetection.h"
-#include "../dataTypes.h"
+#include "../pDataTypes.h"
 
 /**
     Custom lineplot graph widget employing the QCustomPlot library for plotting
@@ -36,7 +36,7 @@ public:
     static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
     uint64 lastTimestamp = 0;
 
-    explicit GraphPlot(DataTypes::DataType plotDataKey, ProcMode procMode=ProcMode::SINGLE_IMAGE_ONE_PUPIL, bool legend=false, QWidget *parent=0);
+    explicit GraphPlot(PDataType plotDataKey, ProcMode procMode=ProcMode::SINGLE_IMAGE_ONE_PUPIL, bool legend=false, QWidget *parent=0);
     ~GraphPlot() override;
 
     QSize sizeHint() const override;
@@ -51,10 +51,10 @@ private slots:
 
 public slots:
 
-    //void appendData(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    //void appendData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    //void appendData(quint64 timestamp, const Pupil &pupil);
+    //void appendData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec);
 
-    void appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename); // GB
+    void appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils); // GB
 
     void appendData(const double &fps);
     void appendData(const int &framecount);
@@ -75,7 +75,7 @@ private:
 
     InteractionMode currentInteractionMode = InteractionMode::AUTO_SCROLL_X_AUTO_SCALE_Y;
 
-    DataTypes::DataType plotDataKey;
+    PDataType plotDataKey;
 
     ProcMode currentProcMode;
 

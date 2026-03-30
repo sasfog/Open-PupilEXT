@@ -13,16 +13,17 @@ StreamingSettingsDialog::StreamingSettingsDialog(
     ConnPoolCOM *connPoolCOM,
     ConnPoolUDP *connPoolUDP,
     PupilDetection *pupilDetection,
-    DataStreamer *dataStreamer,
+    //DataStreamer *dataStreamer,
     QWidget *parent) :
     QDialog(parent),
     connPoolCOM(connPoolCOM),
     connPoolUDP(connPoolUDP),
     pupilDetection(pupilDetection),
-    dataStreamer(dataStreamer),
+    //dataStreamer(dataStreamer),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(310, 450);
+    //this->setMinimumSize(310, 450);
+    this->setMinimumSize(670, 550);
     this->setWindowTitle("Streaming settings");
 
     createForm();
@@ -32,6 +33,8 @@ StreamingSettingsDialog::StreamingSettingsDialog(
 
     loadSettings();
 
+    // comes here in order to avoid one extra self-triggering due to loadSettings()
+    connectSignals();
 }
 
 StreamingSettingsDialog::~StreamingSettingsDialog() {
@@ -40,9 +43,14 @@ StreamingSettingsDialog::~StreamingSettingsDialog() {
 
 void StreamingSettingsDialog::createForm() {
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    QHBoxLayout *mainLayout = new QHBoxLayout(this);
 
-
+    QVBoxLayout *mainLayoutInnerCol1 = new QVBoxLayout();
+    //mainLayoutInnerCol1->setMargin(0);
+    mainLayoutInnerCol1->setContentsMargins(0,5,0,5);
+    QVBoxLayout *mainLayoutInnerCol2 = new QVBoxLayout();
+    //mainLayoutInnerCol2->setMargin(0);
+    mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
 
     udpGroup = new QGroupBox("UDP");
@@ -84,7 +92,6 @@ void StreamingSettingsDialog::createForm() {
     dataContainerUDPBox->setCurrentIndex(0);
     udpLayout->addRow(dataContainerUDPLabel, dataContainerUDPBox);
 
-
     QWidget *widgetsRow1 = new QWidget();
     QHBoxLayout *UDPbuttonsLayout = new QHBoxLayout();
     connectUDPButton = new QPushButton("Connect");
@@ -95,8 +102,17 @@ void StreamingSettingsDialog::createForm() {
     udpLayout->addWidget(widgetsRow1);
     disconnectUDPButton->setEnabled(false);
 
+    // TODO: ADD LINE?
+    udpSampleRateLabel = new QLabel(tr("Sample rate limit:"));
+    udpSampleRateBox = new QSpinBox();
+    udpSampleRateBox->setFixedWidth(90);
+    udpSampleRateBox->setMinimum(1);
+    udpSampleRateBox->setMaximum(50);
+    udpSampleRateBox->setValue(30);
+    udpLayout->addRow(udpSampleRateLabel, udpSampleRateBox);
+
     udpGroup->setLayout(udpLayout);
-    mainLayout->addWidget(udpGroup);
+    mainLayoutInnerCol1->addWidget(udpGroup);
 
     //////
 
@@ -171,7 +187,6 @@ void StreamingSettingsDialog::createForm() {
     dataContainerCOMBox->setCurrentIndex(0);
     comLayout->addRow(dataContainerCOMLabel, dataContainerCOMBox);
 
-
     QWidget *widgetsRow2 = new QWidget();
     QHBoxLayout *COMbuttonsLayout = new QHBoxLayout();
     connectCOMButton = new QPushButton("Connect");
@@ -182,17 +197,164 @@ void StreamingSettingsDialog::createForm() {
     comLayout->addWidget(widgetsRow2);
     disconnectCOMButton->setEnabled(false);
 
+    // TODO: ADD LINE?
+    comSampleRateLabel = new QLabel(tr("Sample rate limit:"));
+    comSampleRateBox = new QSpinBox();
+    comSampleRateBox->setFixedWidth(90);
+    comSampleRateBox->setMinimum(1);
+    comSampleRateBox->setMaximum(50);
+    comSampleRateBox->setValue(30);
+    comLayout->addRow(comSampleRateLabel, comSampleRateBox);
+
     comGroup->setLayout(comLayout);
-    mainLayout->addWidget(comGroup);
+    mainLayoutInnerCol1->addWidget(comGroup);
+
+    //////
+
+    lslGroup = new QGroupBox("LSL");
+    QFormLayout *lslLayout = new QFormLayout;
+
+#ifdef USE_LSL
+
+    dataContainerLSLLabel = new QLabel(tr("Data container:"));
+    dataContainerLSLBox = new QComboBox();
+    //dataContainerLSLBox->setFixedWidth(200);
+    dataContainerLSLBox->addItem(tr("XDF Restrictive"), DataStreamer::DataContainer::LSL_XDF);
+    dataContainerLSLBox->addItem(tr("XDF Permissive"), DataStreamer::DataContainer::LSL_V1);
+    dataContainerLSLBox->setCurrentIndex(0);
+    lslLayout->addRow(dataContainerLSLLabel, dataContainerLSLBox);
+
+
+    lslRestrictiveOptionsSectionW = new QWidget();
+    QFormLayout *lslRestrictiveOptionsSection = new QFormLayout();
+    lslRestrictiveOptionsSection->setContentsMargins(0,0,0,0);
+
+    specXDFeyeLabel = new QLabel(tr("Prefer eye:"));
+    specXDFeyeBox = new QComboBox();
+    //specXDFeyeBox->setFixedWidth(200);
+    specXDFeyeBox->addItem(tr("Left"), LSL_XDF_Eye::XDF_LEFT);
+    specXDFeyeBox->addItem(tr("Right"), LSL_XDF_Eye::XDF_RIGHT);
+    specXDFeyeBox->setCurrentIndex(0);
+    lslRestrictiveOptionsSection->addRow(specXDFeyeLabel, specXDFeyeBox);
+
+    specXDFcameraLabel = new QLabel(tr("Prefer camera:"));
+    specXDFcameraBox = new QComboBox();
+    //specXDFcameraBox->setFixedWidth(200);
+    specXDFcameraBox->addItem(tr("Main"), LSL_XDF_Camera::XDF_MAIN);
+    specXDFcameraBox->addItem(tr("Secondary"), LSL_XDF_Camera::XDF_SECONDARY);
+    specXDFcameraBox->setCurrentIndex(0);
+    lslRestrictiveOptionsSection->addRow(specXDFcameraLabel, specXDFcameraBox);
+
+    specXDFpupDataLabel = new QLabel(tr("Pupil data:"));
+    specXDFpupDataBox = new QComboBox();
+    //specXDFpupDataBox->setFixedWidth(200);
+    specXDFpupDataBox->addItem(tr("Diameter [px]"), PDataType::PUPIL_DIAMETER);
+    specXDFpupDataBox->addItem(tr("Undistorted dia. [px]"), PDataType::PUPIL_UNDIST_DIAMETER);
+    specXDFpupDataBox->addItem(tr("Physical dia. [mm]"), PDataType::PUPIL_PHYSICAL_DIAMETER);
+    specXDFpupDataBox->setCurrentIndex(0);
+    lslRestrictiveOptionsSection->addRow(specXDFpupDataLabel, specXDFpupDataBox);
+
+    specXDFconfLabel = new QLabel(tr("Confidence:"));
+    specXDFconfBox = new QComboBox();
+    //specXDFconfBox->setFixedWidth(200);
+    specXDFconfBox->addItem(tr("Confidence"), PDataType::PUPIL_CONFIDENCE);
+    specXDFconfBox->addItem(tr("Outline conf."), PDataType::PUPIL_OUTLINE_CONFIDENCE);
+    specXDFconfBox->setCurrentIndex(0);
+    lslRestrictiveOptionsSection->addRow(specXDFconfLabel, specXDFconfBox);
+
+    lslRestrictiveOptionsSectionW->setLayout(lslRestrictiveOptionsSection);
+    lslLayout->addRow(lslRestrictiveOptionsSectionW);
+
+    QWidget *widgetsRow3 = new QWidget();
+    QHBoxLayout *LSLbuttonsLayout = new QHBoxLayout();
+    connectLSLButton = new QPushButton("Connect");
+    disconnectLSLButton = new QPushButton("Disconnect");
+    LSLbuttonsLayout->addWidget(connectLSLButton);
+    LSLbuttonsLayout->addWidget(disconnectLSLButton);
+    widgetsRow3->setLayout(LSLbuttonsLayout);
+    lslLayout->addWidget(widgetsRow3);
+    disconnectLSLButton->setEnabled(false);
+
+    // TODO: disallow empty string?
+    LSLSourceIDLabel = new QLabel(tr("Source ID:"));
+    LSLSourceIDBox = new QLineEdit();
+    //LSLSourceIDBox->setText(SupportFunctions::makeUniqueLSLSourceID());
+    //LSLSourceIDBox->setFixedWidth(200);
+    lslLayout->addRow(LSLSourceIDLabel, LSLSourceIDBox);
+
+    // TODO: ADD LINE?
+    lslSampleRateLabel = new QLabel(tr("Sample rate limit:"));
+    lslSampleRateBox = new QSpinBox();
+    lslSampleRateBox->setFixedWidth(90);
+    lslSampleRateBox->setMinimum(1);
+    lslSampleRateBox->setMaximum(50);
+    lslSampleRateBox->setValue(30);
+    lslLayout->addRow(lslSampleRateLabel, lslSampleRateBox);
+
+#else
+    QLabel *notUsingLSLLabel = new QLabel(tr("This build does not offer LSL functionality.\nIt might not be supported on your current OS version or architecture."));
+    SupportFunctions::setSmallerLabelFontSize(notUsingLSLLabel);
+    lslLayout->addWidget(notUsingLSLLabel);
+    lslGroup->setEnabled(false);
+#endif
+
+    lslGroup->setLayout(lslLayout);
+    mainLayoutInnerCol2->addWidget(lslGroup);
+
+
+    QLabel *sampleRateInfoLabel = new QLabel(tr("Defining a low sample rate limit only decimates eye data if that is\ngenerated at a faster rate, and importantly no interpolation is performed."));
+    SupportFunctions::setSmallerLabelFontSize(sampleRateInfoLabel);
+    mainLayoutInnerCol2->addWidget(sampleRateInfoLabel);
+    //QSpacerItem *sp8 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Maximum);
+    //mainLayoutInnerCol2->addSpacerItem(sp8);
+    mainLayoutInnerCol2->addStretch(1);
+
+    mainLayout->addLayout(mainLayoutInnerCol1);
+    mainLayout->addLayout(mainLayoutInnerCol2);
+    mainLayout->addStretch(1);
+
+    setLayout(mainLayout);
+}
+
+void StreamingSettingsDialog::connectSignals() {
+    connect(udpIpBox, SIGNAL(signalTextChanged(QLineEdit*)), this, SLOT(saveUDPSettings()));
+    connect(udpPortBox, SIGNAL(valueChanged(int)), this, SLOT(saveUDPSettings()));
+    connect(dataContainerUDPBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveUDPSettings()));
+    connect(udpSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveUDPSettings()));
+
+    connect(baudRateBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(dataBitsBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(parityBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(stopBitsBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(flowControlBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(dataContainerCOMBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveCOMSettings()));
+    connect(comSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveCOMSettings()));
+
+#ifdef USE_LSL
+    connect(dataContainerLSLBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFeyeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFcameraBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFpupDataBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(specXDFconfBox, SIGNAL(currentIndexChanged(int)), this, SLOT(saveLSLSettings()));
+    connect(LSLSourceIDBox, SIGNAL(textChanged(const QString &)), this, SLOT(saveLSLSettings()));
+    connect(lslSampleRateBox, SIGNAL(valueChanged(int)), this, SLOT(saveLSLSettings()));
+    //
+    connect(connectLSLButton, SIGNAL(clicked()), this, SLOT(onConnectLSLClick()));
+    connect(disconnectLSLButton, SIGNAL(clicked()), this, SLOT(disconnectLSL()));
+#endif
 
     connect(connectUDPButton, SIGNAL(clicked()), this, SLOT(onConnectUDPClick()));
     connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(disconnectUDP()));
     connect(connectCOMButton, SIGNAL(clicked()), this, SLOT(onConnectCOMClick()));
     connect(disconnectCOMButton, SIGNAL(clicked()), this, SLOT(disconnectCOM()));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(updateCOMDevices()));
-
-    setLayout(mainLayout);
 }
+
+//void StreamingSettingsDialog::closeEvent(QCloseEvent *) {
+//
+//    // Just for LSL settings to stay
+//    saveSettings();
+//}
 
 void StreamingSettingsDialog::connectUDP(const ConnPoolUDPInstanceSettings &p) {
     int index = connPoolUDP->setupAndOpenConnection(p, ConnPoolPurposeFlag::STREAMING);
@@ -313,6 +475,105 @@ void StreamingSettingsDialog::disconnectCOM() {
     //emit onConnStateChanged();
 }
 
+#ifdef USE_LSL
+void StreamingSettingsDialog::connectLSL() {
+
+    setLimitationsWhileConnectedLSL(true);
+
+    LSLconnected = true;
+
+    // TODO: nicer way for this?
+    //  this is necessary because sometimes PRGmainwindow calls this method
+    //  Other options include a loadSettings() call in the beginning, or making a new method for these
+    dataContainerLSLBox->blockSignals(true);
+    specXDFeyeBox->blockSignals(true);
+    specXDFcameraBox->blockSignals(true);
+    specXDFpupDataBox->blockSignals(true);
+    specXDFconfBox->blockSignals(true);
+    dataContainerLSLBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.dataContainer", "XDF Restrictive").toString());
+    specXDFeyeBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.eye", "Left").toString());
+    specXDFcameraBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.camera", "Main").toString());
+    specXDFpupDataBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.pupilData", "Diameter [px]").toString());
+    specXDFconfBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.confidence", "Confidence").toString());
+    dataContainerLSLBox->blockSignals(false);
+    specXDFeyeBox->blockSignals(false);
+    specXDFcameraBox->blockSignals(false);
+    specXDFpupDataBox->blockSignals(false);
+    specXDFconfBox->blockSignals(false);
+
+    emit onLSLConnect();
+    //emit onConnStateChanged();
+}
+
+void StreamingSettingsDialog::onConnectLSLClick() {
+    updateSettings();
+    connectLSL();
+}
+
+void StreamingSettingsDialog::disconnectLSL() {
+
+    LSLconnected = false;
+
+    setLimitationsWhileConnectedLSL(false);
+
+    emit onLSLDisconnect();
+    //emit onConnStateChanged();
+}
+
+bool StreamingSettingsDialog::isLSLConnected() {
+    return LSLconnected;
+}
+
+void StreamingSettingsDialog::saveLSLSettings() {
+
+    if(LSLSourceIDBox->text().isEmpty()) {
+        LSLSourceIDBox->blockSignals(true);
+        LSLSourceIDBox->setText(SupportFunctions::makeUniqueLSLSourceID());
+        LSLSourceIDBox->blockSignals(false);
+    }
+
+    std::cout << dataContainerLSLBox->currentData().toString().toStdString() << std::endl;
+
+    lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
+
+    // TODO: LEHET VALAMI PÁROSTÁS KELL MÉG EHHEZ AZ ENUMOK MIATT
+    applicationSettings->setValue("StreamingSettings.LSL.eye", specXDFeyeBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.camera", specXDFcameraBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.pupilData", specXDFpupDataBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.confidence", specXDFconfBox->currentText());
+
+    applicationSettings->setValue("StreamingSettings.LSL.dataContainer", dataContainerLSLBox->currentText());
+    applicationSettings->setValue("StreamingSettings.LSL.sourceID", LSLSourceIDBox->text());
+    applicationSettings->setValue("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value());
+
+    this->update();
+}
+
+DataStreamer::DataContainer StreamingSettingsDialog::getDataContainerLSL() {
+    DataStreamer::DataContainer cn = static_cast<DataStreamer::DataContainer>(
+            dataContainerLSLBox->itemData(dataContainerLSLBox->currentIndex()).toInt());
+    return cn;
+}
+
+void StreamingSettingsDialog::setLimitationsWhileConnectedLSL(bool state) {
+
+    connectLSLButton->setDisabled(state);
+    disconnectLSLButton->setDisabled(!state);
+
+    // empty, but may be populated later
+}
+
+void StreamingSettingsDialog::setLimitationsWhileStreamingLSL(bool state) {
+
+    dataContainerLSLBox->setDisabled(state);
+    dataContainerLSLLabel->setDisabled(state);
+    lslSampleRateBox->setDisabled(state);
+    lslSampleRateLabel->setDisabled(state);
+    LSLSourceIDLabel->setDisabled(state);
+    LSLSourceIDBox->setDisabled(state);
+}
+#endif
+
 void StreamingSettingsDialog::fillCOMParameters() {
     baudRateBox->addItem(QStringLiteral("9600"), QSerialPort::Baud9600);
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
@@ -345,7 +606,11 @@ void StreamingSettingsDialog::fillCOMParameters() {
 }
 
 bool StreamingSettingsDialog::isAnyConnected() {
-    return (isUDPConnected() || isCOMConnected());
+    return (isUDPConnected() || isCOMConnected()
+#ifdef USE_LSL
+        || isLSLConnected()
+#endif
+        );
 }
 
 bool StreamingSettingsDialog::isUDPConnected() {
@@ -407,11 +672,10 @@ void StreamingSettingsDialog::updateSettings()
 // Loads the serial port settings from application settings
 void StreamingSettingsDialog::loadSettings() {
 
-    dataContainerUDPBox->setCurrentText(applicationSettings->value("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->itemText(0)).toString());
-    dataContainerCOMBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataContainer", dataContainerCOMBox->itemText(0)).toString());
-
     udpIpBox->setValue(applicationSettings->value("StreamingSettings.UDP.ipAddress", udpIpBox->getValue()).toString());
     udpPortBox->setValue(applicationSettings->value("StreamingSettings.UDP.portNumber", udpPortBox->value()).toInt());
+    dataContainerUDPBox->setCurrentText(applicationSettings->value("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->itemText(0)).toString());
+    udpSampleRateBox->setValue(applicationSettings->value("StreamingSettings.UDP.sampleRate", udpSampleRateBox->value()).toInt());
 
     serialPortInfoListBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.name", serialPortInfoListBox->itemText(0)).toString());
     baudRateBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.baudRate", baudRateBox->itemText(3)).toString());
@@ -420,19 +684,54 @@ void StreamingSettingsDialog::loadSettings() {
     stopBitsBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.stopBits", stopBitsBox->itemText(0)).toString());
     flowControlBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.flowControl", flowControlBox->itemText(0)).toString());
     // localEchoCheckBox->setChecked(SupportFunctions::readBoolFromQSettings("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked(), applicationSettings));
+    dataContainerCOMBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataContainer", dataContainerCOMBox->itemText(0)).toString());
+    comSampleRateBox->setValue(applicationSettings->value("StreamingSettings.COM.sampleRate", comSampleRateBox->value()).toInt());
+
+#ifdef USE_LSL
+    // TODO: így menjen az XDF cuccok beállítása
+    //  és a hide/show is a GUI elemeiken
+    //  és a Notepad++-ban aktuális dolgok még asap
+    //  aztán a stereo camerára is az aravis
+    //  aztán a cmd paraméterekkel állítható algoritmusok
+    static_cast<DataStreamer::DataContainer>(
+            dataContainerLSLBox->itemData(dataContainerLSLBox->currentIndex()).toInt());
+
+    dataContainerLSLBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.dataContainer", dataContainerLSLBox->itemText(0)).toString());
+    specXDFeyeBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.eye", "Left").toString());
+    specXDFcameraBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.camera", "Main").toString());
+    specXDFpupDataBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.pupilData", "Diameter [px]").toString());
+    specXDFconfBox->setCurrentText(applicationSettings->value("StreamingSettings.LSL.confidence", "Confidence").toString());
+    LSLSourceIDBox->setText(applicationSettings->value("StreamingSettings.LSL.sourceID", SupportFunctions::makeUniqueLSLSourceID()).toString());
+    lslSampleRateBox->setValue(applicationSettings->value("StreamingSettings.LSL.sampleRate", lslSampleRateBox->value()).toInt());
+
+    lslRestrictiveOptionsSectionW->setVisible(!(dataContainerLSLBox->currentData() == DataStreamer::DataContainer::LSL_XDF));
+#endif
+
+    this->update();
 
     updateSettings();
 }
 
-// Saves serial port settings to application settings
 void StreamingSettingsDialog::saveSettings() {
 
-    applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->currentText());
-    applicationSettings->setValue("StreamingSettings.COM.dataContainer", dataContainerCOMBox->currentText());
+    saveUDPSettings();
+    saveCOMSettings();
+#ifdef USE_LSL
+    saveLSLSettings();
+#endif
+}
 
+void StreamingSettingsDialog::saveUDPSettings() {
+
+    applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->currentText());
     applicationSettings->setValue("StreamingSettings.UDP.ipAddress", udpIpBox->getValue());
     applicationSettings->setValue("StreamingSettings.UDP.portNumber", udpPortBox->value());
-    
+    applicationSettings->setValue("StreamingSettings.UDP.sampleRate", udpSampleRateBox->value());
+}
+
+void StreamingSettingsDialog::saveCOMSettings() {
+
+    applicationSettings->setValue("StreamingSettings.COM.dataContainer", dataContainerCOMBox->currentText());
     applicationSettings->setValue("StreamingSettings.COM.name", serialPortInfoListBox->currentText());
     applicationSettings->setValue("StreamingSettings.COM.baudRate", baudRateBox->currentText().toInt());
     applicationSettings->setValue("StreamingSettings.COM.dataBits", dataBitsBox->currentText().toInt());
@@ -440,6 +739,7 @@ void StreamingSettingsDialog::saveSettings() {
     applicationSettings->setValue("StreamingSettings.COM.stopBits", stopBitsBox->currentText().toFloat());
     applicationSettings->setValue("StreamingSettings.COM.flowControl", flowControlBox->currentText());
     //applicationSettings->setValue("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked());
+    applicationSettings->setValue("StreamingSettings.COM.sampleRate", comSampleRateBox->value());
 }
 
 /*
@@ -495,14 +795,8 @@ void StreamingSettingsDialog::setLimitationsWhileConnectedUDP(bool state) {
     disconnectUDPButton->setDisabled(!state);
 }
 
-void StreamingSettingsDialog::setLimitationsWhileStreamingUDP(bool state) {  
-    
-    dataContainerUDPBox->setDisabled(state);
-    dataContainerUDPLabel->setDisabled(state);
-}
+void StreamingSettingsDialog::setLimitationsWhileConnectedCOM(bool state) {
 
-void StreamingSettingsDialog::setLimitationsWhileConnectedCOM(bool state) {  
-    
     serialPortInfoListBox->setDisabled(state);
     refreshButton->setDisabled(state);
 
@@ -523,10 +817,33 @@ void StreamingSettingsDialog::setLimitationsWhileConnectedCOM(bool state) {
     disconnectCOMButton->setDisabled(!state);
 }
 
+void StreamingSettingsDialog::setLimitationsWhileStreamingUDP(bool state) {
+
+    dataContainerUDPBox->setDisabled(state);
+    dataContainerUDPLabel->setDisabled(state);
+    udpSampleRateBox->setDisabled(state);
+    udpSampleRateBox->setDisabled(state);
+    udpSampleRateLabel->setDisabled(state);
+}
+
 void StreamingSettingsDialog::setLimitationsWhileStreamingCOM(bool state) {  
     
     dataContainerCOMBox->setDisabled(state);
     dataContainerCOMLabel->setDisabled(state);
+    comSampleRateBox->setDisabled(state);
+    comSampleRateLabel->setDisabled(state);
+}
+
+
+
+// Only to grey out "Connect" buttons while streaming is On (no matter which are On)
+void StreamingSettingsDialog::setLimitationsWhileStreamingAny(bool state) {
+
+    connectUDPButton->setDisabled(state || isUDPConnected());
+    connectCOMButton->setDisabled(state || isCOMConnected());
+#ifdef USE_LSL
+    connectLSLButton->setDisabled(state || isLSLConnected());
+#endif
 }
 
 /*

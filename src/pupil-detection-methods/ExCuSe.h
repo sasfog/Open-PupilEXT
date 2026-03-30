@@ -22,10 +22,13 @@ public:
     int max_ellipse_radi = 50;
     int good_ellipse_threshold = 15;
 
-    ExCuSe() {
-        mDesc = "ExCuSe (Fuhl et al. 2015)";
-        mTitle = "ExCuSe";
-    }
+    int imgSize;// = 680;
+    int defSize;// = 800;
+
+    cv::InterpolationFlags interMethod = cv::InterpolationFlags::INTER_LINEAR;
+
+    ExCuSe();
+    ~ExCuSe() override;
 
     Pupil run(const cv::Mat &frame);
 

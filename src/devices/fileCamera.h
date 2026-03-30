@@ -6,7 +6,7 @@
 
 #include "camera.h"
 #include "../frameRateCounter.h"
-#include "../imageReader.h"
+#include "../data-io/imageReader.h"
 #include "../stereoCameraCalibration.h"
 
 //#include "../offlineEventLogReader.h"
@@ -29,7 +29,7 @@ class FileCamera : public Camera
     Q_OBJECT
 
 public:
-    explicit FileCamera(const QString &directory, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
+    explicit FileCamera(const QString &imageSource, const int &subrecordingNumber, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
 
     ~FileCamera() override;
 
@@ -71,9 +71,9 @@ public:
     bool isPlaying() {
         return imageReader->isPlaying();
     }
-    QString getImageDirectoryName() {
-        return imageReader->getImageDirectoryName();
-    }
+//    QString getImageDirectoryName() {
+//        return imageReader->getImageDirectoryName();
+//    }
     QString getImageWidth() {
         return QString::number(imageReader->getImageWidth());
     }
@@ -99,8 +99,14 @@ public:
     uint64_t getRecordingDuration() {
         return imageReader->getRecordingDuration();
     }
-    void seekToFrame(int frameNumber) {
-        imageReader->seekToFrame(frameNumber);
+    QString getRecordingName() {
+        return imageReader->getRecordingName();
+    }
+    QString getRecordingFullPath() {
+        return imageReader->getRecordingFullPath();
+    }
+    void seekToFrame(int frameNumber, bool seekBackwards) {
+        imageReader->seekToFrame(frameNumber, seekBackwards);
     }
     /*uint64_t getLastCommissionedTimestamp() {
         return imageReader->getLastCommissionedTimestamp();
@@ -108,14 +114,40 @@ public:
     int getLastCommissionedFrameNumber() {
         return imageReader->getLastCommissionedFrameNumber();
     }
+    ImageReader::ImageReaderStatus getImageReaderStatus() {
+        return imageReader->getImageReaderStatus();
+    }
+    QVector<ImageReader::ZipMultiInfo> getFoundZipMultiInfo() {
+        return imageReader->getFoundZipMultiInfo();
+    }
+    QString getOfflineEventLogContent() {
+        return imageReader->getOfflineEventLogContent();
+    }
+    QString getMetaSnapshotContent() {
+        return imageReader->getMetaSnapshotContent();
+    }
+    void startExportRecSection(int toFrame) {
+        imageReader->startExportRecSection(toFrame);
+    }
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
     int getImageROIwidthMax() override;
+    int getImageROIwidthInc() override { return 0; };
     int getImageROIheightMax() override;
-    int getImageROIoffsetX() override; 
+    int getImageROIheightInc() override { return 0; };
+    int getImageROIoffsetX() override;
+    int getImageROIoffsetXInc() override { return 0; };
     int getImageROIoffsetY() override;
+    int getImageROIoffsetYInc() override { return 0; };
     QRectF getImageROI() override;
+
+    QSize getFullSensorResolution() override { return QSize(imageReader->getImageWidth(), imageReader->getImageHeight()); }; // TODO: read from metadata, and also check with image sizes
+
+    double getResultingFrameRateValue() override { return getPlaybackSpeed(); };
+    int getExposureTimeValue() override { return 9999999; }; // TODO: read from meta snapshot
+
+    bool isTemperatureReadingSupported() override { return false; };
 
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();
@@ -126,7 +158,7 @@ private:
     FrameRateCounter *frameCounter;
     ImageReader *imageReader;
 
-    bool open;
+    bool open = false;
 
     CameraCalibration *cameraCalibration;
     StereoCameraCalibration *stereoCameraCalibration;

@@ -14,14 +14,14 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 
-#include "IPCtrl.h"
-#include "../connPoolCOM.h"
-#include "../connPoolUDP.h"
+#include "custom-widgets/IPCtrl.h"
+#include "../data-io/connPoolCOM.h"
+#include "../data-io/connPoolUDP.h"
 
 #include "../pupilDetection.h"
-#include "../dataWriter.h"
-#include "../imageWriter.h"
-#include "../dataStreamer.h"
+#include "../data-io/dataWriter.h"
+#include "../data-io/imageWriter.h"
+#include "../data-io/dataStreamer.h"
 #include "../recEventTracker.h"
 #include "../supportFunctions.h"
 

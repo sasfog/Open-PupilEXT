@@ -11,7 +11,8 @@ ExecArgParser::ExecArgParser(int argc, char *argv[]) {
         //std::cout << argv[i] << "\n";
         //std::string str(argv[i]);
 
-        if( i < argc && 
+        if( i < argc &&
+            argv[i] &&
             std::strlen(argv[i])>1 &&
             argv[i][0] == '-' ) {
             
@@ -102,7 +103,7 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGsetExposure(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_ACQUISITION_TRIGGERING_MODE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            if(execArgs[i].argVals[0].toLower() == "1" || execArgs[i].argVals[0].toLower() == "true")
+            if(execArgs[i].argVals[0].toLower() == "1" || execArgs[i].argVals[0].toLower() == "true" || execArgs[i].argVals[0].toLower() == "h")
                 w->PRGenableHWT(true);
             else
                 w->PRGenableHWT(false);
@@ -111,10 +112,16 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGsetHWTlineSource(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_RUNTIME_LENGTH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetHWTruntime(execArgs[i].argVals[0].toFloat());
+            w->PRGsetHWTMCUruntime(execArgs[i].argVals[0].toFloat());
         }
         if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetHWTframerate(execArgs[i].argVals[0].toInt());
+            w->PRGsetHWTMCUframerate(execArgs[i].argVals[0].toInt());
+        }
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE_LIMITING_ENABLED) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGenableHWTframerateLimiting(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE_LIMIT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetHWTframerateLimitVal(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(START_HARDWARE_TRIGGERING)) {
             w->PRGstartHWT();
@@ -123,7 +130,10 @@ void ExecArgParser::iterThroughDuties() {
             w->PRGenableSWTframerateLimiting(execArgs[i].argVals[0].toLower());
         }
         if(execArgs[i].argID == getArgIdx(SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMIT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetSWTframerate(execArgs[i].argVals[0].toInt());
+            w->PRGsetSWTframerateLimitVal(execArgs[i].argVals[0].toInt());
+        }
+        if(execArgs[i].argID == getArgIdx(SET_BINNING) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetBinning(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_GAIN) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetGain(execArgs[i].argVals[0].toDouble());
@@ -137,11 +147,14 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(SET_PD_COMPUTE_OUTLINE_CONF) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetPupilDetectionCompOutlineConf(execArgs[i].argVals[0].toLower());
         }
+        if(execArgs[i].argID == getArgIdx(SET_PD_COMPUTE_BRISQUE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetPupilDetectionCompBRISQUE(execArgs[i].argVals[0].toLower());
+        }
         if(execArgs[i].argID == getArgIdx(START_TRACKING)) {
             w->PRGtrackStart();
         }
         if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_PATH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetOutPath(execArgs[i].argVals[0]);
+            w->PRGsetImageOutputTarget(execArgs[i].argVals[0]);
         }
         if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_FORMAT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetImageOutputFormat(execArgs[i].argVals[0].toLower());
@@ -164,6 +177,14 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGconnectStreamCOM(execArgs[i].argVals[0].toLower());
         }
+#ifdef USE_LSL
+        if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_LSL) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGconnectStreamLSL(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_LSL)) {
+            w->PRGconnectStreamLSL("");
+        }
+#endif
         if(execArgs[i].argID == getArgIdx(START_STREAMING)) {
             w->PRGstreamStart();
         }

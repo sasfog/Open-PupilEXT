@@ -77,6 +77,9 @@ class PuReST: public PuRe {
 
 public:
 
+    // GB: NOTE: no need to declare much of the stuff, as has been declared in PuRe already.
+    // E.g. the way we can specify downscaling interpolation method
+
     PuReST();
     ~PuReST() override;
 

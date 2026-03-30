@@ -17,9 +17,9 @@
 #include <QtCore/QSettings>
 #include <QRadioButton>
 #include <QSpinBox>
-#include "../connPoolCOM.h"
-#include "../connPoolUDP.h"
-#include "IPCtrl.h"
+#include "../data-io/connPoolCOM.h"
+#include "../data-io/connPoolUDP.h"
+#include "custom-widgets/IPCtrl.h"
 
 QT_BEGIN_NAMESPACE
 

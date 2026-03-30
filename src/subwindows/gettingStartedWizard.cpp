@@ -66,16 +66,22 @@ QWizardPage* GettingStartedWizard::createIntro01() {
     logoButton->setIcon(QIcon(":/icons/PupilEXT-Logo.png"));
 
     QLabel *label = new QLabel(tr("<b>%1 Version: %2 </b> is an open source application for pupillometry.<br><br>"
-                                  "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (2021). "
+                                  "Gábor L. Bényei, Diederick C. Niehorster, Marcus Nyström, and Péter Pajkossy (<b>2026</b>). "
+                                  "Open-source event-related pupillometry using PupilEXT.</br>"
+                                  " Proceedings of the 2026 Symposium on Eye Tracking Research and Applications. DOI:<a href=\"https://doi.org/10.1145/3797246.3805836\">10.1145/3797246.3805836</a>.<br><br>"
+//                                  "Gábor L. Bényei, Attila B. Boncsér, Péter Pajkossy (<b>2024</b>). "
+//                                  "Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform.</br>"
+//                                  " ECEM2024, 22nd European Conference on Eye Movements. DOI:<a href=\"https://doi.org/10.13140/RG.2.2.33761.93284\">10.13140/RG.2.2.33761.93284</a>.<br><br>"
+                                  "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (<b>2021</b>). "
                                   "PupilEXT: Flexible Open-Source Platform for High-Resolution Pupil Measurement in Vision Research.</br>"
-                                  " Frontiers in Neuroscience. doi:10.3389/fnins.2021.676220."
-                                  "<br><br>Consider to cite our work, if you find this tool useful for your research. "
+                                  " Frontiers in Neuroscience. DOI:<a href=\"https://doi.org/10.3389/fnins.2021.676220\">10.3389/fnins.2021.676220</a>."
+                                  "<br><br>Consider to cite our works, if you find this tool useful for your research. "
                                   "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br><br>"
                                   "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
                                   ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
                                   " Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses (see GitHub repository).<br><br>"
                                   "<b>This release was built from the Experimental Community Version branch source code</b>, "
-                                  "contributed by Gábor Bényei and Attila Boncsér as of 2024.<br><br>"
+                                  "contributed by Gábor Bényei and Attila Boncsér as of 2026. Please always cite the original 2021 paper as well.<br><br>"
     ).arg(QCoreApplication::applicationName(),QCoreApplication::applicationVersion()));
 
     QHBoxLayout *appSettingsRow = new QHBoxLayout();
@@ -471,7 +477,7 @@ QWizardPage* GettingStartedWizard::createUserGuide07() {
     "<li>If you want to perform live pupil detection to write output to e.g. a .csv file or stream it on the spot</li>"
     "<li>If you want to run analysis on previously made image recordings</li>"
     "</ol>"
-    "Yet, as of PupilEXT version v0.1.2 the latter is recommended, to ensure precise trial and message triggering. "
+    "Yet, as of PupilEXT version v0.1.3 the latter is recommended, to ensure precise trial and message triggering. "
     "Now we advise to first acquire images and run pupil detection on the recordings later, to produce data files.";
 
     QLabel *label = new QLabel(labelText);

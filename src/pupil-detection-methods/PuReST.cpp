@@ -139,7 +139,7 @@ void PuReST::runTracking(const cv::Mat &frame, Pupil &pupil, const float &userMi
     /*
      * From here on, we are in the resulting roi scaled to our base size coordinates
      */
-    cv::resize(frame(trackingRect), input, cv::Size(), localScalingRatio, localScalingRatio, cv::INTER_LINEAR);
+    cv::resize(frame(trackingRect), input, cv::Size(), localScalingRatio, localScalingRatio, interMethod);
 
     // Setup for Canny
     workingSize = {input.cols, input.rows};

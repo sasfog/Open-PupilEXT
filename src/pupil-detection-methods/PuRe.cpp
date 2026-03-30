@@ -669,7 +669,7 @@ void PuRe::run(const Mat &frame, Pupil &pupil) {
 
 	// Downscaling
 	Mat downscaled = frame;
-	resize(frame, downscaled, Size(), scalingRatio, scalingRatio, INTER_LINEAR);
+	resize(frame, downscaled, Size(), scalingRatio, scalingRatio, interMethod);
 	normalize(downscaled, input, 0, 255, NORM_MINMAX, CV_8U);
 
 	workingSize.width = floor(scalingRatio*frame.cols);
@@ -707,7 +707,7 @@ void PuRe::run(const cv::Mat &frame, Pupil &pupil, std::vector<cv::Point2f> &inl
 
     // Downscaling
     Mat downscaled = frame;
-    resize(frame, downscaled, Size(), scalingRatio, scalingRatio, INTER_LINEAR);
+    resize(frame, downscaled, Size(), scalingRatio, scalingRatio, interMethod);
     normalize(downscaled, input, 0, 255, NORM_MINMAX, CV_8U);
 
     workingSize.width = floor(scalingRatio*frame.cols);
@@ -754,7 +754,7 @@ void PuRe::run(const cv::Mat &frame, const cv::Rect &roi, Pupil &pupil, const fl
 
 	// Downscaling
 	Mat downscaled;
-	resize(frame(roi), downscaled, Size(), scalingRatio, scalingRatio, INTER_LINEAR);
+	resize(frame(roi), downscaled, Size(), scalingRatio, scalingRatio, interMethod);
 	normalize(downscaled, input, 0, 255, NORM_MINMAX, CV_8U);
 
 	//cvtColor(input, dbg, CV_GRAY2BGR);

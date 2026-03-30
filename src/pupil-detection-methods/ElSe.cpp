@@ -20,8 +20,17 @@ using namespace cv;
 float ElSe::minArea = 0;
 float ElSe::maxArea = 0;
 
-#define IMG_SIZE 640 //400
+//#define IMG_SIZE 640 //400
 #define MAX_LINE 10000
+
+ElSe::ElSe() : imgSize(680) {
+    mDesc = "ElSe (Fuhl et al. 2016)";
+    mTitle = "ElSe";
+}
+
+ElSe::~ElSe() {
+
+}
 
 static bool is_good_ellipse_eval(RotatedRect *ellipse, Mat *pic, int *erg)
 {
@@ -135,7 +144,7 @@ static int calc_inner_gray(Mat *pic, std::vector<Point> curve, RotatedRect ellip
     return gray_val;
 }
 
-static std::vector<std::vector<Point>> get_curves(Mat *pic, Mat *edge, Mat *magni, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range)
+static std::vector<std::vector<Point>> get_curves(Mat *pic, Mat *edge, Mat *magni, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range, int imgSize)
 {
 
     (void)magni;
@@ -165,20 +174,21 @@ static std::vector<std::vector<Point>> get_curves(Mat *pic, Mat *edge, Mat *magn
     all_means.clear();
     all_lines.clear();
 
-    bool check[IMG_SIZE][IMG_SIZE];
+    // bool check[IMG_SIZE][IMG_SIZE];
+    bool *check = new bool[imgSize*imgSize]; // to short-make "2d" allocable at runtime
 
-    for (int i = 0; i < IMG_SIZE; i++)
-        for (int j = 0; j < IMG_SIZE; j++)
-            check[i][j] = 0;
+    for (int i = 0; i < imgSize; i++)
+        for (int j = 0; j < imgSize; j++)
+            check[i*imgSize +j] = 0;
 
     //get all lines
     for (int i = start_x; i < end_x; i++)
         for (int j = start_y; j < end_y; j++)
         {
 
-            if (edge->data[(edge->cols * (j)) + (i)] > 0 && !check[i][j])
+            if (edge->data[(edge->cols * (j)) + (i)] > 0 && !check[i*imgSize +j])
             {
-                check[i][j] = 1;
+                check[i*imgSize +j] = 1;
 
                 curve.clear();
                 curve_idx = 0;
@@ -199,10 +209,10 @@ static std::vector<std::vector<Point>> get_curves(Mat *pic, Mat *edge, Mat *magn
                         {
 
                             if (akt_pos.x + k1 >= start_x && akt_pos.x + k1 < end_x && akt_pos.y + k2 >= start_y && akt_pos.y + k2 < end_y)
-                                if (!check[akt_pos.x + k1][akt_pos.y + k2])
+                                if (!check[(akt_pos.x + k1)*imgSize +(akt_pos.y + k2)])
                                     if (edge->data[(edge->cols * (akt_pos.y + k2)) + (akt_pos.x + k1)] > 0)
                                     {
-                                        check[akt_pos.x + k1][akt_pos.y + k2] = 1;
+                                        check[(akt_pos.x + k1)*imgSize +(akt_pos.y + k2)] = 1;
 
                                         mean_p.x += akt_pos.x + k1;
                                         mean_p.y += akt_pos.y + k2;
@@ -306,10 +316,12 @@ static std::vector<std::vector<Point>> get_curves(Mat *pic, Mat *edge, Mat *magn
         }
     }
 
+    delete[] check;
+
     return all_curves;
 }
 
-static RotatedRect find_best_edge(Mat *pic, Mat *edge, Mat *magni, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range)
+static RotatedRect find_best_edge(Mat *pic, Mat *edge, Mat *magni, int start_x, int end_x, int start_y, int end_y, double mean_dist, int inner_color_range, int imgSize)
 {
 
     RotatedRect ellipse;
@@ -319,7 +331,7 @@ static RotatedRect find_best_edge(Mat *pic, Mat *edge, Mat *magni, int start_x, 
     ellipse.size.height = 0.0;
     ellipse.size.width = 0.0;
 
-    std::vector<std::vector<Point>> all_curves = get_curves(pic, edge, magni, start_x, end_x, start_y, end_y, mean_dist, inner_color_range);
+    std::vector<std::vector<Point>> all_curves = get_curves(pic, edge, magni, start_x, end_x, start_y, end_y, mean_dist, inner_color_range, imgSize);
 
     if (all_curves.size() == 1)
     {
@@ -1267,14 +1279,14 @@ Pupil ElSe::run(const Mat &frame)
 
     Mat downscaled = frame;
     float scalingRatio = 1.0;
-    if (frame.rows > IMG_SIZE || frame.cols > IMG_SIZE)
+    if (frame.rows > imgSize || frame.cols > imgSize)
     {
         // return ellipse;
         // Downscaling
-        float rw = IMG_SIZE / (float)frame.cols;
-        float rh = IMG_SIZE / (float)frame.rows;
+        float rw = imgSize / (float)frame.cols;
+        float rh = imgSize / (float)frame.rows;
         scalingRatio = min<float>(min<float>(rw, rh), 1.0);
-        cv::resize(frame, downscaled, Size(), scalingRatio, scalingRatio, INTER_LINEAR);
+        cv::resize(frame, downscaled, Size(), scalingRatio, scalingRatio, interMethod);
     }
 
     Mat pic;
@@ -1319,7 +1331,7 @@ Pupil ElSe::run(const Mat &frame)
 
     //cv::imwrite( "filtered_edge_image.jpg", detected_edges );
 
-    ellipse = find_best_edge(&pic, &detected_edges, &magni, start_x, end_x, start_y, end_y, mean_dist, inner_color_range);
+    ellipse = find_best_edge(&pic, &detected_edges, &magni, start_x, end_x, start_y, end_y, mean_dist, inner_color_range, imgSize);
 
     if ((ellipse.center.x <= 0 && ellipse.center.y <= 0) || ellipse.center.x >= pic.cols || ellipse.center.y >= pic.rows)
     {

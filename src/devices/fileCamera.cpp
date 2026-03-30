@@ -4,22 +4,43 @@
 
 // Creates a virtual camera, behaving like a physical camera while playing image files from the given directory
 // Playback speed in frames per second can be adjusted through "playbackSpeed"
-FileCamera::FileCamera(const QString &directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed, bool playbackLoop, QObject *parent) : Camera(parent),
-                        imageReader(new ImageReader(directory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)),
+FileCamera::FileCamera(const QString &imageSource, const int &subrecordingNumber, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed, bool playbackLoop, QObject *parent) : Camera(parent),
                         frameCounter(new FrameRateCounter(this)),
                         stereoCameraCalibration(nullptr),
                         cameraCalibration(nullptr),
                         calibrationThread(nullptr) {
 
+    try {
+        imageReader = new ImageReader(imageSource, subrecordingNumber, imageMutex, imagePublished, imageProcessed,
+                                      playbackSpeed, playbackLoop, this);
+
+        if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ERROR) {
+            // There was a problem, we cannot yet open the location for image reading
+            qDebug() << "ImageReader::IMSTATUS_ERROR";
+            return;
+        } else if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_INDECISIVE) {
+            // In case of a zipped recording, there are multiple recordings in the zip file,
+            //  (and the specified subrecording name or number does not match with any of those found in the zip)
+            qDebug() << "ImageReader::IMSTATUS_ZIP_INDECISIVE";
+            return;
+        } else if (imageReader->getImageReaderStatus() == ImageReader::IMSTATUS_ZIP_UNOPENABLE) {
+            qDebug() << "ImageReader::IMSTATUS_ZIP_UNOPENABLE";
+            return;
+        }
+    } catch (const std::exception &e) {
+        qWarning() << "ImageReader encountered an error upon initialization: " << e.what();
+        return;
+    }
+
     connect(imageReader, SIGNAL(onNewImage(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
-    connect(imageReader, SIGNAL(onNewImage(CameraImage)), frameCounter, SLOT(count()));
+    assert(connect(imageReader, SIGNAL(onNewImage(CameraImage)), frameCounter, SLOT(count())));
     connect(imageReader, SIGNAL(finished()), this, SIGNAL(finished()));
 
     connect(imageReader, SIGNAL(endReached()), this, SIGNAL(endReached()));
     connect(imageReader, SIGNAL(paused()), this, SIGNAL(paused()));
 
-    connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
-    connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
+    assert(connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double))));
+    assert(connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int))));
 
     // Its possible to load existing calibration files for offline pupil measuring
     // CAUTION: calibration file must correspond to the camera with which the offline files were recorded otherwise the calculations are incorrect
