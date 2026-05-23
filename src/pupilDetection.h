@@ -396,13 +396,19 @@ private:
     ////////////////////////////////////////////////////////////////////////////////////////////
 
     // Pupil data Tracked Time Window
+    bool pupilTTWEnabled = false;
     quint64 pupilTTWRefitLC;
-    int pupilTTWRefitDelayMs = 2*1000;
+//    int pupilTTWRefitDelayMs = 2*1000;
+//    int pupilTTWTotalTimeoutMs = 4*1000;
+//    quint64 pupilTTWTimeWindowMs = 1*1000;
+////    float pupilTTWExpectedFPS = 50;
+    int pupilTTWRefitDelayMs = 250;
+    int pupilTTWTotalTimeoutMs = 1000;
+    quint64 pupilTTWTimeWindowMs = 500;
+//    float pupilTTWExpectedFPS = 50;
     float pupilTTWCriterion_confidence = 0.8;
     float pupilTTWCriterion_outlineConfidence = 0.8;
     float pupilTTWCriterion_axisRatio = 2.0; // = MAJOR / MINOR ratio
-    quint64 pupilTTWTimeWindowMs = 1*1000;
-//    float pupilTTWExpectedFPS = 50;
     std::vector<std::vector<cv::Point2f>> pupilTTW_centers;
     std::vector<std::vector<float>> pupilTTW_dias; // TODO: seat MA and ma into a Point2F or such, so we could easily stash it and fit width & height of ROI easily
     std::vector<std::vector<quint64>> pupilTTWTimestamps;
@@ -416,9 +422,15 @@ private:
     float wfac_clueless = 5.0f;
     float hfac_clueless = 4.5f;
 
-    bool pupilTTW_useConfidence = false;
-    bool pupilTTW_useOutlineConfidence = false;
-    bool pupilTTW_useAxisRatio = false;
+    // DEV
+    std::vector<cv::Size> currentFrameSizes = {cv::Size(1,1), cv::Size(1,1), cv::Size(1,1), cv::Size(1,1)};
+
+//    bool pupilTTW_useConfidence = false;
+//    bool pupilTTW_useOutlineConfidence = false;
+//    bool pupilTTW_useAxisRatio = false;
+    bool pupilTTW_useConfidence = true;
+    bool pupilTTW_useOutlineConfidence = true;
+    bool pupilTTW_useAxisRatio = true;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -540,7 +552,7 @@ public slots:
         }
     }
 
-    QRectF pupilTTW_suggestROI(cv::Point2f avg_center, float avg_dia) {
+    QRectF pupilTTW_suggestROI(cv::Point2f avg_center, float avg_dia, int _currentProcMode, int pupilIndex) {
         float wfac, hfac;
         if(ROIeyeFitScheduled) {
             wfac = wfac_clueless;
@@ -550,12 +562,75 @@ public slots:
             wfac = wfac_basic;
             hfac = hfac_basic;
         }
-        return QRectF(
+
+        QRectF suggested = QRectF(
                 avg_center.x - wfac/2.0*avg_dia,
                 avg_center.y - hfac/2.0*avg_dia,
                 wfac*avg_dia,
                 hfac*avg_dia
         );
+
+        limitPDROIToFrameSize(suggested, pupilIndex);
+
+        return suggested;
+    }
+
+    void growROICentered(QRectF &suggested, float fac) {
+        QPointF c = suggested.center();
+
+        suggested.setSize(suggested.size() * fac);
+        suggested.moveCenter(c);
+    }
+
+    void limitPDROIToFrameSize(QRectF &suggested, int pupilIndex) {
+        qreal maxWidth = 1;
+        qreal maxHeight = 1;
+        qreal shift;
+
+        maxWidth = currentFrameSizes[pupilIndex].width;
+        maxHeight = currentFrameSizes[pupilIndex].height;
+
+//        shift = 0;
+        if (suggested.left() < 0) {
+//            shift = -suggested.x();
+            suggested.setX(0);
+//            qDebug() << "(suggested.x() < 0)";
+            if (suggested.right() > maxWidth) {
+                suggested.setWidth(maxWidth);
+            }
+        }
+
+//        shift = 0;
+        if (suggested.top() < 0) {
+//            shift = -suggested.y();
+            suggested.setY(0);
+//            qDebug() << "(suggested.y() < 0)";
+            if (suggested.bottom() > maxHeight) {
+                suggested.setHeight(maxHeight);
+            }
+        }
+
+        if (suggested.right() > maxWidth) {
+            suggested.setX(maxWidth-suggested.width());
+//            qDebug() << "(suggested.right() > maxWidth)";
+            if (suggested.x() < 0) {
+                suggested.setWidth(maxWidth);
+                suggested.setX(0);
+            }
+        }
+
+        if (suggested.bottom() > maxHeight) {
+            suggested.setY(maxHeight-suggested.height());
+//            qDebug() << "(suggested.top() > maxHeight)";
+            if (suggested.top() < 0) {
+                suggested.setHeight(maxHeight);
+                suggested.setY(0);
+            }
+        }
+    }
+
+    bool isPupilTTWEnabled() {
+        return pupilTTWEnabled;
     }
 
     void updatePupilTTW(quint64 _timestamp, int _currentProcMode, const std::vector<Pupil> &_Pupils) {
@@ -586,17 +661,50 @@ public slots:
             }
         }
 
+        bool totalTimedOut = false;
         for(int uu = 0; uu < _Pupils.size(); uu++) {
+
+            // TODO: retain autoparam sane min-max limits
+            // TODO: wove together with periodic face finder cv thingy, also respecting autoparam min-max limits relative to IPD
+            if (pupilTTWTimestamps[uu].size() > 0 &&
+                _timestamp - pupilTTWTimestamps[uu][pupilTTWTimestamps[uu].size()-1] > pupilTTWTotalTimeoutMs) {
+
+                qDebug() << "growROICentered";
+                qDebug() << pupilTTW_suggestedROIs[uu];
+
+                growROICentered(pupilTTW_suggestedROIs[uu],  1.2f);
+                limitPDROIToFrameSize(pupilTTW_suggestedROIs[uu], uu);
+
+                if(pupilTTW_suggestedROIs[uu].isEmpty()) {
+                    pupilTTW_suggestedROIs[uu].setX(0);
+                    pupilTTW_suggestedROIs[uu].setY(0);
+                    pupilTTW_suggestedROIs[uu].setWidth(currentFrameSizes[uu].width);
+                    pupilTTW_suggestedROIs[uu].setHeight(currentFrameSizes[uu].height);
+                }
+
+                qDebug() << "limitPDROIToFrameSize";
+                qDebug() << pupilTTW_suggestedROIs[uu];
+
+
+//                pupilTTW_centers[zz].push_back(_Pupils[zz].center);
+//                pupilTTW_dias[zz].push_back(_Pupils[zz].diameter());
+//                pupilTTWTimestamps[zz].push_back(_timestamp);
+
+                qDebug() << "------------------------------";
+                totalTimedOut = true;
+            }
+
             if (_timestamp - pupilTTWRefitLC > pupilTTWRefitDelayMs) {
                 advanceTTW(uu);
                 pupilTTW_suggestedROIs[uu] = QRectF(); // "clear" it
                 if (pupilTTW_centers[uu].size() < pupilTTWminSamples)
-                    return;
-                pupilTTW_suggestedROIs[uu] = pupilTTW_suggestROI(vecMeanP2F(pupilTTW_centers[uu]), vecMeanF(pupilTTW_dias[uu]));
+//                    return;
+                    continue;
+                pupilTTW_suggestedROIs[uu] = pupilTTW_suggestROI(vecMeanP2F(pupilTTW_centers[uu]), vecMeanF(pupilTTW_dias[uu]), _currentProcMode, uu);
             }
         }
 
-        if(_timestamp - pupilTTWRefitLC > pupilTTWRefitDelayMs) {
+        if(_timestamp - pupilTTWRefitLC > pupilTTWRefitDelayMs || totalTimedOut) {
             if (_currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
                 if(!pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_ONE_PUPIL_MAIN].isEmpty())
                     setROIsingleImageOnePupil(pupilTTW_suggestedROIs[PupilVecIdx::SINGLE_IMAGE_ONE_PUPIL_MAIN]);
@@ -627,11 +735,16 @@ public slots:
             pupilTTWRefitLC = _timestamp;
         }
 
+        // TODO ?
+        autoParamScheduled = true;
 
     };
+
     void emptyPupilTTW () {
         // TODO
-    }
+    };
+
+    void enablePupilTTW(bool state);
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////

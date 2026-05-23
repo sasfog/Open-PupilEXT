@@ -27,8 +27,10 @@ void CamTempMonitor::run() {
     bool hasDeltaTimeData = false;
 
     do {
-        if(!camera || (camera && !camera->isOpen()))
+        if(!camera || (camera && !camera->isOpen())) {
+            QThread::msleep(checkIntervalSec*1000);
             continue;
+        }
         
         if(!stereo) {
             temps = {static_cast<SingleCamera*>(camera)->getTemperature(), MINIMUM_DEVICE_TEMPERATURE};

@@ -1805,7 +1805,7 @@ SingleCamera::SingleCamera(const QString &friendlyName, QObject* parent)
         //arv_device_set_string_feature_value(arv_camera_get_device(camera), "DeviceLinkHeartbeatMode", "Off", &error);
 
         GValue s = G_VALUE_INIT;
-        arv_device_get_feature_value(arv_camera_get_device(camera), "GevHeartbeatTimeout", &v, NULL);
+        arv_device_get_feature_value(arv_camera_get_device(camera), "GevHeartbeatTimeout", &s, NULL);
         auto si = g_value_get_int(&s);
         qDebug() << "GevHeartbeatTimeout = " << si;
     }
