@@ -16,7 +16,8 @@
 #include "../supportFunctions.h"
 #include "../recEventTracker.h"
 
-Q_DECLARE_METATYPE(std::vector<double>)
+// TODO: NOT HERE? also to be declared in MCUManager, but might not even be necessary
+//Q_DECLARE_METATYPE(std::vector<double>)
 
 /**
     An instance of this class is supposed to be running only when/while a Basler camera 

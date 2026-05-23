@@ -35,8 +35,8 @@ project(PupilEXT)
 set(PUPILEXT_VERSION "0.1.3")
 
 # Use Pylon or Aravis
-#set(USE_PYLON TRUE)
-set(USE_PYLON FALSE)
+set(USE_PYLON TRUE)
+#set(USE_PYLON FALSE)
 
 set(USE_LSL TRUE)
 #set(USE_LSL FALSE)

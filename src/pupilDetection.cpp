@@ -88,33 +88,51 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
 
     //configureCameraConnection();
 
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
+    // DEV
+    enablePupilTTW(pupilTTWEnabled);
+}
 
-    /*
-    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
-    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
-    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
-    pupilTTW_centers.push_back(std::vector<cv::Point2f>());
-    //
-    pupilTTW_dias.push_back(std::vector<float>());
-    pupilTTW_dias.push_back(std::vector<float>());
-    pupilTTW_dias.push_back(std::vector<float>());
-    pupilTTW_dias.push_back(std::vector<float>());
-    //
-    pupilTTWTimestamps.push_back(std::vector<quint64>());
-    pupilTTWTimestamps.push_back(std::vector<quint64>());
-    pupilTTWTimestamps.push_back(std::vector<quint64>());
-    pupilTTWTimestamps.push_back(std::vector<quint64>());
+void PupilDetection::enablePupilTTW(bool state) {
+    pupilTTWEnabled = state;
 
-    timeWindow_init(2000, 1000, 10);
+    if(pupilTTWEnabled) {
+        pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+        pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+        pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+        pupilTTW_centers.push_back(std::vector<cv::Point2f>());
+        //
+        pupilTTW_dias.push_back(std::vector<float>());
+        pupilTTW_dias.push_back(std::vector<float>());
+        pupilTTW_dias.push_back(std::vector<float>());
+        pupilTTW_dias.push_back(std::vector<float>());
+        //
+        pupilTTWTimestamps.push_back(std::vector<quint64>());
+        pupilTTWTimestamps.push_back(std::vector<quint64>());
+        pupilTTWTimestamps.push_back(std::vector<quint64>());
+        pupilTTWTimestamps.push_back(std::vector<quint64>());
 
-    // UNDER CONSTRUCTION
-    connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>)), this, SLOT(updatePupilTTW(quint64, int, std::vector<Pupil>)));
-    */
+        timeWindow_init(2000, 1000, 10);
 
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
+        // UNDER CONSTRUCTION
+        connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>)), this,
+                SLOT(updatePupilTTW(quint64, int, std::vector<Pupil>)));
+    } else {
+        for( int i = 0; i < pupilTTW_centers.size(); i++ )
+            pupilTTW_centers[i].clear();
+        pupilTTW_centers.clear();
+
+        for( int i = 0; i < pupilTTW_dias.size(); i++ )
+            pupilTTW_dias[i].clear();
+        pupilTTW_dias.clear();
+
+        for( int i = 0; i < pupilTTW_dias.size(); i++ )
+            pupilTTWTimestamps[i].clear();
+        pupilTTWTimestamps.clear();
+
+        disconnect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>)), this,
+                SLOT(updatePupilTTW(quint64, int, std::vector<Pupil>)));
+    }
+    // TODO: cleanup separately, upon pupildetection destruct? but pupilDetection should be an always alive singleton anyway
 }
 
 PupilDetection::~PupilDetection() {
@@ -306,6 +324,9 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
     }
 
     cv::Rect roi = cv::Rect(0, 0, bwFrame.cols, bwFrame.rows);
+
+    // DEV
+    currentFrameSizes[0] = roi.size();
 
     if(     useROIPreProcessing && !ROIsingleImageOnePupil.empty() && roi != ROIsingleImageOnePupil &&
             ROIsingleImageOnePupil.x < bwFrame.cols && (ROIsingleImageOnePupil.x + ROIsingleImageOnePupil.width) <= bwFrame.cols &&
@@ -509,6 +530,10 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
     // BG: NOTE: by default we only use the left and right halves of the input image
     cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
     cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
+
+    // DEV
+    currentFrameSizes[0] = roiA.size();
+    currentFrameSizes[1] = roiB.size();
 
     if(     useROIPreProcessing && !ROIsingleImageTwoPupilR.empty() && roiA != ROIsingleImageTwoPupilR &&
             ROIsingleImageTwoPupilR.x < bwFrameA.cols && (ROIsingleImageTwoPupilR.x + ROIsingleImageTwoPupilR.width) <= bwFrameA.cols &&
@@ -731,6 +756,10 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     cv::Mat bwFrameS = simg.imgS;
     cv::Rect roiM = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Rect roiS = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+
+    // DEV
+    currentFrameSizes[0] = roiM.size();
+    currentFrameSizes[1] = roiS.size();
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(     useROIPreProcessing && !ROIstereoImageOnePupilM.empty() && roiM != ROIstereoImageOnePupilM &&
@@ -974,6 +1003,12 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     cv::Rect roiRS = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Rect roiLM = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Rect roiLS = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+
+    // DEV
+    currentFrameSizes[0] = roiRM.size();
+    currentFrameSizes[1] = roiRS.size();
+    currentFrameSizes[2] = roiLM.size();
+    currentFrameSizes[3] = roiLS.size();
 
     if(     useROIPreProcessing && !ROIstereoImageTwoPupilRM.empty() && roiRM != ROIstereoImageTwoPupilRM &&
             ROIstereoImageTwoPupilRM.x < bwFrameRM.cols && (ROIstereoImageTwoPupilRM.x + ROIstereoImageTwoPupilRM.width) <= bwFrameRM.cols &&

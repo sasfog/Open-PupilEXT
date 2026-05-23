@@ -155,6 +155,12 @@ void PupilDetectionSettingsDialog::createForm() {
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
     optionsLayout->addRow(roiPreprocessingLabel, roiPreprocessingBox);
 
+    QLabel *pupilTTWLabel = new QLabel(tr("Track pupil location (PD ROI refit):"));
+    pupilTTWBox = new QCheckBox();
+    pupilTTWBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
+    pupilTTWBox->setChecked(pupilDetection->isPupilTTWEnabled());
+    optionsLayout->addRow(pupilTTWLabel, pupilTTWBox);
+
     QLabel *outlineConfidenceLabel = new QLabel(tr("Compute Additional Outline Confidence:"));
     outlineConfidenceBox = new QCheckBox();
     outlineConfidenceBox->setStyle(QStyleFactory::create("Fusion")); // Since upgrade to Qt 6.8.3 this is needed
@@ -281,6 +287,7 @@ void PupilDetectionSettingsDialog::updateForm() {
 
     algorithmBox->setCurrentText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
     roiPreprocessingBox->setChecked(pupilDetection->isROIPreProcessingEnabled());
+    pupilTTWBox->setChecked(pupilDetection->isPupilTTWEnabled()); // TODO: only if ROI is enabled
     outlineConfidenceBox->setChecked(pupilDetection->isOutlineConfidenceEnabled());
     computeBRISQUEBox->setChecked(pupilDetection->isComputeBRISQUEEnabled());
 
@@ -356,6 +363,7 @@ void PupilDetectionSettingsDialog::loadSettings() {
 //    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked(), applicationSettings));
 //    pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked(), applicationSettings));
     pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", true, applicationSettings));
+    pupilDetection->enablePupilTTW(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.pupilTTW", false, applicationSettings));
     pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", true, applicationSettings));
     pupilDetection->enableComputeBRISQUE(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.computeBRISQUE", false, applicationSettings));
     pupilDetection->enablePupilUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked(), applicationSettings));
@@ -382,6 +390,7 @@ void PupilDetectionSettingsDialog::saveUniversalSettings() {
 
     applicationSettings->setValue("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText());
     applicationSettings->setValue("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked());
+    applicationSettings->setValue("PupilDetectionSettingsDialog.pupilTTW", pupilTTWBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.computeBRISQUE", computeBRISQUEBox->isChecked());
     applicationSettings->setValue("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked());
@@ -488,6 +497,7 @@ void PupilDetectionSettingsDialog::applyButtonClick() {
 
     pupilDetection->setAlgorithm(algorithmBox->currentText());
     pupilDetection->enableROIPreProcessing(roiPreprocessingBox->isChecked());
+    pupilDetection->enablePupilTTW(pupilTTWBox->isChecked());
     pupilDetection->enableOutlineConfidence(outlineConfidenceBox->isChecked());
     pupilDetection->enableComputeBRISQUE(computeBRISQUEBox->isChecked());
     pupilDetection->enablePupilUndistortion(pupilUndistortionBox->isChecked());
