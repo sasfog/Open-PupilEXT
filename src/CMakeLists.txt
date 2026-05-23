@@ -149,6 +149,7 @@ list(APPEND ALL_SOURCES_TO_ADD
         subwindows/openZipChoiceDialog.cpp
         data-io/recSectionExporter.h data-io/recSectionExporter.cpp
         subwindows/exportRecSectionDialog.h
+        devices/MCUManager.h devices/MCUManager.cpp
 )
 
 if(USE_PYLON)
