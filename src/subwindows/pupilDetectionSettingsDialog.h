@@ -51,6 +51,7 @@ private:
     QCheckBox *roiPreprocessingBox;
     QCheckBox *outlineConfidenceBox;
     QCheckBox *computeBRISQUEBox;
+    QCheckBox *pupilTTWBox;
     QCheckBox *pupilUndistortionBox;
     QCheckBox *imageUndistortionBox;
 
