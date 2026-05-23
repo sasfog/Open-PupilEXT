@@ -8,6 +8,8 @@
 #include <QDebug>
 #include "camera.h"
 
+#ifdef USE_PYLON
+
 #include <pylon/PylonIncludes.h>
 
 using namespace Pylon;
@@ -30,3 +32,4 @@ Q_OBJECT
 
 };
 
+#endif

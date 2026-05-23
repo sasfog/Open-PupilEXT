@@ -76,13 +76,13 @@ public:
     }
 #else // #ifdef Q_OS_MACOS
     // APPLE
-    static bool relaunchAsAdminMac(const QStringList &argsL)
+    static bool restartAsAdmin(const QStringList &argsL)
     {
         QString appPath = QCoreApplication::applicationFilePath();
         QString script = QString(
             "do shell script \"%1 %2\" with administrator privileges")
             .arg(appPath)
-            .arg(argsL.join(' '););
+            .arg(argsL.join(' '));
 
         QStringList osaArgs;
         osaArgs << "-e" << script;
