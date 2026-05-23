@@ -533,7 +533,7 @@ void ImageWriter::writeVideoFrame(const cv::Mat &img, const uint64 &timestamp, Q
     int bufferSuccess = av_frame_get_buffer(frame, 32);
 
     if(bufferSuccess != 0)
-        throw std::exception("Could not get buffer for writing frame...");
+        throw std::runtime_error("Could not get buffer for writing frame..."); // runtime_error = exception with string message
 
     // Lets see if we need to convert the color or not. Some codecs need us to use "color"
     if(codec_ctx->pix_fmt != AV_PIX_FMT_GRAY8) {

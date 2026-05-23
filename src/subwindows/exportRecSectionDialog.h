@@ -10,7 +10,7 @@
 #include <QDebug>
 #include <QLabel>
 #include <QVBoxLayout>
-#include "devices/fileCamera.h"
+#include "../devices/fileCamera.h"
 #include "custom-widgets/timestampSpinBox.h"
 
 class ExportRecSectionDialog : public QDialog {

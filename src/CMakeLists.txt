@@ -382,23 +382,26 @@ if(UNIX)
                 COMMENT "Running macdeployqt."
         )
         add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-                # Supposedly already created by macdeployqt
-        #        COMMAND ${CMAKE_COMMAND} -E make_directory "${FRAMEWORKS_DIR}"
+            # Supposedly already created by macdeployqt
+        #    COMMAND ${CMAKE_COMMAND} -E make_directory "${FRAMEWORKS_DIR}"
 
-                # Copy libquazip - should be there yet
-        #        COMMAND ${CMAKE_COMMAND} -E copy "${QUAZIP_PATH}" "${FRAMEWORKS_DIR}/"
-                # Fix install name for libquazip
-                COMMAND install_name_tool -change @rpath/libquazip1-qt6.1.5.0.dylib
-                @executable_path/../Frameworks/libquazip1-qt6.1.5.0.dylib
-                "${APP_EXECUTABLE}"
+            # Copy libquazip - should be there yet
+        #    COMMAND ${CMAKE_COMMAND} -E copy "${QUAZIP_PATH}" "${FRAMEWORKS_DIR}/"
+            # Fix install name for libquazip
+            COMMAND install_name_tool -change @rpath/libquazip1-qt6.1.5.0.dylib
+            @executable_path/../Frameworks/libquazip1-qt6.1.5.0.dylib
+            "${APP_EXECUTABLE}"
 
-                # Copy libspii - should be there yet
-        #        COMMAND ${CMAKE_COMMAND} -E copy "${SPII_PATH}" "${FRAMEWORKS_DIR}/"
-                # Fix install name for libspii
-                COMMAND install_name_tool -change @rpath/libspii.dylib
-                @executable_path/../Frameworks/libspii.dylib
-                "${APP_EXECUTABLE}"
+            # Copy libspii - should be there yet
+        #    COMMAND ${CMAKE_COMMAND} -E copy "${SPII_PATH}" "${FRAMEWORKS_DIR}/"
+            # Fix install name for libspii
+            COMMAND install_name_tool -change @rpath/libspii.dylib
+            @executable_path/../Frameworks/libspii.dylib
+            "${APP_EXECUTABLE}"
+        )
 
+        if(USE_PYLON)
+            add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
                 # Copy pylon.framework (whole framework directory)
                 COMMAND ${CMAKE_COMMAND} -E copy_directory "${PYLON_HOME}" "${FRAMEWORKS_DIR}/pylon.framework"
                 # Fix install name for pylon
@@ -406,7 +409,8 @@ if(UNIX)
                 @executable_path/../Frameworks/pylon.framework/Versions/A/pylon
                 "${APP_EXECUTABLE}"
                 COMMENT "Bundling third-party dependencies into .app file."
-        )
+            )
+        endif()
 
     #
     #    set(PYLON_FRAMEWORK_ORIG "/Library/Frameworks/pylon.framework") # Where Pylon is installed
